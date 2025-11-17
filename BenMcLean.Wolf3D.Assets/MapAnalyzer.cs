@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -78,45 +79,42 @@ public class MapAnalyzer
 		public string Song { get; private set; }
 		#endregion XML Attributes
 		#region Grids
-		private readonly bool[][] Navigable;
+		private readonly BitArray Navigable;
 		public readonly bool IsNavigable(int x, int z) =>
-			x >= 0 && z >= 0 && x < Navigable.Length && z < Navigable[x].Length
-			&& Navigable[x][z];
-		private readonly bool[][] Transparent;
+			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
+			&& Navigable[x * GameMap.Depth + z];
+		private readonly BitArray Transparent;
 		public readonly bool IsTransparent(int x, int z) =>
-			x >= 0 && z >= 0 && x < Transparent.Length && z < Transparent[x].Length
-			&& Transparent[x][z];
-		private readonly bool[][] Mappable;
+			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
+			&& Transparent[x * GameMap.Depth + z];
+		private readonly BitArray Mappable;
 		public readonly bool IsMappable(int x, int z) =>
-			x >= 0 && z >= 0 && x < Mappable.Length && z < Mappable[x].Length
-			&& Mappable[x][z];
+			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
+			&& Mappable[x * GameMap.Depth + z];
 		#endregion Grids
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
 		{
 			MapAnalyzer = mapAnalyzer;
 			GameMap = gameMap;
-			Navigable = new bool[GameMap.Width][];
-			Transparent = new bool[GameMap.Width][];
+			Navigable = new BitArray(GameMap.Width * GameMap.Depth);
+			Transparent = new BitArray(GameMap.Width * GameMap.Depth);
 			for (ushort x = 0; x < GameMap.Width; x++)
 			{
-				Navigable[x] = new bool[GameMap.Depth];
-				Transparent[x] = new bool[GameMap.Depth];
 				for (ushort z = 0; z < GameMap.Depth; z++)
 				{
-					Navigable[x][z] = MapAnalyzer.IsNavigable(GameMap.GetMapData(x, z), GameMap.GetObjectData(x, z));
-					Transparent[x][z] = MapAnalyzer.IsTransparent(GameMap.GetMapData(x, z), GameMap.GetObjectData(x, z));
+					Navigable[x * GameMap.Depth + z] = MapAnalyzer.IsNavigable(GameMap.GetMapData(x, z), GameMap.GetObjectData(x, z));
+					Transparent[x * GameMap.Depth + z] = MapAnalyzer.IsTransparent(GameMap.GetMapData(x, z), GameMap.GetObjectData(x, z));
 				}
 			}
-			Mappable = new bool[GameMap.Width][];
+			Mappable = new BitArray(GameMap.Width * GameMap.Depth);
 			for (ushort x = 0; x < GameMap.Width; x++)
 			{
-				Mappable[x] = new bool[GameMap.Depth];
 				for (ushort z = 0; z < GameMap.Depth; z++)
-					Mappable[x][z] = Transparent[x][z]
-						|| (x > 0 && Transparent[x - 1][z])
-						|| (x < Transparent.Length - 1 && Transparent[x + 1][z])
-						|| (z > 0 && Transparent[x][z - 1])
-						|| (z < Transparent[x].Length - 1 && Transparent[x][z + 1]);
+					Mappable[x * GameMap.Depth + z] = Transparent[x * GameMap.Depth + z]
+						|| (x > 0 && Transparent[(x - 1) * GameMap.Depth + z])
+						|| (x < GameMap.Width - 1 && Transparent[(x + 1) * GameMap.Depth + z])
+						|| (z > 0 && Transparent[x * GameMap.Depth + (z - 1)])
+						|| (z < GameMap.Depth - 1 && Transparent[x * GameMap.Depth + (z + 1)]);
 			}
 			XML = MapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault() ?? throw new InvalidDataException("XML tag for map \"" + GameMap.Name + "\" was not found!");
 			Episode = byte.TryParse(XML?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
