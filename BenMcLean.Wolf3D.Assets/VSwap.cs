@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,6 +20,7 @@ public struct VSwap
 	public uint[][] Palettes { get; set; }
 	public byte[][] Pages { get; set; }
 	public byte[][] DigiSounds { get; set; }
+	public BitArray[] Masks { get; set; }
 	public ushort SpritePage { get; set; }
 	public ushort NumPages { get; set; }
 	public readonly int SoundPage => Pages.Length;
@@ -44,10 +46,11 @@ public struct VSwap
 		if (Palettes is null || Palettes.Length < 1)
 			throw new InvalidDataException("Must load a palette before loading a VSWAP!");
 		using BinaryReader binaryReader = new(stream);
-		// parse header info
+		#region parse header info
 		NumPages = binaryReader.ReadUInt16();
 		SpritePage = binaryReader.ReadUInt16();
 		Pages = new byte[binaryReader.ReadUInt16()][]; // SoundPage
+		Masks = new BitArray[SoundPage - SpritePage];
 		uint[] pageOffsets = new uint[NumPages];
 		uint dataStart = 0;
 		for (ushort i = 0; i < pageOffsets.Length; i++)
@@ -62,7 +65,8 @@ public struct VSwap
 		for (ushort i = 0; i < pageLengths.Length; i++)
 			pageLengths[i] = binaryReader.ReadUInt16();
 		ushort page;
-		// read in walls
+		#endregion parse header info
+		#region read in walls
 		for (page = 0; page < SpritePage; page++)
 			if (pageOffsets[page] > 0)
 			{
@@ -73,8 +77,9 @@ public struct VSwap
 						wall[TileSqrt * row + col] = (byte)stream.ReadByte();
 				Pages[page] = wall.Indices2ByteArray(palettes[PaletteNumber(page, xml)]);
 			}
-		// read in sprites
-		for (; page < Pages.Length; page++)
+		#endregion read in walls
+		#region read in sprites
+		for (; page < SoundPage; page++)
 			if (pageOffsets[page] > 0)
 			{
 				stream.Seek(pageOffsets[page], 0);
@@ -107,14 +112,19 @@ public struct VSwap
 					}
 				}
 				Pages[page] = TransparentBorder(sprite.Indices2UIntArray(palettes[PaletteNumber(page, xml)])).UInt2ByteArray();
+				BitArray mask = new(sprite.Length);
+				for (int i = 0; i < sprite.Length; i++)
+					mask[i] = sprite[i] != 0;
+				Masks[page - SpritePage] = mask;
 			}
-		// read in digisounds
+		#endregion read in sprites
+		#region read in digisounds
 		byte[] soundData = new byte[stream.Length - pageOffsets[Pages.Length]];
 		stream.Seek(pageOffsets[Pages.Length], 0);
 		stream.Read(soundData, 0, soundData.Length);
 		uint start = pageOffsets[NumPages - 1] - pageOffsets[Pages.Length];
 		ushort[][] soundTable;
-		using (MemoryStream memoryStream = new MemoryStream(soundData, (int)start, soundData.Length - (int)start))
+		using (MemoryStream memoryStream = new(soundData, (int)start, soundData.Length - (int)start))
 			soundTable = VgaGraph.Load16BitPairs(memoryStream);
 		uint numDigiSounds = 0;
 		while (numDigiSounds < soundTable.Length && soundTable[numDigiSounds][1] > 0)
@@ -128,6 +138,7 @@ public struct VSwap
 				for (uint bite = 0; bite < DigiSounds[sound].Length; bite++)
 					DigiSounds[sound][bite] = (byte)(soundData[start + bite] - 128); // Godot makes some kind of oddball conversion from the unsigned byte to a signed byte
 			}
+		#endregion read in digisounds
 	}
 	public static uint PaletteNumber(uint pageNumber, XElement xml) =>
 		xml?.Element("VSwap")?.Descendants()?.Where(
