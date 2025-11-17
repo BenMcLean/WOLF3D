@@ -4,32 +4,32 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
-public struct GameMap
+public sealed class GameMap
 {
 	#region Data
-	public string Name { get; private set; }
-	public override readonly string ToString() => Name;
-	public ushort Number { get; private set; }
-	public ushort Width { get; private set; }
+	public string Name { get; private init; }
+	public override string ToString() => Name;
+	public ushort Number { get; private init; }
+	public ushort Width { get; private init; }
 	public const ushort Height = 0; // Vertical
-	public ushort Depth { get; private set; }
-	public ushort[] MapData { get; private set; }
-	public ushort[] ObjectData { get; private set; }
-	public ushort[] OtherData { get; private set; }
-	public readonly ushort X(uint i) => X((ushort)i);
-	public readonly ushort X(ushort i) => (ushort)(i % Width);
+	public ushort Depth { get; private init; }
+	public ushort[] MapData { get; private init; }
+	public ushort[] ObjectData { get; private init; }
+	public ushort[] OtherData { get; private init; }
+	public ushort X(uint i) => X((ushort)i);
+	public ushort X(ushort i) => (ushort)(i % Width);
 	public const ushort Y = 0; // Vertical
-	public readonly ushort Z(uint i) => Z((ushort)i);
-	public readonly ushort Z(ushort i) => (ushort)(i / Depth);
-	public readonly ushort GetIndex(uint x, uint z) => GetIndex((ushort)x, (ushort)z);
-	public readonly ushort GetIndex(ushort x, ushort z) => (ushort)((z * Depth) + x);
-	public readonly ushort GetMapData(ushort x, ushort z) => MapData[GetIndex(x, z)];
-	public readonly ushort GetMapData(uint x, uint z) => GetMapData((ushort)x, (ushort)z);
-	public readonly ushort GetObjectData(uint x, uint z) => GetObjectData((ushort)x, (ushort)z);
-	public readonly ushort GetObjectData(ushort x, ushort z) => ObjectData[GetIndex(x, z)];
-	public readonly ushort GetOtherData(uint x, uint z) => GetOtherData((ushort)x, (ushort)z);
-	public readonly ushort GetOtherData(ushort x, ushort z) => OtherData[GetIndex(x, z)];
-	public readonly bool IsWithinMap(int x, int z) => x >= 0 && z >= 0 && x < Width && z < Depth;
+	public ushort Z(uint i) => Z((ushort)i);
+	public ushort Z(ushort i) => (ushort)(i / Depth);
+	public ushort GetIndex(uint x, uint z) => GetIndex((ushort)x, (ushort)z);
+	public ushort GetIndex(ushort x, ushort z) => (ushort)((z * Depth) + x);
+	public ushort GetMapData(ushort x, ushort z) => MapData[GetIndex(x, z)];
+	public ushort GetMapData(uint x, uint z) => GetMapData((ushort)x, (ushort)z);
+	public ushort GetObjectData(uint x, uint z) => GetObjectData((ushort)x, (ushort)z);
+	public ushort GetObjectData(ushort x, ushort z) => ObjectData[GetIndex(x, z)];
+	public ushort GetOtherData(uint x, uint z) => GetOtherData((ushort)x, (ushort)z);
+	public ushort GetOtherData(ushort x, ushort z) => OtherData[GetIndex(x, z)];
+	public bool IsWithinMap(int x, int z) => x >= 0 && z >= 0 && x < Width && z < Depth;
 	#endregion Data
 	#region Loading
 	public static GameMap[] Load(string folder, XElement xml) => Load(

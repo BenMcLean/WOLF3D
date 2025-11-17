@@ -6,7 +6,7 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
-public struct AudioT
+public sealed class AudioT
 {
 	public static AudioT Load(string folder, XElement xml)
 	{
@@ -14,8 +14,8 @@ public struct AudioT
 		using FileStream audioTStream = new(System.IO.Path.Combine(folder, xml.Element("Audio").Attribute("AudioT").Value), FileMode.Open);
 		return new AudioT(audioHead, audioTStream, xml.Element("Audio"));
 	}
-	public Adl[] Sounds;
-	public readonly Dictionary<string, Song> Songs;
+	public Adl[] Sounds { get; private init; }
+	public Dictionary<string, Song> Songs { get; private init; }
 	public static uint[] ParseHead(Stream stream)
 	{
 		List<uint> list = [];

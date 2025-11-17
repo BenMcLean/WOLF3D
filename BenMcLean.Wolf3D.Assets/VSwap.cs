@@ -8,7 +8,7 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
-public struct VSwap
+public sealed class VSwap
 {
 	public static VSwap Load(string folder, XElement xml)
 	{
@@ -17,22 +17,22 @@ public struct VSwap
 			ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort tileSqrt) ? tileSqrt : (ushort)64
 			);
 	}
-	public uint[][] Palettes { get; set; }
-	public byte[][] Pages { get; set; }
-	public byte[][] DigiSounds { get; set; }
-	public BitArray[] Masks { get; set; }
-	public ushort SpritePage { get; set; }
-	public ushort NumPages { get; set; }
-	public readonly int SoundPage => Pages.Length;
-	public ushort TileSqrt { get; set; }
-	public readonly byte[] Sprite(ushort number) => Pages[SpritePage + number];
+	public uint[][] Palettes { get; private init; }
+	public byte[][] Pages { get; private init; }
+	public byte[][] DigiSounds { get; private init; }
+	public BitArray[] Masks { get; private init; }
+	public ushort SpritePage { get; private init; }
+	public ushort NumPages { get; private init; }
+	public int SoundPage => Pages.Length;
+	public ushort TileSqrt { get; private init; }
+	public byte[] Sprite(ushort number) => Pages[SpritePage + number];
 	public static uint GetOffset(ushort x, ushort y, ushort tileSqrt = 64) => (uint)((tileSqrt * y + x) * 4);
-	public readonly uint GetOffset(ushort x, ushort y) => GetOffset(x, y, TileSqrt);
-	public readonly byte GetR(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y)];
-	public readonly byte GetG(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 1];
-	public readonly byte GetB(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 2];
-	public readonly byte GetA(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 3];
-	public readonly bool IsTransparent(ushort page, ushort x, ushort y) =>
+	public uint GetOffset(ushort x, ushort y) => GetOffset(x, y, TileSqrt);
+	public byte GetR(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y)];
+	public byte GetG(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 1];
+	public byte GetB(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 2];
+	public byte GetA(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 3];
+	public bool IsTransparent(ushort page, ushort x, ushort y) =>
 		page >= Pages.Length
 		|| Pages[page] == null
 		|| (page >= SpritePage // We know walls aren't transparent

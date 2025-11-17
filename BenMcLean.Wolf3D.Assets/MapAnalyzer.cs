@@ -61,34 +61,34 @@ public class MapAnalyzer
 		(ushort)(uint)XDoor(cell).FirstOrDefault()?.Attribute("Page");
 	public MapAnalysis Analyze(GameMap map) => new(this, map);
 	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Select(map => new MapAnalysis(this, map));
-	public struct MapAnalysis
+	public sealed class MapAnalysis
 	{
 		#region XML Attributes
-		public MapAnalyzer MapAnalyzer { get; private set; }
-		public XElement XML { get; private set; }
-		public GameMap GameMap { get; private set; }
-		public byte Episode { get; private set; }
-		public byte Floor { get; private set; }
-		public byte ElevatorTo { get; private set; }
-		public byte? Ground { get; private set; }
-		public ushort? GroundTile { get; private set; }
-		public byte? Ceiling { get; private set; }
-		public ushort? CeilingTile { get; private set; }
-		public byte Border { get; private set; }
-		public TimeSpan Par { get; private set; }
-		public string Song { get; private set; }
+		public MapAnalyzer MapAnalyzer { get; private init; }
+		public XElement XML { get; private init; }
+		public GameMap GameMap { get; private init; }
+		public byte Episode { get; private init; }
+		public byte Floor { get; private init; }
+		public byte ElevatorTo { get; private init; }
+		public byte? Ground { get; private init; }
+		public ushort? GroundTile { get; private init; }
+		public byte? Ceiling { get; private init; }
+		public ushort? CeilingTile { get; private init; }
+		public byte Border { get; private init; }
+		public TimeSpan Par { get; private init; }
+		public string Song { get; private init; }
 		#endregion XML Attributes
 		#region Grids
 		private readonly BitArray Navigable;
-		public readonly bool IsNavigable(int x, int z) =>
+		public bool IsNavigable(int x, int z) =>
 			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
 			&& Navigable[x * GameMap.Depth + z];
 		private readonly BitArray Transparent;
-		public readonly bool IsTransparent(int x, int z) =>
+		public bool IsTransparent(int x, int z) =>
 			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
 			&& Transparent[x * GameMap.Depth + z];
 		private readonly BitArray Mappable;
-		public readonly bool IsMappable(int x, int z) =>
+		public bool IsMappable(int x, int z) =>
 			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
 			&& Mappable[x * GameMap.Depth + z];
 		#endregion Grids

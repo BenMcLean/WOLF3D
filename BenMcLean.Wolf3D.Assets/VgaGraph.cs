@@ -6,9 +6,9 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
-public struct VgaGraph
+public sealed class VgaGraph
 {
-	XElement XML { get; set; }
+	XElement XML { get; private init; }
 
 	public static VgaGraph Load(string folder, XElement xml)
 	{
@@ -18,11 +18,11 @@ public struct VgaGraph
 		return new VgaGraph(vgaHead, vgaGraphStream, vgaDict, xml);
 	}
 
-	public struct Font
+	public sealed class Font
 	{
-		public ushort Height;
-		public byte[] Width;
-		public byte[][] Character;
+		public ushort Height { get; private init; }
+		public byte[] Width { get; private init; }
+		public byte[][] Character { get; private init; }
 
 		public Font(Stream stream)
 		{
@@ -48,7 +48,7 @@ public struct VgaGraph
 			}
 		}
 
-		public readonly byte[] Text(string input, ushort padding = 0)
+		public byte[] Text(string input, ushort padding = 0)
 		{
 			if (string.IsNullOrWhiteSpace(input))
 				return null;
@@ -71,7 +71,7 @@ public struct VgaGraph
 			return bytes;
 		}
 
-		public readonly byte[] Line(string input)
+		public byte[] Line(string input)
 		{
 			if (string.IsNullOrWhiteSpace(input))
 				return null;
@@ -96,9 +96,9 @@ public struct VgaGraph
 			return bytes;
 		}
 
-		public readonly int CalcHeight(string input, ushort padding = 0) => (Height + padding) * (input == null ? 0 : input.Split('\n').Length);
+		public int CalcHeight(string input, ushort padding = 0) => (Height + padding) * (input == null ? 0 : input.Split('\n').Length);
 
-		public readonly int CalcWidth(string input)
+		public int CalcWidth(string input)
 		{
 			if (string.IsNullOrWhiteSpace(input))
 				return 0;
@@ -108,7 +108,7 @@ public struct VgaGraph
 			return longest;
 		}
 
-		public readonly int CalcWidthLine(string input)
+		public int CalcWidthLine(string input)
 		{
 			if (string.IsNullOrWhiteSpace(input))
 				return 0;
@@ -119,10 +119,10 @@ public struct VgaGraph
 		}
 	}
 
-	public Font[] Fonts { get; set; }
-	public byte[][] Pics { get; set; }
-	public ushort[][] Sizes { get; set; }
-	public uint[][] Palettes { get; set; }
+	public Font[] Fonts { get; private init; }
+	public byte[][] Pics { get; private init; }
+	public ushort[][] Sizes { get; private init; }
+	public uint[][] Palettes { get; private init; }
 
 	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitFile(ParseHead(vgaHead), vgaGraph, Load16BitPairs(dictionary)), xml)
 	{ }
