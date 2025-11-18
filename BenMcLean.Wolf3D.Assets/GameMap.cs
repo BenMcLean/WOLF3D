@@ -16,10 +16,12 @@ public sealed class GameMap
 	public ushort[] MapData { get; private set; }
 	public ushort[] ObjectData { get; private set; }
 	public ushort[] OtherData { get; private set; }
-	public ushort X(uint i) => X((ushort)i);
+	public ushort X(int i) => (ushort)(i % Width);
+	public ushort X(uint i) => (ushort)(i % Width);
 	public ushort X(ushort i) => (ushort)(i % Width);
 	public const ushort Y = 0; // Vertical
-	public ushort Z(uint i) => Z((ushort)i);
+	public ushort Z(int i) => (ushort)(i / Depth);
+	public ushort Z(uint i) => (ushort)(i / Depth);
 	public ushort Z(ushort i) => (ushort)(i / Depth);
 	public ushort GetIndex(uint x, uint z) => GetIndex((ushort)x, (ushort)z);
 	public ushort GetIndex(ushort x, ushort z) => (ushort)((z * Depth) + x);
