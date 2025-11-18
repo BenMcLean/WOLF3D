@@ -35,8 +35,7 @@ public class MapAnalyzer
 		IsTransparent(mapData, objectData) && (
 			!(XML?.Element("VSwap")?.Element("Objects").Elements("Billboard")
 				.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == objectData).FirstOrDefault() is XElement mapObject)
-			|| mapObject.IsTrue("Walk")
-			);
+			|| mapObject.IsTrue("Walk"));
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
 		(!Walls.Contains(mapData) || PushWalls.Contains(objectData))
 		&& !Elevators.Contains(mapData);
@@ -60,13 +59,10 @@ public class MapAnalyzer
 	public ushort DoorTexture(ushort cell) =>
 		(ushort)(uint)XDoor(cell).FirstOrDefault()?.Attribute("Page");
 	public MapAnalysis Analyze(GameMap map) => new(this, map);
-	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Select(map => new MapAnalysis(this, map));
+	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Select(Analyze);
 	public sealed class MapAnalysis
 	{
 		#region XML Attributes
-		public MapAnalyzer MapAnalyzer { get; private init; }
-		public XElement XML { get; private init; }
-		public GameMap GameMap { get; private init; }
 		public byte Episode { get; private init; }
 		public byte Floor { get; private init; }
 		public byte ElevatorTo { get; private init; }
@@ -78,55 +74,59 @@ public class MapAnalyzer
 		public TimeSpan Par { get; private init; }
 		public string Song { get; private init; }
 		#endregion XML Attributes
-		#region Grids
+		#region Masks
+		public ushort Width { get; private init; }
+		public const ushort Height = 0; // Vertical
+		public ushort Depth { get; private init; }
 		private readonly BitArray Navigable;
 		public bool IsNavigable(int x, int z) =>
-			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
-			&& Navigable[x * GameMap.Depth + z];
+			x >= 0 && z >= 0 && x < Width && z < Depth
+			&& Navigable[x * Depth + z];
 		private readonly BitArray Transparent;
 		public bool IsTransparent(int x, int z) =>
-			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
-			&& Transparent[x * GameMap.Depth + z];
+			x >= 0 && z >= 0 && x < Width && z < Depth
+			&& Transparent[x * Depth + z];
 		private readonly BitArray Mappable;
 		public bool IsMappable(int x, int z) =>
-			x >= 0 && z >= 0 && x < GameMap.Width && z < GameMap.Depth
-			&& Mappable[x * GameMap.Depth + z];
-		#endregion Grids
+			x >= 0 && z >= 0 && x < Width && z < Depth
+			&& Mappable[x * Depth + z];
+		#endregion Masks
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
 		{
-			MapAnalyzer = mapAnalyzer;
-			GameMap = gameMap;
-			Navigable = new BitArray(GameMap.Width * GameMap.Depth);
-			Transparent = new BitArray(GameMap.Width * GameMap.Depth);
-			for (ushort x = 0; x < GameMap.Width; x++)
-			{
-				for (ushort z = 0; z < GameMap.Depth; z++)
+			#region XML Attributes
+			XElement xml = mapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault()
+				?? throw new InvalidDataException($"XML tag for map \"{gameMap.Name}\" was not found!");
+			Episode = byte.TryParse(xml?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
+			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor : (byte)0;
+			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Floor + 1);
+			Ground = byte.TryParse(xml?.Attribute("Ground")?.Value, out byte ground) ? ground : null;
+			GroundTile = byte.TryParse(xml?.Attribute("GroundTile")?.Value, out byte groundTile) ? groundTile : (byte?)null;
+			Ceiling = byte.TryParse(xml?.Attribute("Ceiling")?.Value, out byte ceiling) ? ceiling : null;
+			CeilingTile = byte.TryParse(xml?.Attribute("CeilingTile")?.Value, out byte ceilingTile) ? ceilingTile : null;
+			Border = byte.TryParse(xml?.Attribute("Border")?.Value, out byte border) ? border : (byte)0;
+			Par = TimeSpan.TryParse(xml?.Attribute("Par")?.Value, out TimeSpan par) ? par : TimeSpan.Zero;
+			Song = xml.Attribute("Song")?.Value;
+			#endregion XML Attributes
+			#region Masks
+			Width = gameMap.Width;
+			Depth = gameMap.Depth;
+			Navigable = new BitArray(Width * Depth);
+			Transparent = new BitArray(Navigable.Length);
+			for (ushort x = 0; x < Width; x++)
+				for (ushort z = 0; z < Depth; z++)
 				{
-					Navigable[x * GameMap.Depth + z] = MapAnalyzer.IsNavigable(GameMap.GetMapData(x, z), GameMap.GetObjectData(x, z));
-					Transparent[x * GameMap.Depth + z] = MapAnalyzer.IsTransparent(GameMap.GetMapData(x, z), GameMap.GetObjectData(x, z));
+					Navigable[x * Depth + z] = mapAnalyzer.IsNavigable(gameMap.GetMapData(x, z), gameMap.GetObjectData(x, z));
+					Transparent[x * Depth + z] = mapAnalyzer.IsTransparent(gameMap.GetMapData(x, z), gameMap.GetObjectData(x, z));
 				}
-			}
-			Mappable = new BitArray(GameMap.Width * GameMap.Depth);
-			for (ushort x = 0; x < GameMap.Width; x++)
-			{
-				for (ushort z = 0; z < GameMap.Depth; z++)
-					Mappable[x * GameMap.Depth + z] = Transparent[x * GameMap.Depth + z]
-						|| (x > 0 && Transparent[(x - 1) * GameMap.Depth + z])
-						|| (x < GameMap.Width - 1 && Transparent[(x + 1) * GameMap.Depth + z])
-						|| (z > 0 && Transparent[x * GameMap.Depth + (z - 1)])
-						|| (z < GameMap.Depth - 1 && Transparent[x * GameMap.Depth + (z + 1)]);
-			}
-			XML = MapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault() ?? throw new InvalidDataException("XML tag for map \"" + GameMap.Name + "\" was not found!");
-			Episode = byte.TryParse(XML?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
-			Floor = byte.TryParse(XML?.Attribute("Floor")?.Value, out byte floor) ? floor : (byte)0;
-			ElevatorTo = byte.TryParse(XML.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Floor + 1);
-			Ground = byte.TryParse(XML?.Attribute("Ground")?.Value, out byte ground) ? ground : (byte?)null;
-			GroundTile = byte.TryParse(XML?.Attribute("GroundTile")?.Value, out byte groundTile) ? groundTile : (byte?)null;
-			Ceiling = byte.TryParse(XML?.Attribute("Ceiling")?.Value, out byte ceiling) ? ceiling : (byte?)null;
-			CeilingTile = byte.TryParse(XML?.Attribute("CeilingTile")?.Value, out byte ceilingTile) ? ceilingTile : (ushort?)null;
-			Border = byte.TryParse(XML?.Attribute("Border")?.Value, out byte border) ? border : (byte)0;
-			Par = TimeSpan.TryParse(XML?.Attribute("Par")?.Value, out TimeSpan par) ? par : TimeSpan.Zero;
-			Song = XML.Attribute("Song")?.Value;
+			Mappable = new BitArray(Navigable.Length);
+			for (ushort x = 0; x < Width; x++)
+				for (ushort z = 0; z < Depth; z++)
+					Mappable[x * Depth + z] = Transparent[x * Depth + z]
+						|| (x > 0 && Transparent[(x - 1) * Depth + z])
+						|| (x < Width - 1 && Transparent[(x + 1) * Depth + z])
+						|| (z > 0 && Transparent[x * Depth + (z - 1)])
+						|| (z < Depth - 1 && Transparent[x * Depth + (z + 1)]);
+			#endregion Masks
 		}
 	}
 }

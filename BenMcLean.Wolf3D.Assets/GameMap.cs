@@ -7,15 +7,15 @@ namespace BenMcLean.Wolf3D.Assets;
 public sealed class GameMap
 {
 	#region Data
-	public string Name { get; private init; }
+	public string Name { get; private set; }
 	public override string ToString() => Name;
 	public ushort Number { get; private init; }
 	public ushort Width { get; private init; }
 	public const ushort Height = 0; // Vertical
 	public ushort Depth { get; private init; }
-	public ushort[] MapData { get; private init; }
-	public ushort[] ObjectData { get; private init; }
-	public ushort[] OtherData { get; private init; }
+	public ushort[] MapData { get; private set; }
+	public ushort[] ObjectData { get; private set; }
+	public ushort[] OtherData { get; private set; }
 	public ushort X(uint i) => X((ushort)i);
 	public ushort X(ushort i) => (ushort)(i % Width);
 	public const ushort Y = 0; // Vertical
@@ -97,7 +97,7 @@ public sealed class GameMap
 					for (uint i = 0; i < mapData.Length; i++)
 						mapData[i] = gameMapsReader.ReadUInt16();
 				}
-				map.MapData = RlewExpand(mapData, (ushort)(map.Depth * map.Width), 0xABCD);
+				map.MapData = RlewExpand(mapData, (ushort)(map.Depth * map.Width));
 				ushort[] objectData;
 				gameMaps.Seek(objectOffset, 0);
 				if (isCarmackized)
@@ -108,7 +108,7 @@ public sealed class GameMap
 					for (uint i = 0; i < objectData.Length; i++)
 						objectData[i] = gameMapsReader.ReadUInt16();
 				}
-				map.ObjectData = RlewExpand(objectData, (ushort)(map.Depth * map.Width), 0xABCD);
+				map.ObjectData = RlewExpand(objectData, (ushort)(map.Depth * map.Width));
 				ushort[] otherData;
 				gameMaps.Seek(otherOffset, 0);
 				if (isCarmackized)
@@ -119,16 +119,16 @@ public sealed class GameMap
 					for (uint i = 0; i < otherData.Length; i++)
 						otherData[i] = gameMapsReader.ReadUInt16();
 				}
-				map.OtherData = RlewExpand(otherData, (ushort)(map.Depth * map.Width), 0xABCD);
+				map.OtherData = RlewExpand(otherData, (ushort)(map.Depth * map.Width));
 				maps[mapNumber] = map;
 			}
 		return maps;
 	}
 	#endregion Loading
 	#region Decompression algorithms
-	public const ushort CARMACK_NEAR = 0xA7,
+	public const byte CARMACK_NEAR = 0xA7,
 		CARMACK_FAR = 0xA8;
-	public static ushort[] RlewExpand(ushort[] carmackExpanded, ushort length, ushort tag)
+	public static ushort[] RlewExpand(ushort[] carmackExpanded, ushort length, ushort tag = 0xABCD)
 	{
 		ushort[] rawMapData = new ushort[length];
 		int src_index = 1, dest_index = 0;

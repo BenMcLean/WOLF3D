@@ -17,6 +17,7 @@ public sealed class VSwap
 			ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort tileSqrt) ? tileSqrt : (ushort)64
 			);
 	}
+	#region Data
 	public uint[][] Palettes { get; private init; }
 	public byte[][] Pages { get; private init; }
 	public byte[][] DigiSounds { get; private init; }
@@ -24,7 +25,8 @@ public sealed class VSwap
 	public ushort SpritePage { get; private init; }
 	public ushort NumPages { get; private init; }
 	public int SoundPage => Pages.Length;
-	public ushort TileSqrt { get; private init; }
+	public ushort TileSqrt { get; private init; } = 64;
+	#endregion
 	public byte[] Sprite(ushort number) => Pages[SpritePage + number];
 	public static uint GetOffset(ushort x, ushort y, ushort tileSqrt = 64) => (uint)((tileSqrt * y + x) * 4);
 	public uint GetOffset(ushort x, ushort y) => GetOffset(x, y, TileSqrt);
@@ -34,7 +36,7 @@ public sealed class VSwap
 	public byte GetA(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 3];
 	public bool IsTransparent(ushort page, ushort x, ushort y) =>
 		page >= Pages.Length
-		|| Pages[page] == null
+		|| Pages[page] is null
 		|| (page >= SpritePage // We know walls aren't transparent
 		&& GetOffset(x, y) + 3 is uint offset
 		&& offset < Pages[page].Length
