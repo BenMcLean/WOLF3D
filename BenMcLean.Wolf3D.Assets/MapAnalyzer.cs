@@ -100,13 +100,13 @@ public class MapAnalyzer
 		public bool IsMappable(int x, int z) =>
 			x >= 0 && z >= 0 && x < Width && z < Depth
 			&& Mappable[x * Depth + z];
-		public record struct Wall(ushort Shape, bool Western, ushort X, ushort Z, bool Flip = false);
-		public ReadOnlyCollection<Wall> Walls { get; private set; }
-		public record struct PushWall(ushort Shape, ushort DarkSide, ushort X, ushort Z);
-		public ReadOnlyCollection<PushWall> PushWalls { get; private set; }
+		public readonly record struct WallSpawn(ushort Shape, bool Western, ushort X, ushort Z, bool Flip = false);
+		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
+		public readonly record struct PushWallSpawn(ushort Shape, ushort DarkSide, ushort X, ushort Z);
+		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 		public ReadOnlyCollection<Tuple<ushort, ushort>> Elevators { get; private set; }
-		public record struct Door(ushort Shape, ushort X, ushort Z, bool Western = false);
-		public ReadOnlyCollection<Door> Doors { get; private set; }
+		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Z, bool Western = false);
+		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
 		{
@@ -144,7 +144,8 @@ public class MapAnalyzer
 						|| (z > 0 && Transparent[x * Depth + (z - 1)])
 						|| (z < Depth - 1 && Transparent[x * Depth + (z + 1)]);
 			#endregion Masks
-			List<PushWall> pushWalls = [];
+			#region Objects
+			List<PushWallSpawn> pushWalls = [];
 			// realWalls replaces pushwalls with floors.
 			ushort[] realWalls = new ushort[gameMap.MapData.Length];
 			Array.Copy(gameMap.MapData, realWalls, realWalls.Length);
@@ -153,50 +154,50 @@ public class MapAnalyzer
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
 					ushort wall = gameMap.MapData[i];
-					pushWalls.Add(new PushWall(mapAnalyzer.WallPage(wall), mapAnalyzer.DarkSide(wall), gameMap.X(i), gameMap.Z(i)));
+					pushWalls.Add(new PushWallSpawn(mapAnalyzer.WallPage(wall), mapAnalyzer.DarkSide(wall), gameMap.X(i), gameMap.Z(i)));
 				}
 			ushort GetMapData(ushort x, ushort z) => realWalls[gameMap.GetIndex(x, z)];
 			XElement doorFrameX = mapAnalyzer.XML.Element("VSwap")?.Element("Walls")?.Element("DoorFrame")
 				?? throw new NullReferenceException("Could not find \"DoorFrame\" tag in walls!");
 			ushort doorFrame = (ushort)(uint)doorFrameX.Attribute("Page"),
 				darkFrame = (ushort)(uint)doorFrameX.Attribute("DarkSide");
-			List<Wall> walls = [];
+			List<WallSpawn> walls = [];
 			List<Tuple<ushort, ushort>> elevators = [];
-			List<Door> doors = [];
+			List<DoorSpawn> doors = [];
 			void EastWest(ushort x, ushort z)
 			{
 				ushort wall;
 				if (x < Width - 1 && mapAnalyzer.Walls.Contains(wall = GetMapData((ushort)(x + 1), z)))
-					walls.Add(new Wall(mapAnalyzer.DarkSide(wall), false, (ushort)(x + 1), z));
+					walls.Add(new WallSpawn(mapAnalyzer.DarkSide(wall), false, (ushort)(x + 1), z));
 				if (x > 0 && mapAnalyzer.Walls.Contains(wall = GetMapData((ushort)(x - 1), z)))
-					walls.Add(new Wall(mapAnalyzer.DarkSide(wall), false, x, z, true));
+					walls.Add(new WallSpawn(mapAnalyzer.DarkSide(wall), false, x, z, true));
 			}
 			void NorthSouth(ushort x, ushort z)
 			{
 				ushort wall;
 				if (z > 0 && mapAnalyzer.Walls.Contains(wall = GetMapData(x, (ushort)(z - 1))))
-					walls.Add(new Wall(mapAnalyzer.WallPage(wall), true, x, (ushort)(z - 1), true));
+					walls.Add(new WallSpawn(mapAnalyzer.WallPage(wall), true, x, (ushort)(z - 1), true));
 				if (z < Depth - 1 && mapAnalyzer.Walls.Contains(wall = GetMapData(x, (ushort)(z + 1))))
-					walls.Add(new Wall(mapAnalyzer.WallPage(wall), true, x, z));
+					walls.Add(new WallSpawn(mapAnalyzer.WallPage(wall), true, x, z));
 			}
-			for (ushort i = 0; i < gameMap.MapData.Length; i++)
+			for (int i = 0; i < gameMap.MapData.Length; i++)
 			{
 				ushort x = gameMap.X(i), z = gameMap.Z(i), here = GetMapData(x, z);
 				if (mapAnalyzer.Doors.Contains(here))
 				{
 					if (here % 2 == 0) // Even numbered doors face east
 					{
-						walls.Add(new Wall(doorFrame, true, x, z));
-						walls.Add(new Wall(doorFrame, true, x, (ushort)(z - 1), true));
+						walls.Add(new WallSpawn(doorFrame, true, x, z));
+						walls.Add(new WallSpawn(doorFrame, true, x, (ushort)(z - 1), true));
 						EastWest(x, z);
-						doors.Add(new Door(here, x, z, true));
+						doors.Add(new DoorSpawn(here, x, z, true));
 					}
 					else // Odd numbered doors face north
 					{
-						walls.Add(new Wall(darkFrame, false, x, z, true));
-						walls.Add(new Wall(darkFrame, false, (ushort)(x + 1), z));
+						walls.Add(new WallSpawn(darkFrame, false, x, z, true));
+						walls.Add(new WallSpawn(darkFrame, false, (ushort)(x + 1), z));
 						NorthSouth(x, z);
-						doors.Add(new Door(here, x, z));
+						doors.Add(new DoorSpawn(here, x, z));
 					}
 				}
 				else if (mapAnalyzer.Elevators.Contains(here))
@@ -210,6 +211,7 @@ public class MapAnalyzer
 			Walls = Array.AsReadOnly([.. walls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
 			Doors = Array.AsReadOnly([.. doors]);
+			#endregion Objects
 		}
 	}
 	#endregion Inner classes
