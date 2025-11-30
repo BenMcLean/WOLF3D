@@ -36,8 +36,7 @@ public sealed class GameMap
 	#region Loading
 	public static GameMap[] Load(string folder, XElement xml) => Load(
 		mapHead: Path.Combine(folder, xml.Element("Maps").Attribute("MapHead").Value),
-		gameMaps: Path.Combine(folder, xml.Element("Maps").Attribute("GameMaps").Value)
-		);
+		gameMaps: Path.Combine(folder, xml.Element("Maps").Attribute("GameMaps").Value));
 	public static GameMap[] Load(string mapHead, string gameMaps)
 	{
 		using FileStream mapHeadStream = new(mapHead, FileMode.Open);

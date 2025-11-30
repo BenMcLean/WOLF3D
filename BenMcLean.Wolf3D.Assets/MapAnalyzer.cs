@@ -16,6 +16,18 @@ public class MapAnalyzer
 	public HashSet<ushort> Doors { get; private set; }
 	public HashSet<ushort> Elevators { get; private set; }
 	public HashSet<ushort> PushWalls { get; private set; }
+
+	// Object metadata
+	public Dictionary<ushort, ObjectInfo> Objects { get; private set; }
+
+	// Object class definitions (from Wolf3D classtype and stat_t enums)
+	private HashSet<string> ActiveClasses { get; set; }
+	private HashSet<string> EnemyClasses { get; set; }  // Objects that count toward kill percentage
+	private HashSet<string> StaticClasses { get; set; }
+
+	// Patrol tile metadata (map layer)
+	public Dictionary<ushort, Direction> PatrolTiles { get; private set; }
+
 	public ushort FloorCodeFirst { get; private set; }
 	public ushort FloorCodes { get; private set; }
 	#endregion Data
@@ -26,6 +38,73 @@ public class MapAnalyzer
 		Doors = [.. XML.Element("VSwap")?.Element("Walls")?.Elements("Door")?.Select(e => ushort.Parse(e.Attribute("Number").Value))];
 		Elevators = [.. XML.Element("VSwap")?.Element("Walls")?.Elements("Elevator")?.Select(e => ushort.Parse(e.Attribute("Number").Value))];
 		PushWalls = [.. PushWall?.Select(e => ushort.Parse(e.Attribute("Number").Value))];
+
+		// Parse object class definitions (Wolf3D classtype and stat_t enums)
+		IEnumerable<XElement> classElements = XML.Element("VSwap")?.Element("ObjectClasses")?.Elements("ObClass") ?? [];
+		ActiveClasses = [];
+		EnemyClasses = [];
+		StaticClasses = [];
+
+		foreach (XElement classElem in classElements)
+		{
+			string className = classElem.Attribute("Name")?.Value;
+			if (string.IsNullOrEmpty(className))
+				continue;
+
+			if (classElem.IsTrue("Active"))
+			{
+				ActiveClasses.Add(className);
+				// Enemy flag marks objects that count toward kill percentage (gamestate.killcount/killtotal)
+				if (classElem.IsTrue("Enemy"))
+					EnemyClasses.Add(className);
+			}
+			else
+			{
+				StaticClasses.Add(className);
+			}
+		}
+
+		// Parse object metadata - unified <Object> elements
+		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("Objects")?.Elements("Object") ?? [];
+		Objects = [];
+
+		foreach (XElement obj in objectElements)
+		{
+			if (!ushort.TryParse(obj.Attribute("Number")?.Value, out ushort number))
+				continue;
+
+			Direction? facing = null;
+			if (Enum.TryParse<Direction>(obj.Attribute("Facing")?.Value, out Direction dir))
+				facing = dir;
+
+			string obclass = obj.Attribute("ObClass")?.Value;
+
+			ObjectInfo info = new()
+			{
+				Number = number,
+				ObClass = obclass,
+				Facing = facing,
+				Patrol = obj.IsTrue("Patrol"),
+				Ambush = obj.IsTrue("Ambush"),
+				IsEnemy = !string.IsNullOrEmpty(obclass) && EnemyClasses.Contains(obclass),
+				IsActive = !string.IsNullOrEmpty(obclass) && ActiveClasses.Contains(obclass)
+			};
+
+			Objects[number] = info;
+		}
+
+		// Patrol tiles (map layer)
+		PatrolTiles = new Dictionary<ushort, Direction>();
+		IEnumerable<XElement> patrolElements = XML.Element("Maps")?.Element("PatrolTiles")?.Elements("Tile") ?? [];
+		foreach (XElement tile in patrolElements)
+		{
+			if (ushort.TryParse(tile.Attribute("Number")?.Value, out ushort tileNum)
+				&& Enum.TryParse<Direction>(tile.Attribute("Turn")?.Value, out Direction turnDir))
+			{
+				PatrolTiles[tileNum] = turnDir;
+			}
+		}
+
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("Walls")?.Attribute("FloorCodeFirst")?.Value, out ushort floorCodeFirst))
 			FloorCodeFirst = floorCodeFirst;
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("Walls")?.Attribute("FloorCodeLast")?.Value, out ushort floorCodeLast))
@@ -67,6 +146,22 @@ public class MapAnalyzer
 		?.Where(e => (uint)e.Attribute("Number") == cell);
 	public ushort DoorTexture(ushort cell) =>
 		(ushort)(uint)XDoor(cell).FirstOrDefault()?.Attribute("Page");
+	public ObjectInfo GetObjectInfo(ushort objectCode) =>
+		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
+
+	// Wolf3D object class categorization (using parsed class definitions)
+	private bool IsPlayerStart(string obclass) => obclass == "playerobj";
+	private bool IsEnemy(string obclass) => EnemyClasses.Contains(obclass);
+	private bool IsStatic(string obclass) => StaticClasses.Contains(obclass);
+
+	private static StatType GetStatType(string obclass) => obclass switch
+	{
+		"dressing" => StatType.dressing,
+		"block" => StatType.block,
+		_ when obclass?.StartsWith("bo_") == true => StatType.bonus,
+		_ => StatType.dressing // default
+	};
+
 	public MapAnalysis Analyze(GameMap map) => new(this, map);
 	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Select(Analyze);
 	#region Inner classes
@@ -100,6 +195,20 @@ public class MapAnalyzer
 		public bool IsMappable(int x, int z) =>
 			x >= 0 && z >= 0 && x < Width && z < Depth
 			&& Mappable[x * Depth + z];
+
+		// Spawn data
+		public readonly record struct PlayerSpawn(ushort X, ushort Z, Direction Facing);
+		public PlayerSpawn? PlayerStart { get; private set; }
+
+		public readonly record struct EnemySpawn(string Type, ushort X, ushort Z, Direction Facing, bool Ambush, bool Patrol);
+		public ReadOnlyCollection<EnemySpawn> EnemySpawns { get; private set; }
+
+		public readonly record struct StaticSpawn(StatType StatType, string Type, ushort X, ushort Z);
+		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
+
+		public readonly record struct PatrolPoint(ushort X, ushort Z, Direction Turn);
+		public ReadOnlyCollection<PatrolPoint> PatrolPoints { get; private set; }
+
 		public readonly record struct WallSpawn(ushort Shape, bool Western, ushort X, ushort Z, bool Flip = false);
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
 		public readonly record struct PushWallSpawn(ushort Shape, ushort DarkSide, ushort X, ushort Z);
@@ -144,7 +253,72 @@ public class MapAnalyzer
 						|| (z > 0 && Transparent[x * Depth + (z - 1)])
 						|| (z < Depth - 1 && Transparent[x * Depth + (z + 1)]);
 			#endregion Masks
-			#region Objects
+			#region Object Layer Parsing
+			List<EnemySpawn> enemies = [];
+			List<StaticSpawn> statics = [];
+			List<PatrolPoint> patrolPoints = [];
+			PlayerSpawn? playerStart = null;
+
+			// Scan object layer
+			for (int i = 0; i < gameMap.ObjectData.Length; i++)
+			{
+				ushort objectCode = gameMap.ObjectData[i];
+				if (objectCode == 0)
+					continue;
+
+				ObjectInfo objInfo = mapAnalyzer.GetObjectInfo(objectCode);
+				if (objInfo == null)
+					continue;
+
+				ushort x = gameMap.X(i);
+				ushort z = gameMap.Z(i);
+
+				// Player start
+				if (mapAnalyzer.IsPlayerStart(objInfo.ObClass))
+				{
+					if (objInfo.Facing.HasValue)
+						playerStart = new PlayerSpawn(x, z, objInfo.Facing.Value);
+				}
+				// Enemies
+				else if (mapAnalyzer.IsEnemy(objInfo.ObClass))
+				{
+					if (objInfo.Facing.HasValue)
+					{
+						enemies.Add(new EnemySpawn(
+							objInfo.ObClass,
+							x, z,
+							objInfo.Facing.Value,
+							objInfo.Ambush,
+							objInfo.Patrol));
+					}
+				}
+				// Static objects (dressing, block, bonus items)
+				else if (mapAnalyzer.IsStatic(objInfo.ObClass))
+				{
+					StatType statType = MapAnalyzer.GetStatType(objInfo.ObClass);
+					statics.Add(new StaticSpawn(statType, objInfo.ObClass, x, z));
+				}
+			}
+
+			// Scan map layer for patrol tiles
+			for (int i = 0; i < gameMap.MapData.Length; i++)
+			{
+				ushort mapCode = gameMap.MapData[i];
+
+				if (mapAnalyzer.PatrolTiles.TryGetValue(mapCode, out Direction turn))
+				{
+					ushort x = gameMap.X(i);
+					ushort z = gameMap.Z(i);
+					patrolPoints.Add(new PatrolPoint(x, z, turn));
+				}
+			}
+
+			PlayerStart = playerStart;
+			EnemySpawns = Array.AsReadOnly([.. enemies]);
+			StaticSpawns = Array.AsReadOnly([.. statics]);
+			PatrolPoints = Array.AsReadOnly([.. patrolPoints]);
+			#endregion Object Layer Parsing
+			#region Wall/Door/PushWall Parsing
 			List<PushWallSpawn> pushWalls = [];
 			// realWalls replaces pushwalls with floors.
 			ushort[] realWalls = new ushort[gameMap.MapData.Length];
@@ -209,10 +383,40 @@ public class MapAnalyzer
 				}
 			}
 			Walls = Array.AsReadOnly([.. walls]);
+			PushWalls = Array.AsReadOnly([.. pushWalls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
 			Doors = Array.AsReadOnly([.. doors]);
-			#endregion Objects
+			#endregion Wall/Door/PushWall Parsing
 		}
 	}
 	#endregion Inner classes
+}
+
+// Object metadata - unified Wolf3D object representation
+public record ObjectInfo
+{
+	public ushort Number { get; init; }      // Tile number in map
+	public string ObClass { get; init; }     // Wolf3D obclass (classtype or stat_t): "playerobj", "guardobj", "bo_firstaid", "dressing", etc.
+	public Direction? Facing { get; init; }  // N/S/E/W (for player & enemies)
+	public bool Patrol { get; init; }        // Enemy patrols (vs. standing still)
+	public bool Ambush { get; init; }        // Enemy doesn't move until spotted (FL_AMBUSH flag)
+	public bool IsEnemy { get; init; }       // Counts toward kill percentage (gamestate.killcount/killtotal)
+	public bool IsActive { get; init; }      // Active object (classtype vs stat_t)
+}
+
+// Direction enum (Wolf3D: NORTH=0, EAST=1, SOUTH=2, WEST=3)
+public enum Direction : byte
+{
+	N = 0,  // North (negative Z)
+	E = 1,  // East (positive X)
+	S = 2,  // South (positive Z)
+	W = 3   // West (negative X)
+}
+
+// Static object type (Wolf3D stat_t enum)
+public enum StatType : byte
+{
+	dressing,    // Non-interactive decoration
+	block,       // Blocking object
+	bonus        // Pickup item
 }
