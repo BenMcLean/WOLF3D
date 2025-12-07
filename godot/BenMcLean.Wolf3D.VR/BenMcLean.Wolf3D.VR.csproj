@@ -6,5 +6,6 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />
+		<ProjectReference Include="..\BenMcLean.Wolf3D.Shared\BenMcLean.Wolf3D.Shared.csproj" />
 	</ItemGroup>
 </Project>

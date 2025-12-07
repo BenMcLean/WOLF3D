@@ -1,0 +1,17 @@
+<Project Sdk="Godot.NET.Sdk/4.5.1">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<!-- This makes it a class library instead of an executable -->
+		<OutputType>Library</OutputType>
+		<!-- Disable auto-generation of assembly attributes to avoid duplicates -->
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- Embed bitmap font files as resources -->
+		<EmbeddedResource Include="Resources\**\*.otb" />
+		<EmbeddedResource Include="Resources\**\*.fon" />
+		<EmbeddedResource Include="Resources\**\*.png" />
+	</ItemGroup>
+</Project>
