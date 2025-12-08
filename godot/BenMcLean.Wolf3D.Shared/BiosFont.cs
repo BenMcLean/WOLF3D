@@ -39,26 +39,15 @@ public static class BiosFont
 		if (_cachedImage is not null)
 			return _cachedImage;
 		Assembly assembly = Assembly.GetExecutingAssembly();
-		using Stream stream = assembly.GetManifestResourceStream(ResourceName);
-		if (stream is null)
-		{
-			// List available resources for debugging
-			string[] resources = assembly.GetManifestResourceNames();
-			GD.PrintErr($"Font resource not found: {ResourceName}");
-			GD.PrintErr("Available resources:");
-			foreach (string res in resources)
-				GD.PrintErr($"  - {res}");
-			throw new FileNotFoundException($"Embedded font resource not found: {ResourceName}");
-		}
-		using MemoryStream ms = new();
-		stream.CopyTo(ms);
-		byte[] pngData = ms.ToArray();
-		Image img = new();
-		Error err = img.LoadPngFromBuffer(pngData);
-		if (err != Error.Ok)
-			throw new System.Exception($"Failed to load PNG font: {err}");
-		_cachedImage = img;
-		return img;
+		using Stream stream = assembly.GetManifestResourceStream(ResourceName)
+			?? throw new FileNotFoundException($"Embedded font resource not found: \"{ResourceName}\"");
+		using MemoryStream memoryStream = new();
+		stream.CopyTo(memoryStream);
+		Image image = new();
+		Error error = image.LoadPngFromBuffer(memoryStream.ToArray());
+		if (error != Error.Ok)
+			throw new System.Exception($"Failed to load PNG font: {error}");
+		return _cachedImage = image;
 	}
 	/// <summary>
 	/// Gets the source rectangle for a character in the sprite sheet.
