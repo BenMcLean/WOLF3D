@@ -150,8 +150,7 @@ public sealed class VSwap
 	public static IEnumerable<uint[]> LoadPalettes(XElement xml)
 	{
 		foreach (XElement xPalette in xml.Elements("Palette"))
-			using (MemoryStream palette = new(Encoding.ASCII.GetBytes(xPalette.Value)))
-				yield return LoadPalette(palette);
+			yield return LoadPalette(xPalette);
 	}
 	public static uint[] TransparentBorder(uint[] texture, ushort width = 0)
 	{
@@ -210,33 +209,26 @@ public sealed class VSwap
 	}
 	public static uint Color(byte r, byte g, byte b, byte a) => (uint)r << 24 | (uint)g << 16 | (uint)b << 8 | a;
 	#region Palette
-	public static uint[] LoadPalette(string @string) => LoadPalette(new MemoryStream(Encoding.UTF8.GetBytes(@string)));
-	public static uint[] LoadPalette(Stream stream)
+	public static uint[] LoadPalette(XElement paletteElement)
 	{
-		uint[] result;
-		using (StreamReader streamReader = new(stream))
+		XElement[] colorElements = paletteElement.Elements("Color").ToArray();
+		if (colorElements.Length != 256)
+			throw new InvalidDataException($"Palette must contain exactly 256 colors, found {colorElements.Length}");
+
+		uint[] result = new uint[256];
+		for (int i = 0; i < 256; i++)
 		{
-			string line;
-			while (string.IsNullOrWhiteSpace(line = streamReader.ReadLine().Trim())) { }
-			if (!line.Equals("JASC-PAL") || !streamReader.ReadLine().Trim().Equals("0100"))
-				throw new InvalidDataException("Palette stream is an incorrectly formatted JASC palette.");
-			if (!int.TryParse(streamReader.ReadLine()?.Trim(), out int numColors)
-			 || numColors != 256)
-				throw new InvalidDataException("Palette stream does not contain exactly 256 colors.");
-			result = new uint[numColors];
-			for (int i = 0; i < numColors; i++)
-			{
-				string[] tokens = streamReader.ReadLine()?.Trim().Split(' ');
-				if (tokens == null || tokens.Length != 3
-					|| !byte.TryParse(tokens[0], out byte r)
-					|| !byte.TryParse(tokens[1], out byte g)
-					|| !byte.TryParse(tokens[2], out byte b))
-					throw new InvalidDataException("Palette stream is an incorrectly formatted JASC palette.");
-				result[i] = (uint)r << 24
-					| (uint)g << 16
-					| (uint)b << 8
-					| (byte)(i == 255 ? 0 : 255);
-			}
+			string hexValue = colorElements[i].Attribute("Hex")?.Value;
+			if (string.IsNullOrEmpty(hexValue) || !hexValue.StartsWith("#") || hexValue.Length != 7)
+				throw new InvalidDataException($"Color {i} has invalid Hex attribute: '{hexValue}'. Expected format: #RRGGBB");
+
+			// Parse hex color (remove # and parse as hex)
+			if (!uint.TryParse(hexValue.Substring(1), System.Globalization.NumberStyles.HexNumber, null, out uint rgb24))
+				throw new InvalidDataException($"Color {i} has invalid hex value: '{hexValue}'");
+
+			// Convert 24-bit RGB to 32-bit RGBA: left-shift by 8 bits and OR with opaque alpha
+			// (except index 255 which is transparent)
+			result[i] = (rgb24 << 8) | (i == 255 ? 0u : 0xFFu);
 		}
 		return result;
 	}

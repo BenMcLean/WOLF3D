@@ -605,14 +605,37 @@
   <xs:element name="Palette">
     <xs:annotation>
       <xs:documentation>
-        JASC-PAL format palette (256 colors).
-        Content is the palette text data.
+        Palette containing 256 colors in XML format.
+        Each Color element specifies a 24-bit RGB color using hex notation.
+        The Name attribute is optional and used for alternate palettes.
+        The first palette without a Name attribute is the default palette.
       </xs:documentation>
     </xs:annotation>
     <xs:complexType>
-      <xs:simpleContent>
-        <xs:extension base="xs:string"/>
-      </xs:simpleContent>
+      <xs:sequence>
+        <xs:element ref="Color" minOccurs="256" maxOccurs="256"/>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Color">
+    <xs:annotation>
+      <xs:documentation>
+        A single color in 24-bit RGB format using hexadecimal notation.
+        Format: #RRGGBB (case insensitive)
+        Example: #FF0000 for red, #00FF00 for green, #0000FF for blue
+        Will be converted to 32-bit RGBA by left-shifting 8 bits and ORing with 0xFF (opaque alpha).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Hex" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="#[0-9A-Fa-f]{6}"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
