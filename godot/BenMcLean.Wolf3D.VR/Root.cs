@@ -1,29 +1,27 @@
-using BenMcLean.Wolf3D.Assets;
 using Godot;
+
+namespace BenMcLean.Wolf3D.VR;
 
 public partial class Root : Node3D
 {
 	private Camera3D _camera;
+	private FreeLookCamera _freeLookCamera;
 	private Sky _sky;
 	private readonly ShaderMaterial _skyMaterial = new()
 	{
 		Shader = new() { Code = """
 shader_type sky;
 
-uniform vec4 ground_color;
-uniform vec4 sky_color;
+uniform vec4 floor_color;
+uniform vec4 ceiling_color;
 
 void sky() {
-	if (EYEDIR.y < 0.0) {
-		COLOR = ground_color.rgb;
-	} else {
-		COLOR = sky_color.rgb;
-	}
+	COLOR = mix(floor_color.rgb, ceiling_color.rgb, step(0.0, EYEDIR.y));
 }
 """, }
 	};
 	public WorldEnvironment WorldEnvironment;
-	public Assets Assets;
+	public Assets.Assets Assets;
 	public override void _Ready()
 	{
 		AddChild(WorldEnvironment = new()
@@ -37,15 +35,19 @@ void sky() {
 				BackgroundMode = Environment.BGMode.Sky,
 			}
 		});
-		_skyMaterial.SetShaderParameter("ground_color", new Color(0f, 1f, 0f, 1f));
-		_skyMaterial.SetShaderParameter("sky_color", new Color(0f, 0f, 1f, 1f));
-		_camera = new Camera3D
+		_skyMaterial.SetShaderParameter("floor_color", new Color(0f, 1f, 0f, 1f));
+		_skyMaterial.SetShaderParameter("ceiling_color", new Color(0f, 0f, 1f, 1f));
+		_camera = new()
 		{
-			Position = new Vector3(0, 1.6f, 0),
+			Position = new Vector3(0, Constants.HalfWallHeight, 0),
 			RotationDegrees = new Vector3(0, 0, 0),
+			Current = true,
 		};
 		AddChild(_camera);
-		Assets = Assets.Load(@"..\..\games\WL1.xml");
+		_freeLookCamera = new();
+		_camera.AddChild(_freeLookCamera);
+		_freeLookCamera.Enabled = true;
+		Assets = BenMcLean.Wolf3D.Assets.Assets.Load(@"..\..\games\WL1.xml");
 		GD.Print($"Game Maps: {Assets.Maps.Length}");
 	}
 	public override void _Process(double delta)
