@@ -1,0 +1,632 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <!-- ============================================ -->
+  <!-- Root Element: Game                           -->
+  <!-- ============================================ -->
+
+  <xs:element name="Game">
+    <xs:annotation>
+      <xs:documentation>
+        Root element for Wolfenstein 3D game definition.
+        Defines all game assets, levels, and configuration.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="VgaGraph" minOccurs="0"/>
+        <xs:element ref="Maps" minOccurs="0"/>
+        <xs:element ref="Audio" minOccurs="0"/>
+        <xs:element ref="VSwap" minOccurs="0"/>
+        <xs:element ref="Palette" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Exe" type="xs:string"/>
+      <xs:attribute name="HighScores" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================ -->
+  <!-- VgaGraph Section                             -->
+  <!-- ============================================ -->
+
+  <xs:element name="VgaGraph">
+    <xs:annotation>
+      <xs:documentation>
+        Graphics assets from VGAGRAPH/VGADICT/VGAHEAD files.
+        Contains fonts, pictures, status bar, and menu definitions.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Sizes" minOccurs="0"/>
+        <xs:element ref="Font" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="Pic" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="StatusBar" minOccurs="0"/>
+        <xs:element ref="Menus" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="VgaDict" type="xs:string" use="required"/>
+      <xs:attribute name="VgaGraph" type="xs:string" use="required"/>
+      <xs:attribute name="VgaHead" type="xs:string" use="required"/>
+      <xs:attribute name="LoadingPic" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Sizes">
+    <xs:complexType>
+      <xs:attribute name="Chunk" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="StartPic" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="StartFont" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Fonts" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Font">
+    <xs:complexType>
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Chunk" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Prefix" type="xs:string"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Height" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="SpaceColor" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="SpaceWidth" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Pic">
+    <xs:complexType>
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Chunk" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Character" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="StatusBar">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="Number"/>
+        <xs:element ref="Face"/>
+        <xs:element ref="Weapons"/>
+      </xs:choice>
+      <xs:attribute name="Pic" type="xs:string"/>
+      <xs:attribute name="Font" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Number">
+    <xs:complexType>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="X" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Y" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Digits" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Init" type="xs:integer"/>
+      <xs:attribute name="Max" type="xs:integer"/>
+      <xs:attribute name="Have" type="xs:string"/>
+      <xs:attribute name="Empty" type="xs:string"/>
+      <xs:attribute name="LevelReset" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Face">
+    <xs:complexType>
+      <xs:attribute name="X" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Y" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Weapons">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Weapon" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="X" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Y" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Weapon">
+    <xs:complexType>
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Pic" type="xs:string"/>
+      <xs:attribute name="Init" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Menus">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="EndString" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="Menu" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="Start" type="xs:string"/>
+      <xs:attribute name="Song" type="xs:string"/>
+      <xs:attribute name="Deactive" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Stripe" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="SelectSound" type="xs:string"/>
+      <xs:attribute name="ScrollSound" type="xs:string"/>
+      <xs:attribute name="BordColor" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Bord2Color" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Color" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="TextColor" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Font" type="xs:string"/>
+      <xs:attribute name="ModalFont" type="xs:string"/>
+      <xs:attribute name="Selected" type="xs:string"/>
+      <xs:attribute name="NotSelected" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Menu">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="Image"/>
+        <xs:element ref="Text"/>
+        <xs:element ref="PixelRect"/>
+        <xs:element ref="MenuItems"/>
+        <xs:element ref="Cancel"/>
+        <xs:element ref="Cursor"/>
+      </xs:choice>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="BkgdColor" type="xs:string"/>
+      <xs:attribute name="Font" type="xs:string"/>
+      <xs:attribute name="Song" type="xs:string"/>
+      <xs:attribute name="SelectedColor" type="xs:string"/>
+      <xs:attribute name="TextColor" type="xs:string"/>
+      <xs:attribute name="DisabledColor" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Image">
+    <xs:complexType>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="X" type="xs:string"/>
+      <xs:attribute name="Y" type="xs:string"/>
+      <xs:attribute name="XBanner" type="xs:integer"/>
+      <xs:attribute name="Action" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Text">
+    <xs:complexType>
+      <xs:attribute name="String" type="xs:string" use="required"/>
+      <xs:attribute name="X" type="xs:string"/>
+      <xs:attribute name="Y" type="xs:string"/>
+      <xs:attribute name="Color" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="PixelRect">
+    <xs:complexType>
+      <xs:attribute name="X" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Y" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Width" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Height" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Color" type="xs:string"/>
+      <xs:attribute name="BordColor" type="xs:string"/>
+      <xs:attribute name="Bord2Color" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="MenuItems">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="MenuItem" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="StartX" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="StartY" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="PaddingX" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="MenuItem">
+    <xs:complexType>
+      <xs:attribute name="Text" type="xs:string"/>
+      <xs:attribute name="Action" type="xs:string"/>
+      <xs:attribute name="Argument" type="xs:string"/>
+      <xs:attribute name="InGame" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Cancel">
+    <xs:complexType>
+      <xs:attribute name="InGame" type="xs:boolean"/>
+      <xs:attribute name="Action" type="xs:string"/>
+      <xs:attribute name="Argument" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Cursor">
+    <xs:complexType>
+      <xs:attribute name="Cursor1" type="xs:string"/>
+      <xs:attribute name="Cursor2" type="xs:string"/>
+      <xs:attribute name="X" type="xs:integer"/>
+      <xs:attribute name="Y" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================ -->
+  <!-- Maps Section                                 -->
+  <!-- ============================================ -->
+
+  <xs:element name="Maps">
+    <xs:annotation>
+      <xs:documentation>
+        Level map data from MAPHEAD/GAMEMAPS files.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Map" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="MapHead" type="xs:string" use="required"/>
+      <xs:attribute name="GameMaps" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Map">
+    <xs:complexType>
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Name" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================ -->
+  <!-- Audio Section                                -->
+  <!-- ============================================ -->
+
+  <xs:element name="Audio">
+    <xs:annotation>
+      <xs:documentation>
+        Audio assets from AUDIOHED/AUDIOT files.
+        Contains digital sounds and music (IMF format).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="DigiSound" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="Imf" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="AudioHead" type="xs:string" use="required"/>
+      <xs:attribute name="AudioT" type="xs:string" use="required"/>
+      <xs:attribute name="StartPCSounds" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="StartAdlibSounds" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="StartMusic" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="DigiSound">
+    <xs:complexType>
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Imf">
+    <xs:complexType>
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================ -->
+  <!-- VSwap Section                                -->
+  <!-- ============================================ -->
+
+  <xs:element name="VSwap">
+    <xs:annotation>
+      <xs:documentation>
+        VSWAP file containing wall textures, sprites, and digital sounds.
+        PMSpriteStart and PMSoundStart are read from the VSWAP file header.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Walls" minOccurs="0"/>
+        <xs:element ref="Objects" minOccurs="0"/>
+        <xs:element ref="Sprites" minOccurs="0"/>
+        <xs:element ref="DigiSounds" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Sqrt" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Scale" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="MipMaps" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Walls -->
+
+  <xs:element name="Walls">
+    <xs:annotation>
+      <xs:documentation>
+        Wall texture configuration. Regular walls 1-MaxWallTiles use the
+        hardcoded formula from WL_MAIN.C SetupWalls():
+          horizwall[i] = (i-1) * 2    (horizontal/light walls)
+          vertwall[i]  = (i-1) * 2 + 1 (vertical/dark walls)
+
+        DoorWall specifies the base VSWAP page for door textures (calculated as
+        PMSpriteStart - 8 in original code, but hardcoded here for modding).
+
+        FloorCodeFirst/Last define the range of floor code tiles used for area
+        detection (AREATILE through AREATILE+NUMAREAS-1, typically 107-143).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="Elevator"/>
+        <xs:element ref="Pushable"/>
+        <xs:element ref="Exit"/>
+        <xs:element ref="Ambush"/>
+        <xs:element ref="AltElevator"/>
+        <xs:element ref="Door"/>
+      </xs:choice>
+      <xs:attribute name="MaxWallTiles" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="DoorWall" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="FloorCodeFirst" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="FloorCodeLast" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Elevator">
+    <xs:annotation>
+      <xs:documentation>
+        Elevator activation tile. When player uses this tile, triggers level
+        completion and elevator sequence. Destination (next level or secret level)
+        depends on floor tile player is standing on. (ELEVATORTILE = 21)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Pushable">
+    <xs:annotation>
+      <xs:documentation>
+        Pushable wall marker. Walls marked with this tile can be pushed by the
+        player to reveal secret areas. (PUSHABLETILE = 98)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Exit">
+    <xs:annotation>
+      <xs:documentation>
+        Victory/exit tile. When player walks onto this tile, triggers end of
+        episode/castle victory sequence. (EXITTILE = 99)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Ambush">
+    <xs:annotation>
+      <xs:documentation>
+        Ambush marker tile. During level setup, this tile is removed from the
+        tilemap and enemies placed on it are marked with FL_AMBUSH flag, making
+        them deaf/inactive until triggered. The floor code from adjacent tiles
+        is used to replace this tile. (AMBUSHTILE = 106)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="AltElevator">
+    <xs:annotation>
+      <xs:documentation>
+        Secret level elevator floor tile. When player activates an elevator
+        while standing on this tile, triggers transition to secret level
+        instead of normal level completion. This tile number is also AREATILE,
+        the first floor code. (ALTELEVATORTILE = 107)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Door">
+    <xs:annotation>
+      <xs:documentation>
+        Door type definition from map object plane. Object number is the base (even)
+        value; odd value (Object+1) is implied for opposite orientation.
+        Lock type is calculated as (Object-90)/2.
+
+        Key attribute specifies required inventory item (omit if no key needed).
+        Page is offset from DoorWall (actual page = DoorWall + Page).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="Object" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Key" type="xs:string"/>
+      <xs:attribute name="Page" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="OpenSound" type="xs:string"/>
+      <xs:attribute name="CloseSound" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Objects -->
+
+  <xs:element name="Objects">
+    <xs:annotation>
+      <xs:documentation>
+        Map tile object definitions (decorations, pickups, enemy spawners, etc.)
+        and enemy AI definitions (actors and states).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="Object"/>
+        <xs:element ref="Actor"/>
+        <xs:element ref="State"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Object">
+    <xs:annotation>
+      <xs:documentation>
+        Map tile object - can be decoration, pickup, enemy spawn, or special marker.
+        Replaces Billboard, Pickup, Spawn, Start elements with unified structure.
+        Behavior is defined via optional Script element or handled by C# code.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Script" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+      <!-- Map tile properties -->
+      <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+
+      <!-- Visual properties -->
+      <xs:attribute name="Sprite" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Page" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Palette" type="xs:nonNegativeInteger"/>
+
+      <!-- Physical properties -->
+      <xs:attribute name="Walk" type="xs:boolean"/>
+
+      <!-- Pickup properties -->
+      <xs:attribute name="Treasure" type="xs:boolean"/>
+      <xs:attribute name="Sound" type="xs:string"/>
+
+      <!-- Enemy spawn properties -->
+      <xs:attribute name="Actor" type="xs:string"/>
+      <xs:attribute name="Direction" type="DirectionType"/>
+      <xs:attribute name="Difficulty" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="State" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Actor">
+    <xs:annotation>
+      <xs:documentation>
+        Enemy class definition with AI behavior.
+        Scripts define complex behavior (onDeath item drops, etc.)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Script" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="HP" type="xs:string"/>
+      <xs:attribute name="Reaction" type="xs:string"/>
+      <xs:attribute name="Speed" type="xs:integer"/>
+      <xs:attribute name="AlertDigiSound" type="xs:string"/>
+      <xs:attribute name="Chase" type="xs:string"/>
+      <xs:attribute name="Attack" type="xs:string"/>
+      <xs:attribute name="Death" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="State">
+    <xs:annotation>
+      <xs:documentation>
+        State machine state for actor AI.
+        Scripts can extend state behavior.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Script" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Rotate" type="xs:boolean"/>
+      <xs:attribute name="Shape" type="xs:string"/>
+      <xs:attribute name="Tics" type="xs:nonNegativeInteger"/>
+      <xs:attribute name="Think" type="xs:string"/>
+      <xs:attribute name="Act" type="xs:string"/>
+      <xs:attribute name="Speed" type="xs:integer"/>
+      <xs:attribute name="Next" type="xs:string"/>
+      <xs:attribute name="Alive" type="xs:boolean"/>
+      <xs:attribute name="Mark" type="xs:boolean"/>
+      <xs:attribute name="DigiSound" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Sprites -->
+
+  <xs:element name="Sprites">
+    <xs:annotation>
+      <xs:documentation>
+        Sprite definitions. Page is absolute VSWAP page number.
+        Sprites begin at PMSpriteStart (read from VSWAP header).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Sprite" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Sprite">
+    <xs:complexType>
+      <xs:attribute name="Page" type="xs:nonNegativeInteger" use="required"/>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Palette" type="xs:nonNegativeInteger"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Digital Sounds in VSwap -->
+
+  <xs:element name="DigiSounds">
+    <xs:annotation>
+      <xs:documentation>
+        Digital sound data stored in VSWAP after sprites.
+        Page numbers are relative to PMSoundStart (read from VSWAP header).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="DigiSound" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+            <xs:attribute name="Name" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================ -->
+  <!-- Palette Section                              -->
+  <!-- ============================================ -->
+
+  <xs:element name="Palette">
+    <xs:annotation>
+      <xs:documentation>
+        JASC-PAL format palette (256 colors).
+        Content is the palette text data.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string"/>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================ -->
+  <!-- Common Types                                 -->
+  <!-- ============================================ -->
+
+  <xs:simpleType name="DirectionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="E"/>
+      <xs:enumeration value="N"/>
+      <xs:enumeration value="W"/>
+      <xs:enumeration value="S"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>
