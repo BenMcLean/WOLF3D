@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Assets;
 using Godot;
 
 public partial class Root : Node3D
@@ -22,6 +23,7 @@ void sky() {
 """, }
 	};
 	public WorldEnvironment WorldEnvironment;
+	public Assets Assets;
 	public override void _Ready()
 	{
 		AddChild(WorldEnvironment = new()
@@ -43,6 +45,8 @@ void sky() {
 			RotationDegrees = new Vector3(0, 0, 0),
 		};
 		AddChild(_camera);
+		Assets = Assets.Load(@"..\..\games\WL1.xml");
+		GD.Print($"Game Maps: {Assets.Maps.Length}");
 	}
 	public override void _Process(double delta)
 	{

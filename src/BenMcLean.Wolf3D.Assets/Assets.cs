@@ -11,6 +11,11 @@ public class Assets
 	//public readonly VgaGraph VgaGraph;
 	public readonly VSwap VSwap;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
+	public static Assets Load(string xmlPath)
+	{
+		XElement xml = XDocument.Load(xmlPath).Root;
+		return new(xml, Path.Combine(Path.GetDirectoryName(xmlPath), xml.Attribute("Path")?.Value));
+	}
 	public Assets(XElement xml, string folder = "")
 	{
 		if (!Directory.Exists(folder))

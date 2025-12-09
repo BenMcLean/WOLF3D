@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
@@ -151,11 +150,7 @@ public sealed class VSwap
 			e => uint.TryParse(e.Attribute("Page")?.Value, out uint page) && page == pageNumber
 			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
 		?.FirstOrDefault() ?? 0;
-	public static IEnumerable<uint[]> LoadPalettes(XElement xml)
-	{
-		foreach (XElement xPalette in xml.Elements("Palette"))
-			yield return LoadPalette(xPalette);
-	}
+	public static IEnumerable<uint[]> LoadPalettes(XElement xml) => xml.Elements("Palette").Select(LoadPalette);
 	public static uint[] TransparentBorder(uint[] texture, ushort width = 0)
 	{
 		if (width == 0)
