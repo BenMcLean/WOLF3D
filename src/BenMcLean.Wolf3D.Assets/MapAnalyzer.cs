@@ -12,10 +12,20 @@ public class MapAnalyzer
 {
 	#region Data
 	public XElement XML;
-	public HashSet<ushort> Walls { get; private set; }
-	public HashSet<ushort> Doors { get; private set; }
-	public HashSet<ushort> Elevators { get; private set; }
-	public HashSet<ushort> PushWalls { get; private set; }
+
+	// Wall configuration (from WOLF3D.xsd Walls attributes)
+	public ushort MaxWallTiles { get; private set; }
+	public ushort DoorWall { get; private set; }
+
+	// Special tiles (from WOLF3D.xsd special tile elements - can have multiple)
+	public HashSet<ushort> ElevatorTiles { get; private set; }
+	public HashSet<ushort> PushableTiles { get; private set; }
+	public HashSet<ushort> ExitTiles { get; private set; }
+	public HashSet<ushort> AmbushTiles { get; private set; }
+	public HashSet<ushort> AltElevatorTiles { get; private set; }
+
+	// Door types (Object number -> door info)
+	public Dictionary<ushort, DoorInfo> Doors { get; private set; }
 
 	// Object metadata
 	public Dictionary<ushort, ObjectInfo> Objects { get; private set; }
@@ -33,11 +43,55 @@ public class MapAnalyzer
 	#endregion Data
 	public MapAnalyzer(XElement xml)
 	{
-		XML = xml;
-		Walls = [.. XML.Element("VSwap")?.Element("Walls")?.Elements("Wall").Select(e => ushort.Parse(e.Attribute("Number").Value))];
-		Doors = [.. XML.Element("VSwap")?.Element("Walls")?.Elements("Door")?.Select(e => ushort.Parse(e.Attribute("Number").Value))];
-		Elevators = [.. XML.Element("VSwap")?.Element("Walls")?.Elements("Elevator")?.Select(e => ushort.Parse(e.Attribute("Number").Value))];
-		PushWalls = [.. PushWall?.Select(e => ushort.Parse(e.Attribute("Number").Value))];
+		XML = xml ?? throw new ArgumentNullException(nameof(xml));
+
+		// Parse Walls element attributes (required)
+		XElement wallsElement = XML.Element("VSwap")?.Element("Walls")
+			?? throw new InvalidDataException("Missing VSwap/Walls element in XML");
+
+		MaxWallTiles = ushort.Parse(wallsElement.Attribute("MaxWallTiles")?.Value
+			?? throw new InvalidDataException("Missing MaxWallTiles attribute"));
+		DoorWall = ushort.Parse(wallsElement.Attribute("DoorWall")?.Value
+			?? throw new InvalidDataException("Missing DoorWall attribute"));
+
+		// Parse special floor tiles (can have multiple of each type)
+		ElevatorTiles = [.. wallsElement.Elements("Elevator")
+			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("Elevator element missing Tile attribute")))];
+		PushableTiles = [.. wallsElement.Elements("Pushable")
+			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("Pushable element missing Tile attribute")))];
+		ExitTiles = [.. wallsElement.Elements("Exit")
+			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("Exit element missing Tile attribute")))];
+		AmbushTiles = [.. wallsElement.Elements("Ambush")
+			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("Ambush element missing Tile attribute")))];
+		AltElevatorTiles = [.. wallsElement.Elements("AltElevator")
+			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("AltElevator element missing Tile attribute")))];
+
+		// Parse door types
+		Doors = new Dictionary<ushort, DoorInfo>();
+		foreach (XElement doorElem in wallsElement.Elements("Door"))
+		{
+			ushort objectNum = ushort.Parse(doorElem.Attribute("Object")?.Value
+				?? throw new InvalidDataException("Door element missing Object attribute"));
+			DoorInfo info = new()
+			{
+				ObjectNumber = objectNum,
+				Name = doorElem.Attribute("Name")?.Value
+					?? throw new InvalidDataException("Door element missing Name attribute"),
+				Key = doorElem.Attribute("Key")?.Value,  // Optional
+				Page = ushort.Parse(doorElem.Attribute("Page")?.Value
+					?? throw new InvalidDataException("Door element missing Page attribute")),
+				OpenSound = doorElem.Attribute("OpenSound")?.Value,  // Optional
+				CloseSound = doorElem.Attribute("CloseSound")?.Value  // Optional
+			};
+			// Store both even (vertical) and odd (horizontal) object numbers
+			Doors[objectNum] = info;
+			Doors[(ushort)(objectNum + 1)] = info;
+		}
 
 		// Parse object class definitions (Wolf3D classtype and stat_t enums)
 		IEnumerable<XElement> classElements = XML.Element("VSwap")?.Element("ObjectClasses")?.Elements("ObClass") ?? [];
@@ -114,38 +168,32 @@ public class MapAnalyzer
 			ushort.TryParse(map.Attribute("Episode")?.Value, out ushort e) && e == episode
 			&& ushort.TryParse(map.Attribute("Floor")?.Value, out ushort f) && f == floor
 		).First().Attribute("Number")?.Value);
-	public XElement Elevator(ushort number) => XML?.Element("VSwap")?.Element("Walls")?.Elements("Elevator")?.Where(e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort elevator) && elevator == number)?.FirstOrDefault();
-	public XElement Wall(ushort number) => XML?.Element("VSwap")?.Element("Walls")?.Elements("Wall")?.Where(e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort wall) && wall == number)?.FirstOrDefault();
-	public IEnumerable<XElement> PushWall => XML?.Element("VSwap")?.Element("Objects")?.Elements("Pushwall");
-	public ushort WallPage(ushort cell) =>
-		ushort.TryParse(Wall(cell)?.Attribute("Page")?.Value, out ushort result) ? result : throw new InvalidDataException("Could not find wall texture " + cell + "!");
+
+	// Wall formula from WL_MAIN.C SetupWalls():
+	// horizwall[i] = (i-1) * 2
+	// vertwall[i] = (i-1) * 2 + 1
+	public ushort GetWallPage(ushort wallNumber, bool vertical) =>
+		(ushort)((wallNumber - 1) * 2 + (vertical ? 1 : 0));
+
+	// Check if tile number is a wall
+	public bool IsWall(ushort tile) => tile > 0 && tile <= MaxWallTiles;
+
 	public bool IsNavigable(ushort mapData, ushort objectData) =>
 		IsTransparent(mapData, objectData) && (
 			!(XML?.Element("VSwap")?.Element("Objects").Elements("Billboard")
 				.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == objectData).FirstOrDefault() is XElement mapObject)
 			|| mapObject.IsTrue("Walk"));
+
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
-		(!Walls.Contains(mapData) || PushWalls.Contains(objectData))
-		&& !Elevators.Contains(mapData);
+		(!IsWall(mapData) || PushableTiles.Contains(objectData))
+		&& !ElevatorTiles.Contains(mapData);
+
 	public bool IsMappable(GameMap map, ushort x, ushort z) =>
 		IsTransparent(map.GetMapData(x, z), map.GetObjectData(x, z))
 		|| (x > 0 && IsTransparent(map.GetMapData((ushort)(x - 1), z), map.GetObjectData((ushort)(x - 1), z)))
 		|| (x < map.Width - 1 && IsTransparent(map.GetMapData((ushort)(x + 1), z), map.GetObjectData((ushort)(x + 1), z)))
 		|| (z > 0 && IsTransparent(map.GetMapData(x, (ushort)(z - 1)), map.GetObjectData(x, (ushort)(z - 1))))
 		|| (z < map.Depth - 1 && IsTransparent(map.GetMapData(x, (ushort)(z + 1)), map.GetObjectData(x, (ushort)(z + 1))));
-	/// <summary>
-	/// "If you only knew the power of the Dark Side." - Darth Vader
-	/// </summary>
-	public ushort DarkSide(ushort cell) =>
-		ushort.TryParse(XWall(cell).FirstOrDefault()?.Attribute("DarkSide")?.Value, out ushort result) ? result : WallPage(cell);
-	public IEnumerable<XElement> XWall(ushort cell) =>
-		XML?.Element("VSwap")?.Element("Walls")?.Elements()
-		?.Where(e => (uint)e.Attribute("Number") == cell);
-	public IEnumerable<XElement> XDoor(ushort cell) =>
-		XML?.Element("VSwap")?.Element("Walls")?.Elements("Door")
-		?.Where(e => (uint)e.Attribute("Number") == cell);
-	public ushort DoorTexture(ushort cell) =>
-		(ushort)(uint)XDoor(cell).FirstOrDefault()?.Attribute("Page");
 	public ObjectInfo GetObjectInfo(ushort objectCode) =>
 		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
 
@@ -324,64 +372,89 @@ public class MapAnalyzer
 			ushort[] realWalls = new ushort[gameMap.MapData.Length];
 			Array.Copy(gameMap.MapData, realWalls, realWalls.Length);
 			for (int i = 0; i < realWalls.Length; i++)
-				if (mapAnalyzer.PushWalls.Contains(gameMap.ObjectData[i]))
+				if (mapAnalyzer.PushableTiles.Contains(gameMap.ObjectData[i]))
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
 					ushort wall = gameMap.MapData[i];
-					pushWalls.Add(new PushWallSpawn(mapAnalyzer.WallPage(wall), mapAnalyzer.DarkSide(wall), gameMap.X(i), gameMap.Z(i)));
+					ushort horizPage = mapAnalyzer.GetWallPage(wall, false);
+					ushort vertPage = mapAnalyzer.GetWallPage(wall, true);
+					pushWalls.Add(new PushWallSpawn(horizPage, vertPage, gameMap.X(i), gameMap.Z(i)));
 				}
 			ushort GetMapData(ushort x, ushort z) => realWalls[gameMap.GetIndex(x, z)];
-			XElement doorFrameX = mapAnalyzer.XML.Element("VSwap")?.Element("Walls")?.Element("DoorFrame")
-				?? throw new NullReferenceException("Could not find \"DoorFrame\" tag in walls!");
-			ushort doorFrame = (ushort)(uint)doorFrameX.Attribute("Page"),
-				darkFrame = (ushort)(uint)doorFrameX.Attribute("DarkSide");
+
+			// Door frames use specific pages near sprite start
+			// In original: doorFrame at DOORWALL+2, but we'll use a calculated value
+			ushort doorFrameHoriz = (ushort)(mapAnalyzer.DoorWall + 2);  // Horizontal door frame
+			ushort doorFrameVert = (ushort)(mapAnalyzer.DoorWall + 3);   // Vertical door frame
+
 			List<WallSpawn> walls = [];
 			List<Tuple<ushort, ushort>> elevators = [];
 			List<DoorSpawn> doors = [];
+
 			void EastWest(ushort x, ushort z)
 			{
 				ushort wall;
-				if (x < Width - 1 && mapAnalyzer.Walls.Contains(wall = GetMapData((ushort)(x + 1), z)))
-					walls.Add(new WallSpawn(mapAnalyzer.DarkSide(wall), false, (ushort)(x + 1), z));
-				if (x > 0 && mapAnalyzer.Walls.Contains(wall = GetMapData((ushort)(x - 1), z)))
-					walls.Add(new WallSpawn(mapAnalyzer.DarkSide(wall), false, x, z, true));
+				// East/West walls are vertical (darker)
+				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), z)))
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), false, (ushort)(x + 1), z));
+				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), z)))
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), false, x, z, true));
 			}
+
 			void NorthSouth(ushort x, ushort z)
 			{
 				ushort wall;
-				if (z > 0 && mapAnalyzer.Walls.Contains(wall = GetMapData(x, (ushort)(z - 1))))
-					walls.Add(new WallSpawn(mapAnalyzer.WallPage(wall), true, x, (ushort)(z - 1), true));
-				if (z < Depth - 1 && mapAnalyzer.Walls.Contains(wall = GetMapData(x, (ushort)(z + 1))))
-					walls.Add(new WallSpawn(mapAnalyzer.WallPage(wall), true, x, z));
+				// North/South walls are horizontal (lighter)
+				if (z > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(z - 1))))
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), true, x, (ushort)(z - 1), true));
+				if (z < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(z + 1))))
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), true, x, z));
 			}
-			for (int i = 0; i < gameMap.MapData.Length; i++)
+
+			// Scan object layer for doors
+			for (int i = 0; i < gameMap.ObjectData.Length; i++)
 			{
-				ushort x = gameMap.X(i), z = gameMap.Z(i), here = GetMapData(x, z);
-				if (mapAnalyzer.Doors.Contains(here))
+				ushort x = gameMap.X(i), z = gameMap.Z(i);
+				ushort objectCode = gameMap.ObjectData[i];
+
+				if (mapAnalyzer.Doors.TryGetValue(objectCode, out DoorInfo doorInfo))
 				{
-					if (here % 2 == 0) // Even numbered doors face east
+					ushort doorPage = (ushort)(mapAnalyzer.DoorWall + doorInfo.Page);
+
+					// Even object numbers = vertical doors, odd = horizontal
+					if (objectCode % 2 == 0)  // Vertical door (East/West)
 					{
-						walls.Add(new WallSpawn(doorFrame, true, x, z));
-						walls.Add(new WallSpawn(doorFrame, true, x, (ushort)(z - 1), true));
+						walls.Add(new WallSpawn(doorFrameHoriz, true, x, z));
+						walls.Add(new WallSpawn(doorFrameHoriz, true, x, (ushort)(z - 1), true));
 						EastWest(x, z);
-						doors.Add(new DoorSpawn(here, x, z, true));
+						doors.Add(new DoorSpawn(doorPage, x, z, true));
 					}
-					else // Odd numbered doors face north
+					else  // Horizontal door (North/South)
 					{
-						walls.Add(new WallSpawn(darkFrame, false, x, z, true));
-						walls.Add(new WallSpawn(darkFrame, false, (ushort)(x + 1), z));
+						walls.Add(new WallSpawn(doorFrameVert, false, x, z, true));
+						walls.Add(new WallSpawn(doorFrameVert, false, (ushort)(x + 1), z));
 						NorthSouth(x, z);
-						doors.Add(new DoorSpawn(here, x, z));
+						doors.Add(new DoorSpawn(doorPage, x, z));
 					}
 				}
-				else if (mapAnalyzer.Elevators.Contains(here))
+			}
+
+			// Scan map layer for walls and elevators
+			for (int i = 0; i < gameMap.MapData.Length; i++)
+			{
+				ushort x = gameMap.X(i), z = gameMap.Z(i);
+				ushort here = GetMapData(x, z);
+
+				if (mapAnalyzer.ElevatorTiles.Contains(here))
 					elevators.Add(new(x, z));
-				else if (!mapAnalyzer.Walls.Contains(here))
+				else if (!mapAnalyzer.IsWall(here) && !mapAnalyzer.Doors.ContainsKey(gameMap.ObjectData[i]))
 				{
+					// For empty spaces, check adjacent cells for walls
 					EastWest(x, z);
 					NorthSouth(x, z);
 				}
 			}
+
 			Walls = Array.AsReadOnly([.. walls]);
 			PushWalls = Array.AsReadOnly([.. pushWalls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
@@ -390,6 +463,17 @@ public class MapAnalyzer
 		}
 	}
 	#endregion Inner classes
+}
+
+// Door metadata from XML
+public record DoorInfo
+{
+	public ushort ObjectNumber { get; init; }  // Base object number (even, odd is +1)
+	public string Name { get; init; }          // Door type name (e.g., "normal", "gold")
+	public string Key { get; init; }           // Required key item (null if no key needed)
+	public ushort Page { get; init; }          // Page offset from DoorWall
+	public string OpenSound { get; init; }     // Sound when opening
+	public string CloseSound { get; init; }    // Sound when closing
 }
 
 // Object metadata - unified Wolf3D object representation
