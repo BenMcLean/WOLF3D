@@ -34,7 +34,7 @@ public sealed class GameMap
 	public bool IsWithinMap(int x, int z) => x >= 0 && z >= 0 && x < Width && z < Depth;
 	#endregion Data
 	#region Loading
-	public static GameMap[] Load(string folder, XElement xml) => Load(
+	public static GameMap[] Load(XElement xml, string folder = "") => Load(
 		mapHead: Path.Combine(folder, xml.Element("Maps").Attribute("MapHead").Value),
 		gameMaps: Path.Combine(folder, xml.Element("Maps").Attribute("GameMaps").Value));
 	public static GameMap[] Load(string mapHead, string gameMaps)

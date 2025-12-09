@@ -1,0 +1,24 @@
+using System;
+using System.IO;
+using System.Xml.Linq;
+
+namespace BenMcLean.Wolf3D.Assets;
+
+public class Assets
+{
+	public readonly XElement XML;
+	public readonly GameMap[] Maps;
+	//public readonly VgaGraph VgaGraph;
+	public readonly VSwap VSwap;
+	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
+	public Assets(XElement xml, string folder = "")
+	{
+		if (!Directory.Exists(folder))
+			throw new DirectoryNotFoundException(folder);
+		XML = xml ?? throw new ArgumentNullException(nameof(xml));
+		//VgaGraph = VgaGraph.Load(xml, folder);
+		VSwap = VSwap.Load(xml, folder);
+		Maps = GameMap.Load(xml, folder);
+		MapAnalyses = [.. new MapAnalyzer(xml).Analyze(Maps)];
+	}
+}

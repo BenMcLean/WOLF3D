@@ -10,12 +10,16 @@ namespace BenMcLean.Wolf3D.Assets;
 
 public sealed class VSwap
 {
-	public static VSwap Load(string folder, XElement xml)
+	public static VSwap Load(XElement xml, string folder="")
 	{
+		if (!Directory.Exists(folder))
+			throw new DirectoryNotFoundException(folder);
 		using FileStream vSwap = new(System.IO.Path.Combine(folder, xml.Element("VSwap").Attribute("Name").Value), FileMode.Open);
-		return new VSwap(xml, [.. LoadPalettes(xml)], vSwap,
-			ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort tileSqrt) ? tileSqrt : (ushort)64
-			);
+		return new VSwap(
+			xml: xml,
+			palettes: [.. LoadPalettes(xml)],
+			stream: vSwap,
+			tileSqrt: ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort tileSqrt) ? tileSqrt : (ushort)64);
 	}
 	#region Data
 	public uint[][] Palettes { get; private init; }
@@ -214,18 +218,15 @@ public sealed class VSwap
 		XElement[] colorElements = paletteElement.Elements("Color").ToArray();
 		if (colorElements.Length != 256)
 			throw new InvalidDataException($"Palette must contain exactly 256 colors, found {colorElements.Length}");
-
 		uint[] result = new uint[256];
 		for (int i = 0; i < 256; i++)
 		{
 			string hexValue = colorElements[i].Attribute("Hex")?.Value;
 			if (string.IsNullOrEmpty(hexValue) || !hexValue.StartsWith("#") || hexValue.Length != 7)
 				throw new InvalidDataException($"Color {i} has invalid Hex attribute: '{hexValue}'. Expected format: #RRGGBB");
-
 			// Parse hex color (remove # and parse as hex)
-			if (!uint.TryParse(hexValue.Substring(1), System.Globalization.NumberStyles.HexNumber, null, out uint rgb24))
+			if (!uint.TryParse(hexValue[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb24))
 				throw new InvalidDataException($"Color {i} has invalid hex value: '{hexValue}'");
-
 			// Convert 24-bit RGB to 32-bit RGBA: left-shift by 8 bits and OR with opaque alpha
 			// (except index 255 which is transparent)
 			result[i] = (rgb24 << 8) | (i == 255 ? 0u : 0xFFu);

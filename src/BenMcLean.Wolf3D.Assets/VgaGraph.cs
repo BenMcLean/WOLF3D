@@ -8,8 +8,10 @@ namespace BenMcLean.Wolf3D.Assets;
 
 public sealed class VgaGraph
 {
-	public static VgaGraph Load(string folder, XElement xml)
+	public static VgaGraph Load(XElement xml, string folder = "")
 	{
+		if (!Directory.Exists(folder))
+			throw new DirectoryNotFoundException(folder);
 		using FileStream vgaHead = new(Path.Combine(folder, xml.Element("VgaGraph").Attribute("VgaHead").Value), FileMode.Open);
 		using FileStream vgaGraphStream = new(Path.Combine(folder, xml.Element("VgaGraph").Attribute("VgaGraph").Value), FileMode.Open);
 		using FileStream vgaDict = new(Path.Combine(folder, xml.Element("VgaGraph").Attribute("VgaDict").Value), FileMode.Open);
