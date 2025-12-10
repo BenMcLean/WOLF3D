@@ -47,7 +47,7 @@ void sky() {
 
 		// Create Godot resources (textures and materials)
 		// Try scaleFactor: 4 for better performance, or 8 for maximum quality
-		GodotResources = new GodotResources(Assets.VSwap, scaleFactor: 4);
+		GodotResources = new GodotResources(Assets.VSwap, scaleFactor: 8);
 
 		// Get first level analysis
 		Assets.MapAnalyzer.MapAnalysis firstLevel = Assets.MapAnalyses[0];
@@ -89,13 +89,11 @@ void sky() {
 		_freeLookCamera.Enabled = true;
 
 		// Create walls for the first level
-		Walls = new Walls(GodotResources.WallMaterials, firstLevel.Walls);
+		Walls = new Walls(GodotResources.WallMaterials, firstLevel.Walls, firstLevel.PushWalls);
 
 		// Add wall meshes to scene
-		foreach (MultiMeshInstance3D meshInstance in Walls.MeshInstances)
-		{
+		foreach (MultiMeshInstance3D meshInstance in Walls.MeshInstances.Values)
 			AddChild(meshInstance);
-		}
 
 		GD.Print($"Scene ready! Fly around with the FreeLookCamera to explore the level.");
 	}
