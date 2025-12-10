@@ -1008,7 +1008,7 @@
 		<Imf Number="26" Name="PACMAN_MUS" />
 	</Audio>
 	<VSwap Name="VSWAP.WL1" Sqrt="64" Scale="8" MipMaps="true">
-		<Walls MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
+		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
 			<!-- Special floor tiles -->
@@ -1018,17 +1018,20 @@
 			<Ambush Tile="106" />
 			<AltElevator Tile="107" />
 
-			<!-- Door types: Object is base (even), Object+1 (odd) implied, Lock=(Object-90)/2 -->
-			<Door Object="90" Name="normal" Page="0" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Object="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Object="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Object="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-		</Walls>
-		<Objects>
-			<Start Number="19" Direction="E" Name="Start" />
-			<Start Number="20" Direction="N" Name="Start" />
-			<Start Number="21" Direction="W" Name="Start" />
-			<Start Number="22" Direction="S" Name="Start" />
+			<!-- Door types: Tile is base (even), Tile+1 (odd) implied, Lock=(Tile-90)/2 -->
+			<Door Tile="90" Name="normal" Page="0" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+		</WallPlane>
+		<InfoPlane>
+			<ObClass Name="playerobj" Active="false" Enemy="false" />
+			<Object Number="19" ObClass="playerobj" Facing="E" Name="Player Start East" />
+			<Object Number="20" ObClass="playerobj" Facing="N" Name="Player Start North" />
+			<Object Number="21" ObClass="playerobj" Facing="W" Name="Player Start West" />
+			<Object Number="22" ObClass="playerobj" Facing="S" Name="Player Start South" />
 			<Billboard Number="23" Page="108" Walk="true" Name="Pool of Water" />
 			<Billboard Number="24" Page="109" Name="Oil Drum" />
 			<Billboard Number="25" Page="110" Name="Table with Chairs" />
@@ -1318,7 +1321,7 @@
 				</Animation>
 			</Actor>
 			-->
-		</Objects>
+		</InfoPlane>
 		<Sprites>
 			<Sprite Page="106" Name="SPR_DEMO" />
 			<Sprite Page="107" Name="SPR_DEATHCAM" />

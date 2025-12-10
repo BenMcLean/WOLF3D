@@ -321,8 +321,9 @@
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element ref="Walls" minOccurs="0"/>
-				<xs:element ref="Objects" minOccurs="0"/>
+				<xs:element ref="WallPlane" minOccurs="0"/>
+				<xs:element ref="InfoPlane" minOccurs="0"/>
+				<xs:element ref="Actors" minOccurs="0"/>
 				<xs:element ref="Sprites" minOccurs="0"/>
 				<xs:element ref="DigiSounds" minOccurs="0"/>
 			</xs:sequence>
@@ -333,13 +334,15 @@
 		</xs:complexType>
 	</xs:element>
 
-	<!-- Walls -->
+	<!-- WallPlane (mapsegs[0]) -->
 
-	<xs:element name="Walls">
+	<xs:element name="WallPlane">
 		<xs:annotation>
 			<xs:documentation>
-				Wall texture configuration. Regular walls 1-MaxWallTiles use the
-				hardcoded formula from WL_MAIN.C SetupWalls():
+				Wall plane (mapsegs[0]) configuration. Contains wall tiles, door tiles,
+				and special marker tiles from the map's first plane.
+
+				Regular walls 1-MaxWallTiles use the hardcoded formula from WL_MAIN.C SetupWalls():
 				horizwall[i] = (i-1) * 2    (horizontal/light walls)
 				vertwall[i]  = (i-1) * 2 + 1 (vertical/dark walls)
 
@@ -434,16 +437,18 @@
 	<xs:element name="Door">
 		<xs:annotation>
 			<xs:documentation>
-				Door type definition from map object plane. Object number is the base (even)
-				value; odd value (Object+1) is implied for opposite orientation.
-				Lock type is calculated as (Object-90)/2.
+				Door type definition from wall plane (mapsegs[0]). Door tiles are 90-101.
+
+				Tile attribute is the base (even) tile number; odd value (Tile+1) is implied
+				for opposite orientation (vertical vs horizontal).
+				Lock type is calculated as (Tile-90)/2.
 
 				Key attribute specifies required inventory item (omit if no key needed).
 				Page is offset from DoorWall (actual page = DoorWall + Page).
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:attribute name="Object" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Key" type="xs:string"/>
 			<xs:attribute name="Page" type="xs:nonNegativeInteger" use="required"/>
@@ -452,21 +457,35 @@
 		</xs:complexType>
 	</xs:element>
 
-	<!-- Objects -->
+	<!-- InfoPlane (mapsegs[1]) -->
 
-	<xs:element name="Objects">
+	<xs:element name="InfoPlane">
 		<xs:annotation>
 			<xs:documentation>
-				Map tile object definitions (decorations, pickups, enemy spawners, etc.)
-				and enemy AI definitions (actors and states).
+				Info plane (mapsegs[1]) definitions. Contains object spawn data from the
+				map's second plane: decorations, pickups, enemy spawners, player start, etc.
+
+				Processed by ScanInfoPlane() in the original code.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element ref="ObClass"/>
 				<xs:element ref="Object"/>
-				<xs:element ref="Actor"/>
-				<xs:element ref="State"/>
 			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="ObClass">
+		<xs:annotation>
+			<xs:documentation>
+				Object class definition for categorizing objects in the info plane.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Name" type="xs:string" use="required"/>
+			<xs:attribute name="Active" type="xs:boolean"/>
+			<xs:attribute name="Enemy" type="xs:boolean"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -550,6 +569,23 @@
 			<xs:attribute name="Alive" type="xs:boolean"/>
 			<xs:attribute name="Mark" type="xs:boolean"/>
 			<xs:attribute name="DigiSound" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- Actors (AI definitions, not plane data) -->
+
+	<xs:element name="Actors">
+		<xs:annotation>
+			<xs:documentation>
+				Enemy AI definitions (actors and states). Not tied to specific map planes,
+				these define the behavior and state machines for enemy classes.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element ref="Actor"/>
+				<xs:element ref="State"/>
+			</xs:choice>
 		</xs:complexType>
 	</xs:element>
 
