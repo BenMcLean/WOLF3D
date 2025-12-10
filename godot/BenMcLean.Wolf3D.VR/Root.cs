@@ -88,12 +88,9 @@ void sky() {
 		_camera.AddChild(_freeLookCamera);
 		_freeLookCamera.Enabled = true;
 
-		// Create walls for the first level
-		Walls = new Walls(GodotResources.WallMaterials, firstLevel.Walls, firstLevel.PushWalls);
-
-		// Add wall meshes to scene
-		foreach (MultiMeshInstance3D meshInstance in Walls.MeshInstances.Values)
-			AddChild(meshInstance);
+		// Create walls for the first level and add to scene
+		Walls = new Walls(GodotResources.WallMaterials, firstLevel);
+		AddChild(Walls);
 
 		GD.Print($"Scene ready! Fly around with the FreeLookCamera to explore the level.");
 	}

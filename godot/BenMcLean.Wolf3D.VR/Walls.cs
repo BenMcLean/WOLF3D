@@ -9,8 +9,9 @@ namespace BenMcLean.Wolf3D.VR;
 /// Generates MultiMesh instances for all walls in a Wolfenstein 3D map.
 /// Uses MultiMesh for efficient rendering of many wall quads in VR.
 /// Supports pushwalls as 4-sided cubes that can move.
+/// This node contains all wall multimeshes as children - just add it to the scene tree.
 /// </summary>
-public class Walls
+public partial class Walls : Node3D
 {
 	/// <summary>
 	/// Dictionary of MultiMeshInstance3D nodes, indexed by texture number.
@@ -37,15 +38,13 @@ public class Walls
 	/// Creates wall geometry from map data.
 	/// </summary>
 	/// <param name="wallMaterials">Array of wall materials from GodotResources</param>
-	/// <param name="wallSpawns">Array of wall spawn data from MapAnalyzer</param>
-	/// <param name="pushWallSpawns">Array of pushwall spawn data from MapAnalyzer (optional)</param>
-	public Walls(StandardMaterial3D[] wallMaterials, IEnumerable<MapAnalysis.WallSpawn> wallSpawns,
-		IEnumerable<MapAnalysis.PushWallSpawn> pushWallSpawns = null)
+	/// <param name="mapAnalysis">Map analysis containing wall and pushwall spawn data</param>
+	public Walls(StandardMaterial3D[] wallMaterials, MapAnalysis mapAnalysis)
 	{
 		this.wallMaterials = wallMaterials;
 
 		// Group walls by texture (Shape = VSwap page number)
-		Dictionary<ushort, List<MapAnalysis.WallSpawn>> wallsByTexture = wallSpawns
+		Dictionary<ushort, List<MapAnalysis.WallSpawn>> wallsByTexture = mapAnalysis.Walls
 			.GroupBy(w => w.Shape)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
@@ -54,8 +53,8 @@ public class Walls
 			kvp => kvp.Key,
 			kvp => kvp.Value.Count);
 
-		if (pushWallSpawns is not null)
-			foreach (MapAnalysis.PushWallSpawn pw in pushWallSpawns)
+		if (mapAnalysis.PushWalls is not null)
+			foreach (MapAnalysis.PushWallSpawn pw in mapAnalysis.PushWalls)
 			{
 				// Each pushwall needs 2 instances in Shape texture (north + south)
 				instanceCounts[pw.Shape] = instanceCounts.GetValueOrDefault(pw.Shape) + 2;
@@ -77,12 +76,16 @@ public class Walls
 				wallsByTexture.GetValueOrDefault(shape, []),
 				instanceCounts[shape]));
 
+		// Add all multimeshes as children of this node
+		foreach (MultiMeshInstance3D meshInstance in MeshInstances.Values)
+			AddChild(meshInstance);
+
 		// Automatically spawn all pushwalls in order
-		// The pushwall ID will match its index in the pushWallSpawns collection
-		if (pushWallSpawns is not null)
+		// The pushwall ID will match its index in the mapAnalysis.PushWalls collection
+		if (mapAnalysis.PushWalls is not null)
 		{
 			int pwCount = 0;
-			foreach (MapAnalysis.PushWallSpawn pw in pushWallSpawns)
+			foreach (MapAnalysis.PushWallSpawn pw in mapAnalysis.PushWalls)
 			{
 				GD.Print($"Spawning pushwall {pwCount}: Shape={pw.Shape}, DarkSide={pw.DarkSide}, Pos=({pw.X}, {pw.Z})");
 				ushort id = AddPushWall(pw.Shape, new Vector2(pw.X, pw.Z));
@@ -91,8 +94,8 @@ public class Walls
 			}
 		}
 
-		int totalWalls = wallSpawns.Count(),
-			totalPushwallFaces = pushWallSpawns?.Count() * 4 ?? 0;
+		int totalWalls = mapAnalysis.Walls.Count,
+			totalPushwallFaces = mapAnalysis.PushWalls?.Count * 4 ?? 0;
 		GD.Print($"Walls: Created {MeshInstances.Count} MultiMesh instances for {totalWalls} walls + {totalPushwallFaces} pushwall faces");
 		GD.Print($"Available MultiMeshes: {string.Join(", ", MeshInstances.Keys.OrderBy(k => k).Select(k => $"[{k}]"))}");
 	}
@@ -100,7 +103,7 @@ public class Walls
 	/// <summary>
 	/// Adds a pushwall to the rendering system.
 	/// A pushwall is a 4-sided cube (north, south, east, west faces).
-	/// NOTE: Usually called automatically by constructor. Pushwall IDs match their index in pushWallSpawns.
+	/// NOTE: Usually called automatically by constructor. Pushwall IDs match their index in MapAnalysis.PushWalls.
 	/// </summary>
 	/// <param name="wallTexture">The wall texture number (horizontal page)</param>
 	/// <param name="gridPosition">Grid position (X, Z) of the pushwall</param>
