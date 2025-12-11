@@ -107,6 +107,10 @@ public partial class Fixtures : Node3D
 			multiMesh.SetInstanceTransform(i, transform);
 		}
 
+		// Precompute custom AABB that encompasses all billboards at all Y-axis rotations
+		// This prevents incorrect frustum culling and avoids expensive RecomputeAabb() each frame
+		multiMesh.CustomAabb = ComputeBillboardAabb(fixtures);
+
 		// Create MultiMeshInstance3D
 		MultiMeshInstance3D meshInstance = new()
 		{
@@ -116,6 +120,23 @@ public partial class Fixtures : Node3D
 		};
 
 		return meshInstance;
+	}
+
+	/// <summary>
+	/// Computes an AABB that fully encloses all billboard fixtures across all Y-axis rotations.
+	/// When rotating around Y-axis, a billboard extends ±HalfWallWidth in XZ, ±HalfWallHeight in Y.
+	/// </summary>
+	private static Aabb ComputeBillboardAabb(params MapAnalysis.StaticSpawn[] fixtures)
+	{
+		if (fixtures.Length == 0)
+			return new(Vector3.Zero, Vector3.Zero);
+		ushort minX = fixtures.Min(fixture => fixture.X),
+			maxX = fixtures.Max(fixture => fixture.X),
+			minZ = fixtures.Min(fixture => fixture.Z),
+			maxZ = fixtures.Max(fixture => fixture.Z);
+		return new Aabb(
+			position: new(Constants.FloatCoordinate(minX), 0f, Constants.FloatCoordinate(minZ)),
+			size: new(Constants.FloatCoordinate(maxX - minX + 1), Constants.WallHeight, Constants.FloatCoordinate(maxZ - minZ + 1)));
 	}
 
 	/// <summary>
