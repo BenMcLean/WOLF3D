@@ -1026,36 +1026,35 @@
 			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 		</WallPlane>
-		<InfoPlane>
-			<ObClass Name="playerobj" Active="false" Enemy="false" />
-			<Object Number="19" ObClass="playerobj" Facing="E" Name="Player Start East" />
-			<Object Number="20" ObClass="playerobj" Facing="N" Name="Player Start North" />
-			<Object Number="21" ObClass="playerobj" Facing="W" Name="Player Start West" />
-			<Object Number="22" ObClass="playerobj" Facing="S" Name="Player Start South" />
-			<Billboard Number="23" Page="108" Walk="true" Name="Pool of Water" />
-			<Billboard Number="24" Page="109" Name="Oil Drum" />
-			<Billboard Number="25" Page="110" Name="Table with Chairs" />
-			<Billboard Number="26" Page="111" Name="Floor Lamp" />
-			<Billboard Number="27" Page="112" Walk="true" Name="Chandalier" />
-			<Billboard Number="28" Page="113" Name="Hanging Skeleton" />
+		<StatInfo>
+			<ObjectType Number="19" ObClass="playerobj" Facing="E" Name="Player Start East" />
+			<ObjectType Number="20" ObClass="playerobj" Facing="N" Name="Player Start North" />
+			<ObjectType Number="21" ObClass="playerobj" Facing="W" Name="Player Start West" />
+			<ObjectType Number="22" ObClass="playerobj" Facing="S" Name="Player Start South" />
+			<ObjectType Number="23" ObClass="dressing" Page="108" Name="Pool of Water" />
+			<ObjectType Number="24" ObClass="block" Page="109" Name="Oil Drum" />
+			<ObjectType Number="25" ObClass="block" Page="110" Name="Table with Chairs" />
+			<ObjectType Number="26" ObClass="block" Page="111" Name="Floor Lamp" />
+			<ObjectType Number="27" ObClass="dressing" Page="112" Name="Chandalier" />
+			<ObjectType Number="28" ObClass="block" Page="113" Name="Hanging Skeleton" />
 			<Pickup Number="29" Page="114" Walk="true" If="Health" LessThan="100" AddTo="Health" Add="4" Sound="HEALTH1SND" Flash="#FFFF00" Name="Dog Food" />
-			<Billboard Number="30" Page="115" Name="White Column" />
-			<Billboard Number="31" Page="116" Name="Green Plant" />
-			<Billboard Number="32" Page="117" Walk="true" Name="Skeleton" />
-			<Billboard Number="33" Page="118" Name="Sink" />
-			<Billboard Number="34" Page="119" Name="Brown Plant" />
-			<Billboard Number="35" Page="120" Name="Vase" />
-			<Billboard Number="36" Page="121" Name="Table" />
-			<Billboard Number="37" Page="122" Walk="true" Name="Ceiling Light" />
-			<Billboard Number="38" Page="123" Walk="true" Name="Utensils (Brown)" />
-			<Billboard Number="39" Page="124" Name="Armor" />
-			<Billboard Number="40" Page="125" Name="Empty Cage" />
-			<Billboard Number="41" Page="126" Name="Cage with Skeleton" />
-			<Billboard Number="42" Page="127" Walk="true" Name="Bones 1" />
+			<ObjectType Number="30" ObClass="block" Page="115" Name="White Column" />
+			<ObjectType Number="31" ObClass="block" Page="116" Name="Green Plant" />
+			<ObjectType Number="32" ObClass="dressing" Page="117" Name="Skeleton" />
+			<ObjectType Number="33" ObClass="block" Page="118" Name="Sink" />
+			<ObjectType Number="34" ObClass="block" Page="119" Name="Brown Plant" />
+			<ObjectType Number="35" ObClass="block" Page="120" Name="Vase" />
+			<ObjectType Number="36" ObClass="block" Page="121" Name="Table" />
+			<ObjectType Number="37" ObClass="dressing" Page="122" Name="Ceiling Light" />
+			<ObjectType Number="38" ObClass="dressing" Page="123" Name="Utensils (Brown)" />
+			<ObjectType Number="39" ObClass="block" Page="124" Name="Armor" />
+			<ObjectType Number="40" ObClass="block" Page="125" Name="Empty Cage" />
+			<ObjectType Number="41" ObClass="block" Page="126" Name="Cage with Skeleton" />
+			<ObjectType Number="42" ObClass="dressing" Page="127" Name="Bones 1" />
 			<Pickup Number="43" Page="128" AddTo="Gold Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Gold Key" />
 			<Pickup Number="44" Page="129" AddTo="Silver Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Silver Key" />
-			<Billboard Number="45" Page="130" Name="Bed" />
-			<Billboard Number="46" Page="131" Walk="true" Name="Basket" />
+			<ObjectType Number="45" ObClass="block" Page="130" Name="Bed" />
+			<ObjectType Number="46" ObClass="dressing" Page="131" Name="Basket" />
 			<Pickup Number="47" Page="132" If="Health" LessThan="100" AddTo="Health" Add="10" Sound="HEALTH1SND" Flash="#FFFF00" Name="Food" />
 			<Pickup Number="48" Page="133" If="Health" LessThan="100" AddTo="Health" Add="25" Sound="HEALTH2SND" Flash="#FFFF00" Name="First Aid Kit" />
 			<Pickup Number="49" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="8" Sound="GETAMMOSND" Flash="#FFFF00" Name="Ammo" />
@@ -1074,19 +1073,19 @@
 				<Effect AddTo="Health" Add="100" />
 			</Pickup>
 			<Pickup Number="57" Page="142" If="Health" LessThan="12" AddTo="Health" Add="1" DigiSound="SLURPIESND" Flash="#FFFF00" Name="Bones with Blood" />
-			<Billboard Number="58" Page="143" Name="Barrel" />
-			<Billboard Number="59" Page="144" Name="Well with Water" />
-			<Billboard Number="60" Page="145" Name="Well" />
+			<ObjectType Number="58" ObClass="block" Page="143" Name="Barrel" />
+			<ObjectType Number="59" ObClass="block" Page="144" Name="Well with Water" />
+			<ObjectType Number="60" ObClass="block" Page="145" Name="Well" />
 			<Pickup Number="61" Page="146" If="Health" LessThan="12" AddTo="Health" Add="1" DigiSound="SLURPIESND" Flash="#FFFF00" Name="Pool of Blood" />
-			<Billboard Number="62" Page="147" Name="Flag" />
-			<Billboard Number="63" Page="148" Name="Aardwolf" />
-			<Billboard Number="64" Page="149" Walk="true" Name="Bones 2" />
-			<Billboard Number="65" Page="150" Walk="true" Name="Bones 3" />
-			<Billboard Number="66" Page="151" Walk="true" Name="Bones 4" />
-			<Billboard Number="67" Page="152" Walk="true" Name="Utensils (Blue)" />
-			<Billboard Number="68" Page="153" Name="Stove" />
-			<Billboard Number="69" Page="154" Name="Rack" />
-			<Billboard Number="70" Page="155" Name="Vines" />
+			<ObjectType Number="62" ObClass="block" Page="147" Name="Flag" />
+			<ObjectType Number="63" ObClass="block" Page="148" Name="Aardwolf" />
+			<ObjectType Number="64" ObClass="dressing" Page="149" Name="Bones 2" />
+			<ObjectType Number="65" ObClass="dressing" Page="150" Name="Bones 3" />
+			<ObjectType Number="66" ObClass="dressing" Page="151" Name="Bones 4" />
+			<ObjectType Number="67" ObClass="dressing" Page="152" Name="Utensils (Blue)" />
+			<ObjectType Number="68" ObClass="block" Page="153" Name="Stove" />
+			<ObjectType Number="69" ObClass="block" Page="154" Name="Rack" />
+			<ObjectType Number="70" ObClass="block" Page="155" Name="Vines" />
 			<Turn Number="90" Direction="E" Name="Turn E" />
 			<Turn Number="91" Direction="NE" Name="Turn NE" />
 			<Turn Number="92" Direction="N" Name="Turn N" />
@@ -1105,7 +1104,7 @@
 			<Spawn Number="113" Actor="Guard" Direction="N" Difficulty="1" State="s_grdpath1" />
 			<Spawn Number="114" Actor="Guard" Direction="W" Difficulty="1" State="s_grdpath1" />
 			<Spawn Number="115" Actor="Guard" Direction="S" Difficulty="1" State="s_grdpath1" />
-			<Billboard Number="124" Page="201" Walk="true" Name="Dead Guard" />
+			<ObjectType Number="124" ObClass="dressing" Page="201" Name="Dead Guard" />
 			<Spawn Number="126" Actor="SS" Direction="E" Difficulty="1" State="s_ssstand" />
 			<Spawn Number="127" Actor="SS" Direction="N" Difficulty="1" State="s_ssstand" />
 			<Spawn Number="128" Actor="SS" Direction="W" Difficulty="1" State="s_ssstand" />
@@ -1321,7 +1320,7 @@
 				</Animation>
 			</Actor>
 			-->
-		</InfoPlane>
+		</StatInfo>
 		<Sprites>
 			<Sprite Page="106" Name="SPR_DEMO" />
 			<Sprite Page="107" Name="SPR_DEATHCAM" />

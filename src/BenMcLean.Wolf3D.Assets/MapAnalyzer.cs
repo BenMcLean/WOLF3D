@@ -93,33 +93,15 @@ public class MapAnalyzer
 			Doors[(ushort)(tileNum + 1)] = info;
 		}
 
-		// Parse object class definitions (Wolf3D classtype and stat_t enums)
-		IEnumerable<XElement> classElements = XML.Element("VSwap")?.Element("InfoPlane")?.Elements("ObClass") ?? [];
+		// Hardcoded object class definitions (Wolf3D classtype and stat_t enums)
+		// Static object classes (stat_t)
+		StaticClasses = ["dressing", "block"];
+		// Active/enemy classes can be added here as needed
 		ActiveClasses = [];
 		EnemyClasses = [];
-		StaticClasses = [];
 
-		foreach (XElement classElem in classElements)
-		{
-			string className = classElem.Attribute("Name")?.Value;
-			if (string.IsNullOrEmpty(className))
-				continue;
-
-			if (classElem.IsTrue("Active"))
-			{
-				ActiveClasses.Add(className);
-				// Enemy flag marks objects that count toward kill percentage (gamestate.killcount/killtotal)
-				if (classElem.IsTrue("Enemy"))
-					EnemyClasses.Add(className);
-			}
-			else
-			{
-				StaticClasses.Add(className);
-			}
-		}
-
-		// Parse object metadata - unified <Object> elements
-		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("InfoPlane")?.Elements("Object") ?? [];
+		// Parse object metadata - unified <ObjectType> elements
+		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? [];
 		Objects = [];
 
 		foreach (XElement obj in objectElements)
@@ -180,9 +162,9 @@ public class MapAnalyzer
 
 	public bool IsNavigable(ushort mapData, ushort objectData) =>
 		IsTransparent(mapData, objectData) && (
-			!(XML?.Element("VSwap")?.Element("InfoPlane")?.Elements("Object")
+			!(XML?.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType")
 				.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == objectData).FirstOrDefault() is XElement mapObject)
-			|| mapObject.IsTrue("Walk"));
+			|| mapObject.Attribute("ObClass")?.Value == "dressing");
 
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
 		(!IsWall(mapData) || PushableTiles.Contains(objectData))

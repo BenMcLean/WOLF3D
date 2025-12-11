@@ -322,7 +322,7 @@
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element ref="WallPlane" minOccurs="0"/>
-				<xs:element ref="InfoPlane" minOccurs="0"/>
+				<xs:element ref="StatInfo" minOccurs="0"/>
 				<xs:element ref="Actors" minOccurs="0"/>
 				<xs:element ref="Sprites" minOccurs="0"/>
 				<xs:element ref="DigiSounds" minOccurs="0"/>
@@ -457,39 +457,24 @@
 		</xs:complexType>
 	</xs:element>
 
-	<!-- InfoPlane (mapsegs[1]) -->
+	<!-- StatInfo (statinfo[] lookup table from original code) -->
 
-	<xs:element name="InfoPlane">
+	<xs:element name="StatInfo">
 		<xs:annotation>
 			<xs:documentation>
-				Info plane (mapsegs[1]) definitions. Contains object spawn data from the
-				map's second plane: decorations, pickups, enemy spawners, player start, etc.
-
-				Processed by ScanInfoPlane() in the original code.
+				Static object type definitions. Maps info plane tile numbers to sprite pages
+				and object properties. Equivalent to the statinfo[] array in WL_ACT1.C.
+				Contains decorations, pickups, enemy spawners, player start, etc.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<xs:element ref="ObClass"/>
-				<xs:element ref="Object"/>
+				<xs:element ref="ObjectType"/>
 			</xs:choice>
 		</xs:complexType>
 	</xs:element>
 
-	<xs:element name="ObClass">
-		<xs:annotation>
-			<xs:documentation>
-				Object class definition for categorizing objects in the info plane.
-			</xs:documentation>
-		</xs:annotation>
-		<xs:complexType>
-			<xs:attribute name="Name" type="xs:string" use="required"/>
-			<xs:attribute name="Active" type="xs:boolean"/>
-			<xs:attribute name="Enemy" type="xs:boolean"/>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Object">
+	<xs:element name="ObjectType">
 		<xs:annotation>
 			<xs:documentation>
 				Map tile object - can be decoration, pickup, enemy spawn, or special marker.
