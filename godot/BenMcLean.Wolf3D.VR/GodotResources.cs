@@ -37,6 +37,16 @@ public class GodotResources
 	private readonly Shader _doorShader;
 
 	/// <summary>
+	/// Cached sprite materials for billboarded objects, indexed by VSwap page number.
+	/// </summary>
+	private readonly StandardMaterial3D[] _spriteMaterials;
+
+	/// <summary>
+	/// Gets the array of all sprite materials for batch operations.
+	/// </summary>
+	public StandardMaterial3D[] SpriteMaterials => _spriteMaterials;
+
+	/// <summary>
 	/// Reference to the source VSwap data.
 	/// </summary>
 	public Assets.VSwap VSwap { get; init; }
@@ -81,7 +91,12 @@ void fragment() {
 		_doorMaterials = [.. Enumerable.Range(0, VSwap.SpritePage)
 			.Parallelize(pageNumber => CreateDoorMaterial((ushort)pageNumber))];
 
-		GD.Print($"GodotResources: Converted {_wallMaterials.Length} wall materials and {_doorMaterials.Length} door materials at {ScaleFactor}x scale ({VSwap.TileSqrt * ScaleFactor}x{VSwap.TileSqrt * ScaleFactor})");
+		// Eagerly convert all sprite materials using parallelization
+		int spriteCount = VSwap.Pages.Length - VSwap.SpritePage;
+		_spriteMaterials = [.. Enumerable.Range(VSwap.SpritePage, spriteCount)
+			.Parallelize(pageNumber => CreateSpriteMaterial((ushort)pageNumber))];
+
+		GD.Print($"GodotResources: Converted {_wallMaterials.Length} wall materials, {_doorMaterials.Length} door materials, and {_spriteMaterials.Length} sprite materials at {ScaleFactor}x scale ({VSwap.TileSqrt * ScaleFactor}x{VSwap.TileSqrt * ScaleFactor})");
 	}
 
 	/// <summary>
@@ -113,6 +128,26 @@ void fragment() {
 				$"Page {pageNumber} is not a door material (SpritePage = {VSwap.SpritePage})");
 
 		return _doorMaterials[pageNumber];
+	}
+
+	/// <summary>
+	/// Gets a sprite material by VSwap page number.
+	/// Uses transparency and double-sided rendering for billboarded objects.
+	/// </summary>
+	/// <param name="pageNumber">VSwap page number (must be >= SpritePage)</param>
+	/// <returns>Cached StandardMaterial3D with transparency support</returns>
+	public StandardMaterial3D GetSpriteMaterial(ushort pageNumber)
+	{
+		if (pageNumber < VSwap.SpritePage)
+			throw new ArgumentOutOfRangeException(nameof(pageNumber),
+				$"Page {pageNumber} is not a sprite (SpritePage = {VSwap.SpritePage})");
+
+		int index = pageNumber - VSwap.SpritePage;
+		if (index >= _spriteMaterials.Length)
+			throw new ArgumentOutOfRangeException(nameof(pageNumber),
+				$"Page {pageNumber} is out of range (max = {VSwap.Pages.Length - 1})");
+
+		return _spriteMaterials[index];
 	}
 
 	/// <summary>
@@ -226,6 +261,74 @@ void fragment() {
 
 		// Set the texture uniform
 		material.SetShaderParameter("albedo_texture", texture);
+
+		return material;
+	}
+
+	/// <summary>
+	/// Creates a StandardMaterial3D for a sprite texture with transparency support.
+	/// Applies upscaling, generates mipmaps, and enables alpha blending for billboarded objects.
+	/// </summary>
+	private StandardMaterial3D CreateSpriteMaterial(ushort pageNumber)
+	{
+		// Get the original texture data from VSwap
+		byte[] originalData = VSwap.Pages[pageNumber];
+
+		if (originalData == null)
+		{
+			GD.PrintErr($"Warning: VSwap sprite page {pageNumber} is null, creating default material");
+			return new StandardMaterial3D { AlbedoColor = Colors.Magenta }; // Bright magenta for missing sprites
+		}
+
+		// Upscale the texture data
+		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
+		int scaledSize = VSwap.TileSqrt * ScaleFactor;
+
+		// Create Godot Image with mipmaps disabled initially
+		Image image = Image.CreateFromData(
+			width: scaledSize,
+			height: scaledSize,
+			useMipmaps: false,
+			format: Image.Format.Rgba8,
+			data: scaledData
+		);
+
+		if (image == null)
+		{
+			GD.PrintErr($"ERROR: Image.CreateFromData returned null for sprite page {pageNumber}");
+			return new StandardMaterial3D { AlbedoColor = Colors.Yellow };
+		}
+
+		// Generate mipmaps after creation
+		image.GenerateMipmaps();
+
+		// Create ImageTexture from the image
+		ImageTexture texture = ImageTexture.CreateFromImage(image);
+
+		if (texture == null)
+		{
+			GD.PrintErr($"ERROR: ImageTexture.CreateFromImage returned null for sprite page {pageNumber}");
+			return new StandardMaterial3D { AlbedoColor = Colors.Cyan };
+		}
+
+		// Create material with transparency and VR-optimized settings
+		StandardMaterial3D material = new StandardMaterial3D
+		{
+			AlbedoTexture = texture,
+			// Use alpha scissor (cutout) for binary transparency like original Wolf3D
+			// This allows proper depth testing/writing unlike alpha blending
+			Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor,
+			AlphaScissorThreshold = 0.5f,
+			// Nearest filtering for sharp, retro pixel aesthetic
+			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
+			// Disable shading for flat, Wolfenstein 3D-style sprites
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			// Enable backface culling - billboards rotate to face camera, only front is visible
+			CullMode = BaseMaterial3D.CullModeEnum.Back,
+			// Alpha scissor allows normal depth testing for proper occlusion
+			NoDepthTest = false,
+			DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Always,
+		};
 
 		return material;
 	}

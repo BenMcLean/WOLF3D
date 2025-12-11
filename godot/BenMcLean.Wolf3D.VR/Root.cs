@@ -24,6 +24,7 @@ void sky() {
 	public Assets.Assets Assets;
 	public GodotResources GodotResources;
 	public Walls Walls;
+	public Fixtures Fixtures;
 
 	public override void _Ready()
 	{
@@ -92,9 +93,18 @@ void sky() {
 		Walls = new Walls(GodotResources.WallMaterials, firstLevel);
 		AddChild(Walls);
 
+		// Create fixtures (billboarded sprites) for the first level and add to scene
+		Fixtures = new Fixtures(
+			GodotResources.SpriteMaterials,
+			firstLevel,
+			() => _freeLookCamera.GlobalRotation.Y,  // Delegate returns camera Y rotation for billboard effect
+			Assets.VSwap.SpritePage);
+		AddChild(Fixtures);
+
 		GD.Print($"Scene ready! Fly around with the FreeLookCamera to explore the level.");
 	}
 	public override void _Process(double delta)
 	{
+		// Fixtures updates billboard rotations automatically in its own _Process
 	}
 }

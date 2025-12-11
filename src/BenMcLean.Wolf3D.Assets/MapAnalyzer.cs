@@ -30,11 +30,6 @@ public class MapAnalyzer
 	// Object metadata
 	public Dictionary<ushort, ObjectInfo> Objects { get; private set; }
 
-	// Object class definitions (from Wolf3D classtype and stat_t enums)
-	private HashSet<string> ActiveClasses { get; set; }
-	private HashSet<string> EnemyClasses { get; set; }  // Objects that count toward kill percentage
-	private HashSet<string> StaticClasses { get; set; }
-
 	// Patrol tile metadata (map layer)
 	public Dictionary<ushort, Direction> PatrolTiles { get; private set; }
 
@@ -93,13 +88,6 @@ public class MapAnalyzer
 			Doors[(ushort)(tileNum + 1)] = info;
 		}
 
-		// Hardcoded object class definitions (Wolf3D classtype and stat_t enums)
-		// Static object classes (stat_t)
-		StaticClasses = ["dressing", "block"];
-		// Active/enemy classes can be added here as needed
-		ActiveClasses = [];
-		EnemyClasses = [];
-
 		// Parse object metadata - unified <ObjectType> elements
 		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? [];
 		Objects = [];
@@ -113,17 +101,25 @@ public class MapAnalyzer
 			if (Enum.TryParse<Direction>(obj.Attribute("Facing")?.Value, out Direction dir))
 				facing = dir;
 
-			string obclass = obj.Attribute("ObClass")?.Value;
+			// Parse ObClass case-insensitively
+			ObClass? objectClass = null;
+			string obclassStr = obj.Attribute("ObClass")?.Value;
+			if (!string.IsNullOrEmpty(obclassStr) && Enum.TryParse<ObClass>(obclassStr, ignoreCase: true, out ObClass parsedClass))
+				objectClass = parsedClass;
+
+			// Parse sprite page number (optional for some object types like player start)
+			ushort.TryParse(obj.Attribute("Page")?.Value, out ushort page);
 
 			ObjectInfo info = new()
 			{
 				Number = number,
-				ObClass = obclass,
+				ObjectClass = objectClass,
+				Page = page,
 				Facing = facing,
 				Patrol = obj.IsTrue("Patrol"),
 				Ambush = obj.IsTrue("Ambush"),
-				IsEnemy = !string.IsNullOrEmpty(obclass) && EnemyClasses.Contains(obclass),
-				IsActive = !string.IsNullOrEmpty(obclass) && ActiveClasses.Contains(obclass)
+				IsEnemy = false,  // TODO: Set based on object class when enemy types are added
+				IsActive = false  // TODO: Set based on object class when active types are added
 			};
 
 			Objects[number] = info;
@@ -162,9 +158,8 @@ public class MapAnalyzer
 
 	public bool IsNavigable(ushort mapData, ushort objectData) =>
 		IsTransparent(mapData, objectData) && (
-			!(XML?.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType")
-				.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == objectData).FirstOrDefault() is XElement mapObject)
-			|| mapObject.Attribute("ObClass")?.Value == "dressing");
+			!Objects.TryGetValue(objectData, out ObjectInfo objInfo)
+			|| objInfo.ObjectClass == ObClass.dressing);
 
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
 		(!IsWall(mapData) || PushableTiles.Contains(objectData))
@@ -179,16 +174,16 @@ public class MapAnalyzer
 	public ObjectInfo GetObjectInfo(ushort objectCode) =>
 		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
 
-	// Wolf3D object class categorization (using parsed class definitions)
-	private bool IsPlayerStart(string obclass) => obclass == "playerobj";
-	private bool IsEnemy(string obclass) => EnemyClasses.Contains(obclass);
-	private bool IsStatic(string obclass) => StaticClasses.Contains(obclass);
+	// Wolf3D object class categorization (using enum)
+	private static bool IsPlayerStart(ObClass? obclass) => obclass == ObClass.playerobj;
+	private static bool IsEnemy(ObClass? obclass) => false; // TODO: Add enemy types to enum
+	private static bool IsStatic(ObClass? obclass) => obclass == ObClass.dressing || obclass == ObClass.block;
 
-	private static StatType GetStatType(string obclass) => obclass switch
+	private static StatType GetStatType(ObClass? obclass) => obclass switch
 	{
-		"dressing" => StatType.dressing,
-		"block" => StatType.block,
-		_ when obclass?.StartsWith("bo_") == true => StatType.bonus,
+		ObClass.dressing => StatType.dressing,
+		ObClass.block => StatType.block,
+		// bonus items will be added to enum as needed
 		_ => StatType.dressing // default
 	};
 
@@ -230,10 +225,10 @@ public class MapAnalyzer
 		public readonly record struct PlayerSpawn(ushort X, ushort Z, Direction Facing);
 		public PlayerSpawn? PlayerStart { get; private set; }
 
-		public readonly record struct EnemySpawn(string Type, ushort X, ushort Z, Direction Facing, bool Ambush, bool Patrol);
+		public readonly record struct EnemySpawn(ObClass Type, ushort X, ushort Z, Direction Facing, bool Ambush, bool Patrol);
 		public ReadOnlyCollection<EnemySpawn> EnemySpawns { get; private set; }
 
-		public readonly record struct StaticSpawn(StatType StatType, string Type, ushort X, ushort Z);
+		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Page, ushort X, ushort Z);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
 
 		public readonly record struct PatrolPoint(ushort X, ushort Z, Direction Turn);
@@ -297,25 +292,26 @@ public class MapAnalyzer
 					continue;
 
 				ObjectInfo objInfo = mapAnalyzer.GetObjectInfo(objectCode);
-				if (objInfo == null)
+				if (objInfo == null || !objInfo.ObjectClass.HasValue)
 					continue;
 
 				ushort x = gameMap.X(i);
 				ushort z = gameMap.Z(i);
+				ObClass objectClass = objInfo.ObjectClass.Value;
 
 				// Player start
-				if (mapAnalyzer.IsPlayerStart(objInfo.ObClass))
+				if (MapAnalyzer.IsPlayerStart(objectClass))
 				{
 					if (objInfo.Facing.HasValue)
 						playerStart = new PlayerSpawn(x, z, objInfo.Facing.Value);
 				}
 				// Enemies
-				else if (mapAnalyzer.IsEnemy(objInfo.ObClass))
+				else if (MapAnalyzer.IsEnemy(objectClass))
 				{
 					if (objInfo.Facing.HasValue)
 					{
 						enemies.Add(new EnemySpawn(
-							objInfo.ObClass,
+							objectClass,
 							x, z,
 							objInfo.Facing.Value,
 							objInfo.Ambush,
@@ -323,10 +319,10 @@ public class MapAnalyzer
 					}
 				}
 				// Static objects (dressing, block, bonus items)
-				else if (mapAnalyzer.IsStatic(objInfo.ObClass))
+				else if (MapAnalyzer.IsStatic(objectClass))
 				{
-					StatType statType = MapAnalyzer.GetStatType(objInfo.ObClass);
-					statics.Add(new StaticSpawn(statType, objInfo.ObClass, x, z));
+					StatType statType = MapAnalyzer.GetStatType(objectClass);
+					statics.Add(new StaticSpawn(statType, objectClass, objInfo.Page, x, z));
 				}
 			}
 
@@ -465,7 +461,8 @@ public record DoorInfo
 public record ObjectInfo
 {
 	public ushort Number { get; init; }      // Tile number in map
-	public string ObClass { get; init; }     // Wolf3D obclass (classtype or stat_t): "playerobj", "guardobj", "bo_firstaid", "dressing", etc.
+	public ObClass? ObjectClass { get; init; } // Wolf3D obclass (classtype or stat_t)
+	public ushort Page { get; init; }        // VSwap sprite page number for rendering
 	public Direction? Facing { get; init; }  // N/S/E/W (for player & enemies)
 	public bool Patrol { get; init; }        // Enemy patrols (vs. standing still)
 	public bool Ambush { get; init; }        // Enemy doesn't move until spotted (FL_AMBUSH flag)
@@ -480,6 +477,20 @@ public enum Direction : byte
 	E = 1,  // East (positive X)
 	S = 2,  // South (positive Z)
 	W = 3   // West (negative X)
+}
+
+// Object class enum (Wolf3D classtype and stat_t enums combined)
+public enum ObClass
+{
+	// Special
+	playerobj,   // Player start position
+
+	// Static objects (stat_t)
+	dressing,    // Non-interactive decoration (walkable)
+	block,       // Blocking scenery (not walkable)
+
+	// Bonus/pickup items (stat_t with bo_ prefix)
+	// These will be added as needed for dynamic objects
 }
 
 // Static object type (Wolf3D stat_t enum)
