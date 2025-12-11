@@ -142,9 +142,9 @@ public class MapAnalyzer
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("WallPlane")?.Attribute("FloorCodeLast")?.Value, out ushort floorCodeLast))
 			FloorCodes = (ushort)(1 + floorCodeLast - FloorCodeFirst);
 	}
-	public ushort MapNumber(ushort episode, ushort floor) => ushort.Parse(XML.Element("Maps").Elements("Map").Where(map =>
+	public ushort MapNumber(ushort episode, ushort level) => ushort.Parse(XML.Element("Maps").Elements("Map").Where(map =>
 			ushort.TryParse(map.Attribute("Episode")?.Value, out ushort e) && e == episode
-			&& ushort.TryParse(map.Attribute("Floor")?.Value, out ushort f) && f == floor
+			&& ushort.TryParse(map.Attribute("Level")?.Value, out ushort l) && l == level
 		).First().Attribute("Number")?.Value);
 
 	// Wall formula from WL_MAIN.C SetupWalls():
@@ -194,10 +194,10 @@ public class MapAnalyzer
 	{
 		#region XML Attributes
 		public byte Episode { get; private init; }
-		public byte Floor { get; private init; }
+		public byte Level { get; private init; }
 		public byte ElevatorTo { get; private init; }
-		public byte? Ground { get; private init; }
-		public ushort? GroundTile { get; private init; }
+		public byte? Floor { get; private init; }
+		public ushort? FloorTile { get; private init; }
 		public byte? Ceiling { get; private init; }
 		public ushort? CeilingTile { get; private init; }
 		public byte Border { get; private init; }
@@ -248,10 +248,10 @@ public class MapAnalyzer
 			XElement xml = mapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault()
 				?? throw new InvalidDataException($"XML tag for map \"{gameMap.Name}\" was not found!");
 			Episode = byte.TryParse(xml?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
-			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor : (byte)0;
-			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Floor + 1);
-			Ground = byte.TryParse(xml?.Attribute("Ground")?.Value, out byte ground) ? ground : null;
-			GroundTile = byte.TryParse(xml?.Attribute("GroundTile")?.Value, out byte groundTile) ? groundTile : (byte?)null;
+			Level = byte.TryParse(xml?.Attribute("Level")?.Value, out byte level) ? level : (byte)0;
+			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Level + 1);
+			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor : null;
+			FloorTile = byte.TryParse(xml?.Attribute("FloorTile")?.Value, out byte floorTile) ? floorTile : (byte?)null;
 			Ceiling = byte.TryParse(xml?.Attribute("Ceiling")?.Value, out byte ceiling) ? ceiling : null;
 			CeilingTile = byte.TryParse(xml?.Attribute("CeilingTile")?.Value, out byte ceilingTile) ? ceilingTile : null;
 			Border = byte.TryParse(xml?.Attribute("Border")?.Value, out byte border) ? border : (byte)0;

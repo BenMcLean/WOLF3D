@@ -265,8 +265,125 @@
 	</xs:element>
 
 	<xs:element name="Map">
+		<xs:annotation>
+			<xs:documentation>
+				Level/map metadata defining visual appearance and gameplay parameters.
+
+				Most attributes correspond to arrays in the original Wolf3D source code
+				that were indexed by level number (gamestate.mapon or episode*10+mapon).
+			</xs:documentation>
+		</xs:annotation>
 		<xs:complexType>
-			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Map index (gamestate.mapon in source code).
+						Used to index into level data arrays.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Episode" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Episode number (gamestate.episode or MapEpisode[] in source).
+						Used for episode-based level organization in Wolf3D.
+						Noah's Ark uses MapEpisode[] array (WL_AGENT.C:107).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Level" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Level number within episode (MapLevel[] in source).
+						The "floor" number within the castle/episode (1st floor, 2nd floor, etc.).
+						Noah's Ark uses MapLevel[] array (WL_AGENT.C:108).
+						Used with Episode for level organization and elevator progression.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Floor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Floor color as VGA palette index (vgaFloor equivalent).
+						In VGAClearScreen() (WL_DRAW.C:1184), floor is hardcoded as:
+						- 0x1919 (decimal 25) for standard Wolf3D/Spear
+						- 0xd9d9 (decimal 217) for Noah's Ark
+						Value represents repeating byte pattern (e.g., 25 = 0x1919).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FloorTile" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Floor tile/texture index for textured floors.
+						Corresponds to FloorTile[] array in Noah's Ark (WL_INTER.C:2108).
+						In standard Wolf3D, this may be unused or omitted.
+						Passed to LoadFloorTiles() for Noah's Ark textured floor rendering.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Ceiling" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Ceiling color as VGA palette index (vgaCeiling[] array).
+						Defined in WL_DRAW.C:1079, indexed by episode*10+mapon (Wolf3D)
+						or just mapon (Noah's Ark).
+						Examples: 29 (0x1d, grey), 191 (0xbf, purple for secret levels).
+						Value represents repeating byte pattern (e.g., 29 = 0x1d1d).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CeilingTile" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Ceiling tile/texture index for textured ceilings.
+						Extension beyond original Wolf3D/Noah's Ark (which used FloorTile[]
+						for BOTH floor and ceiling in Noah's Ark).
+						Allows modders to specify different textures for ceiling vs floor.
+						If omitted, may default to FloorTile value for Noah's Ark compatibility.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Border" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Border/overscan color as VGA palette index (BORDERCOLOR macro).
+						Defined in WL_DEF.H:104, used with COLORBORDER() macro.
+						Standard values: 3 (Wolf3D), 0x9b (Spear), 0xdb (Noah3D).
+						Sets the VGA overscan border around the playfield.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Par" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Par time for level completion in HH:MM:SS format.
+						Corresponds to LRstruct.par member (WL_MENU.H:347-354).
+						Used in Noah's Ark and some Wolf3D versions for time trials.
+						Stored as long in original code, formatted as timestring here.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Song" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Music track name for this level (songs[] array).
+						Defined in WL_PLAY.C:122, indexed by gamestate.mapon.
+						References IMF music track names from Audio section.
+						Different versions have different song arrays.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ElevatorTo" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Destination map number when completing level via elevator.
+						Determines next level in sequence or secret level transitions.
+						Used when player activates ELEVATORTILE (typically 21).
+						If standing on ALTELEVATORTILE (107), goes to secret level.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
