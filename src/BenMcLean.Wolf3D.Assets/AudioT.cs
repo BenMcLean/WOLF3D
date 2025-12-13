@@ -6,6 +6,10 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
+/// <summary>
+/// AUDIOT file loader - Wolf3D audio resource format
+/// File uses 32-bit offsets to locate AdLib sounds and IMF music
+/// </summary>
 public sealed class AudioT
 {
 	public static AudioT Load(string folder, XElement xml)

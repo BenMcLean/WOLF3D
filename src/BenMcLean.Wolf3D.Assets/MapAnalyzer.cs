@@ -67,7 +67,7 @@ public class MapAnalyzer
 				?? throw new InvalidDataException("AltElevator element missing Tile attribute")))];
 
 		// Parse door types
-		Doors = new Dictionary<ushort, DoorInfo>();
+		Doors = [];
 		foreach (XElement doorElem in wallsElement.Elements("Door"))
 		{
 			ushort tileNum = ushort.Parse(doorElem.Attribute("Tile")?.Value
@@ -98,17 +98,17 @@ public class MapAnalyzer
 				continue;
 
 			Direction? facing = null;
-			if (Enum.TryParse<Direction>(obj.Attribute("Facing")?.Value, out Direction dir))
+			if (Enum.TryParse(obj.Attribute("Facing")?.Value, out Direction dir))
 				facing = dir;
 
 			// Parse ObClass case-insensitively
 			ObClass? objectClass = null;
 			string obclassStr = obj.Attribute("ObClass")?.Value;
-			if (!string.IsNullOrEmpty(obclassStr) && Enum.TryParse<ObClass>(obclassStr, ignoreCase: true, out ObClass parsedClass))
+			if (!string.IsNullOrEmpty(obclassStr) && Enum.TryParse(obclassStr, ignoreCase: true, out ObClass parsedClass))
 				objectClass = parsedClass;
 
 			// Parse sprite page number (optional for some object types like player start)
-			ushort.TryParse(obj.Attribute("Page")?.Value, out ushort page);
+			_ = ushort.TryParse(obj.Attribute("Page")?.Value, out ushort page);
 
 			ObjectInfo info = new()
 			{
@@ -126,16 +126,12 @@ public class MapAnalyzer
 		}
 
 		// Patrol tiles (map layer)
-		PatrolTiles = new Dictionary<ushort, Direction>();
+		PatrolTiles = [];
 		IEnumerable<XElement> patrolElements = XML.Element("Maps")?.Element("PatrolTiles")?.Elements("Tile") ?? [];
 		foreach (XElement tile in patrolElements)
-		{
 			if (ushort.TryParse(tile.Attribute("Number")?.Value, out ushort tileNum)
-				&& Enum.TryParse<Direction>(tile.Attribute("Turn")?.Value, out Direction turnDir))
-			{
+				&& Enum.TryParse(tile.Attribute("Turn")?.Value, out Direction turnDir))
 				PatrolTiles[tileNum] = turnDir;
-			}
-		}
 
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("WallPlane")?.Attribute("FloorCodeFirst")?.Value, out ushort floorCodeFirst))
 			FloorCodeFirst = floorCodeFirst;
@@ -150,8 +146,8 @@ public class MapAnalyzer
 	// Wall formula from WL_MAIN.C SetupWalls():
 	// horizwall[i] = (i-1) * 2
 	// vertwall[i] = (i-1) * 2 + 1
-	public ushort GetWallPage(ushort wallNumber, bool vertical) =>
-		(ushort)((wallNumber - 1) * 2 + (vertical ? 1 : 0));
+	public static ushort GetWallPage(ushort wall, bool facesEastWest) =>
+		(ushort)((wall - 1) * 2 + (facesEastWest ? 1 : 0));
 
 	// Check if tile number is a wall
 	public bool IsWall(ushort tile) => tile > 0 && tile <= MaxWallTiles;
@@ -224,27 +220,35 @@ public class MapAnalyzer
 			&& Mappable[y * Width + x];
 
 		// Spawn data (using X, Y coordinate system for Assets layer)
+		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
 		public readonly record struct PlayerSpawn(ushort X, ushort Y, Direction Facing);
 		public PlayerSpawn? PlayerStart { get; private set; }
 
+		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
+		// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
 		public readonly record struct EnemySpawn(ObClass Type, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol);
 		public ReadOnlyCollection<EnemySpawn> EnemySpawns { get; private set; }
 
-		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Page, ushort X, ushort Y);
+		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
+		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
 
 		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
 		public ReadOnlyCollection<PatrolPoint> PatrolPoints { get; private set; }
 
+		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
 		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
-	public readonly record struct WallSpawn(ushort Shape, bool FacesEastWest, ushort X, ushort Y, bool Flip = false);
+		public readonly record struct WallSpawn(ushort Shape, bool FacesEastWest, ushort X, ushort Y, bool Flip = false);
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
+
 		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
-	public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
+		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 		public ReadOnlyCollection<Tuple<ushort, ushort>> Elevators { get; private set; }
+
+		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
 		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
-	public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Y, bool FacesEastWest = false);
+		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Y, bool FacesEastWest = false);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
@@ -359,7 +363,7 @@ public class MapAnalyzer
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
 					ushort wall = gameMap.MapData[i];
-					ushort page = mapAnalyzer.GetWallPage(wall, false);
+					ushort page = GetWallPage(wall, false);
 					// VSWAP even/odd pairing: page (even) for one orientation, page+1 (odd) for perpendicular
 					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i)));
 				}
@@ -382,10 +386,10 @@ public class MapAnalyzer
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x + 1), y, false));
+					walls.Add(new WallSpawn(GetWallPage(wall, true), true, (ushort)(x + 1), y, false));
 				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x - 1), y, true));
+					walls.Add(new WallSpawn(GetWallPage(wall, true), true, (ushort)(x - 1), y, true));
 			}
 
 			void NorthSouth(ushort x, ushort y)
@@ -396,10 +400,10 @@ public class MapAnalyzer
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (y > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y - 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y - 1), false));
+					walls.Add(new WallSpawn(GetWallPage(wall, false), false, x, (ushort)(y - 1), false));
 				if (y < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y + 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y + 1), true));
+					walls.Add(new WallSpawn(GetWallPage(wall, false), false, x, (ushort)(y + 1), true));
 			}
 
 			// Scan wall plane (MapData) for doors, walls, and elevators

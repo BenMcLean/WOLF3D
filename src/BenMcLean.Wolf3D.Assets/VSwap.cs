@@ -7,6 +7,11 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
+/// <summary>
+/// VSWAP file loader - Wolf3D graphics/sound resource format
+/// File format: 16-bit NumPages, 16-bit SpritePage, 16-bit SoundPage,
+/// followed by 32-bit page offsets and 16-bit page lengths
+/// </summary>
 public sealed class VSwap
 {
 	public static VSwap Load(XElement xml, string folder="")

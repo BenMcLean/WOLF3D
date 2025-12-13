@@ -45,7 +45,7 @@ public partial class Fixtures : Node3D
 
 		// Group fixtures by sprite page number
 		Dictionary<ushort, MapAnalysis.StaticSpawn[]> fixturesByPage = fixtureSpawns
-			.GroupBy(s => s.Page)
+			.GroupBy(s => s.Shape)
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
 		// Create MultiMesh for each unique sprite page

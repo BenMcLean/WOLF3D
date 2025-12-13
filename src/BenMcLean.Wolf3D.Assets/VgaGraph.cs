@@ -6,6 +6,11 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
+/// <summary>
+/// VGAGRAPH file loader - Wolf3D graphics resource format
+/// Huffman-compressed graphics with 24-bit file offsets
+/// Font data uses 16-bit height and 8-bit character widths
+/// </summary>
 public sealed class VgaGraph
 {
 	public static VgaGraph Load(XElement xml, string folder = "")

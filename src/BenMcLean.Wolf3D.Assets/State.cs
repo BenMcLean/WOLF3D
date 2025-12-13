@@ -6,6 +6,7 @@ namespace BenMcLean.Wolf3D.Assets;
 
 /// <summary>
 /// Represents a state in the Wolfenstein 3D state machine.
+/// Based on WL_DEF.H:statestruct
 /// States are used for enemies, weapons, player animations, and other game objects.
 /// This class only stores data - actual execution happens elsewhere.
 /// </summary>
@@ -16,26 +17,31 @@ public class State
 	/// </summary>
 	public string Name { get; set; }
 	/// <summary>
+	/// WL_DEF.H:statestruct:rotate (original: boolean)
 	/// Whether the sprite should rotate to face the player (8-directional sprites)
 	/// </summary>
 	public bool Rotate { get; set; } = false;
 	/// <summary>
+	/// WL_DEF.H:statestruct:shapenum (original: int = 16-bit)
 	/// Sprite/shape number to display in this state.
 	/// Can be -1 to indicate dynamic sprite selection.
 	/// </summary>
 	public short Shape { get; set; }
 	/// <summary>
+	/// WL_DEF.H:statestruct:tictime (original: int = 16-bit)
 	/// Duration of this state in tics (1/70th of a second).
 	/// 0 means the state lasts indefinitely until explicitly changed.
 	/// </summary>
 	public short Tics { get; set; }
 	/// <summary>
+	/// WL_DEF.H:statestruct:think (original: void (*think)())
 	/// Name/reference to the Think function.
 	/// Think is called every frame while in this state.
 	/// Will eventually be a Lua script name or inline Lua code.
 	/// </summary>
 	public string Think { get; set; }
 	/// <summary>
+	/// WL_DEF.H:statestruct:action (original: void (*action)())
 	/// Name/reference to the Action function.
 	/// Action is called once when entering this state.
 	/// Will eventually be a Lua script name or inline Lua code.
@@ -47,12 +53,13 @@ public class State
 	/// </summary>
 	public string NextStateName { get; set; }
 	/// <summary>
+	/// WL_DEF.H:statestruct:next (original: struct statestruct*)
 	/// Resolved reference to the next state (set during post-load linking phase)
 	/// </summary>
 	public State Next { get; set; }
 	/// <summary>
 	/// Optional speed parameter used by some states (e.g., enemy movement speed)
-	/// Uses fixed-point integer arithmetic like the original game.
+	/// Uses fixed-point 16.16 integer arithmetic (original: long = 32-bit)
 	/// </summary>
 	public int Speed { get; set; } = 0;
 	/// <summary>
