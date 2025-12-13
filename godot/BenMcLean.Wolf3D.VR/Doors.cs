@@ -26,8 +26,8 @@ public partial class Doors : Node3D
 
 	// Door tracking
 	private readonly List<DoorData> doors = [];
-	private readonly Material[] opaqueMaterials;
-	private readonly Dictionary<ushort, ShaderMaterial> flippedMaterials;
+	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> opaqueMaterials;
+	private readonly IReadOnlyDictionary<ushort, ShaderMaterial> flippedMaterials;
 	private readonly Dictionary<ushort, int> nextInstanceIndex = []; // Tracks next available instance per texture
 
 	private class DoorData
@@ -54,10 +54,10 @@ public partial class Doors : Node3D
 	/// Creates door geometry from map data using two quads per door for proper UV handling.
 	/// Both use back-face culling, with flipped materials having mirrored UVs.
 	/// </summary>
-	/// <param name="opaqueMaterials">Array of opaque materials with normal UVs</param>
+	/// <param name="opaqueMaterials">Dictionary of opaque materials with normal UVs from GodotResources.OpaqueMaterials</param>
 	/// <param name="flippedMaterials">Dictionary of flipped materials by texture index</param>
 	/// <param name="doorSpawns">Collection of door spawn data from map analysis</param>
-	public Doors(Material[] opaqueMaterials, Dictionary<ushort, ShaderMaterial> flippedMaterials, IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
+	public Doors(IReadOnlyDictionary<ushort, StandardMaterial3D> opaqueMaterials, IReadOnlyDictionary<ushort, ShaderMaterial> flippedMaterials, IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
 		this.opaqueMaterials = opaqueMaterials ?? throw new ArgumentNullException(nameof(opaqueMaterials));
 		this.flippedMaterials = flippedMaterials ?? throw new ArgumentNullException(nameof(flippedMaterials));
@@ -66,7 +66,6 @@ public partial class Doors : Node3D
 		{
 			NormalMeshes = [];
 			FlippedMeshes = [];
-			GD.Print("Doors: No doors in map");
 			return;
 		}
 
@@ -145,12 +144,8 @@ public partial class Doors : Node3D
 			// Set initial transforms for both instances (back-cull and front-cull)
 			UpdateDoorTransforms(data);
 
-			GD.Print($"Door {i}: Pos=({doorSpawn.X},{doorSpawn.Z}) Shape={doorSpawn.Shape}→Texture={textureIndex}, FacesEW={doorSpawn.FacesEastWest}, Instance={instanceIndex}");
 			i++;
 		}
-
-		GD.Print($"Doors: Created {NormalMeshes.Count} normal + {FlippedMeshes.Count} flipped MultiMesh instances for {doors.Count} doors");
-		GD.Print($"Available Door Textures: {string.Join(", ", NormalMeshes.Keys.OrderBy(k => k).Select(k => $"[{k}]"))}");
 	}
 
 	// No _Process needed! Back-face culling automatically shows the correct side

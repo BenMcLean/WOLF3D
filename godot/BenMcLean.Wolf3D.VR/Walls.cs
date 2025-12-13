@@ -20,7 +20,7 @@ public partial class Walls : Node3D
 
 	// Pushwall tracking
 	private readonly List<PushWallData> pushWalls = [];
-	private readonly StandardMaterial3D[] wallMaterials;
+	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> wallMaterials;
 	private readonly Dictionary<ushort, int> nextInstanceIndex = []; // Tracks next available instance per texture
 
 	private class PushWallData
@@ -37,9 +37,9 @@ public partial class Walls : Node3D
 	/// <summary>
 	/// Creates wall geometry from map data.
 	/// </summary>
-	/// <param name="wallMaterials">Array of wall materials from GodotResources</param>
+	/// <param name="wallMaterials">Dictionary of wall materials from GodotResources.OpaqueMaterials</param>
 	/// <param name="mapAnalysis">Map analysis containing wall and pushwall spawn data</param>
-	public Walls(StandardMaterial3D[] wallMaterials, MapAnalysis mapAnalysis)
+	public Walls(IReadOnlyDictionary<ushort, StandardMaterial3D> wallMaterials, MapAnalysis mapAnalysis)
 	{
 		this.wallMaterials = wallMaterials;
 
@@ -83,21 +83,8 @@ public partial class Walls : Node3D
 		// Automatically spawn all pushwalls in order
 		// The pushwall ID will match its index in the mapAnalysis.PushWalls collection
 		if (mapAnalysis.PushWalls is not null)
-		{
-			int pwCount = 0;
 			foreach (MapAnalysis.PushWallSpawn pw in mapAnalysis.PushWalls)
-			{
-				GD.Print($"Spawning pushwall {pwCount}: Shape={pw.Shape}, DarkSide={pw.DarkSide}, Pos=({pw.X}, {pw.Z})");
-				ushort id = AddPushWall(pw.Shape, new Vector2(pw.X, pw.Z));
-				GD.Print($"  -> Assigned ID {id}");
-				pwCount++;
-			}
-		}
-
-		int totalWalls = mapAnalysis.Walls.Count,
-			totalPushwallFaces = mapAnalysis.PushWalls?.Count * 4 ?? 0;
-		GD.Print($"Walls: Created {MeshInstances.Count} MultiMesh instances for {totalWalls} walls + {totalPushwallFaces} pushwall faces");
-		GD.Print($"Available MultiMeshes: {string.Join(", ", MeshInstances.Keys.OrderBy(k => k).Select(k => $"[{k}]"))}");
+				AddPushWall(pw.Shape, new Vector2(pw.X, pw.Z));
 	}
 
 	/// <summary>
@@ -173,25 +160,19 @@ public partial class Walls : Node3D
 			Constants.FloatCoordinate((int)gridPosition.Y) + Constants.HalfWallWidth
 		);
 
-		GD.Print($"Updating pushwall at grid ({gridPosition.X}, {gridPosition.Y}) -> world {centerPosition}");
-
 		// North face (Shape texture, facing north at -Z edge)
-		GD.Print($"  North face: texture {data.ShapeTexture}, instance {data.NorthInstanceIndex}");
 		SetInstanceTransform(data.ShapeTexture, data.NorthInstanceIndex,
 			centerPosition + new Vector3(0, 0, -Constants.HalfWallWidth), Mathf.Pi);
 
 		// South face (Shape texture, facing south at +Z edge)
-		GD.Print($"  South face: texture {data.ShapeTexture}, instance {data.SouthInstanceIndex}");
 		SetInstanceTransform(data.ShapeTexture, data.SouthInstanceIndex,
 			centerPosition + new Vector3(0, 0, Constants.HalfWallWidth), 0f);
 
 		// East face (DarkSide texture, facing east at +X edge)
-		GD.Print($"  East face: texture {(ushort)(data.ShapeTexture + 1)}, instance {data.EastInstanceIndex}");
 		SetInstanceTransform((ushort)(data.ShapeTexture + 1), data.EastInstanceIndex,
 			centerPosition + new Vector3(Constants.HalfWallWidth, 0, 0), Constants.HalfPi);
 
 		// West face (DarkSide texture, facing west at -X edge)
-		GD.Print($"  West face: texture {(ushort)(data.ShapeTexture + 1)}, instance {data.WestInstanceIndex}");
 		SetInstanceTransform((ushort)(data.ShapeTexture + 1), data.WestInstanceIndex,
 			centerPosition + new Vector3(-Constants.HalfWallWidth, 0, 0), -Constants.HalfPi);
 	}
@@ -211,8 +192,6 @@ public partial class Walls : Node3D
 		Transform3D transform = Transform3D.Identity.Rotated(Vector3.Up, rotationY);
 		transform.Origin = position;
 		meshInstance.Multimesh.SetInstanceTransform(instanceIndex, transform);
-
-		GD.Print($"Set instance {instanceIndex} in texture {textureIndex} to position {position}, rotation {rotationY * 180 / Mathf.Pi}°");
 	}
 
 	/// <summary>

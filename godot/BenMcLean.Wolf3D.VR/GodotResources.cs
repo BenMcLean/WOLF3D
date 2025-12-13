@@ -20,12 +20,12 @@ public class GodotResources
 	/// <summary>
 	/// Cached opaque materials (used for walls and normal door quads), indexed by VSwap page number.
 	/// </summary>
-	private readonly StandardMaterial3D[] _opaqueMaterials;
+	private readonly Dictionary<ushort, StandardMaterial3D> _opaqueMaterials;
 
 	/// <summary>
-	/// Gets the array of opaque materials with normal UVs (used for walls and normal door quads).
+	/// Gets the dictionary of opaque materials with normal UVs (used for walls and normal door quads).
 	/// </summary>
-	public StandardMaterial3D[] OpaqueMaterials => _opaqueMaterials;
+	public IReadOnlyDictionary<ushort, StandardMaterial3D> OpaqueMaterials => _opaqueMaterials;
 
 	/// <summary>
 	/// Cache of flipped opaque materials with horizontally mirrored UVs.
@@ -48,7 +48,6 @@ public class GodotResources
 			_flippedOpaqueMaterials[pageNumber] = material; // Cache for future reference
 		}
 
-		GD.Print($"GodotResources: Created {materials.Count} flipped materials for door textures");
 		return materials;
 	}
 
@@ -60,12 +59,12 @@ public class GodotResources
 	/// <summary>
 	/// Cached sprite materials for billboarded objects, indexed by VSwap page number.
 	/// </summary>
-	private readonly StandardMaterial3D[] _spriteMaterials;
+	private readonly Dictionary<ushort, StandardMaterial3D> _spriteMaterials;
 
 	/// <summary>
-	/// Gets the array of all sprite materials for batch operations.
+	/// Gets the dictionary of all sprite materials.
 	/// </summary>
-	public StandardMaterial3D[] SpriteMaterials => _spriteMaterials;
+	public IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials => _spriteMaterials;
 
 	/// <summary>
 	/// Reference to the source VSwap data.
@@ -106,29 +105,35 @@ void fragment() {
 		_flippedDoorShader = new Shader { Code = FlippedDoorShaderCode };
 
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
-		_opaqueMaterials = [.. Enumerable.Range(0, VSwap.SpritePage)
-			.Parallelize(pageNumber => CreateOpaqueMaterial((ushort)pageNumber))];
+		// Only process pages that actually exist in the VSwap (skip null entries)
+		_opaqueMaterials = Enumerable.Range(0, VSwap.SpritePage)
+			.Where(pageNumber => VSwap.Pages[pageNumber] != null)
+			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateOpaqueMaterial((ushort)pageNumber)))
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
 		// Eagerly convert all sprite materials using parallelization
+		// Only process sprite pages that actually exist in the VSwap (skip null entries)
 		int spriteCount = VSwap.Pages.Length - VSwap.SpritePage;
-		_spriteMaterials = [.. Enumerable.Range(VSwap.SpritePage, spriteCount)
-			.Parallelize(pageNumber => CreateSpriteMaterial((ushort)pageNumber))];
-
-		GD.Print($"GodotResources: Converted {_opaqueMaterials.Length} opaque materials and {_spriteMaterials.Length} sprite materials at {ScaleFactor}x scale ({VSwap.TileSqrt * ScaleFactor}x{VSwap.TileSqrt * ScaleFactor})");
+		_spriteMaterials = Enumerable.Range(VSwap.SpritePage, spriteCount)
+			.Where(pageNumber => VSwap.Pages[pageNumber] != null)
+			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateSpriteMaterial((ushort)pageNumber)))
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 	}
 
 	/// <summary>
 	/// Gets an opaque material by VSwap page number.
 	/// Used for walls and normal door quads.
 	/// </summary>
-	/// <param name="pageNumber">VSwap page number (must be less than SpritePage)</param>
+	/// <param name="pageNumber">VSwap page number (must be less than SpritePage and must exist)</param>
 	/// <returns>Cached StandardMaterial3D ready for use in VR</returns>
+	/// <exception cref="KeyNotFoundException">Thrown when the page number does not exist in VSwap</exception>
 	public StandardMaterial3D GetOpaqueMaterial(ushort pageNumber)
 	{
-		if (pageNumber >= _opaqueMaterials.Length)
+		if (pageNumber >= VSwap.SpritePage)
 			throw new ArgumentOutOfRangeException(nameof(pageNumber),
 				$"Page {pageNumber} is not an opaque material (SpritePage = {VSwap.SpritePage})");
 
+		// Will throw KeyNotFoundException if page doesn't exist - this is intentional
 		return _opaqueMaterials[pageNumber];
 	}
 
@@ -137,20 +142,17 @@ void fragment() {
 	/// Gets a sprite material by VSwap page number.
 	/// Uses transparency and double-sided rendering for billboarded objects.
 	/// </summary>
-	/// <param name="pageNumber">VSwap page number (must be >= SpritePage)</param>
+	/// <param name="pageNumber">VSwap page number (must be >= SpritePage and must exist)</param>
 	/// <returns>Cached StandardMaterial3D with transparency support</returns>
+	/// <exception cref="KeyNotFoundException">Thrown when the page number does not exist in VSwap</exception>
 	public StandardMaterial3D GetSpriteMaterial(ushort pageNumber)
 	{
 		if (pageNumber < VSwap.SpritePage)
 			throw new ArgumentOutOfRangeException(nameof(pageNumber),
 				$"Page {pageNumber} is not a sprite (SpritePage = {VSwap.SpritePage})");
 
-		int index = pageNumber - VSwap.SpritePage;
-		if (index >= _spriteMaterials.Length)
-			throw new ArgumentOutOfRangeException(nameof(pageNumber),
-				$"Page {pageNumber} is out of range (max = {VSwap.Pages.Length - 1})");
-
-		return _spriteMaterials[index];
+		// Will throw KeyNotFoundException if page doesn't exist - this is intentional
+		return _spriteMaterials[pageNumber];
 	}
 
 	/// <summary>
@@ -159,14 +161,8 @@ void fragment() {
 	/// </summary>
 	private StandardMaterial3D CreateOpaqueMaterial(ushort pageNumber)
 	{
-		// Get the original texture data from VSwap
+		// Get the original texture data from VSwap (will throw if page doesn't exist)
 		byte[] originalData = VSwap.Pages[pageNumber];
-
-		if (originalData == null)
-		{
-			GD.PrintErr($"Warning: VSwap page {pageNumber} is null, creating default material");
-			return new StandardMaterial3D { AlbedoColor = Colors.Magenta }; // Bright magenta for missing textures
-		}
 
 		// Upscale the texture data
 		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
@@ -231,11 +227,8 @@ void fragment() {
 	/// </summary>
 	private ShaderMaterial CreateFlippedMaterial(ushort pageNumber)
 	{
-		// Get the original texture data from VSwap
+		// Get the original texture data from VSwap (will throw if page doesn't exist)
 		byte[] originalData = VSwap.Pages[pageNumber];
-
-		if (originalData == null)
-			return null;
 
 		// Upscale the texture data
 		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
@@ -280,14 +273,8 @@ void fragment() {
 	/// </summary>
 	private StandardMaterial3D CreateSpriteMaterial(ushort pageNumber)
 	{
-		// Get the original texture data from VSwap
+		// Get the original texture data from VSwap (will throw if page doesn't exist)
 		byte[] originalData = VSwap.Pages[pageNumber];
-
-		if (originalData == null)
-		{
-			GD.PrintErr($"Warning: VSwap sprite page {pageNumber} is null, creating default material");
-			return new StandardMaterial3D { AlbedoColor = Colors.Magenta }; // Bright magenta for missing sprites
-		}
 
 		// Upscale the texture data
 		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);

@@ -46,7 +46,6 @@ void sky() {
 
 		// Load game assets
 		Assets = BenMcLean.Wolf3D.Assets.Assets.Load(@"..\..\games\WL1.xml");
-		GD.Print($"Game Maps: {Assets.Maps.Length}");
 
 		// Create Godot resources (textures and materials)
 		// Try scaleFactor: 4 for better performance, or 8 for maximum quality
@@ -54,7 +53,6 @@ void sky() {
 
 		// Get first level analysis
 		Assets.MapAnalyzer.MapAnalysis firstLevel = Assets.MapAnalyses[0];
-		GD.Print($"First Level: Episode {firstLevel.Episode}, Floor {firstLevel.Floor}, {firstLevel.Walls.Count} walls");
 
 		// Position camera at player start
 		Vector3 cameraPosition;
@@ -71,7 +69,6 @@ void sky() {
 			// Convert Direction enum to rotation (N=0, E=1, S=2, W=3)
 			// In Godot, Y rotation: 0=North(-Z), 90=East(+X), 180=South(+Z), 270=West(-X)
 			cameraRotationY = (float)playerStart.Facing * Constants.HalfPi;
-			GD.Print($"Player Start: ({playerStart.X}, {playerStart.Z}) facing {playerStart.Facing} -> World: {cameraPosition}, Rotation: {Mathf.RadToDeg(cameraRotationY)}°");
 		}
 		else
 		{
@@ -111,8 +108,6 @@ void sky() {
 			flippedDoorMaterials,  // Flipped materials (only for door textures)
 			firstLevel.Doors);
 		AddChild(Doors);
-
-		GD.Print($"Scene ready! Fly around with the FreeLookCamera to explore the level.");
 	}
 	public override void _Process(double delta)
 	{

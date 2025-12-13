@@ -25,17 +25,17 @@ public partial class Fixtures : Node3D
 	/// </summary>
 	private Func<float> _getCameraYRotation;
 
-	private readonly StandardMaterial3D[] _spriteMaterials;
+	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
 	private readonly Dictionary<ushort, List<int>> _instancesByPage = [];
 
 	/// <summary>
 	/// Creates fixture sprite geometry from map data.
 	/// </summary>
-	/// <param name="spriteMaterials">Array of sprite materials from GodotResources.SpriteMaterials</param>
+	/// <param name="spriteMaterials">Dictionary of sprite materials from GodotResources.SpriteMaterials</param>
 	/// <param name="mapAnalysis">Map analysis containing static spawn data</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
-	/// <param name="spritePageOffset">VSwap.SpritePage offset (first sprite page number)</param>
-	public Fixtures(StandardMaterial3D[] spriteMaterials, IEnumerable<MapAnalysis.StaticSpawn> staticSpawns, Func<float> getCameraYRotation, ushort spritePageOffset)
+	/// <param name="spritePageOffset">VSwap.SpritePage offset (first sprite page number) - no longer used with Dictionary</param>
+	public Fixtures(IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials, IEnumerable<MapAnalysis.StaticSpawn> staticSpawns, Func<float> getCameraYRotation, ushort spritePageOffset)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
@@ -60,8 +60,6 @@ public partial class Fixtures : Node3D
 		// Add all multimeshes as children of this node
 		foreach (MultiMeshInstance3D meshInstance in MeshInstances.Values)
 			AddChild(meshInstance);
-
-		GD.Print($"Fixtures: Created {MeshInstances.Count} MultiMesh instances for {fixtureSpawns.Count} static fixture objects");
 	}
 
 	/// <summary>
@@ -72,15 +70,8 @@ public partial class Fixtures : Node3D
 		MapAnalysis.StaticSpawn[] fixtures,
 		ushort spritePageOffset)
 	{
-		// Calculate material index (sprite materials array is offset by spritePageOffset)
-		int materialIndex = page - spritePageOffset;
-		if (materialIndex < 0 || materialIndex >= _spriteMaterials.Length)
-		{
-			GD.PrintErr($"ERROR: Sprite page {page} out of range (spritePageOffset={spritePageOffset}, materials={_spriteMaterials.Length})");
-			materialIndex = 0;
-		}
-
-		StandardMaterial3D material = _spriteMaterials[materialIndex];
+		// Get material directly by page number (will throw KeyNotFoundException if missing)
+		StandardMaterial3D material = _spriteMaterials[page];
 
 		// Create MultiMesh
 		MultiMesh multiMesh = new()
