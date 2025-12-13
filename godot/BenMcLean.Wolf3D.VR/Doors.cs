@@ -26,8 +26,8 @@ public partial class Doors : Node3D
 
 	// Door tracking
 	private readonly List<DoorData> doors = [];
-	private readonly Material[] normalMaterials;
-	private readonly Material[] flippedMaterials;
+	private readonly Material[] opaqueMaterials;
+	private readonly Dictionary<ushort, ShaderMaterial> flippedMaterials;
 	private readonly Dictionary<ushort, int> nextInstanceIndex = []; // Tracks next available instance per texture
 
 	private class DoorData
@@ -40,15 +40,26 @@ public partial class Doors : Node3D
 	}
 
 	/// <summary>
+	/// Calculates which texture indices are needed for a collection of door spawns.
+	/// Accounts for FacesEastWest orientation (even=horizontal/light, odd=vertical/dark).
+	/// </summary>
+	public static IEnumerable<ushort> GetRequiredTextureIndices(IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
+	{
+		return doorSpawns
+			.Select(d => d.FacesEastWest ? (ushort)(d.Shape + 1) : d.Shape)
+			.Distinct();
+	}
+
+	/// <summary>
 	/// Creates door geometry from map data using two quads per door for proper UV handling.
 	/// Both use back-face culling, with flipped materials having mirrored UVs.
 	/// </summary>
-	/// <param name="normalMaterials">Array of door materials with normal UVs (StandardMaterial3D)</param>
-	/// <param name="flippedMaterials">Array of door materials with flipped UVs (ShaderMaterial)</param>
+	/// <param name="opaqueMaterials">Array of opaque materials with normal UVs</param>
+	/// <param name="flippedMaterials">Dictionary of flipped materials by texture index</param>
 	/// <param name="doorSpawns">Collection of door spawn data from map analysis</param>
-	public Doors(Material[] normalMaterials, Material[] flippedMaterials, IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
+	public Doors(Material[] opaqueMaterials, Dictionary<ushort, ShaderMaterial> flippedMaterials, IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
-		this.normalMaterials = normalMaterials ?? throw new ArgumentNullException(nameof(normalMaterials));
+		this.opaqueMaterials = opaqueMaterials ?? throw new ArgumentNullException(nameof(opaqueMaterials));
 		this.flippedMaterials = flippedMaterials ?? throw new ArgumentNullException(nameof(flippedMaterials));
 
 		if (doorSpawns is null || !doorSpawns.Any())
@@ -80,7 +91,7 @@ public partial class Doors : Node3D
 			shape => shape,
 			shape => CreateMultiMeshForTexture(
 				shape,
-				normalMaterials[shape],
+				opaqueMaterials[shape],
 				instanceCounts[shape],
 				"Normal"));
 

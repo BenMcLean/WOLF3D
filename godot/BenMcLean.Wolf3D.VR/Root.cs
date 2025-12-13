@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -91,7 +92,7 @@ void sky() {
 		_freeLookCamera.Enabled = true;
 
 		// Create walls for the first level and add to scene
-		Walls = new Walls(GodotResources.WallMaterials, firstLevel);
+		Walls = new Walls(GodotResources.OpaqueMaterials, firstLevel);
 		AddChild(Walls);
 
 		// Create fixtures (billboarded sprites) for the first level and add to scene
@@ -103,9 +104,11 @@ void sky() {
 		AddChild(Fixtures);
 
 		// Create doors for the first level and add to scene
+		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(firstLevel.Doors);
+		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = GodotResources.CreateFlippedMaterialsForDoors(doorTextureIndices);
 		Doors = new Doors(
-			GodotResources.DoorMaterials,  // Materials with normal UVs
-			GodotResources.FlippedDoorMaterials,  // Materials with flipped/mirrored UVs
+			GodotResources.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
+			flippedDoorMaterials,  // Flipped materials (only for door textures)
 			firstLevel.Doors);
 		AddChild(Doors);
 
