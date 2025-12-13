@@ -35,13 +35,13 @@ public partial class Fixtures : Node3D
 	/// <param name="mapAnalysis">Map analysis containing static spawn data</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
 	/// <param name="spritePageOffset">VSwap.SpritePage offset (first sprite page number)</param>
-	public Fixtures(StandardMaterial3D[] spriteMaterials, MapAnalysis mapAnalysis, Func<float> getCameraYRotation, ushort spritePageOffset)
+	public Fixtures(StandardMaterial3D[] spriteMaterials, IEnumerable<MapAnalysis.StaticSpawn> staticSpawns, Func<float> getCameraYRotation, ushort spritePageOffset)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
 
 		// Filter for only dressing and block objects (exclude bonus/pickup items)
-		List<MapAnalysis.StaticSpawn> fixtureSpawns = [.. mapAnalysis.StaticSpawns.Where(s => s.StatType == StatType.dressing || s.StatType == StatType.block)];
+		List<MapAnalysis.StaticSpawn> fixtureSpawns = [.. staticSpawns.Where(s => s.StatType == StatType.dressing || s.StatType == StatType.block)];
 
 		// Group fixtures by sprite page number
 		Dictionary<ushort, MapAnalysis.StaticSpawn[]> fixturesByPage = fixtureSpawns

@@ -25,6 +25,7 @@ void sky() {
 	public GodotResources GodotResources;
 	public Walls Walls;
 	public Fixtures Fixtures;
+	public Doors Doors;
 
 	public override void _Ready()
 	{
@@ -96,15 +97,23 @@ void sky() {
 		// Create fixtures (billboarded sprites) for the first level and add to scene
 		Fixtures = new Fixtures(
 			GodotResources.SpriteMaterials,
-			firstLevel,
+			firstLevel.StaticSpawns,
 			() => _freeLookCamera.GlobalRotation.Y,  // Delegate returns camera Y rotation for billboard effect
 			Assets.VSwap.SpritePage);
 		AddChild(Fixtures);
+
+		// Create doors for the first level and add to scene
+		Doors = new Doors(
+			GodotResources.DoorMaterials,  // Materials with normal UVs
+			GodotResources.FlippedDoorMaterials,  // Materials with flipped/mirrored UVs
+			firstLevel.Doors);
+		AddChild(Doors);
 
 		GD.Print($"Scene ready! Fly around with the FreeLookCamera to explore the level.");
 	}
 	public override void _Process(double delta)
 	{
 		// Fixtures updates billboard rotations automatically in its own _Process
+		// Doors use two-quad approach with back-face culling - no per-frame updates needed
 	}
 }

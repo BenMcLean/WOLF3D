@@ -282,18 +282,7 @@ public partial class Walls : Node3D
 		Vector3 position;
 		float rotationY;
 
-		if (wall.Western) // North/South wall (runs along X axis, perpendicular to Z)
-		{
-			// Wall block at (X, Z) - show south face (Flip=false) or north face (Flip=true)
-			position = new Vector3(
-				Constants.CenterSquare(wall.X),
-				Constants.HalfWallHeight,
-				wall.Flip ? Constants.FloatCoordinate(wall.Z) : Constants.FloatCoordinate(wall.Z) + Constants.WallWidth
-			);
-			// South face looks south (0°), North face looks north (180°)
-			rotationY = wall.Flip ? Mathf.Pi : 0f;
-		}
-		else // East/West wall (runs along Z axis, perpendicular to X)
+		if (wall.FacesEastWest) // East/West facing wall (runs N-S, perpendicular to X, vertwall)
 		{
 			// Wall block at (X, Z) - show west face (Flip=false) or east face (Flip=true)
 			position = new Vector3(
@@ -303,6 +292,17 @@ public partial class Walls : Node3D
 			);
 			// West face looks west (-90°), East face looks east (90°)
 			rotationY = wall.Flip ? Constants.HalfPi : -Constants.HalfPi;
+		}
+		else // North/South facing wall (runs E-W, perpendicular to Z, horizwall)
+		{
+			// Wall block at (X, Z) - show south face (Flip=false) or north face (Flip=true)
+			position = new Vector3(
+				Constants.CenterSquare(wall.X),
+				Constants.HalfWallHeight,
+				wall.Flip ? Constants.FloatCoordinate(wall.Z) : Constants.FloatCoordinate(wall.Z) + Constants.WallWidth
+			);
+			// South face looks south (0°), North face looks north (180°)
+			rotationY = wall.Flip ? Mathf.Pi : 0f;
 		}
 
 		Transform3D transform = Transform3D.Identity.Rotated(Vector3.Up, rotationY);

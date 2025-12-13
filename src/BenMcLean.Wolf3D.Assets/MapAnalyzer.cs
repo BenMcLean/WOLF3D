@@ -234,12 +234,12 @@ public class MapAnalyzer
 		public readonly record struct PatrolPoint(ushort X, ushort Z, Direction Turn);
 		public ReadOnlyCollection<PatrolPoint> PatrolPoints { get; private set; }
 
-		public readonly record struct WallSpawn(ushort Shape, bool Western, ushort X, ushort Z, bool Flip = false);
+		public readonly record struct WallSpawn(ushort Shape, bool FacesEastWest, ushort X, ushort Z, bool Flip = false);
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
 		public readonly record struct PushWallSpawn(ushort Shape, ushort DarkSide, ushort X, ushort Z);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 		public ReadOnlyCollection<Tuple<ushort, ushort>> Elevators { get; private set; }
-		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Z, bool Western = false);
+		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Z, bool FacesEastWest = false);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
@@ -372,29 +372,29 @@ public class MapAnalyzer
 			void EastWest(ushort x, ushort z)
 			{
 				ushort wall;
-				// East/West walls are vertical (darker)
+				// East/West facing walls (run N-S, perpendicular to X, use vertwall/odd pages)
 				// Coordinates now consistently use the wall block's position
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), z))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), false, (ushort)(x + 1), z, false));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x + 1), z, false));
 				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), z))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), false, (ushort)(x - 1), z, true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x - 1), z, true));
 			}
 
 			void NorthSouth(ushort x, ushort z)
 			{
 				ushort wall;
-				// North/South walls are horizontal (lighter)
+				// North/South facing walls (run E-W, perpendicular to Z, use horizwall/even pages)
 				// Coordinates now consistently use the wall block's position
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (z > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(z - 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), true, x, (ushort)(z - 1), false));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(z - 1), false));
 				if (z < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(z + 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), true, x, (ushort)(z + 1), true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(z + 1), true));
 			}
 
 			// Scan wall plane (MapData) for doors, walls, and elevators
@@ -408,20 +408,20 @@ public class MapAnalyzer
 				{
 					ushort doorPage = (ushort)(mapAnalyzer.DoorWall + doorInfo.Page);
 
-					// Even tile numbers = vertical doors, odd = horizontal
-					if (tile % 2 == 0)  // Vertical door (East/West opening)
+					// Even tile numbers = vertical doors (FacesEastWest=true), odd = horizontal (FacesEastWest=false)
+					if (tile % 2 == 0)  // Vertical door (runs N-S, faces E/W)
 					{
-						// Door frames on north and south sides, facing inward toward doorway
-						walls.Add(new WallSpawn(doorFrameHoriz, true, x, (ushort)(z - 1), false));
-						walls.Add(new WallSpawn(doorFrameHoriz, true, x, (ushort)(z + 1), true));
-						doors.Add(new DoorSpawn(doorPage, x, z, true));
+						// Door frames on north and south sides (run E-W, face N/S)
+						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(z - 1), false));
+						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(z + 1), true));
+						doors.Add(new DoorSpawn(doorPage, x, z, true));  // FacesEastWest = true
 					}
-					else  // Horizontal door (North/South opening)
+					else  // Horizontal door (runs E-W, faces N/S)
 					{
-						// Door frames on west and east sides, facing inward toward doorway
-						walls.Add(new WallSpawn(doorFrameVert, false, (ushort)(x - 1), z, true));
-						walls.Add(new WallSpawn(doorFrameVert, false, (ushort)(x + 1), z, false));
-						doors.Add(new DoorSpawn(doorPage, x, z));
+						// Door frames on west and east sides (run N-S, face E/W)
+						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x - 1), z, true));
+						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x + 1), z, false));
+						doors.Add(new DoorSpawn(doorPage, x, z));  // FacesEastWest = false (default)
 					}
 				}
 				else if (mapAnalyzer.ElevatorTiles.Contains(tile))

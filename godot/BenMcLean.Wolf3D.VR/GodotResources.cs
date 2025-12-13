@@ -27,14 +27,30 @@ public class GodotResources
 	public StandardMaterial3D[] WallMaterials => _wallMaterials;
 
 	/// <summary>
-	/// Cached door materials, indexed by VSwap page number.
+	/// Cached door materials with normal UVs, indexed by VSwap page number.
 	/// </summary>
-	private readonly ShaderMaterial[] _doorMaterials;
+	private readonly StandardMaterial3D[] _doorMaterials;
 
 	/// <summary>
-	/// Shared shader for all door materials with UV flipping for correct latch positioning.
+	/// Gets the array of door materials with normal UVs.
 	/// </summary>
-	private readonly Shader _doorShader;
+	public StandardMaterial3D[] DoorMaterials => _doorMaterials;
+
+	/// <summary>
+	/// Cached door materials with horizontally flipped/mirrored UVs, indexed by VSwap page number.
+	/// Used in combination with negative scale to ensure door handles appear on the correct side.
+	/// </summary>
+	private readonly ShaderMaterial[] _flippedDoorMaterials;
+
+	/// <summary>
+	/// Gets the array of door materials with flipped/mirrored UVs.
+	/// </summary>
+	public ShaderMaterial[] FlippedDoorMaterials => _flippedDoorMaterials;
+
+	/// <summary>
+	/// Shared shader for flipped door materials with horizontal UV flipping.
+	/// </summary>
+	private readonly Shader _flippedDoorShader;
 
 	/// <summary>
 	/// Cached sprite materials for billboarded objects, indexed by VSwap page number.
@@ -52,20 +68,21 @@ public class GodotResources
 	public Assets.VSwap VSwap { get; init; }
 
 	/// <summary>
-	/// Custom shader code for doors that flips UVs on the back face.
-	/// This ensures the door latch appears on the same side from both viewing directions.
+	/// Custom shader code for flipped door quads with horizontally flipped UVs.
+	/// Uses back-face culling (same as normal quads) - the negative scale makes it face the opposite direction.
+	/// UV flip compensates for the geometry flip to keep door handles on the correct side.
 	/// </summary>
-	private const string DoorShaderCode = @"
+	private const string FlippedDoorShaderCode = @"
 shader_type spatial;
-render_mode unshaded, cull_disabled;
+render_mode unshaded, cull_back;
 
 uniform sampler2D albedo_texture : source_color, filter_nearest, repeat_disable;
 
 void fragment() {
-	vec2 uv = FRONT_FACING ? UV : vec2(1.0 - UV.x, UV.y);
+	vec2 uv = vec2(1.0 - UV.x, UV.y);  // Flip UVs horizontally to compensate for geometry flip
 	vec4 tex = texture(albedo_texture, uv);
 	ALBEDO = tex.rgb;
-	ALPHA = tex.a;
+	// Don't set ALPHA - doors are opaque and shouldn't use alpha blending
 }
 ";
 
@@ -80,23 +97,27 @@ void fragment() {
 		VSwap = vswap ?? throw new ArgumentNullException(nameof(vswap));
 		ScaleFactor = scaleFactor;
 
-		// Initialize door shader
-		_doorShader = new Shader { Code = DoorShaderCode };
+		// Initialize flipped door shader
+		_flippedDoorShader = new Shader { Code = FlippedDoorShaderCode };
 
 		// Eagerly convert all wall materials using parallelization
 		_wallMaterials = [.. Enumerable.Range(0, VSwap.SpritePage)
 			.Parallelize(pageNumber => CreateWallMaterial((ushort)pageNumber))];
 
-		// Eagerly convert all door materials using parallelization
+		// Eagerly convert normal door materials using parallelization
 		_doorMaterials = [.. Enumerable.Range(0, VSwap.SpritePage)
 			.Parallelize(pageNumber => CreateDoorMaterial((ushort)pageNumber))];
+
+		// Eagerly convert flipped door materials using parallelization
+		_flippedDoorMaterials = [.. Enumerable.Range(0, VSwap.SpritePage)
+			.Parallelize(pageNumber => CreateFlippedDoorMaterial((ushort)pageNumber))];
 
 		// Eagerly convert all sprite materials using parallelization
 		int spriteCount = VSwap.Pages.Length - VSwap.SpritePage;
 		_spriteMaterials = [.. Enumerable.Range(VSwap.SpritePage, spriteCount)
 			.Parallelize(pageNumber => CreateSpriteMaterial((ushort)pageNumber))];
 
-		GD.Print($"GodotResources: Converted {_wallMaterials.Length} wall materials, {_doorMaterials.Length} door materials, and {_spriteMaterials.Length} sprite materials at {ScaleFactor}x scale ({VSwap.TileSqrt * ScaleFactor}x{VSwap.TileSqrt * ScaleFactor})");
+		GD.Print($"GodotResources: Converted {_wallMaterials.Length} wall materials, {_doorMaterials.Length} normal + {_flippedDoorMaterials.Length} flipped door materials, and {_spriteMaterials.Length} sprite materials at {ScaleFactor}x scale ({VSwap.TileSqrt * ScaleFactor}x{VSwap.TileSqrt * ScaleFactor})");
 	}
 
 	/// <summary>
@@ -114,21 +135,6 @@ void fragment() {
 		return _wallMaterials[pageNumber];
 	}
 
-	/// <summary>
-	/// Gets a door material by VSwap page number.
-	/// Uses custom shader with double-sided rendering and UV flipping to ensure
-	/// the door latch appears on the same side from both viewing directions.
-	/// </summary>
-	/// <param name="pageNumber">VSwap page number (must be less than SpritePage)</param>
-	/// <returns>Cached ShaderMaterial with double-sided rendering</returns>
-	public ShaderMaterial GetDoorMaterial(ushort pageNumber)
-	{
-		if (pageNumber >= _doorMaterials.Length)
-			throw new ArgumentOutOfRangeException(nameof(pageNumber),
-				$"Page {pageNumber} is not a door material (SpritePage = {VSwap.SpritePage})");
-
-		return _doorMaterials[pageNumber];
-	}
 
 	/// <summary>
 	/// Gets a sprite material by VSwap page number.
@@ -222,11 +228,69 @@ void fragment() {
 	}
 
 	/// <summary>
-	/// Creates a ShaderMaterial for a door texture with custom UV-flipping shader.
-	/// Applies upscaling and generates mipmaps.
-	/// The shader ensures the door appears correctly from both sides with the latch on the same side.
+	/// Creates a StandardMaterial3D for a door texture with normal UVs.
+	/// Uses back-face culling.
 	/// </summary>
-	private ShaderMaterial CreateDoorMaterial(ushort pageNumber)
+	private StandardMaterial3D CreateDoorMaterial(ushort pageNumber)
+	{
+		// Get the original texture data from VSwap
+		byte[] originalData = VSwap.Pages[pageNumber];
+
+		if (originalData == null)
+		{
+			GD.PrintErr($"Warning: VSwap page {pageNumber} is null, creating default door material");
+			return new StandardMaterial3D { AlbedoColor = Colors.Magenta };
+		}
+
+		// Upscale the texture data
+		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
+		int scaledSize = VSwap.TileSqrt * ScaleFactor;
+
+		// Create Godot Image
+		Image image = Image.CreateFromData(
+			width: scaledSize,
+			height: scaledSize,
+			useMipmaps: false,
+			format: Image.Format.Rgba8,
+			data: scaledData
+		);
+
+		if (image == null)
+		{
+			GD.PrintErr($"ERROR: Image.CreateFromData returned null for door page {pageNumber}");
+			return new StandardMaterial3D { AlbedoColor = Colors.Yellow };
+		}
+
+		// Generate mipmaps
+		image.GenerateMipmaps();
+
+		// Create ImageTexture from the image
+		ImageTexture texture = ImageTexture.CreateFromImage(image);
+
+		if (texture == null)
+		{
+			GD.PrintErr($"ERROR: ImageTexture.CreateFromImage returned null for door page {pageNumber}");
+			return new StandardMaterial3D { AlbedoColor = Colors.Cyan };
+		}
+
+		// Create material with back-face culling
+		StandardMaterial3D material = new StandardMaterial3D
+		{
+			AlbedoTexture = texture,
+			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			CullMode = BaseMaterial3D.CullModeEnum.Back,
+		};
+
+		return material;
+	}
+
+	/// <summary>
+	/// Creates a ShaderMaterial for a door texture with horizontally flipped/mirrored UVs.
+	/// Uses back-face culling. Combined with negative scale geometry to show from the opposite side.
+	/// UV flip compensates for the geometry flip to ensure door handles appear on the correct side.
+	/// </summary>
+	private ShaderMaterial CreateFlippedDoorMaterial(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap
 		byte[] originalData = VSwap.Pages[pageNumber];
@@ -238,25 +302,31 @@ void fragment() {
 		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
 		int scaledSize = VSwap.TileSqrt * ScaleFactor;
 
-		// Create Godot Image with mipmaps enabled
+		// Create Godot Image
 		Image image = Image.CreateFromData(
 			width: scaledSize,
 			height: scaledSize,
-			useMipmaps: true,
+			useMipmaps: false,
 			format: Image.Format.Rgba8,
 			data: scaledData
 		);
 
-		// Generate mipmaps for proper distance rendering and performance
+		if (image == null)
+			return null;
+
+		// Generate mipmaps
 		image.GenerateMipmaps();
 
 		// Create ImageTexture from the image
 		ImageTexture texture = ImageTexture.CreateFromImage(image);
 
-		// Create shader material with the custom door shader
+		if (texture == null)
+			return null;
+
+		// Create shader material with back-face culling and UV flipping
 		ShaderMaterial material = new ShaderMaterial
 		{
-			Shader = _doorShader
+			Shader = _flippedDoorShader
 		};
 
 		// Set the texture uniform
