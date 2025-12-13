@@ -59,8 +59,7 @@ public partial class Walls : Node3D
 				// Each pushwall needs 2 instances in Shape texture (north + south)
 				instanceCounts[pw.Shape] = instanceCounts.GetValueOrDefault(pw.Shape) + 2;
 				// Each pushwall needs 2 instances in DarkSide texture (east + west)
-				ushort darkSide = pw.DarkSide;
-				instanceCounts[darkSide] = instanceCounts.GetValueOrDefault(darkSide) + 2;
+				instanceCounts[(ushort)(pw.Shape + 1)] = instanceCounts.GetValueOrDefault((ushort)(pw.Shape + 1)) + 2;
 			}
 
 		// Track starting index for each texture (after regular walls)
@@ -84,7 +83,7 @@ public partial class Walls : Node3D
 		// The pushwall ID will match its index in the mapAnalysis.PushWalls collection
 		if (mapAnalysis.PushWalls is not null)
 			foreach (MapAnalysis.PushWallSpawn pw in mapAnalysis.PushWalls)
-				AddPushWall(pw.Shape, new Vector2(pw.X, pw.Z));
+				AddPushWall(pw.Shape, new Vector2(pw.X, pw.Y));
 	}
 
 	/// <summary>
@@ -267,7 +266,7 @@ public partial class Walls : Node3D
 			position = new Vector3(
 				wall.Flip ? Constants.FloatCoordinate(wall.X) + Constants.WallWidth : Constants.FloatCoordinate(wall.X),
 				Constants.HalfWallHeight,
-				Constants.CenterSquare(wall.Z)
+				Constants.CenterSquare(wall.Y)
 			);
 			// West face looks west (-90°), East face looks east (90°)
 			rotationY = wall.Flip ? Constants.HalfPi : -Constants.HalfPi;
@@ -278,7 +277,7 @@ public partial class Walls : Node3D
 			position = new Vector3(
 				Constants.CenterSquare(wall.X),
 				Constants.HalfWallHeight,
-				wall.Flip ? Constants.FloatCoordinate(wall.Z) : Constants.FloatCoordinate(wall.Z) + Constants.WallWidth
+				wall.Flip ? Constants.FloatCoordinate(wall.Y) : Constants.FloatCoordinate(wall.Y) + Constants.WallWidth
 			);
 			// South face looks south (0°), North face looks north (180°)
 			rotationY = wall.Flip ? Mathf.Pi : 0f;

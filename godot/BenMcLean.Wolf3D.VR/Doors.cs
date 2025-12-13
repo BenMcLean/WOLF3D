@@ -117,7 +117,7 @@ public partial class Doors : Node3D
 			// Convert grid coordinates to fixed-point 16:16
 			// Add 0x8000 (half tile) to center the door in its tile
 			uint baseX = ((uint)doorSpawn.X << 16) + 0x8000;
-			uint baseZ = ((uint)doorSpawn.Z << 16) + 0x8000;
+			uint baseZ = ((uint)doorSpawn.Y << 16) + 0x8000;
 
 			// Calculate texture based on orientation (doors are paired: even=horizontal/light, odd=vertical/dark)
 			// doorSpawn.Shape is always even (base texture), add 1 for vertical doors

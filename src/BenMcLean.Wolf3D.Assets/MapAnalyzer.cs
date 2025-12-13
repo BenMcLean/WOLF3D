@@ -165,12 +165,12 @@ public class MapAnalyzer
 		(!IsWall(mapData) || PushableTiles.Contains(objectData))
 		&& !ElevatorTiles.Contains(mapData);
 
-	public bool IsMappable(GameMap map, ushort x, ushort z) =>
-		IsTransparent(map.GetMapData(x, z), map.GetObjectData(x, z))
-		|| (x > 0 && IsTransparent(map.GetMapData((ushort)(x - 1), z), map.GetObjectData((ushort)(x - 1), z)))
-		|| (x < map.Width - 1 && IsTransparent(map.GetMapData((ushort)(x + 1), z), map.GetObjectData((ushort)(x + 1), z)))
-		|| (z > 0 && IsTransparent(map.GetMapData(x, (ushort)(z - 1)), map.GetObjectData(x, (ushort)(z - 1))))
-		|| (z < map.Depth - 1 && IsTransparent(map.GetMapData(x, (ushort)(z + 1)), map.GetObjectData(x, (ushort)(z + 1))));
+	public bool IsMappable(GameMap map, ushort x, ushort y) =>
+		IsTransparent(map.GetMapData(x, y), map.GetObjectData(x, y))
+		|| (x > 0 && IsTransparent(map.GetMapData((ushort)(x - 1), y), map.GetObjectData((ushort)(x - 1), y)))
+		|| (x < map.Width - 1 && IsTransparent(map.GetMapData((ushort)(x + 1), y), map.GetObjectData((ushort)(x + 1), y)))
+		|| (y > 0 && IsTransparent(map.GetMapData(x, (ushort)(y - 1)), map.GetObjectData(x, (ushort)(y - 1))))
+		|| (y < map.Depth - 1 && IsTransparent(map.GetMapData(x, (ushort)(y + 1)), map.GetObjectData(x, (ushort)(y + 1))));
 	public ObjectInfo GetObjectInfo(ushort objectCode) =>
 		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
 
@@ -205,41 +205,46 @@ public class MapAnalyzer
 		public string Song { get; private init; }
 		#endregion XML Attributes
 		#region Data
+		// Assets layer - faithful to Wolf3D coordinate system (X, Y)
+		// NOTE: Wolf3D maps are horizontal (2D floor plans)
+		// X = width (east-west), Y = depth (north-south, NOT vertical height!)
 		public ushort Width { get; private init; }
-		public const ushort Height = 0; // Vertical
-		public ushort Depth { get; private init; }
+		public ushort Depth { get; private init; }  // Wolf3D called this "height" but it's actually depth!
 		private readonly BitArray Navigable;
-		public bool IsNavigable(int x, int z) =>
-			x >= 0 && z >= 0 && x < Width && z < Depth
-			&& Navigable[x * Depth + z];
+		public bool IsNavigable(int x, int y) =>
+			x >= 0 && y >= 0 && x < Width && y < Depth
+			&& Navigable[y * Width + x];
 		private readonly BitArray Transparent;
-		public bool IsTransparent(int x, int z) =>
-			x >= 0 && z >= 0 && x < Width && z < Depth
-			&& Transparent[x * Depth + z];
+		public bool IsTransparent(int x, int y) =>
+			x >= 0 && y >= 0 && x < Width && y < Depth
+			&& Transparent[y * Width + x];
 		private readonly BitArray Mappable;
-		public bool IsMappable(int x, int z) =>
-			x >= 0 && z >= 0 && x < Width && z < Depth
-			&& Mappable[x * Depth + z];
+		public bool IsMappable(int x, int y) =>
+			x >= 0 && y >= 0 && x < Width && y < Depth
+			&& Mappable[y * Width + x];
 
-		// Spawn data
-		public readonly record struct PlayerSpawn(ushort X, ushort Z, Direction Facing);
+		// Spawn data (using X, Y coordinate system for Assets layer)
+		public readonly record struct PlayerSpawn(ushort X, ushort Y, Direction Facing);
 		public PlayerSpawn? PlayerStart { get; private set; }
 
-		public readonly record struct EnemySpawn(ObClass Type, ushort X, ushort Z, Direction Facing, bool Ambush, bool Patrol);
+		public readonly record struct EnemySpawn(ObClass Type, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol);
 		public ReadOnlyCollection<EnemySpawn> EnemySpawns { get; private set; }
 
-		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Page, ushort X, ushort Z);
+		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Page, ushort X, ushort Y);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
 
-		public readonly record struct PatrolPoint(ushort X, ushort Z, Direction Turn);
+		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
 		public ReadOnlyCollection<PatrolPoint> PatrolPoints { get; private set; }
 
-		public readonly record struct WallSpawn(ushort Shape, bool FacesEastWest, ushort X, ushort Z, bool Flip = false);
+		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
+	public readonly record struct WallSpawn(ushort Shape, bool FacesEastWest, ushort X, ushort Y, bool Flip = false);
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
-		public readonly record struct PushWallSpawn(ushort Shape, ushort DarkSide, ushort X, ushort Z);
+		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
+	public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 		public ReadOnlyCollection<Tuple<ushort, ushort>> Elevators { get; private set; }
-		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Z, bool FacesEastWest = false);
+		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
+	public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Y, bool FacesEastWest = false);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
@@ -264,19 +269,19 @@ public class MapAnalyzer
 			Navigable = new BitArray(Width * Depth);
 			Transparent = new BitArray(Navigable.Length);
 			for (ushort x = 0; x < Width; x++)
-				for (ushort z = 0; z < Depth; z++)
+				for (ushort y = 0; y < Depth; y++)
 				{
-					Navigable[x * Depth + z] = mapAnalyzer.IsNavigable(gameMap.GetMapData(x, z), gameMap.GetObjectData(x, z));
-					Transparent[x * Depth + z] = mapAnalyzer.IsTransparent(gameMap.GetMapData(x, z), gameMap.GetObjectData(x, z));
+					Navigable[y * Width + x] = mapAnalyzer.IsNavigable(gameMap.GetMapData(x, y), gameMap.GetObjectData(x, y));
+					Transparent[y * Width + x] = mapAnalyzer.IsTransparent(gameMap.GetMapData(x, y), gameMap.GetObjectData(x, y));
 				}
 			Mappable = new BitArray(Navigable.Length);
 			for (ushort x = 0; x < Width; x++)
-				for (ushort z = 0; z < Depth; z++)
-					Mappable[x * Depth + z] = Transparent[x * Depth + z]
-						|| (x > 0 && Transparent[(x - 1) * Depth + z])
-						|| (x < Width - 1 && Transparent[(x + 1) * Depth + z])
-						|| (z > 0 && Transparent[x * Depth + (z - 1)])
-						|| (z < Depth - 1 && Transparent[x * Depth + (z + 1)]);
+				for (ushort y = 0; y < Depth; y++)
+					Mappable[y * Width + x] = Transparent[y * Width + x]
+						|| (x > 0 && Transparent[y * Width + (x - 1)])
+						|| (x < Width - 1 && Transparent[y * Width + (x + 1)])
+						|| (y > 0 && Transparent[(y - 1) * Width + x])
+						|| (y < Depth - 1 && Transparent[(y + 1) * Width + x]);
 			#endregion Masks
 			#region Object Layer Parsing
 			List<EnemySpawn> enemies = [];
@@ -296,14 +301,14 @@ public class MapAnalyzer
 					continue;
 
 				ushort x = gameMap.X(i);
-				ushort z = gameMap.Z(i);
+				ushort y = gameMap.Y(i);
 				ObClass objectClass = objInfo.ObjectClass.Value;
 
 				// Player start
 				if (MapAnalyzer.IsPlayerStart(objectClass))
 				{
 					if (objInfo.Facing.HasValue)
-						playerStart = new PlayerSpawn(x, z, objInfo.Facing.Value);
+						playerStart = new PlayerSpawn(x, y, objInfo.Facing.Value);
 				}
 				// Enemies
 				else if (MapAnalyzer.IsEnemy(objectClass))
@@ -312,7 +317,7 @@ public class MapAnalyzer
 					{
 						enemies.Add(new EnemySpawn(
 							objectClass,
-							x, z,
+							x, y,
 							objInfo.Facing.Value,
 							objInfo.Ambush,
 							objInfo.Patrol));
@@ -322,7 +327,7 @@ public class MapAnalyzer
 				else if (MapAnalyzer.IsStatic(objectClass))
 				{
 					StatType statType = MapAnalyzer.GetStatType(objectClass);
-					statics.Add(new StaticSpawn(statType, objectClass, objInfo.Page, x, z));
+					statics.Add(new StaticSpawn(statType, objectClass, objInfo.Page, x, y));
 				}
 			}
 
@@ -334,8 +339,8 @@ public class MapAnalyzer
 				if (mapAnalyzer.PatrolTiles.TryGetValue(mapCode, out Direction turn))
 				{
 					ushort x = gameMap.X(i);
-					ushort z = gameMap.Z(i);
-					patrolPoints.Add(new PatrolPoint(x, z, turn));
+					ushort y = gameMap.Y(i);
+					patrolPoints.Add(new PatrolPoint(x, y, turn));
 				}
 			}
 
@@ -354,11 +359,11 @@ public class MapAnalyzer
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
 					ushort wall = gameMap.MapData[i];
-					ushort horizPage = mapAnalyzer.GetWallPage(wall, false);
-					ushort vertPage = mapAnalyzer.GetWallPage(wall, true);
-					pushWalls.Add(new PushWallSpawn(horizPage, vertPage, gameMap.X(i), gameMap.Z(i)));
+					ushort page = mapAnalyzer.GetWallPage(wall, false);
+					// VSWAP even/odd pairing: page (even) for one orientation, page+1 (odd) for perpendicular
+					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i)));
 				}
-			ushort GetMapData(ushort x, ushort z) => realWalls[gameMap.GetIndex(x, z)];
+			ushort GetMapData(ushort x, ushort y) => realWalls[gameMap.GetIndex(x, y)];
 
 			// Door frames use specific pages near sprite start
 			// In original: doorFrame at DOORWALL+2, but we'll use a calculated value
@@ -369,39 +374,39 @@ public class MapAnalyzer
 			List<Tuple<ushort, ushort>> elevators = [];
 			List<DoorSpawn> doors = [];
 
-			void EastWest(ushort x, ushort z)
+			void EastWest(ushort x, ushort y)
 			{
 				ushort wall;
 				// East/West facing walls (run N-S, perpendicular to X, use vertwall/odd pages)
 				// Coordinates now consistently use the wall block's position
 				// Skip if adjacent tile is a door (doors have their own frames)
-				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), z))
+				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x + 1), z, false));
-				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), z))
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x + 1), y, false));
+				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x - 1), z, true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x - 1), y, true));
 			}
 
-			void NorthSouth(ushort x, ushort z)
+			void NorthSouth(ushort x, ushort y)
 			{
 				ushort wall;
-				// North/South facing walls (run E-W, perpendicular to Z, use horizwall/even pages)
+				// North/South facing walls (run E-W, perpendicular to Y, use horizwall/even pages)
 				// Coordinates now consistently use the wall block's position
 				// Skip if adjacent tile is a door (doors have their own frames)
-				if (z > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(z - 1)))
+				if (y > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y - 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(z - 1), false));
-				if (z < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(z + 1)))
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y - 1), false));
+				if (y < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y + 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(z + 1), true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y + 1), true));
 			}
 
 			// Scan wall plane (MapData) for doors, walls, and elevators
 			for (int i = 0; i < gameMap.MapData.Length; i++)
 			{
-				ushort x = gameMap.X(i), z = gameMap.Z(i);
-				ushort tile = GetMapData(x, z);
+				ushort x = gameMap.X(i), y = gameMap.Y(i);
+				ushort tile = GetMapData(x, y);
 
 				// Check if this tile is a door (tiles 90-101 from wall plane)
 				if (mapAnalyzer.Doors.TryGetValue(tile, out DoorInfo doorInfo))
@@ -412,27 +417,27 @@ public class MapAnalyzer
 					if (tile % 2 == 0)  // Vertical door (runs N-S, faces E/W)
 					{
 						// Door frames on north and south sides (run E-W, face N/S)
-						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(z - 1), false));
-						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(z + 1), true));
-						doors.Add(new DoorSpawn(doorPage, x, z, true));  // FacesEastWest = true
+						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y - 1), false));
+						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y + 1), true));
+						doors.Add(new DoorSpawn(doorPage, x, y, true));  // FacesEastWest = true
 					}
 					else  // Horizontal door (runs E-W, faces N/S)
 					{
 						// Door frames on west and east sides (run N-S, face E/W)
-						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x - 1), z, true));
-						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x + 1), z, false));
-						doors.Add(new DoorSpawn(doorPage, x, z));  // FacesEastWest = false (default)
+						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x - 1), y, true));
+						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x + 1), y, false));
+						doors.Add(new DoorSpawn(doorPage, x, y));  // FacesEastWest = false (default)
 					}
 				}
 				else if (mapAnalyzer.ElevatorTiles.Contains(tile))
 				{
-					elevators.Add(new(x, z));
+					elevators.Add(new(x, y));
 				}
 				else if (!mapAnalyzer.IsWall(tile))
 				{
 					// For empty spaces, check adjacent cells for walls
-					EastWest(x, z);
-					NorthSouth(x, z);
+					EastWest(x, y);
+					NorthSouth(x, y);
 				}
 			}
 
@@ -473,9 +478,9 @@ public record ObjectInfo
 // Direction enum (Wolf3D: NORTH=0, EAST=1, SOUTH=2, WEST=3)
 public enum Direction : byte
 {
-	N = 0,  // North (negative Z)
+	N = 0,  // North (negative Y)
 	E = 1,  // East (positive X)
-	S = 2,  // South (positive Z)
+	S = 2,  // South (positive Y)
 	W = 3   // West (negative X)
 }
 

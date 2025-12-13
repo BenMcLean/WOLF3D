@@ -4,34 +4,63 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
+/// <summary>
+/// Represents a game map/level.
+/// Based on maptype from ID_CA.H:17-23
+/// Assets layer - faithful to Wolf3D coordinate system (X, Y)
+/// </summary>
 public sealed class GameMap
 {
 	#region Data
 	public string Name { get; private set; }
 	public override string ToString() => Name;
+
+	// Map number in MAPHEAD
 	public ushort Number { get; private init; }
+
+	// ID_CA.H:maptype:width (original: unsigned = 16-bit)
+	// X dimension (east-west)
+	// Intentional extension: Using ushort explicitly to support maps > 64×64
 	public ushort Width { get; private init; }
-	public const ushort Height = 0; // Vertical
+
+	// ID_CA.H:maptype:height (original: unsigned = 16-bit)
+	// Y dimension (north-south depth on horizontal map)
+	// NOTE: Wolf3D called this "height" but it's actually DEPTH - maps are horizontal!
+	// Intentional extension: Using ushort explicitly to support maps > 64×64
 	public ushort Depth { get; private init; }
+
+	// Walls layer - tile numbers for walls
+	// Decompressed from planestart[0], planelength[0]
+	// See WL_MAIN.C:SetupWalls for how wall numbers map to VSWAP pages
 	public ushort[] MapData { get; private set; }
+
+	// Objects layer - object types, enemy spawns, items
+	// Decompressed from planestart[1], planelength[1]
 	public ushort[] ObjectData { get; private set; }
+
+	// Other/Info layer - floor codes, area numbers, etc.
+	// Decompressed from planestart[2], planelength[2]
 	public ushort[] OtherData { get; private set; }
+
+	/// <summary>Extract X tile coordinate from linear array index</summary>
 	public ushort X(int i) => (ushort)(i % Width);
 	public ushort X(uint i) => (ushort)(i % Width);
 	public ushort X(ushort i) => (ushort)(i % Width);
-	public const ushort Y = 0; // Vertical
-	public ushort Z(int i) => (ushort)(i / Depth);
-	public ushort Z(uint i) => (ushort)(i / Depth);
-	public ushort Z(ushort i) => (ushort)(i / Depth);
-	public ushort GetIndex(uint x, uint z) => GetIndex((ushort)x, (ushort)z);
-	public ushort GetIndex(ushort x, ushort z) => (ushort)((z * Depth) + x);
-	public ushort GetMapData(ushort x, ushort z) => MapData[GetIndex(x, z)];
-	public ushort GetMapData(uint x, uint z) => GetMapData((ushort)x, (ushort)z);
-	public ushort GetObjectData(uint x, uint z) => GetObjectData((ushort)x, (ushort)z);
-	public ushort GetObjectData(ushort x, ushort z) => ObjectData[GetIndex(x, z)];
-	public ushort GetOtherData(uint x, uint z) => GetOtherData((ushort)x, (ushort)z);
-	public ushort GetOtherData(ushort x, ushort z) => OtherData[GetIndex(x, z)];
-	public bool IsWithinMap(int x, int z) => x >= 0 && z >= 0 && x < Width && z < Depth;
+
+	/// <summary>Extract Y tile coordinate from linear array index</summary>
+	public ushort Y(int i) => (ushort)(i / Width);
+	public ushort Y(uint i) => (ushort)(i / Width);
+	public ushort Y(ushort i) => (ushort)(i / Width);
+
+	public ushort GetIndex(uint x, uint y) => GetIndex((ushort)x, (ushort)y);
+	public ushort GetIndex(ushort x, ushort y) => (ushort)((y * Width) + x);
+	public ushort GetMapData(ushort x, ushort y) => MapData[GetIndex(x, y)];
+	public ushort GetMapData(uint x, uint y) => GetMapData((ushort)x, (ushort)y);
+	public ushort GetObjectData(uint x, uint y) => GetObjectData((ushort)x, (ushort)y);
+	public ushort GetObjectData(ushort x, ushort y) => ObjectData[GetIndex(x, y)];
+	public ushort GetOtherData(uint x, uint y) => GetOtherData((ushort)x, (ushort)y);
+	public ushort GetOtherData(ushort x, ushort y) => OtherData[GetIndex(x, y)];
+	public bool IsWithinMap(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Depth;
 	#endregion Data
 	#region Loading
 	public static GameMap[] Load(XElement xml, string folder = "") => Load(

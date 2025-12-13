@@ -64,7 +64,7 @@ void sky() {
 			cameraPosition = new Vector3(
 				Constants.CenterSquare(playerStart.X),
 				Constants.HalfWallHeight,
-				Constants.CenterSquare(playerStart.Z)
+				Constants.CenterSquare(playerStart.Y)
 			);
 			// Convert Direction enum to rotation (N=0, E=1, S=2, W=3)
 			// In Godot, Y rotation: 0=North(-Z), 90=East(+X), 180=South(+Z), 270=West(-X)

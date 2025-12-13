@@ -89,7 +89,7 @@ public partial class Fixtures : Node3D
 			Vector3 position = new(
 				Constants.CenterSquare(fixture.X),
 				Constants.HalfWallHeight,
-				Constants.CenterSquare(fixture.Z)
+				Constants.CenterSquare(fixture.Y)
 			);
 
 			// Initial rotation (will be updated each frame)
@@ -123,8 +123,8 @@ public partial class Fixtures : Node3D
 			return new(Vector3.Zero, Vector3.Zero);
 		ushort minX = fixtures.Min(fixture => fixture.X),
 			maxX = fixtures.Max(fixture => fixture.X),
-			minZ = fixtures.Min(fixture => fixture.Z),
-			maxZ = fixtures.Max(fixture => fixture.Z);
+			minZ = fixtures.Min(fixture => fixture.Y),
+			maxZ = fixtures.Max(fixture => fixture.Y);
 		return new Aabb(
 			position: new(Constants.FloatCoordinate(minX), 0f, Constants.FloatCoordinate(minZ)),
 			size: new(Constants.FloatCoordinate(maxX - minX + 1), Constants.WallHeight, Constants.FloatCoordinate(maxZ - minZ + 1)));
