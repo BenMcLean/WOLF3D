@@ -153,10 +153,11 @@ public partial class Doors : Node3D
 	/// <summary>
 	/// Updates a door's position during sliding animation.
 	/// Called by the discrete event simulator as the door opens/closes.
+	/// WL_ACT1.C:doorposition[MAXDOORS] - position is relative from 0 (closed) to 0xFFFF (fully open)
 	/// </summary>
 	/// <param name="index">Index in the door spawns collection</param>
-	/// <param name="newPosition">New position coordinate (16:16 fixed-point) along the door's sliding axis</param>
-	public void MoveDoor(ushort index, uint newPosition)
+	/// <param name="relativePosition">Relative door position: 0 = closed, 0xFFFF = fully open (matches WL_ACT1.C:doorposition)</param>
+	public void MoveDoor(ushort index, ushort relativePosition)
 	{
 		if (index >= doors.Count)
 		{
@@ -166,12 +167,17 @@ public partial class Doors : Node3D
 
 		DoorData door = doors[index];
 
+		// Doors are one tile wide and slide one full tile to open
+		const uint DoorWidth = 0x10000;  // One full tile in 16.16 fixed point
+		uint offset = (uint)((relativePosition * (ulong)DoorWidth) >> 16);
+
 		// Update the position along the door's sliding axis
-		// Door facing E/W (runs N-S) slides along X (E-W), door facing N/S (runs E-W) slides along Z (N-S)
+		// X axis = East-West, Z axis = North-South
+		// Door facing E/W slides N/S (perpendicular), door facing N/S slides E/W (perpendicular)
 		if (door.FacesEastWest)
-			door.CurrentX = newPosition;  // Door faces E/W (runs N-S), slides E-W along X axis
+			door.CurrentZ = door.BaseGridZ + offset;  // Door faces E/W, slides N/S along Z axis
 		else
-			door.CurrentZ = newPosition;  // Door faces N/S (runs E-W), slides N-S along Z axis
+			door.CurrentX = door.BaseGridX + offset;  // Door faces N/S, slides E/W along X axis
 
 		// Update both instances (they're always at the same position)
 		UpdateDoorTransforms(door);
@@ -183,14 +189,15 @@ public partial class Doors : Node3D
 	/// </summary>
 	private void UpdateDoorTransforms(DoorData door)
 	{
-		// Convert fixed-point to float coordinates
-		float worldX = door.CurrentX / 65536f;
-		float worldZ = door.CurrentZ / 65536f;
+		// Convert 16.16 fixed-point to float (tile units with fractional part)
+		float tileX = door.CurrentX / 65536f;
+		float tileZ = door.CurrentZ / 65536f;
 
+		// Convert from tile coordinates to VR space (meters)
 		Vector3 position = new(
-			Constants.FloatCoordinate((int)(worldX)) + Constants.HalfWallWidth,
+			Constants.VrCoordinate(tileX),
 			Constants.HalfWallHeight,
-			Constants.FloatCoordinate((int)(worldZ)) + Constants.HalfWallWidth
+			Constants.VrCoordinate(tileZ)
 		);
 
 		// Determine base rotation based on door orientation
@@ -233,8 +240,14 @@ public partial class Doors : Node3D
 
 		if (!meshes.TryGetValue(textureIndex, out MultiMeshInstance3D meshInstance))
 		{
-			GD.PrintErr($"No {meshType} MultiMesh found for texture {textureIndex}");
+			GD.PrintErr($"ERROR: No {meshType} MultiMesh found for texture {textureIndex}");
 			GD.PrintErr($"  Available: {string.Join(", ", meshes.Keys.OrderBy(k => k))}");
+			return;
+		}
+
+		if (meshInstance?.Multimesh == null)
+		{
+			GD.PrintErr($"ERROR: MultiMesh or Multimesh is null for texture {textureIndex}");
 			return;
 		}
 

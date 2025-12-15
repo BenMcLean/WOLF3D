@@ -59,6 +59,13 @@ public static class Constants
 	public static float FloatCoordinate(uint x) => FloatCoordinate((int)x);
 	public static float FloatCoordinate(ushort x) => FloatCoordinate((int)x);
 	public static float FloatCoordinate(short x) => FloatCoordinate((int)x);
+	/// <summary>
+	/// Converts a tile coordinate (with fractional part) to VR space position (meters).
+	/// Use this for coordinates that already include sub-tile precision (e.g., door positions, actor positions).
+	/// </summary>
+	/// <param name="tileCoordinate">Position in tile units (e.g., 32.68 = tile 32, offset 0.68)</param>
+	/// <returns>Position in VR space (meters)</returns>
+	public static float VrCoordinate(float tileCoordinate) => tileCoordinate * WallWidth;
 	public static readonly Vector3 Scale = new(1f, 1.2f, 1f);
 	//public static readonly Transform WallTransform = new Transform(Basis.Identity, new Vector3(HalfWallWidth, HalfWallHeight, 0));
 	//public static readonly Transform WallTransformFlipped = new Transform(Basis.Identity.Rotated(Godot.Vector3.Up, Mathf.Pi), WallTransform.origin);

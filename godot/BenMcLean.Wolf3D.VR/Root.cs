@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BenMcLean.Wolf3D.Assets;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -27,6 +28,7 @@ void sky() {
 	public Walls Walls;
 	public Fixtures Fixtures;
 	public Doors Doors;
+	public SimulatorController SimulatorController;
 
 	public override void _Ready()
 	{
@@ -108,10 +110,78 @@ void sky() {
 			flippedDoorMaterials,  // Flipped materials (only for door textures)
 			firstLevel.Doors);
 		AddChild(Doors);
+
+		// Create simulator controller and initialize with door data
+		SimulatorController = new SimulatorController();
+		AddChild(SimulatorController);
+		SimulatorController.Initialize(
+			firstLevel.Doors,
+			Doors);
 	}
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
+		{
+			if (keyEvent.Keycode == Key.R)
+			{
+				// Use door player is facing
+				OperateDoorPlayerIsFacing();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Finds and operates the door the player is facing.
+	/// Projects 1 WallWidth forward from camera position/rotation and checks that tile.
+	/// </summary>
+	private void OperateDoorPlayerIsFacing()
+	{
+		// Get camera's position and Y rotation
+		Vector3 cameraPos = _freeLookCamera.GlobalPosition;
+		float rotationY = _freeLookCamera.GlobalRotation.Y;
+
+		// Project forward 1.5 tiles to reliably detect doors in front
+		// In Godot: Y rotation of 0 = facing -Z (North), rotating clockwise
+		float forwardX = Mathf.Sin(rotationY);
+		float forwardZ = -Mathf.Cos(rotationY);
+		Vector3 forwardPoint = cameraPos + new Vector3(
+			forwardX * -Constants.WallWidth,
+			0f,
+			forwardZ * Constants.WallWidth);
+
+		// Convert world position to tile coordinates
+		ushort tileX = (ushort)(forwardPoint.X / Constants.WallWidth);
+		ushort tileY = (ushort)(forwardPoint.Z / Constants.WallWidth);
+
+		// Find door at this tile
+		ushort? doorIndex = FindDoorAtTile(tileX, tileY);
+
+		if (doorIndex.HasValue)
+		{
+			SimulatorController.OperateDoor(doorIndex.Value);
+		}
+	}
+
+	/// <summary>
+	/// Finds the door index at the specified tile coordinates.
+	/// Returns null if no door exists at that tile.
+	/// </summary>
+	private ushort? FindDoorAtTile(ushort tileX, ushort tileY)
+	{
+		// Search through all doors in the simulator
+		for (int i = 0; i < SimulatorController.Doors.Count; i++)
+		{
+			Simulator.Door door = SimulatorController.Doors[i];
+			if (door.TileX == tileX && door.TileY == tileY)
+				return (ushort)i;
+		}
+		return null;
+	}
+
 	public override void _Process(double delta)
 	{
 		// Fixtures updates billboard rotations automatically in its own _Process
 		// Doors use two-quad approach with back-face culling - no per-frame updates needed
+		// SimulatorController drives the simulator and updates door positions automatically in its own _Process
 	}
 }
