@@ -1,0 +1,279 @@
+using BenMcLean.Wolf3D.Assets;
+using Godot;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
+
+namespace BenMcLean.Wolf3D.VR;
+
+/// <summary>
+/// Generates MultiMesh instances for all bonus/pickup objects in a Wolfenstein 3D map.
+/// Uses MultiMesh for efficient rendering of billboarded bonus sprites in VR.
+/// Only handles bonus items with game logic (not fixtures/scenery).
+/// Sprites rotate each frame to face opposite of the player's Y-axis orientation (billboard effect).
+/// This node contains all bonus multimeshes as children - just add it to the scene tree.
+/// </summary>
+public partial class Bonuses : Node3D
+{
+	/// <summary>
+	/// Dictionary of MultiMeshInstance3D nodes, indexed by sprite page number.
+	/// </summary>
+	public Dictionary<ushort, MultiMeshInstance3D> MeshInstances { get; private init; }
+
+	/// <summary>
+	/// Delegate that returns the camera's Y-axis rotation angle for billboard effect.
+	/// </summary>
+	private Func<float> _getCameraYRotation;
+
+	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
+
+	/// <summary>
+	/// Maps simulator StatObjList index to rendering location.
+	/// </summary>
+	private readonly Dictionary<int, BonusRenderData> _simulatorToRenderMap = [];
+
+	/// <summary>
+	/// Tracks the next available slot index per sprite page.
+	/// Sequential allocation, no slot reuse (simulator handles slot reuse via ShapeNum = -1).
+	/// </summary>
+	private readonly Dictionary<ushort, int> _nextSlotIndex = [];
+
+	/// <summary>
+	/// Rendering location for a bonus item.
+	/// </summary>
+	private struct BonusRenderData
+	{
+		public ushort SpriteShape;   // Which MultiMesh (sprite page number)
+		public int LocalIndex;       // Index within that MultiMesh
+	}
+
+	/// <summary>
+	/// Creates bonus sprite geometry with pre-allocated slots.
+	/// All slots start hidden (scaled to zero) until BonusSpawnedEvent fires.
+	/// </summary>
+	/// <param name="spriteMaterials">Dictionary of sprite materials from GodotResources.SpriteMaterials</param>
+	/// <param name="mapAnalysis">Map analysis containing static bonus spawn data and enemy counts</param>
+	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
+	public Bonuses(
+		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
+		MapAnalysis mapAnalysis,
+		Func<float> getCameraYRotation)
+	{
+		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
+		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
+
+		// Calculate instance counts per sprite page
+		Dictionary<ushort, int> instanceCounts = [];
+
+		// Static bonuses from map - materialize to list to avoid re-enumeration issues
+		List<MapAnalysis.StaticSpawn> staticBonuses = mapAnalysis.StaticSpawns
+			.Where(s => s.StatType == StatType.bonus)
+			.ToList();  // Materialize to avoid multiple enumeration
+
+		foreach (MapAnalysis.StaticSpawn bonus in staticBonuses)
+			instanceCounts[bonus.Shape] = instanceCounts.GetValueOrDefault(bonus.Shape) + 1;
+
+		// Reserve slots for enemy drops
+		// Each enemy can drop at most one item when killed
+		foreach (MapAnalysis.EnemySpawn enemy in mapAnalysis.EnemySpawns)
+		{
+			ushort dropShape = GetEnemyDropShape(enemy.Type);
+			if (dropShape != 0)
+				instanceCounts[dropShape] = instanceCounts.GetValueOrDefault(dropShape) + 1;
+		}
+
+		// Initialize slot tracking
+		foreach (ushort shape in instanceCounts.Keys)
+			_nextSlotIndex[shape] = 0;
+
+		// Create MultiMesh for each sprite page with exact pre-allocated size
+		MeshInstances = instanceCounts.Keys.ToDictionary(
+			page => page,
+			page => CreateMultiMeshForPage(page, instanceCounts[page]));
+
+		// Add all multimeshes as children of this node
+		foreach (MultiMeshInstance3D meshInstance in MeshInstances.Values)
+			AddChild(meshInstance);
+
+		// Display all static bonuses immediately (no need for events)
+		int globalStaticIndex = 0;
+		foreach (MapAnalysis.StaticSpawn bonus in staticBonuses)
+		{
+			int localIndex = _nextSlotIndex[bonus.Shape]++;
+
+			// Map using global index (negative to distinguish from dynamic simulator indices)
+			// Each static bonus gets a unique negative index
+			int staticIndex = -(globalStaticIndex + 1);
+			globalStaticIndex++;
+
+			_simulatorToRenderMap[staticIndex] = new BonusRenderData
+			{
+				SpriteShape = bonus.Shape,
+				LocalIndex = localIndex
+			};
+
+			// Set transform to show it
+			Vector3 position = new(
+				Constants.CenterSquare(bonus.X),
+				Constants.HalfWallHeight,
+				Constants.CenterSquare(bonus.Y)
+			);
+
+			Transform3D transform = Transform3D.Identity;
+			transform.Origin = position;
+			MeshInstances[bonus.Shape].Multimesh.SetInstanceTransform(localIndex, transform);
+		}
+	}
+
+	/// <summary>
+	/// Shows a dynamically spawned bonus (enemy drops).
+	/// Called from SimulatorController when BonusSpawnedEvent fires.
+	/// Static bonuses are displayed directly in the constructor - this is only for dynamic spawns.
+	/// </summary>
+	/// <param name="statObjIndex">Index in simulator's StatObjList</param>
+	/// <param name="shape">VSwap sprite page number</param>
+	/// <param name="tileX">Tile X coordinate</param>
+	/// <param name="tileY">Tile Y coordinate (Wolf3D Y, becomes Godot Z)</param>
+	public void ShowBonus(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
+	{
+		if (!MeshInstances.ContainsKey(shape))
+		{
+			GD.PrintErr($"ERROR: No MultiMesh found for bonus shape {shape}");
+			GD.PrintErr($"  Available shapes: {string.Join(", ", MeshInstances.Keys)}");
+			return;
+		}
+
+		// Allocate next sequential slot for this sprite
+		int localIndex = _nextSlotIndex[shape]++;
+
+		// Map simulator index -> render location
+		_simulatorToRenderMap[statObjIndex] = new BonusRenderData
+		{
+			SpriteShape = shape,
+			LocalIndex = localIndex
+		};
+
+		// Set transform to show it (position only, rotation updated in _Process)
+		Vector3 position = new(
+			Constants.CenterSquare(tileX),
+			Constants.HalfWallHeight,
+			Constants.CenterSquare(tileY)
+		);
+
+		Transform3D transform = Transform3D.Identity;
+		transform.Origin = position;
+		MeshInstances[shape].Multimesh.SetInstanceTransform(localIndex, transform);
+	}
+
+	/// <summary>
+	/// Hides a bonus (player picked it up).
+	/// Called from SimulatorController when BonusPickedUpEvent fires.
+	/// </summary>
+	/// <param name="statObjIndex">Index in simulator's StatObjList that was removed</param>
+	public void HideBonus(int statObjIndex)
+	{
+		if (!_simulatorToRenderMap.TryGetValue(statObjIndex, out BonusRenderData renderData))
+		{
+			GD.PrintErr($"Warning: Tried to hide bonus at simulator index {statObjIndex} but no render mapping exists");
+			return;
+		}
+
+		// Hide by scaling to zero
+		Transform3D transform = Transform3D.Identity.Scaled(Vector3.Zero);
+		MeshInstances[renderData.SpriteShape].Multimesh
+			.SetInstanceTransform(renderData.LocalIndex, transform);
+
+		// Remove mapping (slot stays allocated but hidden)
+		_simulatorToRenderMap.Remove(statObjIndex);
+	}
+
+	/// <summary>
+	/// Creates a MultiMeshInstance3D for bonuses using a specific sprite page.
+	/// All instances start hidden (scaled to zero) until shown by simulator events.
+	/// </summary>
+	private MultiMeshInstance3D CreateMultiMeshForPage(ushort page, int instanceCount)
+	{
+		// Get material directly by page number (will throw KeyNotFoundException if missing)
+		StandardMaterial3D material = _spriteMaterials[page];
+
+		// Create MultiMesh
+		MultiMesh multiMesh = new()
+		{
+			TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+			Mesh = Constants.WallMesh,  // Reuse wall quad mesh for sprites
+			InstanceCount = instanceCount,
+		};
+
+		// Initialize all instances as hidden (scaled to zero)
+		// They'll be shown when BonusSpawnedEvent fires from simulator
+		Transform3D hiddenTransform = Transform3D.Identity.Scaled(Vector3.Zero);
+		for (int i = 0; i < instanceCount; i++)
+			multiMesh.SetInstanceTransform(i, hiddenTransform);
+
+		// Precompute custom AABB that encompasses all potential billboards
+		// Use a generous AABB since bonuses can spawn anywhere on the map
+		// This prevents incorrect frustum culling and avoids expensive RecomputeAabb() each frame
+		multiMesh.CustomAabb = new Aabb(Vector3.Zero, new Vector3(1000, 100, 1000));
+
+		// Create MultiMeshInstance3D
+		MultiMeshInstance3D meshInstance = new()
+		{
+			Multimesh = multiMesh,
+			MaterialOverride = material,
+			Name = $"Bonuses_Page_{page}",
+		};
+
+		return meshInstance;
+	}
+
+	/// <summary>
+	/// Updates all billboard rotations to face the camera.
+	/// Call this every frame from _Process().
+	/// </summary>
+	public override void _Process(double delta)
+	{
+		float billboardRotation = _getCameraYRotation();
+
+		// Update rotation for all visible bonuses
+		foreach (KeyValuePair<int, BonusRenderData> kvp in _simulatorToRenderMap)
+		{
+			BonusRenderData renderData = kvp.Value;
+
+			if (!MeshInstances.ContainsKey(renderData.SpriteShape))
+			{
+				GD.PrintErr($"ERROR in _Process: Shape {renderData.SpriteShape} not in MeshInstances!");
+				continue;
+			}
+
+			MultiMeshInstance3D meshInstance = MeshInstances[renderData.SpriteShape];
+			Transform3D transform = meshInstance.Multimesh.GetInstanceTransform(renderData.LocalIndex);
+
+			// Keep position, update only rotation
+			Vector3 position = transform.Origin;
+			transform = Transform3D.Identity.Rotated(Vector3.Up, billboardRotation);
+			transform.Origin = position;
+			meshInstance.Multimesh.SetInstanceTransform(renderData.LocalIndex, transform);
+		}
+	}
+
+	/// <summary>
+	/// Sets the delegate for retrieving camera Y rotation.
+	/// Useful if camera changes during gameplay.
+	/// </summary>
+	public void SetCameraRotationDelegate(Func<float> getCameraYRotation)
+	{
+		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
+	}
+
+	/// <summary>
+	/// Determines what sprite page an enemy drops when killed.
+	/// TODO: Look up from XML what this enemy type drops.
+	/// </summary>
+	private static ushort GetEnemyDropShape(ObClass enemyType)
+	{
+		// TODO: Parse from WOLF3D.xml Actor/PlaceItem definitions
+		// For now, return 0 (no drop) since enemy system isn't implemented yet
+		return 0;
+	}
+}

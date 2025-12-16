@@ -14,22 +14,30 @@ public partial class SimulatorController : Node3D
 {
 	private Simulator.Simulator simulator;
 	private Doors doors;
+	private Bonuses bonuses;
 
 	/// <summary>
-	/// Initializes the simulator with door data from MapAnalysis.
+	/// Initializes the simulator with door and bonus data from MapAnalysis.
 	/// Call this after adding the controller to the scene tree.
 	/// </summary>
-	/// <param name="doorSpawns">Door spawn data from MapAnalysis</param>
+	/// <param name="mapAnalysis">Map analysis containing all spawn data</param>
 	/// <param name="doorsNode">The Doors node that will render the doors</param>
+	/// <param name="bonusesNode">The Bonuses node that will render bonus items</param>
 	public void Initialize(
-		IEnumerable<MapAnalysis.DoorSpawn> doorSpawns,
-		Doors doorsNode)
+		MapAnalysis mapAnalysis,
+		Doors doorsNode,
+		Bonuses bonusesNode)
 	{
 		simulator = new Simulator.Simulator();
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
+		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
 
 		// Load doors into simulator
-		simulator.LoadDoorsFromMapAnalysis(doorSpawns);
+		simulator.LoadDoorsFromMapAnalysis(mapAnalysis.Doors);
+
+		// Load static bonuses into simulator for gameplay tracking
+		// VR layer displays them directly from MapAnalysis - no events needed
+		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
 	}
 
 	/// <summary>
@@ -42,7 +50,7 @@ public partial class SimulatorController : Node3D
 			return;
 
 		// Update simulator with elapsed time
-		var events = simulator.Update(delta);
+		IReadOnlyList<ISimulationEvent> events = simulator.Update(delta);
 
 		// Process all events that occurred this frame
 		ProcessEvents(events);
@@ -53,7 +61,7 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	private void ProcessEvents(IReadOnlyList<ISimulationEvent> events)
 	{
-		foreach (var evt in events)
+		foreach (ISimulationEvent evt in events)
 		{
 			switch (evt)
 			{
@@ -75,6 +83,14 @@ public partial class SimulatorController : Node3D
 
 				case DoorClosedEvent closed:
 					HandleDoorClosed(closed);
+					break;
+
+				case BonusSpawnedEvent bonusSpawned:
+					HandleBonusSpawned(bonusSpawned);
+					break;
+
+				case BonusPickedUpEvent bonusPickedUp:
+					HandleBonusPickedUp(bonusPickedUp);
 					break;
 			}
 		}
@@ -129,7 +145,7 @@ public partial class SimulatorController : Node3D
 			return;
 		}
 
-		var door = simulator.Doors[doorIndex];
+		Door door = simulator.Doors[doorIndex];
 
 		if (doors == null)
 		{
@@ -168,4 +184,25 @@ public partial class SimulatorController : Node3D
 	/// Read-only access to door states.
 	/// </summary>
 	public IReadOnlyList<Simulator.Door> Doors => simulator?.Doors;
+
+	private void HandleBonusSpawned(BonusSpawnedEvent evt)
+	{
+		// Update VR bonus display
+		bonuses?.ShowBonus(evt.StatObjIndex, evt.Shape, evt.TileX, evt.TileY);
+
+		// TODO: Play bonus spawn sound if applicable
+		// PlaySoundLocTile(spawnSound, evt.TileX, evt.TileY);
+	}
+
+	private void HandleBonusPickedUp(BonusPickedUpEvent evt)
+	{
+		// Hide bonus from VR display
+		bonuses?.HideBonus(evt.StatObjIndex);
+
+		// TODO: Play pickup sound based on item type (WL_AGENT.C:GetBonus)
+		// PlaySoundLocTile(pickupSound, evt.TileX, evt.TileY);
+
+		// TODO: Show bonus flash effect
+		// StartBonusFlash();
+	}
 }

@@ -173,13 +173,13 @@ public class MapAnalyzer
 	// Wolf3D object class categorization (using enum)
 	private static bool IsPlayerStart(ObClass? obclass) => obclass == ObClass.playerobj;
 	private static bool IsEnemy(ObClass? obclass) => false; // TODO: Add enemy types to enum
-	private static bool IsStatic(ObClass? obclass) => obclass == ObClass.dressing || obclass == ObClass.block;
+	private static bool IsStatic(ObClass? obclass) => obclass == ObClass.dressing || obclass == ObClass.block || obclass == ObClass.bonus;
 
 	private static StatType GetStatType(ObClass? obclass) => obclass switch
 	{
 		ObClass.dressing => StatType.dressing,
 		ObClass.block => StatType.block,
-		// bonus items will be added to enum as needed
+		ObClass.bonus => StatType.bonus,
 		_ => StatType.dressing // default
 	};
 
@@ -499,7 +499,7 @@ public enum ObClass
 	block,       // Blocking scenery (not walkable)
 
 	// Bonus/pickup items (stat_t with bo_ prefix)
-	// These will be added as needed for dynamic objects
+	bonus,       // Pickup items (health, ammo, keys, treasure, etc.)
 }
 
 // Static object type (Wolf3D stat_t enum)

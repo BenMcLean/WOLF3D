@@ -27,6 +27,7 @@ void sky() {
 	public GodotResources GodotResources;
 	public Walls Walls;
 	public Fixtures Fixtures;
+	public Bonuses Bonuses;
 	public Doors Doors;
 	public SimulatorController SimulatorController;
 
@@ -102,6 +103,13 @@ void sky() {
 			Assets.VSwap.SpritePage);
 		AddChild(Fixtures);
 
+		// Create bonuses (bonus/pickup items with game logic) for the first level and add to scene
+		Bonuses = new Bonuses(
+			GodotResources.SpriteMaterials,
+			firstLevel,
+			() => _freeLookCamera.GlobalRotation.Y);  // Delegate returns camera Y rotation for billboard effect
+		AddChild(Bonuses);
+
 		// Create doors for the first level and add to scene
 		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(firstLevel.Doors);
 		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = GodotResources.CreateFlippedMaterialsForDoors(doorTextureIndices);
@@ -111,12 +119,13 @@ void sky() {
 			firstLevel.Doors);
 		AddChild(Doors);
 
-		// Create simulator controller and initialize with door data
+		// Create simulator controller and initialize with map data
 		SimulatorController = new SimulatorController();
 		AddChild(SimulatorController);
 		SimulatorController.Initialize(
-			firstLevel.Doors,
-			Doors);
+			firstLevel,
+			Doors,
+			Bonuses);
 	}
 	public override void _Input(InputEvent @event)
 	{
@@ -181,7 +190,8 @@ void sky() {
 	public override void _Process(double delta)
 	{
 		// Fixtures updates billboard rotations automatically in its own _Process
+		// Bonuses updates billboard rotations automatically in its own _Process
 		// Doors use two-quad approach with back-face culling - no per-frame updates needed
-		// SimulatorController drives the simulator and updates door positions automatically in its own _Process
+		// SimulatorController drives the simulator and updates door/bonus states automatically in its own _Process
 	}
 }

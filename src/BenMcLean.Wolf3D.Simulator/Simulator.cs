@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BenMcLean.Wolf3D.Assets;
 using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 
@@ -21,6 +22,13 @@ public class Simulator
 
 	public IReadOnlyList<Door> Doors => doors;
 	private readonly List<Door> doors = [];
+
+	// WL_ACT1.C:statobjlist[MAXSTATS]
+	// Array of bonus/pickup objects (not fixtures - those are display-only)
+	public StatObj[] StatObjList { get; private set; } = new StatObj[StatObj.MAXSTATS];
+
+	// WL_ACT1.C:laststatobj - pointer to next free slot
+	private int lastStatObj;
 
 	// WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
 	// Current simulation time in tics
@@ -65,7 +73,7 @@ public class Simulator
 	private void ProcessTic()
 	{
 		// Process queued player actions
-		foreach (var action in pendingActions)
+		foreach (PlayerAction action in pendingActions)
 		{
 			ProcessAction(action);
 		}
@@ -95,7 +103,7 @@ public class Simulator
 		if (doorIndex >= doors.Count)
 			return;
 
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 
 		// WL_ACT1.C:OperateDoor lines 658-668 - toggle door state
 		switch (door.Action)
@@ -117,7 +125,7 @@ public class Simulator
 	/// </summary>
 	private void OpenDoor(ushort doorIndex)
 	{
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 
 		if (door.Action == DoorAction.Open)
 		{
@@ -136,7 +144,7 @@ public class Simulator
 	/// </summary>
 	private void CloseDoor(ushort doorIndex)
 	{
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 
 		// TODO: Check for blocking actors/player (WL_ACT1.C:574-611)
 		// For now, just start closing
@@ -157,7 +165,7 @@ public class Simulator
 	/// </summary>
 	private void UpdateDoor(int doorIndex)
 	{
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 
 		// WL_ACT1.C:MoveDoors lines 842-856
 		switch (door.Action)
@@ -186,7 +194,7 @@ public class Simulator
 	/// </summary>
 	private void UpdateDoorOpen(int doorIndex)
 	{
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 
 		// WL_ACT1.C:686 - accumulate tics
 		door.TicCount += 1; // Always 1 tic per call in our simplified version
@@ -203,7 +211,7 @@ public class Simulator
 	/// </summary>
 	private void UpdateDoorOpening(int doorIndex)
 	{
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 		int newPosition = door.Position;
 
 		// WL_ACT1.C:707 - door just starting to open
@@ -266,7 +274,7 @@ public class Simulator
 	/// </summary>
 	private void UpdateDoorClosing(int doorIndex)
 	{
-		var door = doors[doorIndex];
+		Door door = doors[doorIndex];
 		int newPosition = door.Position;
 
 		// TODO: WL_ACT1.C:773-778 - check if something is blocking the door
@@ -321,5 +329,46 @@ public class Simulator
 		doors.Clear();
 		foreach (MapAnalysis.DoorSpawn spawn in doorSpawns)
 			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest));
+	}
+
+	/// <summary>
+	/// Initialize static bonus objects from MapAnalyzer data.
+	/// Based on WL_GAME.C:ScanInfoPlane and WL_ACT1.C:InitStaticList
+	/// Populates StatObjList for gameplay (collision/pickup detection).
+	/// Does NOT emit events - VR layer displays static bonuses directly from MapAnalysis.
+	/// </summary>
+	public void LoadBonusesFromMapAnalysis(MapAnalysis mapAnalysis)
+	{
+		// WL_ACT1.C:InitStaticList - reset to beginning
+		lastStatObj = 0;
+
+		// Initialize all slots as free (ShapeNum = -1)
+		for (int i = 0; i < StatObj.MAXSTATS; i++)
+			StatObjList[i] = new StatObj();
+
+		// WL_GAME.C:ScanInfoPlane - spawn static bonus objects from map
+		IEnumerable<MapAnalysis.StaticSpawn> staticBonuses = mapAnalysis.StaticSpawns
+			.Where(s => s.StatType == StatType.bonus);
+
+		foreach (MapAnalysis.StaticSpawn spawn in staticBonuses)
+		{
+			if (lastStatObj >= StatObj.MAXSTATS)
+			{
+				// Too many static objects - this would be a Quit() in original
+				// For now, just stop spawning (should never happen with proper maps)
+				break;
+			}
+
+			// Create the bonus object in StatObjList for gameplay tracking
+			// WL_DEF.H:statstruct - note: shapenum is signed, can be -1
+			StatObjList[lastStatObj] = new StatObj(
+				spawn.X,
+				spawn.Y,
+				(short)spawn.Shape,  // Cast ushort to short (safe, shape numbers are small)
+				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
+				(byte)spawn.Type);  // itemnumber (ObClass enum -> byte)
+
+			lastStatObj++;
+		}
 	}
 }

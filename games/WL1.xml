@@ -1037,7 +1037,7 @@
 			<ObjectType Number="26" ObClass="block" Page="111" Name="Floor Lamp" />
 			<ObjectType Number="27" ObClass="dressing" Page="112" Name="Chandalier" />
 			<ObjectType Number="28" ObClass="block" Page="113" Name="Hanging Skeleton" />
-			<Pickup Number="29" Page="114" Walk="true" If="Health" LessThan="100" AddTo="Health" Add="4" Sound="HEALTH1SND" Flash="#FFFF00" Name="Dog Food" />
+			<ObjectType Number="29" ObClass="block" Page="114" Walk="true" If="Health" LessThan="100" AddTo="Health" Add="4" Sound="HEALTH1SND" Flash="#FFFF00" Name="Dog Food" />
 			<ObjectType Number="30" ObClass="block" Page="115" Name="White Column" />
 			<ObjectType Number="31" ObClass="block" Page="116" Name="Green Plant" />
 			<ObjectType Number="32" ObClass="dressing" Page="117" Name="Skeleton" />
@@ -1051,32 +1051,32 @@
 			<ObjectType Number="40" ObClass="block" Page="125" Name="Empty Cage" />
 			<ObjectType Number="41" ObClass="block" Page="126" Name="Cage with Skeleton" />
 			<ObjectType Number="42" ObClass="dressing" Page="127" Name="Bones 1" />
-			<Pickup Number="43" Page="128" AddTo="Gold Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Gold Key" />
-			<Pickup Number="44" Page="129" AddTo="Silver Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Silver Key" />
+			<ObjectType Number="43" ObClass="bonus" Page="128" AddTo="Gold Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Gold Key" />
+			<ObjectType Number="44" ObClass="bonus" Page="129" AddTo="Silver Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Silver Key" />
 			<ObjectType Number="45" ObClass="block" Page="130" Name="Bed" />
 			<ObjectType Number="46" ObClass="dressing" Page="131" Name="Basket" />
-			<Pickup Number="47" Page="132" If="Health" LessThan="100" AddTo="Health" Add="10" Sound="HEALTH1SND" Flash="#FFFF00" Name="Food" />
-			<Pickup Number="48" Page="133" If="Health" LessThan="100" AddTo="Health" Add="25" Sound="HEALTH2SND" Flash="#FFFF00" Name="First Aid Kit" />
-			<Pickup Number="49" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="8" Sound="GETAMMOSND" Flash="#FFFF00" Name="Ammo" />
-			<Pickup Number="50" Page="135" AddTo="Weapon2" Add="1" Sound="GETMACHINESND" Flash="#FFFF00" Name="Machine Gun">
+			<ObjectType Number="47" ObClass="bonus" Page="132" If="Health" LessThan="100" AddTo="Health" Add="10" Sound="HEALTH1SND" Flash="#FFFF00" Name="Food" />
+			<ObjectType Number="48" ObClass="bonus" Page="133" If="Health" LessThan="100" AddTo="Health" Add="25" Sound="HEALTH2SND" Flash="#FFFF00" Name="First Aid Kit" />
+			<ObjectType Number="49" ObClass="bonus" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="8" Sound="GETAMMOSND" Flash="#FFFF00" Name="Ammo" />
+			<ObjectType Number="50" ObClass="bonus" Page="135" AddTo="Weapon2" Add="1" Sound="GETMACHINESND" Flash="#FFFF00" Name="Machine Gun">
 				<Effect AddTo="Ammo" Add="6" />
-			</Pickup>
-			<Pickup Number="51" Page="136" AddTo="Weapon3" Add="1" Sound="GETGATLINGSND" Flash="#FFFF00" Name="Gatling Gun">
+			</ObjectType>
+			<ObjectType Number="51" ObClass="bonus" Page="136" AddTo="Weapon3" Add="1" Sound="GETGATLINGSND" Flash="#FFFF00" Name="Gatling Gun">
 				<Effect AddTo="Ammo" Add="6" />
-			</Pickup>
-			<Pickup Number="52" Page="137" Treasure="true" AddTo="Score" Add="100" Sound="BONUS1SND" Flash="#FFFF00" Name="Cross" />
-			<Pickup Number="53" Page="138" Treasure="true" AddTo="Score" Add="500" Sound="BONUS2SND" Flash="#FFFF00" Name="Chalice" />
-			<Pickup Number="54" Page="139" Treasure="true" AddTo="Score" Add="1000" Sound="BONUS3SND" Flash="#FFFF00" Name="Chest of Jewels" />
-			<Pickup Number="55" Page="140" Treasure="true" AddTo="Score" Add="5000" Sound="BONUS4SND" Flash="#FFFF00" Name="Crown" />
-			<Pickup Number="56" Page="141" Treasure="true" AddTo="Lives" Add="1" Sound="BONUS1UPSND" Flash="#FFFF00" Name="Extra Life">
+			</ObjectType>
+			<ObjectType Number="52" ObClass="bonus" Page="137" Treasure="true" AddTo="Score" Add="100" Sound="BONUS1SND" Flash="#FFFF00" Name="Cross" />
+			<ObjectType Number="53" ObClass="bonus" Page="138" Treasure="true" AddTo="Score" Add="500" Sound="BONUS2SND" Flash="#FFFF00" Name="Chalice" />
+			<ObjectType Number="54" ObClass="bonus" Page="139" Treasure="true" AddTo="Score" Add="1000" Sound="BONUS3SND" Flash="#FFFF00" Name="Chest of Jewels" />
+			<ObjectType Number="55" ObClass="bonus" Page="140" Treasure="true" AddTo="Score" Add="5000" Sound="BONUS4SND" Flash="#FFFF00" Name="Crown" />
+			<ObjectType Number="56" ObClass="bonus" Page="141" Treasure="true" AddTo="Lives" Add="1" Sound="BONUS1UPSND" Flash="#FFFF00" Name="Extra Life">
 				<Effect AddTo="Ammo" Add="25" />
 				<Effect AddTo="Health" Add="100" />
-			</Pickup>
-			<Pickup Number="57" Page="142" If="Health" LessThan="12" AddTo="Health" Add="1" DigiSound="SLURPIESND" Flash="#FFFF00" Name="Bones with Blood" />
+			</ObjectType>
+			<ObjectType Number="57" ObClass="bonus" Page="142" If="Health" LessThan="12" AddTo="Health" Add="1" DigiSound="SLURPIESND" Flash="#FFFF00" Name="Bones with Blood" />
 			<ObjectType Number="58" ObClass="block" Page="143" Name="Barrel" />
 			<ObjectType Number="59" ObClass="block" Page="144" Name="Well with Water" />
 			<ObjectType Number="60" ObClass="block" Page="145" Name="Well" />
-			<Pickup Number="61" Page="146" If="Health" LessThan="12" AddTo="Health" Add="1" DigiSound="SLURPIESND" Flash="#FFFF00" Name="Pool of Blood" />
+			<ObjectType Number="61" ObClass="bonus" Page="146" If="Health" LessThan="12" AddTo="Health" Add="1" DigiSound="SLURPIESND" Flash="#FFFF00" Name="Pool of Blood" />
 			<ObjectType Number="62" ObClass="block" Page="147" Name="Flag" />
 			<ObjectType Number="63" ObClass="block" Page="148" Name="Aardwolf" />
 			<ObjectType Number="64" ObClass="dressing" Page="149" Name="Bones 2" />
@@ -1160,7 +1160,7 @@
 			<Spawn Number="214" Actor="Hans" Direction="S" State="s_bossstand" />
 			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" AddTo="Score" Add="100" >
 				<PlaceItem>
-					<Pickup Number="49" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="4" Sound="GETAMMOSND" Flash="#FFFF00" Name="bo_clip2" />
+					<ObjectType Number="49" ObClass="bonus" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="4" Sound="GETAMMOSND" Flash="#FFFF00" Name="bo_clip2" />
 				</PlaceItem>
 			</Actor>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
@@ -1210,13 +1210,13 @@
 			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertDigiSound="SCHUTZADSND" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" AddTo="Score" Add="200" >
 				<Condition If="Weapon2" LessThan="1" >
 					<PlaceItem>
-						<Pickup Number="50" Page="135" AddTo="Weapon2" Add="1" Sound="GETMACHINESND" Flash="#FFFF00" Name="Machine Gun">
+						<ObjectType Number="50" ObClass="bonus" Page="135" AddTo="Weapon2" Add="1" Sound="GETMACHINESND" Flash="#FFFF00" Name="Machine Gun">
 							<Effect AddTo="Ammo" Add="6" />
-						</Pickup>
+						</ObjectType>
 					</PlaceItem>
 					<Else>
 						<PlaceItem>
-							<Pickup Number="49" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="4" Sound="GETAMMOSND" Flash="#FFFF00" Name="bo_clip2" />
+							<ObjectType Number="49" ObClass="bonus" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="4" Sound="GETAMMOSND" Flash="#FFFF00" Name="bo_clip2" />
 						</PlaceItem>
 					</Else>
 				</Condition>
@@ -1251,7 +1251,7 @@
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
 			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="GUTENTAGSND" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" AddTo="Score" Add="5000" >
 				<PlaceItem>
-					<Pickup Number="43" Page="128" AddTo="Gold Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Gold Key" />
+					<ObjectType Number="43" ObClass="bonus" Page="128" AddTo="Gold Key" Add="1" Sound="GETKEYSND" Flash="#FFFF00" Name="Gold Key" />
 				</PlaceItem>
 			</Actor>
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0" Next="s_bossstand" />

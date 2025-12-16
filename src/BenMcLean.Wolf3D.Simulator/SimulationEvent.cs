@@ -99,3 +99,46 @@ public struct DoorBlockedEvent : ISimulationEvent
 	public required ushort TileX { get; init; }
 	public required ushort TileY { get; init; }
 }
+
+/// <summary>
+/// A bonus object spawned in the world (static placement or enemy drop).
+/// Triggered in WL_GAME.C:ScanInfoPlane (static) or WL_ACT1.C:PlaceItemType (dynamic).
+/// </summary>
+public struct BonusSpawnedEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+
+	// Index in StatObjList array (WL_ACT1.C:statobjlist index)
+	public required int StatObjIndex { get; init; }
+
+	// VSwap sprite page number (WL_DEF.H:statstruct:shapenum)
+	public required ushort Shape { get; init; }
+
+	// WL_DEF.H:statstruct:tilex (original: byte)
+	public required ushort TileX { get; init; }
+
+	// WL_DEF.H:statstruct:tiley (original: byte)
+	public required ushort TileY { get; init; }
+
+	// WL_DEF.H:statstruct:itemnumber (bo_clip, bo_food, etc.)
+	public required byte ItemNumber { get; init; }
+}
+
+/// <summary>
+/// A bonus object was picked up by the player.
+/// Triggered in WL_AGENT.C:GetBonus when player touches a bonus item.
+/// </summary>
+public struct BonusPickedUpEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+
+	// Index in StatObjList array that was removed
+	public required int StatObjIndex { get; init; }
+
+	// WL_DEF.H:statstruct:itemnumber
+	public required byte ItemNumber { get; init; }
+
+	// Position where item was picked up
+	public required ushort TileX { get; init; }
+	public required ushort TileY { get; init; }
+}

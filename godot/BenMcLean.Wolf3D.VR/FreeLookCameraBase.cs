@@ -22,7 +22,7 @@ partial class FreeLookCameraBase : Camera3D
 	private Vector3 _velocity = new Vector3(0.0f, 0.0f, 0.0f);
 	private float _acceleration = 30f;
 	private float _deceleration = -10f;
-	private float _vel_multiplier = 4f;
+	private float _vel_multiplier = 15f;
 
 	// Keyboard state
 	private bool _w = false;
