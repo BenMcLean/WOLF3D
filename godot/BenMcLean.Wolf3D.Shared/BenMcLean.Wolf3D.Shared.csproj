@@ -14,4 +14,7 @@
 		<EmbeddedResource Include="Resources\**\*.fon" />
 		<EmbeddedResource Include="Resources\**\*.png" />
 	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />
+	</ItemGroup>
 </Project>

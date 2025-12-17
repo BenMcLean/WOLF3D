@@ -10,6 +10,6 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />
+		<ProjectReference Include="..\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />
 	</ItemGroup>
 </Project>

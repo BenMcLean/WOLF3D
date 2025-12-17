@@ -6,70 +6,38 @@ using System.Linq;
 namespace BenMcLean.Wolf3D.VR;
 
 /// <summary>
-/// Manages conversion of Wolfenstein 3D assets to Godot resources optimized for VR.
-/// Eagerly converts and caches wall and door materials with configurable upscaling.
+/// Manages VR-specific 3D rendering assets.
+/// Converts VSwap wall and sprite textures into Godot 3D materials optimized for VR.
+/// Loads once at game start and persists until program termination.
 /// </summary>
-public class GodotResources
+public static class VRAssetManager
 {
 	/// <summary>
 	/// Scale factor for upscaling textures. Default is 8x (64x64 -> 512x512).
 	/// 4x gives 256x256, 8x gives 512x512, 16x gives 1024x1024.
 	/// </summary>
-	public byte ScaleFactor { get; init; } = 8;
+	public static byte ScaleFactor { get; private set; } = 8;
 
 	/// <summary>
-	/// Cached opaque materials (used for walls and normal door quads), indexed by VSwap page number.
+	/// Opaque materials (used for walls and normal door quads), indexed by VSwap page number.
 	/// </summary>
-	private readonly Dictionary<ushort, StandardMaterial3D> _opaqueMaterials;
+	public static IReadOnlyDictionary<ushort, StandardMaterial3D> OpaqueMaterials { get; private set; }
 
 	/// <summary>
-	/// Gets the dictionary of opaque materials with normal UVs (used for walls and normal door quads).
+	/// Sprite materials for billboarded objects, indexed by VSwap page number.
 	/// </summary>
-	public IReadOnlyDictionary<ushort, StandardMaterial3D> OpaqueMaterials => _opaqueMaterials;
+	public static IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials { get; private set; }
 
 	/// <summary>
 	/// Cache of flipped opaque materials with horizontally mirrored UVs.
 	/// Only contains materials for door textures. Used with negative scale for correct handle orientation.
 	/// </summary>
-	private readonly Dictionary<ushort, ShaderMaterial> _flippedOpaqueMaterials = [];
-
-	/// <summary>
-	/// Eagerly creates flipped materials for the specified door texture indices.
-	/// Returns a dictionary of the created materials indexed by texture page number.
-	/// </summary>
-	public Dictionary<ushort, ShaderMaterial> CreateFlippedMaterialsForDoors(IEnumerable<ushort> doorTextureIndices)
-	{
-		Dictionary<ushort, ShaderMaterial> materials = [];
-
-		foreach (ushort pageNumber in doorTextureIndices.Distinct())
-		{
-			ShaderMaterial material = CreateFlippedMaterial(pageNumber);
-			materials[pageNumber] = material;
-			_flippedOpaqueMaterials[pageNumber] = material; // Cache for future reference
-		}
-
-		return materials;
-	}
+	private static Dictionary<ushort, ShaderMaterial> _flippedOpaqueMaterials;
 
 	/// <summary>
 	/// Shared shader for flipped door materials with horizontal UV flipping.
 	/// </summary>
-	private readonly Shader _flippedDoorShader;
-
-	/// <summary>
-	/// Cached sprite materials for billboarded objects, indexed by VSwap page number.
-	/// </summary>
-	private readonly Dictionary<ushort, StandardMaterial3D> _spriteMaterials;
-
-	/// <summary>
-	/// Gets the dictionary of all sprite materials.
-	/// </summary>
-	public IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials => _spriteMaterials;
-
-	/// <summary>
-	/// Reference to the source VSwap data.
-	/// </summary>
-	public Assets.VSwap VSwap { get; init; }
+	private static Shader _flippedDoorShader;
 
 	/// <summary>
 	/// Custom shader code for flipped door quads with horizontally flipped UVs.
@@ -91,82 +59,76 @@ void fragment() {
 ";
 
 	/// <summary>
-	/// Creates a new GodotResources instance and eagerly converts all wall and door materials.
-	/// Uses parallel processing for faster conversion.
+	/// Reference to the VSwap being used (from SharedAssetManager).
 	/// </summary>
-	/// <param name="vswap">The VSwap data source</param>
+	private static Assets.VSwap _vswap;
+
+	/// <summary>
+	/// Initializes VR assets from the currently loaded game.
+	/// Eagerly converts all wall and sprite textures to 3D materials.
+	/// Should be called once after SharedAssetManager.LoadGame().
+	/// </summary>
 	/// <param name="scaleFactor">Upscaling factor (default 8x for 512x512 textures)</param>
-	public GodotResources(Assets.VSwap vswap, byte scaleFactor = 8)
+	public static void Initialize(byte scaleFactor = 8)
 	{
-		VSwap = vswap ?? throw new ArgumentNullException(nameof(vswap));
+		// Get VSwap from SharedAssetManager
+		_vswap = Shared.SharedAssetManager.CurrentGame?.VSwap
+			?? throw new InvalidOperationException("SharedAssetManager.CurrentGame.VSwap is null. Load a game first.");
+
 		ScaleFactor = scaleFactor;
 
 		// Initialize flipped material shader
 		_flippedDoorShader = new Shader { Code = FlippedDoorShaderCode };
+		_flippedOpaqueMaterials = new Dictionary<ushort, ShaderMaterial>();
 
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
 		// Only process pages that actually exist in the VSwap (skip null entries)
-		_opaqueMaterials = Enumerable.Range(0, VSwap.SpritePage)
-			.Where(pageNumber => VSwap.Pages[pageNumber] != null)
+		Dictionary<ushort, StandardMaterial3D> opaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)
+			.Where(pageNumber => _vswap.Pages[pageNumber] != null)
 			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateOpaqueMaterial((ushort)pageNumber)))
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		OpaqueMaterials = opaqueMaterials;
 
 		// Eagerly convert all sprite materials using parallelization
 		// Only process sprite pages that actually exist in the VSwap (skip null entries)
-		int spriteCount = VSwap.Pages.Length - VSwap.SpritePage;
-		_spriteMaterials = Enumerable.Range(VSwap.SpritePage, spriteCount)
-			.Where(pageNumber => VSwap.Pages[pageNumber] != null)
+		int spriteCount = _vswap.Pages.Length - _vswap.SpritePage;
+		Dictionary<ushort, StandardMaterial3D> spriteMaterials = Enumerable.Range(_vswap.SpritePage, spriteCount)
+			.Where(pageNumber => _vswap.Pages[pageNumber] != null)
 			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateSpriteMaterial((ushort)pageNumber)))
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		SpriteMaterials = spriteMaterials;
 	}
 
 	/// <summary>
-	/// Gets an opaque material by VSwap page number.
-	/// Used for walls and normal door quads.
+	/// Eagerly creates flipped materials for the specified door texture indices.
+	/// Returns a dictionary of the created materials indexed by texture page number.
 	/// </summary>
-	/// <param name="pageNumber">VSwap page number (must be less than SpritePage and must exist)</param>
-	/// <returns>Cached StandardMaterial3D ready for use in VR</returns>
-	/// <exception cref="KeyNotFoundException">Thrown when the page number does not exist in VSwap</exception>
-	public StandardMaterial3D GetOpaqueMaterial(ushort pageNumber)
+	public static Dictionary<ushort, ShaderMaterial> CreateFlippedMaterialsForDoors(IEnumerable<ushort> doorTextureIndices)
 	{
-		if (pageNumber >= VSwap.SpritePage)
-			throw new ArgumentOutOfRangeException(nameof(pageNumber),
-				$"Page {pageNumber} is not an opaque material (SpritePage = {VSwap.SpritePage})");
+		Dictionary<ushort, ShaderMaterial> materials = [];
 
-		// Will throw KeyNotFoundException if page doesn't exist - this is intentional
-		return _opaqueMaterials[pageNumber];
-	}
+		foreach (ushort pageNumber in doorTextureIndices.Distinct())
+		{
+			ShaderMaterial material = CreateFlippedMaterial(pageNumber);
+			materials[pageNumber] = material;
+			_flippedOpaqueMaterials[pageNumber] = material; // Cache for future reference
+		}
 
-
-	/// <summary>
-	/// Gets a sprite material by VSwap page number.
-	/// Uses transparency and double-sided rendering for billboarded objects.
-	/// </summary>
-	/// <param name="pageNumber">VSwap page number (must be >= SpritePage and must exist)</param>
-	/// <returns>Cached StandardMaterial3D with transparency support</returns>
-	/// <exception cref="KeyNotFoundException">Thrown when the page number does not exist in VSwap</exception>
-	public StandardMaterial3D GetSpriteMaterial(ushort pageNumber)
-	{
-		if (pageNumber < VSwap.SpritePage)
-			throw new ArgumentOutOfRangeException(nameof(pageNumber),
-				$"Page {pageNumber} is not a sprite (SpritePage = {VSwap.SpritePage})");
-
-		// Will throw KeyNotFoundException if page doesn't exist - this is intentional
-		return _spriteMaterials[pageNumber];
+		return materials;
 	}
 
 	/// <summary>
 	/// Creates a StandardMaterial3D for an opaque texture (walls and doors) with VR-optimized settings.
 	/// Applies upscaling, generates mipmaps, and configures nearest-neighbor filtering for sharp pixels.
 	/// </summary>
-	private StandardMaterial3D CreateOpaqueMaterial(ushort pageNumber)
+	private static StandardMaterial3D CreateOpaqueMaterial(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
-		byte[] originalData = VSwap.Pages[pageNumber];
+		byte[] originalData = _vswap.Pages[pageNumber];
 
 		// Upscale the texture data
-		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
-		int scaledSize = VSwap.TileSqrt * ScaleFactor;
+		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
+		int scaledSize = _vswap.TileSqrt * ScaleFactor;
 
 		// Debug: Check data validity
 		int expectedSize = scaledSize * scaledSize * 4; // RGBA = 4 bytes per pixel
@@ -225,14 +187,14 @@ void fragment() {
 	/// Used for flipped door quads combined with negative scale geometry.
 	/// UV flip compensates for the geometry flip to ensure door handles appear on the correct side.
 	/// </summary>
-	private ShaderMaterial CreateFlippedMaterial(ushort pageNumber)
+	private static ShaderMaterial CreateFlippedMaterial(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
-		byte[] originalData = VSwap.Pages[pageNumber];
+		byte[] originalData = _vswap.Pages[pageNumber];
 
 		// Upscale the texture data
-		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
-		int scaledSize = VSwap.TileSqrt * ScaleFactor;
+		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
+		int scaledSize = _vswap.TileSqrt * ScaleFactor;
 
 		// Create Godot Image
 		Image image = Image.CreateFromData(
@@ -271,14 +233,14 @@ void fragment() {
 	/// Creates a StandardMaterial3D for a sprite texture with transparency support.
 	/// Applies upscaling, generates mipmaps, and enables alpha blending for billboarded objects.
 	/// </summary>
-	private StandardMaterial3D CreateSpriteMaterial(ushort pageNumber)
+	private static StandardMaterial3D CreateSpriteMaterial(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
-		byte[] originalData = VSwap.Pages[pageNumber];
+		byte[] originalData = _vswap.Pages[pageNumber];
 
 		// Upscale the texture data
-		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, VSwap.TileSqrt);
-		int scaledSize = VSwap.TileSqrt * ScaleFactor;
+		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
+		int scaledSize = _vswap.TileSqrt * ScaleFactor;
 
 		// Create Godot Image with mipmaps disabled initially
 		Image image = Image.CreateFromData(
@@ -327,5 +289,38 @@ void fragment() {
 		};
 
 		return material;
+	}
+
+	/// <summary>
+	/// Disposes all loaded VR assets.
+	/// Currently not needed as VR assets persist until program termination,
+	/// but included for completeness.
+	/// </summary>
+	public static void Cleanup()
+	{
+		// Dispose opaque materials
+		if (OpaqueMaterials != null)
+		{
+			foreach (StandardMaterial3D material in OpaqueMaterials.Values)
+				material?.Dispose();
+		}
+
+		// Dispose sprite materials
+		if (SpriteMaterials != null)
+		{
+			foreach (StandardMaterial3D material in SpriteMaterials.Values)
+				material?.Dispose();
+		}
+
+		// Dispose flipped materials
+		if (_flippedOpaqueMaterials != null)
+		{
+			foreach (ShaderMaterial material in _flippedOpaqueMaterials.Values)
+				material?.Dispose();
+			_flippedOpaqueMaterials?.Clear();
+		}
+
+		_flippedDoorShader?.Dispose();
+		_vswap = null;
 	}
 }

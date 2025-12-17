@@ -6,6 +6,9 @@ namespace BenMcLean.Wolf3D.VR;
 
 public partial class Root : Node3D
 {
+	[Export]
+	public int CurrentLevelIndex { get; set; } = 0;
+
 	private Camera3D _camera;
 	private FreeLookCamera _freeLookCamera;
 	private Sky _sky;
@@ -23,8 +26,6 @@ void sky() {
 """, }
 	};
 	public WorldEnvironment WorldEnvironment;
-	public Assets.Assets Assets;
-	public GodotResources GodotResources;
 	public Walls Walls;
 	public Fixtures Fixtures;
 	public Bonuses Bonuses;
@@ -47,22 +48,22 @@ void sky() {
 		_skyMaterial.SetShaderParameter("floor_color", new Color(0f, 1f, 0f, 1f));
 		_skyMaterial.SetShaderParameter("ceiling_color", new Color(0f, 0f, 1f, 1f));
 
-		// Load game assets
-		Assets = BenMcLean.Wolf3D.Assets.Assets.Load(@"..\..\games\WL1.xml");
+		// Load game assets using SharedAssetManager
+		Shared.SharedAssetManager.LoadGame(@"..\..\games\WL1.xml");
 
-		// Create Godot resources (textures and materials)
+		// Create VR-specific 3D materials
 		// Try scaleFactor: 4 for better performance, or 8 for maximum quality
-		GodotResources = new GodotResources(Assets.VSwap, scaleFactor: 8);
+		VRAssetManager.Initialize(scaleFactor: 8);
 
-		// Get first level analysis
-		Assets.MapAnalyzer.MapAnalysis firstLevel = Assets.MapAnalyses[0];
+		// Get current level analysis
+		Assets.MapAnalyzer.MapAnalysis currentLevel = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex];
 
 		// Position camera at player start
 		Vector3 cameraPosition;
 		float cameraRotationY = 0f;
-		if (firstLevel.PlayerStart.HasValue)
+		if (currentLevel.PlayerStart.HasValue)
 		{
-			Assets.MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = firstLevel.PlayerStart.Value;
+			Assets.MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = currentLevel.PlayerStart.Value;
 			// Center of the player's starting grid square
 			cameraPosition = new Vector3(
 				Constants.CenterSquare(playerStart.X),
@@ -91,39 +92,39 @@ void sky() {
 		_camera.AddChild(_freeLookCamera);
 		_freeLookCamera.Enabled = true;
 
-		// Create walls for the first level and add to scene
-		Walls = new Walls(GodotResources.OpaqueMaterials, firstLevel);
+		// Create walls for the current level and add to scene
+		Walls = new Walls(VRAssetManager.OpaqueMaterials, currentLevel);
 		AddChild(Walls);
 
-		// Create fixtures (billboarded sprites) for the first level and add to scene
+		// Create fixtures (billboarded sprites) for the current level and add to scene
 		Fixtures = new Fixtures(
-			GodotResources.SpriteMaterials,
-			firstLevel.StaticSpawns,
+			VRAssetManager.SpriteMaterials,
+			currentLevel.StaticSpawns,
 			() => _freeLookCamera.GlobalRotation.Y,  // Delegate returns camera Y rotation for billboard effect
-			Assets.VSwap.SpritePage);
+			Shared.SharedAssetManager.CurrentGame.VSwap.SpritePage);
 		AddChild(Fixtures);
 
-		// Create bonuses (bonus/pickup items with game logic) for the first level and add to scene
+		// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
 		Bonuses = new Bonuses(
-			GodotResources.SpriteMaterials,
-			firstLevel,
+			VRAssetManager.SpriteMaterials,
+			currentLevel,
 			() => _freeLookCamera.GlobalRotation.Y);  // Delegate returns camera Y rotation for billboard effect
 		AddChild(Bonuses);
 
-		// Create doors for the first level and add to scene
-		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(firstLevel.Doors);
-		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = GodotResources.CreateFlippedMaterialsForDoors(doorTextureIndices);
+		// Create doors for the current level and add to scene
+		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(currentLevel.Doors);
+		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = VRAssetManager.CreateFlippedMaterialsForDoors(doorTextureIndices);
 		Doors = new Doors(
-			GodotResources.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
+			VRAssetManager.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
 			flippedDoorMaterials,  // Flipped materials (only for door textures)
-			firstLevel.Doors);
+			currentLevel.Doors);
 		AddChild(Doors);
 
 		// Create simulator controller and initialize with map data
 		SimulatorController = new SimulatorController();
 		AddChild(SimulatorController);
 		SimulatorController.Initialize(
-			firstLevel,
+			currentLevel,
 			Doors,
 			Bonuses);
 	}
