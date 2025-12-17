@@ -18,7 +18,6 @@ public class Simulator
 
 	private double accumulatedTime;
 	private readonly List<PlayerAction> pendingActions = [];
-	private readonly List<ISimulationEvent> eventQueue = [];
 
 	public IReadOnlyList<Door> Doors => doors;
 	private readonly List<Door> doors = [];
@@ -34,14 +33,71 @@ public class Simulator
 	// Current simulation time in tics
 	public long CurrentTic { get; private set; }
 
+	#region C# Events for Observer Pattern
+
+	/// <summary>
+	/// Fired when a door starts opening (position was 0).
+	/// WL_ACT1.C:DoorOpening
+	/// </summary>
+	public event Action<DoorOpeningEvent> DoorOpening;
+
+	/// <summary>
+	/// Fired when a door finishes opening (position reached 0xFFFF).
+	/// WL_ACT1.C:DoorOpening
+	/// </summary>
+	public event Action<DoorOpenedEvent> DoorOpened;
+
+	/// <summary>
+	/// Fired every tic while a door is moving (opening or closing).
+	/// WL_ACT1.C:DoorOpening and DoorClosing
+	/// </summary>
+	public event Action<DoorPositionChangedEvent> DoorPositionChanged;
+
+	/// <summary>
+	/// Fired when a door starts closing.
+	/// WL_ACT1.C:CloseDoor
+	/// </summary>
+	public event Action<DoorClosingEvent> DoorClosing;
+
+	/// <summary>
+	/// Fired when a door finishes closing (position reached 0).
+	/// WL_ACT1.C:DoorClosing
+	/// </summary>
+	public event Action<DoorClosedEvent> DoorClosed;
+
+	/// <summary>
+	/// Fired when player tries to open a locked door without the required key.
+	/// WL_ACT1.C:OperateDoor
+	/// </summary>
+	public event Action<DoorLockedEvent> DoorLocked;
+
+	/// <summary>
+	/// Fired when a door is blocked from closing by an actor or player.
+	/// WL_ACT1.C:DoorClosing
+	/// </summary>
+	public event Action<DoorBlockedEvent> DoorBlocked;
+
+	/// <summary>
+	/// Fired when a bonus object spawns (static placement or enemy drop).
+	/// WL_GAME.C:ScanInfoPlane or WL_ACT1.C:PlaceItemType
+	/// </summary>
+	public event Action<BonusSpawnedEvent> BonusSpawned;
+
+	/// <summary>
+	/// Fired when a bonus object is picked up by the player.
+	/// WL_AGENT.C:GetBonus
+	/// </summary>
+	public event Action<BonusPickedUpEvent> BonusPickedUp;
+
+	#endregion
+
 	/// <summary>
 	/// Update the simulation with elapsed real time.
-	/// Returns all events that occurred during this update.
+	/// Events are dispatched to subscribers via C# events as they occur.
 	/// Based on WL_PLAY.C:PlayLoop and WL_DRAW.C:CalcTics.
 	/// </summary>
-	public IReadOnlyList<ISimulationEvent> Update(double deltaTime)
+	public void Update(double deltaTime)
 	{
-		eventQueue.Clear();
 		accumulatedTime += deltaTime;
 
 		// WL_DRAW.C:CalcTics - calculate tics since last refresh
@@ -57,8 +113,6 @@ public class Simulator
 			ProcessTic();
 			CurrentTic++;
 		}
-
-		return eventQueue;
 	}
 
 	/// <summary>
@@ -150,7 +204,7 @@ public class Simulator
 		// For now, just start closing
 		door.Action = DoorAction.Closing;
 
-		eventQueue.Add(new DoorClosingEvent
+		DoorClosing?.Invoke(new DoorClosingEvent
 		{
 			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = doorIndex,
@@ -218,7 +272,7 @@ public class Simulator
 		if (newPosition == 0)
 		{
 			// Emit opening event
-			eventQueue.Add(new DoorOpeningEvent
+			DoorOpening?.Invoke(new DoorOpeningEvent
 			{
 				Timestamp = CurrentTic * TicDuration,
 				DoorIndex = (ushort)doorIndex,
@@ -242,7 +296,7 @@ public class Simulator
 			door.TicCount = 0;
 			door.Action = DoorAction.Open;
 
-			eventQueue.Add(new DoorOpenedEvent
+			DoorOpened?.Invoke(new DoorOpenedEvent
 			{
 				Timestamp = CurrentTic * TicDuration,
 				DoorIndex = (ushort)doorIndex,
@@ -258,7 +312,7 @@ public class Simulator
 		}
 
 		// Emit position changed event every tic
-		eventQueue.Add(new DoorPositionChangedEvent
+		DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 		{
 			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = (ushort)doorIndex,
@@ -292,7 +346,7 @@ public class Simulator
 			door.Position = (ushort)newPosition;
 			door.Action = DoorAction.Closed;
 
-			eventQueue.Add(new DoorClosedEvent
+			DoorClosed?.Invoke(new DoorClosedEvent
 			{
 				Timestamp = CurrentTic * TicDuration,
 				DoorIndex = (ushort)doorIndex,
@@ -308,7 +362,7 @@ public class Simulator
 		}
 
 		// Emit position changed event every tic
-		eventQueue.Add(new DoorPositionChangedEvent
+		DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 		{
 			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = (ushort)doorIndex,

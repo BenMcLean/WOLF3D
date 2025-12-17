@@ -38,6 +38,10 @@ public partial class SimulatorController : Node3D
 		// Load static bonuses into simulator for gameplay tracking
 		// VR layer displays them directly from MapAnalysis - no events needed
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
+
+		// Subscribe presentation layers to simulator events
+		doors.Subscribe(simulator);
+		bonuses.Subscribe(simulator);
 	}
 
 	/// <summary>
@@ -50,110 +54,8 @@ public partial class SimulatorController : Node3D
 			return;
 
 		// Update simulator with elapsed time
-		IReadOnlyList<ISimulationEvent> events = simulator.Update(delta);
-
-		// Process all events that occurred this frame
-		ProcessEvents(events);
-	}
-
-	/// <summary>
-	/// Processes simulation events and updates VR presentation.
-	/// </summary>
-	private void ProcessEvents(IReadOnlyList<ISimulationEvent> events)
-	{
-		foreach (ISimulationEvent evt in events)
-		{
-			switch (evt)
-			{
-				case DoorOpeningEvent opening:
-					HandleDoorOpening(opening);
-					break;
-
-				case DoorOpenedEvent opened:
-					HandleDoorOpened(opened);
-					break;
-
-				case DoorPositionChangedEvent positionChanged:
-					HandleDoorPositionChanged(positionChanged);
-					break;
-
-				case DoorClosingEvent closing:
-					HandleDoorClosing(closing);
-					break;
-
-				case DoorClosedEvent closed:
-					HandleDoorClosed(closed);
-					break;
-
-				case BonusSpawnedEvent bonusSpawned:
-					HandleBonusSpawned(bonusSpawned);
-					break;
-
-				case BonusPickedUpEvent bonusPickedUp:
-					HandleBonusPickedUp(bonusPickedUp);
-					break;
-			}
-		}
-	}
-
-	private void HandleDoorOpening(DoorOpeningEvent evt)
-	{
-		// Update VR door position
-		UpdateDoorPosition(evt.DoorIndex);
-
-		// TODO: Play OPENDOORSND at (evt.TileX, evt.TileY)
-		// PlaySoundLocTile(OPENDOORSND, evt.TileX, evt.TileY);
-	}
-
-	private void HandleDoorOpened(DoorOpenedEvent evt)
-	{
-		// Update VR door to fully open position
-		UpdateDoorPosition(evt.DoorIndex);
-	}
-
-	private void HandleDoorPositionChanged(DoorPositionChangedEvent evt)
-	{
-		// Update VR door position during animation
-		UpdateDoorPosition(evt.DoorIndex);
-	}
-
-	private void HandleDoorClosing(DoorClosingEvent evt)
-	{
-		// Update VR door position
-		UpdateDoorPosition(evt.DoorIndex);
-
-		// TODO: Play CLOSEDOORSND at (evt.TileX, evt.TileY)
-		// PlaySoundLocTile(CLOSEDOORSND, evt.TileX, evt.TileY);
-	}
-
-	private void HandleDoorClosed(DoorClosedEvent evt)
-	{
-		// Update VR door to fully closed position
-		UpdateDoorPosition(evt.DoorIndex);
-	}
-
-
-	/// <summary>
-	/// Updates a door's visual position from the simulator state.
-	/// Called whenever a door moves (opening, closing, or position changes).
-	/// </summary>
-	private void UpdateDoorPosition(ushort doorIndex)
-	{
-		if (doorIndex >= simulator.Doors.Count)
-		{
-			GD.PrintErr($"ERROR: doorIndex {doorIndex} >= simulator.Doors.Count {simulator.Doors.Count}");
-			return;
-		}
-
-		Door door = simulator.Doors[doorIndex];
-
-		if (doors == null)
-		{
-			GD.PrintErr($"ERROR: doors node is null!");
-			return;
-		}
-
-		doors.MoveDoor(doorIndex, door.Position);
+		// Events are automatically dispatched to subscribers (Doors, Bonuses, etc.)
+		simulator.Update(delta);
 	}
 
 	/// <summary>
@@ -184,25 +86,4 @@ public partial class SimulatorController : Node3D
 	/// Read-only access to door states.
 	/// </summary>
 	public IReadOnlyList<Simulator.Door> Doors => simulator?.Doors;
-
-	private void HandleBonusSpawned(BonusSpawnedEvent evt)
-	{
-		// Update VR bonus display
-		bonuses?.ShowBonus(evt.StatObjIndex, evt.Shape, evt.TileX, evt.TileY);
-
-		// TODO: Play bonus spawn sound if applicable
-		// PlaySoundLocTile(spawnSound, evt.TileX, evt.TileY);
-	}
-
-	private void HandleBonusPickedUp(BonusPickedUpEvent evt)
-	{
-		// Hide bonus from VR display
-		bonuses?.HideBonus(evt.StatObjIndex);
-
-		// TODO: Play pickup sound based on item type (WL_AGENT.C:GetBonus)
-		// PlaySoundLocTile(pickupSound, evt.TileX, evt.TileY);
-
-		// TODO: Show bonus flash effect
-		// StartBonusFlash();
-	}
 }

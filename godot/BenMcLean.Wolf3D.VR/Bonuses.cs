@@ -28,6 +28,9 @@ public partial class Bonuses : Node3D
 
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
 
+	// Simulator reference for event subscription
+	private Simulator.Simulator _simulator;
+
 	/// <summary>
 	/// Maps simulator StatObjList index to rendering location.
 	/// </summary>
@@ -275,5 +278,76 @@ public partial class Bonuses : Node3D
 		// TODO: Parse from WOLF3D.xml Actor/PlaceItem definitions
 		// For now, return 0 (no drop) since enemy system isn't implemented yet
 		return 0;
+	}
+
+	/// <summary>
+	/// Subscribes to simulator events to automatically show/hide bonus objects.
+	/// Call this after both Bonuses and Simulator are initialized.
+	/// </summary>
+	/// <param name="sim">The simulator instance to subscribe to</param>
+	public void Subscribe(Simulator.Simulator sim)
+	{
+		if (sim == null)
+			throw new ArgumentNullException(nameof(sim));
+
+		// Unsubscribe from previous simulator if any
+		Unsubscribe();
+
+		_simulator = sim;
+
+		// Subscribe to bonus-related events
+		_simulator.BonusSpawned += OnBonusSpawned;
+		_simulator.BonusPickedUp += OnBonusPickedUp;
+	}
+
+	/// <summary>
+	/// Unsubscribes from simulator events.
+	/// Automatically called when subscribing to a new simulator or when this node is freed.
+	/// </summary>
+	public void Unsubscribe()
+	{
+		if (_simulator == null)
+			return;
+
+		_simulator.BonusSpawned -= OnBonusSpawned;
+		_simulator.BonusPickedUp -= OnBonusPickedUp;
+
+		_simulator = null;
+	}
+
+	/// <summary>
+	/// Handles BonusSpawnedEvent - shows a dynamically spawned bonus.
+	/// </summary>
+	private void OnBonusSpawned(BenMcLean.Wolf3D.Simulator.BonusSpawnedEvent evt)
+	{
+		ShowBonus(evt.StatObjIndex, evt.Shape, evt.TileX, evt.TileY);
+
+		// TODO: Play bonus spawn sound if applicable
+		// PlaySoundLocTile(spawnSound, evt.TileX, evt.TileY);
+	}
+
+	/// <summary>
+	/// Handles BonusPickedUpEvent - hides a picked-up bonus.
+	/// </summary>
+	private void OnBonusPickedUp(BenMcLean.Wolf3D.Simulator.BonusPickedUpEvent evt)
+	{
+		HideBonus(evt.StatObjIndex);
+
+		// TODO: Play pickup sound based on item type (WL_AGENT.C:GetBonus)
+		// PlaySoundLocTile(pickupSound, evt.TileX, evt.TileY);
+
+		// TODO: Show bonus flash effect
+		// StartBonusFlash();
+	}
+
+	/// <summary>
+	/// Cleanup when the node is removed from the scene tree.
+	/// </summary>
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+			Unsubscribe();
+
+		base.Dispose(disposing);
 	}
 }

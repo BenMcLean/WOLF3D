@@ -50,6 +50,9 @@ public partial class Doors : Node3D
 			.Distinct();
 	}
 
+	// Simulator reference for event subscription
+	private Simulator.Simulator simulator;
+
 	/// <summary>
 	/// Creates door geometry from map data using two quads per door for proper UV handling.
 	/// Both use back-face culling, with flipped materials having mirrored UVs.
@@ -303,6 +306,114 @@ public partial class Doors : Node3D
 		};
 
 		return meshInstance;
+	}
+
+	/// <summary>
+	/// Subscribes to simulator events to automatically update door positions.
+	/// Call this after both Doors and Simulator are initialized.
+	/// </summary>
+	/// <param name="sim">The simulator instance to subscribe to</param>
+	public void Subscribe(Simulator.Simulator sim)
+	{
+		if (sim == null)
+			throw new ArgumentNullException(nameof(sim));
+
+		// Unsubscribe from previous simulator if any
+		Unsubscribe();
+
+		simulator = sim;
+
+		// Subscribe to all door-related events
+		simulator.DoorOpening += OnDoorOpening;
+		simulator.DoorOpened += OnDoorOpened;
+		simulator.DoorPositionChanged += OnDoorPositionChanged;
+		simulator.DoorClosing += OnDoorClosing;
+		simulator.DoorClosed += OnDoorClosed;
+	}
+
+	/// <summary>
+	/// Unsubscribes from simulator events.
+	/// Automatically called when subscribing to a new simulator or when this node is freed.
+	/// </summary>
+	public void Unsubscribe()
+	{
+		if (simulator == null)
+			return;
+
+		simulator.DoorOpening -= OnDoorOpening;
+		simulator.DoorOpened -= OnDoorOpened;
+		simulator.DoorPositionChanged -= OnDoorPositionChanged;
+		simulator.DoorClosing -= OnDoorClosing;
+		simulator.DoorClosed -= OnDoorClosed;
+
+		simulator = null;
+	}
+
+	/// <summary>
+	/// Handles door opening event - updates visual position.
+	/// </summary>
+	private void OnDoorOpening(Simulator.DoorOpeningEvent evt)
+	{
+		UpdateDoorVisualPosition(evt.DoorIndex);
+	}
+
+	/// <summary>
+	/// Handles door opened event - updates visual position.
+	/// </summary>
+	private void OnDoorOpened(Simulator.DoorOpenedEvent evt)
+	{
+		UpdateDoorVisualPosition(evt.DoorIndex);
+	}
+
+	/// <summary>
+	/// Handles door position changed event - updates visual position.
+	/// </summary>
+	private void OnDoorPositionChanged(Simulator.DoorPositionChangedEvent evt)
+	{
+		UpdateDoorVisualPosition(evt.DoorIndex);
+	}
+
+	/// <summary>
+	/// Handles door closing event - updates visual position.
+	/// </summary>
+	private void OnDoorClosing(Simulator.DoorClosingEvent evt)
+	{
+		UpdateDoorVisualPosition(evt.DoorIndex);
+	}
+
+	/// <summary>
+	/// Handles door closed event - updates visual position.
+	/// </summary>
+	private void OnDoorClosed(Simulator.DoorClosedEvent evt)
+	{
+		UpdateDoorVisualPosition(evt.DoorIndex);
+	}
+
+	/// <summary>
+	/// Updates a door's visual position from the simulator state.
+	/// Helper method called by all door event handlers.
+	/// </summary>
+	private void UpdateDoorVisualPosition(ushort doorIndex)
+	{
+		if (doorIndex >= simulator.Doors.Count)
+		{
+			GD.PrintErr($"ERROR: doorIndex {doorIndex} >= simulator.Doors.Count {simulator.Doors.Count}");
+			return;
+		}
+
+		Simulator.Door door = simulator.Doors[doorIndex];
+		MoveDoor(doorIndex, door.Position);
+	}
+
+	/// <summary>
+	/// Cleanup when the node is removed from the scene tree.
+	/// </summary>
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+			Unsubscribe();
+
+		base.Dispose(disposing);
 	}
 
 }
