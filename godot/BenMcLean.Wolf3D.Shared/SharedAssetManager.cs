@@ -12,38 +12,39 @@ namespace BenMcLean.Wolf3D.Shared;
 /// </summary>
 public static class SharedAssetManager
 {
+	#region Data
 	/// <summary>
 	/// The currently loaded game data (VSwap, Maps, etc.).
 	/// </summary>
 	public static Assets.Assets CurrentGame { get; private set; }
-
-	// TODO: Add DigiSounds (AudioStreamWAV) when implementing audio
-	// public static Dictionary<int, AudioStreamWAV> DigiSounds { get; private set; }
-
-	// TODO: Add Music player when implementing audio
-	// public static IMusicPlayer MusicPlayer { get; private set; }
-
 	/// <summary>
 	/// The master texture atlas containing all VSwap pages, VgaGraph Pics, and Font characters.
 	/// </summary>
-	public static Godot.ImageTexture Atlas { get; private set; }
+	public static Godot.ImageTexture AtlasTexture { get; private set; }
 	public static Godot.Image AtlasImage { get; private set; }
-	private static Dictionary<int, Godot.AtlasTexture> _vswap;
-	private static Dictionary<string, Godot.AtlasTexture> _vgaGraph;
-	private static Dictionary<string, Godot.FontFile> _fonts;
 	/// <summary>
 	/// Maps VSwap page indices to AtlasTextures ready for 2D display.
 	/// </summary>
 	public static IReadOnlyDictionary<int, Godot.AtlasTexture> VSwap => _vswap;
+	private static Dictionary<int, Godot.AtlasTexture> _vswap;
 	/// <summary>
 	/// Maps VgaGraph Pic names to AtlasTextures ready for 2D display.
 	/// </summary>
 	public static IReadOnlyDictionary<string, Godot.AtlasTexture> VgaGraph => _vgaGraph;
+	private static Dictionary<string, Godot.AtlasTexture> _vgaGraph;
 	/// <summary>
 	/// Dictionary of Godot FontFile objects, keyed by font name.
 	/// Includes both chunk fonts (from VGAGRAPH) and pic fonts (prefix-based).
 	/// </summary>
 	public static IReadOnlyDictionary<string, Godot.FontFile> Fonts => _fonts;
+	private static Dictionary<string, Godot.FontFile> _fonts;
+	/// <summary>
+	/// Maps DigiSound names to AudioStreamWAV resources ready for playback.
+	/// </summary>
+	public static IReadOnlyDictionary<string, Godot.AudioStreamWav> DigiSounds => _digiSounds;
+	private static Dictionary<string, Godot.AudioStreamWav> _digiSounds;
+	#endregion Data
+	#region Textures
 	/// <summary>
 	/// Generates packing rectangles for all VSwap and VgaGraph textures.
 	/// </summary>
@@ -221,7 +222,7 @@ public static class SharedAssetManager
 			useMipmaps: false,
 			format: Godot.Image.Format.Rgba8,
 			data: atlas);
-		Atlas = Godot.ImageTexture.CreateFromImage(AtlasImage);
+		AtlasTexture = Godot.ImageTexture.CreateFromImage(AtlasImage);
 		// Build AtlasTextures for 2D display
 		BuildAtlasTextures(vswapRegions, vgaGraphRegions);
 		// Build all fonts (both regular and prefix-based)
@@ -239,7 +240,7 @@ public static class SharedAssetManager
 		{
 			Godot.AtlasTexture atlasTexture = new()
 			{
-				Atlas = Atlas,
+				Atlas = AtlasTexture,
 				Region = new Godot.Rect2(kvp.Value.Position, kvp.Value.Size),
 			};
 			_vswap[kvp.Key] = atlasTexture;
@@ -252,12 +253,14 @@ public static class SharedAssetManager
 					continue;
 				Godot.AtlasTexture atlasTexture = new()
 				{
-					Atlas = Atlas,
+					Atlas = AtlasTexture,
 					Region = new Godot.Rect2(region.Position, region.Size),
 				};
 				_vgaGraph[name] = atlasTexture;
 			}
 	}
+	#endregion Textures
+	#region Fonts
 	/// <summary>
 	/// Builds Godot FontFile objects for all fonts defined in XML.
 	/// Handles both chunk fonts (from VGAGRAPH) and pic fonts (prefix-based).
@@ -324,11 +327,11 @@ public static class SharedAssetManager
 				glyph: charCode,
 				uVRect: new Godot.Rect2(
 					position: new Godot.Vector2(
-						x: region.Position.X / (float)Atlas.GetWidth(),
-						y: region.Position.Y / (float)Atlas.GetHeight()),
+						x: region.Position.X / (float)AtlasTexture.GetWidth(),
+						y: region.Position.Y / (float)AtlasTexture.GetHeight()),
 					size: new Godot.Vector2(
-						x: region.Size.X / (float)Atlas.GetWidth(),
-						y: region.Size.Y / (float)Atlas.GetHeight())));
+						x: region.Size.X / (float)AtlasTexture.GetWidth(),
+						y: region.Size.Y / (float)AtlasTexture.GetHeight())));
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: sourceFont.Height,
@@ -364,7 +367,7 @@ public static class SharedAssetManager
 			cacheIndex: 0,
 			size: new Godot.Vector2I(font.FixedSize, 0),
 			textureIndex: 0,
-			image: Atlas.GetImage());
+			image: AtlasImage);
 		foreach ((char character, int picNumber) in picFont.Characters)
 		{
 			if (!vgaGraphRegions.TryGetValue(picNumber, out Godot.Rect2I region))
@@ -381,11 +384,11 @@ public static class SharedAssetManager
 				glyph: charCode,
 				uVRect: new Godot.Rect2(
 					position: new Godot.Vector2(
-						x: region.Position.X / (float)Atlas.GetWidth(),
-						y: region.Position.Y / (float)Atlas.GetHeight()),
+						x: region.Position.X / (float)AtlasTexture.GetWidth(),
+						y: region.Position.Y / (float)AtlasTexture.GetHeight()),
 					size: new Godot.Vector2(
-						x: region.Size.X / (float)Atlas.GetWidth(),
-						y: region.Size.Y / (float)Atlas.GetHeight())));
+						x: region.Size.X / (float)AtlasTexture.GetWidth(),
+						y: region.Size.Y / (float)AtlasTexture.GetHeight())));
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: font.FixedSize,
@@ -417,11 +420,11 @@ public static class SharedAssetManager
 				glyph: spaceCode,
 				uVRect: new Godot.Rect2(
 					position: new Godot.Vector2(
-						x: spaceRegion.Position.X / (float)Atlas.GetWidth(),
-						y: spaceRegion.Position.Y / (float)Atlas.GetHeight()),
+						x: spaceRegion.Position.X / (float)AtlasTexture.GetWidth(),
+						y: spaceRegion.Position.Y / (float)AtlasTexture.GetHeight()),
 					size: new Godot.Vector2(
-						x: spaceRegion.Size.X / (float)Atlas.GetWidth(),
-						y: spaceRegion.Size.Y / (float)Atlas.GetHeight())));
+						x: spaceRegion.Size.X / (float)AtlasTexture.GetWidth(),
+						y: spaceRegion.Size.Y / (float)AtlasTexture.GetHeight())));
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: font.FixedSize,
@@ -440,20 +443,42 @@ public static class SharedAssetManager
 		}
 		return font;
 	}
+	#endregion Fonts
+	#region DigiSounds
+	/// <summary>
+	/// Builds AudioStreamWAV resources from VSwap DigiSounds.
+	/// Wolfenstein 3D uses 8-bit PCM audio at 7000Hz sample rate.
+	/// </summary>
+	private static void BuildDigiSounds()
+	{
+		_digiSounds = [];
+		if (CurrentGame?.VSwap?.DigiSoundsByName is null)
+			return;
+		foreach ((string name, byte[] pcmData) in CurrentGame.VSwap.DigiSoundsByName)
+		{
+			if (pcmData is null || pcmData.Length == 0)
+				continue;
+			Godot.AudioStreamWav audioStream = new()
+			{
+				Format = Godot.AudioStreamWav.FormatEnum.Format8Bits,
+				MixRate = 7042, // Adam Biser said 7042 Hz is the correct frequency
+				Stereo = false,
+				Data = pcmData,
+			};
+			_digiSounds[name] = audioStream;
+		}
+	}
+	#endregion DigiSounds
 	/// <summary>
 	/// Loads a game from the user's games folder.
 	/// </summary>
 	/// <param name="xmlPath">Path to the game's XML definition file (e.g., "WL6.xml")</param>
 	public static void LoadGame(string xmlPath)
 	{
-		// Cleanup old resources
 		Cleanup();
-		// Load game data
 		CurrentGame = Assets.Assets.Load(xmlPath);
-		// TODO: Create AudioStreamWAV from DigiSounds when implementing audio
-		// TODO: Initialize music player when implementing audio
-		// Build texture atlas with VSwap and VgaGraph
 		BuildAtlas();
+		BuildDigiSounds();
 	}
 	/// <summary>
 	/// Disposes all loaded resources to free memory.
@@ -461,13 +486,10 @@ public static class SharedAssetManager
 	/// </summary>
 	public static void Cleanup()
 	{
-		// TODO: Dispose audio resources when implemented
-		// foreach (var sound in DigiSounds?.Values ?? [])
-		//     sound?.Dispose();
-		// DigiSounds?.Clear();
-		// MusicPlayer?.Dispose();
-
-		// Dispose texture atlas and fonts
+		if (_digiSounds is not null)
+			foreach (Godot.AudioStreamWav sound in _digiSounds.Values)
+				sound?.Dispose();
+		_digiSounds?.Clear();
 		if (_fonts is not null)
 			foreach (Godot.FontFile font in _fonts.Values)
 				font?.Dispose();
@@ -480,8 +502,8 @@ public static class SharedAssetManager
 			foreach (AtlasTexture atlasTexture in _vgaGraph.Values)
 				atlasTexture.Dispose();
 		_vgaGraph?.Clear();
-		Atlas?.Dispose();
-		Atlas = null;
+		AtlasTexture?.Dispose();
+		AtlasTexture = null;
 		AtlasImage?.Dispose();
 		AtlasImage = null;
 		CurrentGame = null;
