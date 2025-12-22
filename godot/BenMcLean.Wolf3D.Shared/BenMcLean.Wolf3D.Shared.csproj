@@ -17,5 +17,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />
+		<ProjectReference Include="..\..\src\ThirdParty\NScumm.Audio\NScumm.Audio.csproj" />
 	</ItemGroup>
 </Project>
