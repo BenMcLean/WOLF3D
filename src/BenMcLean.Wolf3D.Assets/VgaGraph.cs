@@ -125,13 +125,16 @@ public sealed class VgaGraph
 	/// </summary>
 	public Dictionary<string, int> PicsByName { get; private init; }
 	/// <summary>
-	/// Array of prefix-based fonts, where each font is a dictionary mapping characters to pic indices.
-	/// Index 0 is the first prefix font in the XML file.
-	/// Use the pic index to look up in Pics[] array.
+	/// Dictionary mapping chunk font names to their indices in the Fonts[] array.
+	/// Chunk fonts are loaded from VGAGRAPH file chunks.
 	/// </summary>
-	public Dictionary<char, int>[] PrefixFonts { get; private init; }
-	public ushort[] PrefixSpaceWidths { get; private init; }
-	public byte[] PrefixSpaceColors { get; private init; }
+	public Dictionary<string, int> ChunkFontsByName { get; private init; }
+	/// <summary>
+	/// Dictionary mapping pic font names to their PicFont definitions.
+	/// Pic fonts are constructed from Pics using prefix matching.
+	/// </summary>
+	public record PicFont(Dictionary<char, int> Characters, ushort SpaceWidth, byte SpaceColor);
+	public Dictionary<string, PicFont> PicFonts { get; private init; }
 	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitFile(ParseHead(vgaHead), vgaGraph, Load16BitPairs(dictionary)), xml)
 	{ }
 	public VgaGraph(byte[][] file, XElement xml)
@@ -162,32 +165,50 @@ public sealed class VgaGraph
 			if (picNumber < Pics.Length)
 				PicsByName[name] = picNumber;
 		}
-		// Build PrefixFonts array from Font elements with Prefix attribute
-		List<XElement> prefixFontElements = [.. vgaGraph
-			.Elements("Font")
-			.Where(e => !string.IsNullOrEmpty(e.Attribute("Prefix")?.Value))];
-		PrefixFonts = new Dictionary<char, int>[prefixFontElements.Count];
-		PrefixSpaceWidths = new ushort[PrefixFonts.Length];
-		PrefixSpaceColors = new byte[PrefixFonts.Length];
-		for (int i = 0; i < PrefixFonts.Length; i++)
+		// Build font dictionaries
+		ChunkFontsByName = [];
+		PicFonts = [];
+		foreach (XElement fontElement in vgaGraph.Elements("Font"))
 		{
-			XElement fontElement = prefixFontElements[i];
-			string prefix = fontElement.Attribute("Prefix").Value;
-			PrefixFonts[i] = [];
-			// Parse space character metadata
-			PrefixSpaceWidths[i] = ushort.TryParse(fontElement.Attribute("SpaceWidth")?.Value, out ushort spaceWidth) ? spaceWidth : (ushort)0;
-			PrefixSpaceColors[i] = byte.TryParse(fontElement.Attribute("SpaceColor")?.Value, out byte spaceColor) ? spaceColor : (byte)0;
-			foreach (XElement picElement in vgaGraph.Elements("Pic"))
+			// Name is required - crash if missing
+			string name = fontElement.Attribute("Name")?.Value;
+			if (string.IsNullOrEmpty(name))
+				throw new InvalidDataException("Font element missing required Name attribute");
+			// Check for duplicate names across both dictionaries
+			if (ChunkFontsByName.ContainsKey(name) || PicFonts.ContainsKey(name))
+				throw new InvalidDataException($"Duplicate font name '{name}' found");
+			bool isPicFont = !string.IsNullOrEmpty(fontElement.Attribute("Prefix")?.Value);
+			if (isPicFont)
 			{
-				string name = picElement.Attribute("Name")?.Value;
-				if (string.IsNullOrEmpty(name) || !name.StartsWith(prefix))
-					continue;
-				string charAttr = picElement.Attribute("Character")?.Value;
-				if (string.IsNullOrEmpty(charAttr))
-					continue;
-				if (ushort.TryParse(picElement.Attribute("Number")?.Value, out ushort picNumber))
-					if (picNumber < Pics.Length)
-						PrefixFonts[i][charAttr[0]] = picNumber;
+				// Pic font: build from Pics using prefix matching
+				string prefix = fontElement.Attribute("Prefix").Value;
+				Dictionary<char, int> characters = [];
+				foreach (XElement picElement in vgaGraph.Elements("Pic"))
+				{
+					string picName = picElement.Attribute("Name")?.Value;
+					if (string.IsNullOrEmpty(picName) || !picName.StartsWith(prefix))
+						continue;
+					string charAttr = picElement.Attribute("Character")?.Value;
+					if (string.IsNullOrEmpty(charAttr))
+						continue;
+					if (ushort.TryParse(picElement.Attribute("Number")?.Value, out ushort picNumber))
+						if (picNumber < Pics.Length)
+							characters[charAttr[0]] = picNumber;
+				}
+				// Parse space character metadata
+				ushort spaceWidth = ushort.TryParse(fontElement.Attribute("SpaceWidth")?.Value, out ushort sw) ? sw : (ushort)0;
+				byte spaceColor = byte.TryParse(fontElement.Attribute("SpaceColor")?.Value, out byte sc) ? sc : (byte)0;
+				PicFonts[name] = new PicFont(characters, spaceWidth, spaceColor);
+			}
+			else
+			{
+				// Chunk font: parse Number to get index in Fonts array
+				if (!ushort.TryParse(fontElement.Attribute("Number")?.Value, out ushort fontNumber))
+					throw new InvalidDataException($"Chunk font '{name}' missing or invalid Number attribute");
+				// Number should be offset from startFont
+				int index = fontNumber;
+				if (index >= 0 && index < Fonts.Length)
+					ChunkFontsByName[name] = index;
 			}
 		}
 	}
