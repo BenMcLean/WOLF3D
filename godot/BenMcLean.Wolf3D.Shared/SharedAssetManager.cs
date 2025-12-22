@@ -28,19 +28,22 @@ public static class SharedAssetManager
 	/// </summary>
 	public static Godot.ImageTexture Atlas { get; private set; }
 	public static Godot.Image AtlasImage { get; private set; }
+	private static Dictionary<int, Godot.AtlasTexture> _vswap;
+	private static Dictionary<string, Godot.AtlasTexture> _vgaGraph;
+	private static Dictionary<string, Godot.FontFile> _fonts;
 	/// <summary>
 	/// Maps VSwap page indices to AtlasTextures ready for 2D display.
 	/// </summary>
-	public static Dictionary<int, Godot.AtlasTexture> VSwap { get; private set; }
+	public static IReadOnlyDictionary<int, Godot.AtlasTexture> VSwap => _vswap;
 	/// <summary>
 	/// Maps VgaGraph Pic names to AtlasTextures ready for 2D display.
 	/// </summary>
-	public static Dictionary<string, Godot.AtlasTexture> VgaGraph { get; private set; }
+	public static IReadOnlyDictionary<string, Godot.AtlasTexture> VgaGraph => _vgaGraph;
 	/// <summary>
 	/// Dictionary of Godot FontFile objects, keyed by font name.
 	/// Includes both chunk fonts (from VGAGRAPH) and pic fonts (prefix-based).
 	/// </summary>
-	public static Dictionary<string, Godot.FontFile> Fonts { get; private set; }
+	public static IReadOnlyDictionary<string, Godot.FontFile> Fonts => _fonts;
 	/// <summary>
 	/// Generates packing rectangles for all VSwap and VgaGraph textures.
 	/// </summary>
@@ -105,8 +108,8 @@ public static class SharedAssetManager
 	private static void BuildAtlas()
 	{
 		// Initialize texture dictionaries
-		VSwap = [];
-		VgaGraph = [];
+		_vswap = [];
+		_vgaGraph = [];
 		// Create temporary region dictionaries for building
 		Dictionary<int, Godot.Rect2I> vswapRegions = [];
 		Dictionary<int, Godot.Rect2I> vgaGraphRegions = [];
@@ -239,7 +242,7 @@ public static class SharedAssetManager
 				Atlas = Atlas,
 				Region = new Godot.Rect2(kvp.Value.Position, kvp.Value.Size),
 			};
-			VSwap[kvp.Key] = atlasTexture;
+			_vswap[kvp.Key] = atlasTexture;
 		}
 		// Build VgaGraph AtlasTextures by name
 		if (CurrentGame?.VgaGraph?.PicsByName is not null)
@@ -252,7 +255,7 @@ public static class SharedAssetManager
 					Atlas = Atlas,
 					Region = new Godot.Rect2(region.Position, region.Size),
 				};
-				VgaGraph[name] = atlasTexture;
+				_vgaGraph[name] = atlasTexture;
 			}
 	}
 	/// <summary>
@@ -266,20 +269,20 @@ public static class SharedAssetManager
 	{
 		if (CurrentGame?.VgaGraph is null)
 			return;
-		Fonts = [];
+		_fonts = [];
 		// Build chunk fonts
 		foreach ((string name, int index) in CurrentGame.VgaGraph.ChunkFontsByName)
 		{
 			Godot.FontFile font = BuildChunkFont(index, vgaGraphFontRegions);
 			if (font is not null)
-				Fonts[name] = font;
+				_fonts[name] = font;
 		}
 		// Build pic fonts
 		foreach ((string name, Assets.VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
 		{
 			Godot.FontFile font = BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions);
 			if (font is not null)
-				Fonts[name] = font;
+				_fonts[name] = font;
 		}
 	}
 	/// <summary>
@@ -465,18 +468,18 @@ public static class SharedAssetManager
 		// MusicPlayer?.Dispose();
 
 		// Dispose texture atlas and fonts
-		if (Fonts is not null)
-			foreach (Godot.FontFile font in Fonts.Values)
+		if (_fonts is not null)
+			foreach (Godot.FontFile font in _fonts.Values)
 				font?.Dispose();
-		Fonts?.Clear();
-		if (VSwap is not null)
-			foreach (AtlasTexture atlasTexture in VSwap.Values)
+		_fonts?.Clear();
+		if (_vswap is not null)
+			foreach (AtlasTexture atlasTexture in _vswap.Values)
 				atlasTexture.Dispose();
-		VSwap?.Clear();
-		if (VgaGraph is not null)
-			foreach (AtlasTexture atlasTexture in VgaGraph.Values)
+		_vswap?.Clear();
+		if (_vgaGraph is not null)
+			foreach (AtlasTexture atlasTexture in _vgaGraph.Values)
 				atlasTexture.Dispose();
-		VgaGraph?.Clear();
+		_vgaGraph?.Clear();
 		Atlas?.Dispose();
 		Atlas = null;
 		AtlasImage?.Dispose();
