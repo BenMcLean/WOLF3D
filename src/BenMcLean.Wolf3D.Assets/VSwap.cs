@@ -29,6 +29,7 @@ public sealed class VSwap
 	public uint[][] Palettes { get; private init; }
 	public byte[][] Pages { get; private init; }
 	public byte[][] DigiSounds { get; private init; }
+	public Dictionary<string, byte[]> DigiSoundsByName { get; private init; }
 	public BitArray[] Masks { get; private init; }
 	public ushort SpritePage { get; private init; }
 	public ushort NumPages { get; private init; }
@@ -148,6 +149,16 @@ public sealed class VSwap
 				for (uint bite = 0; bite < DigiSounds[sound].Length; bite++)
 					DigiSounds[sound][bite] = (byte)(soundData[start + bite] - 128); // Godot makes some kind of oddball conversion from the unsigned byte to a signed byte
 			}
+		DigiSoundsByName = [];
+		foreach (XElement digiSoundElement in xml.Elements("DigiSounds").Elements("DigiSound"))
+		{
+			uint number = (uint)digiSoundElement.Attribute("Number");
+			string name = digiSoundElement.Attribute("Name")?.Value;
+			if (!string.IsNullOrWhiteSpace(name)
+				&& number < DigiSounds.Length
+				&& DigiSounds[number] is byte[] bytes)
+				DigiSoundsByName.Add(name, bytes);
+		}
 		#endregion read in digisounds
 	}
 	public static uint PaletteNumber(int pageNumber, XElement xml) =>
