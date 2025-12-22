@@ -167,11 +167,16 @@ public sealed class VgaGraph
 			.Elements("Font")
 			.Where(e => !string.IsNullOrEmpty(e.Attribute("Prefix")?.Value))];
 		PrefixFonts = new Dictionary<char, int>[prefixFontElements.Count];
-		for (int i = 0; i < prefixFontElements.Count; i++)
+		PrefixSpaceWidths = new ushort[PrefixFonts.Length];
+		PrefixSpaceColors = new byte[PrefixFonts.Length];
+		for (int i = 0; i < PrefixFonts.Length; i++)
 		{
 			XElement fontElement = prefixFontElements[i];
 			string prefix = fontElement.Attribute("Prefix").Value;
 			PrefixFonts[i] = [];
+			// Parse space character metadata
+			PrefixSpaceWidths[i] = ushort.TryParse(fontElement.Attribute("SpaceWidth")?.Value, out ushort spaceWidth) ? spaceWidth : (ushort)0;
+			PrefixSpaceColors[i] = byte.TryParse(fontElement.Attribute("SpaceColor")?.Value, out byte spaceColor) ? spaceColor : (byte)0;
 			foreach (XElement picElement in vgaGraph.Elements("Pic"))
 			{
 				string name = picElement.Attribute("Name")?.Value;

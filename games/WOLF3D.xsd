@@ -150,10 +150,21 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="SpaceWidth" type="xs:nonNegativeInteger">
+			<xs:attribute name="SpaceWidth" type="xs:unsignedShort">
 				<xs:annotation>
 					<xs:documentation>
-						Width of space character in pixels (prefix-based fonts only).
+						Optional: Width of space character in pixels (prefix-based fonts only).
+						Use when the font doesn't include a Pic with Character=" ".
+						If specified with SpaceColor, a textured space glyph will be created.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="SpaceColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Optional: Color index (0-255) from the default palette (index 0) for space character color (prefix-based fonts only).
+						Use when the font doesn't include a Pic with Character=" ".
+						Creates a solid-color textured glyph for the space character required for Godot UI.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

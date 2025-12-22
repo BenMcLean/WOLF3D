@@ -81,6 +81,22 @@ public static class SharedAssetManager
 							height: (uint)(font.Height + 2),
 							id: rectangles.Count));
 			}
+			// Add rectangles for PrefixFont space characters
+			for (int i = 0; i < CurrentGame.VgaGraph.PrefixFonts.Length; i++)
+			{
+				if (CurrentGame.VgaGraph.PrefixSpaceWidths[i] > 0)
+				{
+					// Get height from first character in the prefix font
+					int firstPicIndex = CurrentGame.VgaGraph.PrefixFonts[i].Values.First();
+					ushort height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
+					rectangles.Add(new PackingRectangle(
+						x: 0,
+						y: 0,
+						width: (uint)(CurrentGame.VgaGraph.PrefixSpaceWidths[i] + 2),
+						height: (uint)(height + 2),
+						id: rectangles.Count));
+				}
+			}
 		}
 		return [.. rectangles];
 	}
@@ -96,6 +112,7 @@ public static class SharedAssetManager
 		Dictionary<int, Godot.Rect2I> vswapRegions = [];
 		Dictionary<int, Godot.Rect2I> vgaGraphRegions = [];
 		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions = [];
+		Dictionary<int, Godot.Rect2I> prefixSpaceRegions = [];
 		// Generate and pack rectangles
 		PackingRectangle[] rectangles = GenerateRectangles();
 		RectanglePacker.Pack(rectangles, out PackingRectangle bounds, PackingHints.TryByBiggerSide);
@@ -165,6 +182,31 @@ public static class SharedAssetManager
 							height: height);
 					}
 			}
+			// Insert PrefixFont space characters
+			for (int i = 0; i < CurrentGame.VgaGraph.PrefixFonts.Length; i++)
+				if (CurrentGame.VgaGraph.PrefixSpaceWidths[i] > 0)
+				{
+					PackingRectangle rect = rectangles[rectIndex++];
+					// Get height from first character in the prefix font
+					int firstPicIndex = CurrentGame.VgaGraph.PrefixFonts[i].Values.First();
+					ushort width = CurrentGame.VgaGraph.PrefixSpaceWidths[i],
+						height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
+					// Draw solid color rectangle directly onto atlas
+					byte colorIndex = CurrentGame.VgaGraph.PrefixSpaceColors[i];
+					uint color = CurrentGame.VgaGraph.Palettes[0][colorIndex]; // Use default palette
+					atlas.DrawRectangle(
+						x: (int)(rect.X + 1),
+						y: (int)(rect.Y + 1),
+						color: color,
+						rectWidth: width,
+						rectHeight: height,
+						width: (ushort)atlasSize);
+					prefixSpaceRegions[i] = new Godot.Rect2I(
+						x: (int)(rect.X + 1),
+						y: (int)(rect.Y + 1),
+						width: width,
+						height: height);
+				}
 		}
 		// Create Godot texture from atlas
 		AtlasImage = Godot.Image.CreateFromData(
@@ -177,9 +219,8 @@ public static class SharedAssetManager
 		// Build AtlasTextures for 2D display
 		BuildAtlasTextures(vswapRegions, vgaGraphRegions);
 		// Build all fonts (both regular and prefix-based)
-		BuildFonts(vgaGraphRegions, vgaGraphFontRegions);
+		BuildFonts(vgaGraphRegions, vgaGraphFontRegions, prefixSpaceRegions);
 	}
-
 	/// <summary>
 	/// Builds AtlasTextures for 2D display from VSwap and VgaGraph regions.
 	/// </summary>
@@ -217,7 +258,8 @@ public static class SharedAssetManager
 	/// </summary>
 	private static void BuildFonts(
 		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
-		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions)
+		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions,
+		Dictionary<int, Godot.Rect2I> prefixSpaceRegions)
 	{
 		if (CurrentGame?.XML?.Element("VgaGraph") is null)
 			return;
@@ -229,7 +271,7 @@ public static class SharedAssetManager
 		for (; font < CurrentGame.VgaGraph.Fonts.Length; font++)
 			Fonts[font] = BuildRegularFont(font, vgaGraphFontRegions);
 		for (int i = 0; i < CurrentGame.VgaGraph.PrefixFonts.Length; i++)
-			Fonts[++font] = BuildPrefixFont(i, vgaGraphRegions);
+			Fonts[++font] = BuildPrefixFont(i, vgaGraphRegions, prefixSpaceRegions);
 	}
 	/// <summary>
 	/// Builds a regular Godot Font from a VgaGraph font chunk.
@@ -297,7 +339,8 @@ public static class SharedAssetManager
 	/// </summary>
 	private static Godot.FontFile BuildPrefixFont(
 		int prefixIndex,
-		Dictionary<int, Godot.Rect2I> vgaGraphRegions)
+		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
+		Dictionary<int, Godot.Rect2I> prefixSpaceRegions)
 	{
 		Dictionary<char, int> charMap = CurrentGame.VgaGraph.PrefixFonts[prefixIndex];
 		Godot.FontFile font = new()
@@ -344,6 +387,42 @@ public static class SharedAssetManager
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
 				glyph: charCode,
+				offset: new Godot.Vector2I(0, 0));
+		}
+		// Add space character if it has a textured region
+		if (prefixSpaceRegions.TryGetValue(prefixIndex, out Godot.Rect2I spaceRegion))
+		{
+			int spaceCode = ' ';
+			font.SetGlyphTextureIdx(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: spaceCode,
+				textureIdx: 0);
+			font.SetGlyphUVRect(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: spaceCode,
+				uVRect: new Godot.Rect2(
+					position: new Godot.Vector2(
+						x: spaceRegion.Position.X / (float)Atlas.GetWidth(),
+						y: spaceRegion.Position.Y / (float)Atlas.GetHeight()),
+					size: new Godot.Vector2(
+						x: spaceRegion.Size.X / (float)Atlas.GetWidth(),
+						y: spaceRegion.Size.Y / (float)Atlas.GetHeight())));
+			font.SetGlyphAdvance(
+				cacheIndex: 0,
+				size: font.FixedSize,
+				glyph: spaceCode,
+				advance: new Godot.Vector2(spaceRegion.Size.X, 0));
+			font.SetGlyphSize(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: spaceCode,
+				glSize: spaceRegion.Size);
+			font.SetGlyphOffset(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: spaceCode,
 				offset: new Godot.Vector2I(0, 0));
 		}
 		return font;
