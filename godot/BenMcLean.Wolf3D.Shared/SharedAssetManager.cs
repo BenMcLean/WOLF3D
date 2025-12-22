@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Godot;
+using RectpackSharp;
 
 namespace BenMcLean.Wolf3D.Shared;
 
@@ -19,19 +23,331 @@ public static class SharedAssetManager
 	// TODO: Add Music player when implementing audio
 	// public static IMusicPlayer MusicPlayer { get; private set; }
 
-	// TODO: Add VgaGraph texture atlas and UI integration when implementing menus
-	// Will use texture atlas approach + Godot UI system
-
 	/// <summary>
-	/// Loads the game selection menu using embedded WL1 shareware assets.
-	/// This is displayed before the user selects which game to play.
+	/// The master texture atlas containing all VSwap pages, VgaGraph Pics, and Font characters.
 	/// </summary>
-	public static void LoadGameSelectionMenu()
+	public static Godot.ImageTexture Atlas { get; private set; }
+	public static Godot.Image AtlasImage { get; private set; }
+	/// <summary>
+	/// Maps VSwap page indices to AtlasTextures ready for 2D display.
+	/// </summary>
+	public static Dictionary<int, Godot.AtlasTexture> VSwap { get; private set; }
+	/// <summary>
+	/// Maps VgaGraph Pic names to AtlasTextures ready for 2D display.
+	/// </summary>
+	public static Dictionary<string, Godot.AtlasTexture> VgaGraph { get; private set; }
+	/// <summary>
+	/// Array of Godot Font objects, indexed by font Number from XML.
+	/// Includes both regular VgaGraph fonts (Chunk attribute) and prefix-based fonts (Prefix attribute).
+	/// </summary>
+	public static Godot.Font[] Fonts { get; private set; }
+	/// <summary>
+	/// Generates packing rectangles for all VSwap and VgaGraph textures.
+	/// </summary>
+	private static PackingRectangle[] GenerateRectangles()
 	{
-		// TODO: Load embedded WL1 shareware from Resources folder
-		throw new NotImplementedException("LoadGameSelectionMenu - need embedded WL1 shareware resource");
+		List<PackingRectangle> rectangles = [];
+		// Add rectangles for VSwap pages (walls and sprites)
+		uint tileSqrt = CurrentGame.VSwap.TileSqrt;
+		for (int page = 0; page < CurrentGame.VSwap.Pages.Length; page++)
+			if (CurrentGame.VSwap.Pages[page] is not null)
+				rectangles.Add(new PackingRectangle(
+					x: 0,
+					y: 0,
+					width: tileSqrt + 2,
+					height: tileSqrt + 2,
+					id: rectangles.Count));
+		// Add rectangles for VgaGraph Pics
+		if (CurrentGame.VgaGraph is not null)
+		{
+			rectangles.AddRange(
+				Enumerable.Range(0, CurrentGame.VgaGraph.Pics.Length)
+				.Select(i => new PackingRectangle(
+					x: 0,
+					y: 0,
+					width: (uint)(CurrentGame.VgaGraph.Sizes[i][0] + 2),
+					height: (uint)(CurrentGame.VgaGraph.Sizes[i][1] + 2),
+					id: rectangles.Count)));
+			// Add rectangles for VgaGraph Font characters
+			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
+			{
+				Assets.VgaGraph.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
+				for (uint charCode = 0; charCode < font.Character.Length; charCode++)
+					if (font.Width[charCode] > 0)
+						rectangles.Add(new PackingRectangle(
+							x: 0,
+							y: 0,
+							width: (uint)(font.Width[charCode] + 2),
+							height: (uint)(font.Height + 2),
+							id: rectangles.Count));
+			}
+		}
+		return [.. rectangles];
+	}
+	/// <summary>
+	/// Builds the texture atlas from all VSwap pages, VgaGraph Pics, and Font characters.
+	/// </summary>
+	private static void BuildAtlas()
+	{
+		// Initialize texture dictionaries
+		VSwap = [];
+		VgaGraph = [];
+		// Create temporary region dictionaries for building
+		Dictionary<int, Godot.Rect2I> vswapRegions = [];
+		Dictionary<int, Godot.Rect2I> vgaGraphRegions = [];
+		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions = [];
+		// Generate and pack rectangles
+		PackingRectangle[] rectangles = GenerateRectangles();
+		RectanglePacker.Pack(rectangles, out PackingRectangle bounds, PackingHints.TryByBiggerSide);
+		// Calculate atlas size as next power of 2
+		uint atlasSize = Math.Max(bounds.Width, bounds.Height).NextPowerOf2();
+		// Create atlas canvas
+		byte[] atlas = new byte[(atlasSize * atlasSize) << 2];
+		// Insert textures into atlas
+		uint rectIndex = 0;
+		// Insert VSwap pages
+		for (int page = 0; page < CurrentGame.VSwap.Pages.Length; page++)
+			if (CurrentGame.VSwap.Pages[page] is not null)
+			{
+				PackingRectangle rect = rectangles[rectIndex++];
+				atlas.DrawInsert(
+					x: (ushort)(rect.X + 1),
+					y: (ushort)(rect.Y + 1),
+					insert: CurrentGame.VSwap.Pages[page],
+					insertWidth: CurrentGame.VSwap.TileSqrt,
+					width: (ushort)atlasSize);
+				vswapRegions[page] = new Godot.Rect2I(
+					x: (int)(rect.X + 1),
+					y: (int)(rect.Y + 1),
+					width: CurrentGame.VSwap.TileSqrt,
+					height: CurrentGame.VSwap.TileSqrt);
+			}
+		// Insert VgaGraph Pics
+		if (CurrentGame.VgaGraph is not null)
+		{
+			for (int i = 0; i < CurrentGame.VgaGraph.Pics.Length; i++)
+			{
+				PackingRectangle rect = rectangles[rectIndex++];
+				ushort width = CurrentGame.VgaGraph.Sizes[i][0],
+					height = CurrentGame.VgaGraph.Sizes[i][1];
+				atlas.DrawInsert(
+					x: (ushort)(rect.X + 1),
+					y: (ushort)(rect.Y + 1),
+					insert: CurrentGame.VgaGraph.Pics[i],
+					insertWidth: width,
+					width: (ushort)atlasSize);
+				vgaGraphRegions[i] = new Godot.Rect2I(
+					x: (int)(rect.X + 1),
+					y: (int)(rect.Y + 1),
+					width: width,
+					height: height);
+			}
+			// Insert VgaGraph Font characters
+			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
+			{
+				Assets.VgaGraph.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
+				for (uint charCode = 0; charCode < font.Character.Length; charCode++)
+					if (font.Width[charCode] > 0)
+					{
+						PackingRectangle rect = rectangles[rectIndex++];
+						byte width = font.Width[charCode];
+						ushort height = font.Height;
+						atlas.DrawInsert(
+							x: (ushort)(rect.X + 1),
+							y: (ushort)(rect.Y + 1),
+							insert: font.Character[charCode],
+							insertWidth: width,
+							width: (ushort)atlasSize);
+						vgaGraphFontRegions[(fontIndex << 16) | charCode] = new Godot.Rect2I(
+							x: (int)(rect.X + 1),
+							y: (int)(rect.Y + 1),
+							width: width,
+							height: height);
+					}
+			}
+		}
+		// Create Godot texture from atlas
+		AtlasImage = Godot.Image.CreateFromData(
+			width: (int)atlasSize,
+			height: (int)atlasSize,
+			useMipmaps: false,
+			format: Godot.Image.Format.Rgba8,
+			data: atlas);
+		Atlas = Godot.ImageTexture.CreateFromImage(AtlasImage);
+		// Build AtlasTextures for 2D display
+		BuildAtlasTextures(vswapRegions, vgaGraphRegions);
+		// Build all fonts (both regular and prefix-based)
+		BuildFonts(vgaGraphRegions, vgaGraphFontRegions);
 	}
 
+	/// <summary>
+	/// Builds AtlasTextures for 2D display from VSwap and VgaGraph regions.
+	/// </summary>
+	private static void BuildAtlasTextures(
+		Dictionary<int, Godot.Rect2I> vswapRegions,
+		Dictionary<int, Godot.Rect2I> vgaGraphRegions)
+	{
+		// Build VSwap AtlasTextures (indexed by page number)
+		foreach (KeyValuePair<int, Godot.Rect2I> kvp in vswapRegions)
+		{
+			Godot.AtlasTexture atlasTexture = new()
+			{
+				Atlas = Atlas,
+				Region = new Godot.Rect2(kvp.Value.Position, kvp.Value.Size),
+			};
+			VSwap[kvp.Key] = atlasTexture;
+		}
+		// Build VgaGraph AtlasTextures by name
+		if (CurrentGame?.VgaGraph?.PicsByName is not null)
+			foreach ((string name, int picIndex) in CurrentGame.VgaGraph.PicsByName)
+			{
+				if (!vgaGraphRegions.TryGetValue(picIndex, out Godot.Rect2I region))
+					continue;
+				Godot.AtlasTexture atlasTexture = new()
+				{
+					Atlas = Atlas,
+					Region = new Godot.Rect2(region.Position, region.Size),
+				};
+				VgaGraph[name] = atlasTexture;
+			}
+	}
+	/// <summary>
+	/// Builds Godot Font objects for all fonts defined in XML.
+	/// Handles both regular VgaGraph fonts and prefix-based fonts.
+	/// </summary>
+	private static void BuildFonts(
+		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
+		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions)
+	{
+		if (CurrentGame?.XML?.Element("VgaGraph") is null)
+			return;
+		System.Xml.Linq.XElement[] fontElements = [.. CurrentGame.XML.Element("VgaGraph").Elements("Font")];
+		if (fontElements.Length == 0)
+			return;
+		Fonts = new Godot.Font[CurrentGame.VgaGraph.Fonts.Length + CurrentGame.VgaGraph.PrefixFonts.Length + 1];
+		int font = 0;
+		for (; font < CurrentGame.VgaGraph.Fonts.Length; font++)
+			Fonts[font] = BuildRegularFont(font, vgaGraphFontRegions);
+		for (int i = 0; i < CurrentGame.VgaGraph.PrefixFonts.Length; i++)
+			Fonts[++font] = BuildPrefixFont(i, vgaGraphRegions);
+	}
+	/// <summary>
+	/// Builds a regular Godot Font from a VgaGraph font chunk.
+	/// </summary>
+	private static Godot.FontFile BuildRegularFont(
+		int fontIndex,
+		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions)
+	{
+		if (CurrentGame?.VgaGraph?.Fonts is null
+			|| fontIndex >= CurrentGame.VgaGraph.Fonts.Length)
+			return null;
+		Assets.VgaGraph.Font sourceFont = CurrentGame.VgaGraph.Fonts[fontIndex];
+		Godot.FontFile font = new()
+		{
+			FixedSize = sourceFont.Height,
+		};
+		font.SetTextureImage(
+			cacheIndex: 0,
+			size: new Godot.Vector2I(sourceFont.Height, 0),
+			textureIndex: 0,
+			image: AtlasImage);
+		for (int charCode = 0; charCode < sourceFont.Character.Length; charCode++)
+		{
+			if (sourceFont.Width[charCode] == 0)
+				continue;
+			uint key = ((uint)fontIndex << 16) | (char)charCode;
+			if (!vgaGraphFontRegions.TryGetValue(key, out Godot.Rect2I region))
+				continue;
+			font.SetGlyphTextureIdx(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(sourceFont.Height, 0),
+				glyph: charCode,
+				textureIdx: 0);
+			font.SetGlyphUVRect(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(sourceFont.Height, 0),
+				glyph: charCode,
+				uVRect: new Godot.Rect2(
+					position: new Godot.Vector2(
+						x: region.Position.X / (float)Atlas.GetWidth(),
+						y: region.Position.Y / (float)Atlas.GetHeight()),
+					size: new Godot.Vector2(
+						x: region.Size.X / (float)Atlas.GetWidth(),
+						y: region.Size.Y / (float)Atlas.GetHeight())));
+			font.SetGlyphAdvance(
+				cacheIndex: 0,
+				size: sourceFont.Height,
+				glyph: charCode,
+				advance: new Godot.Vector2(sourceFont.Width[charCode], 0));
+			font.SetGlyphSize(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(sourceFont.Height, 0),
+				glyph: charCode,
+				glSize: region.Size);
+			font.SetGlyphOffset(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(sourceFont.Height, 0),
+				glyph: charCode,
+				offset: new Godot.Vector2I(0, 0));
+		}
+		return font;
+	}
+	/// <summary>
+	/// Builds a prefix-based Godot Font using VgaGraph.PrefixFonts.
+	/// </summary>
+	private static Godot.FontFile BuildPrefixFont(
+		int prefixIndex,
+		Dictionary<int, Godot.Rect2I> vgaGraphRegions)
+	{
+		Dictionary<char, int> charMap = CurrentGame.VgaGraph.PrefixFonts[prefixIndex];
+		Godot.FontFile font = new()
+		{
+			FixedSize = CurrentGame.VgaGraph.Sizes[charMap.Values.First()][1],
+		};
+		font.SetTextureImage(
+			cacheIndex: 0,
+			size: new Godot.Vector2I(font.FixedSize, 0),
+			textureIndex: 0,
+			image: Atlas.GetImage());
+		foreach ((char character, int picNumber) in charMap)
+		{
+			if (!vgaGraphRegions.TryGetValue(picNumber, out Godot.Rect2I region))
+				continue;
+			int charCode = character;
+			font.SetGlyphTextureIdx(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: charCode,
+				textureIdx: 0);
+			font.SetGlyphUVRect(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: charCode,
+				uVRect: new Godot.Rect2(
+					position: new Godot.Vector2(
+						x: region.Position.X / (float)Atlas.GetWidth(),
+						y: region.Position.Y / (float)Atlas.GetHeight()),
+					size: new Godot.Vector2(
+						x: region.Size.X / (float)Atlas.GetWidth(),
+						y: region.Size.Y / (float)Atlas.GetHeight())));
+			font.SetGlyphAdvance(
+				cacheIndex: 0,
+				size: font.FixedSize,
+				glyph: charCode,
+				advance: new Godot.Vector2(region.Size.X, 0));
+			font.SetGlyphSize(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: charCode,
+				glSize: region.Size);
+			font.SetGlyphOffset(
+				cacheIndex: 0,
+				size: new Godot.Vector2I(font.FixedSize, 0),
+				glyph: charCode,
+				offset: new Godot.Vector2I(0, 0));
+		}
+		return font;
+	}
 	/// <summary>
 	/// Loads a game from the user's games folder.
 	/// </summary>
@@ -40,15 +356,13 @@ public static class SharedAssetManager
 	{
 		// Cleanup old resources
 		Cleanup();
-
 		// Load game data
 		CurrentGame = Assets.Assets.Load(xmlPath);
-
 		// TODO: Create AudioStreamWAV from DigiSounds when implementing audio
 		// TODO: Initialize music player when implementing audio
-		// TODO: Create VgaGraph texture atlas when implementing menus
+		// Build texture atlas with VSwap and VgaGraph
+		BuildAtlas();
 	}
-
 	/// <summary>
 	/// Disposes all loaded resources to free memory.
 	/// Called before loading a new game or on program exit.
@@ -61,8 +375,23 @@ public static class SharedAssetManager
 		// DigiSounds?.Clear();
 		// MusicPlayer?.Dispose();
 
-		// TODO: Dispose VgaGraph texture atlas when implemented
-
+		// Dispose texture atlas and fonts
+		if (Fonts is not null)
+			foreach (Font font in Fonts)
+				font.Dispose();
+		Fonts = null;
+		if (VSwap is not null)
+			foreach (AtlasTexture atlasTexture in VSwap.Values)
+				atlasTexture.Dispose();
+		VSwap?.Clear();
+		if (VgaGraph is not null)
+			foreach (AtlasTexture atlasTexture in VgaGraph.Values)
+				atlasTexture.Dispose();
+		VgaGraph?.Clear();
+		Atlas?.Dispose();
+		Atlas = null;
+		AtlasImage?.Dispose();
+		AtlasImage = null;
 		CurrentGame = null;
 	}
 }

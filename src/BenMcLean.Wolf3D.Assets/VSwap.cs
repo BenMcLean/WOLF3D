@@ -150,9 +150,9 @@ public sealed class VSwap
 			}
 		#endregion read in digisounds
 	}
-	public static uint PaletteNumber(uint pageNumber, XElement xml) =>
+	public static uint PaletteNumber(int pageNumber, XElement xml) =>
 		xml?.Element("VSwap")?.Descendants()?.Where(
-			e => uint.TryParse(e.Attribute("Page")?.Value, out uint page) && page == pageNumber
+			e => ushort.TryParse(e.Attribute("Page")?.Value, out ushort page) && page == pageNumber
 			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
 		?.FirstOrDefault() ?? 0;
 	public static IEnumerable<uint[]> LoadPalettes(XElement xml) => xml.Elements("Palette").Select(LoadPalette);

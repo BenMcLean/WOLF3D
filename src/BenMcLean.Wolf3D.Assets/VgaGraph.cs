@@ -120,29 +120,76 @@ public sealed class VgaGraph
 	public byte[][] Pics { get; private init; }
 	public ushort[][] Sizes { get; private init; }
 	public uint[][] Palettes { get; private init; }
+	/// <summary>
+	/// Dictionary mapping Pic names to their indices in the Pics[] array.
+	/// </summary>
+	public Dictionary<string, int> PicsByName { get; private init; }
+	/// <summary>
+	/// Array of prefix-based fonts, where each font is a dictionary mapping characters to pic indices.
+	/// Index 0 is the first prefix font in the XML file.
+	/// Use the pic index to look up in Pics[] array.
+	/// </summary>
+	public Dictionary<char, int>[] PrefixFonts { get; private init; }
+	public ushort[] PrefixSpaceWidths { get; private init; }
+	public byte[] PrefixSpaceColors { get; private init; }
 	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitFile(ParseHead(vgaHead), vgaGraph, Load16BitPairs(dictionary)), xml)
 	{ }
 	public VgaGraph(byte[][] file, XElement xml)
 	{
 		Palettes = [.. VSwap.LoadPalettes(xml)];
 		XElement vgaGraph = xml.Element("VgaGraph");
-		using (MemoryStream sizes = new(file[(uint)vgaGraph.Element("Sizes").Attribute("Chunk")]))
+		using (MemoryStream sizes = new(file[(uint?)vgaGraph.Element("Sizes").Attribute("Chunk") ?? 0]))
 			Sizes = Load16BitPairs(sizes);
-		uint startFont = (uint)vgaGraph.Element("Sizes").Attribute("StartFont");
-		Fonts = new Font[(uint)vgaGraph.Element("Sizes").Attribute("Fonts")];
-		for (uint i = 0; i < Fonts.Length; i++)
+		uint startFont = (uint)vgaGraph.Element("Sizes").Attribute("StartFont"),
+			startPic = (uint)vgaGraph.Element("Sizes").Attribute("StartPic");
+		Fonts = new Font[startPic - startFont];
+		for (int i = 0; i < Fonts.Length; i++)
 			using (MemoryStream font = new(file[startFont + i]))
 				Fonts[i] = new Font(font);
-		uint startPic = (uint)vgaGraph.Element("Sizes").Attribute("StartPic");
 		Pics = new byte[vgaGraph.Elements("Pic")?.Count() ?? 0][];
-		for (uint i = 0; i < Pics.Length; i++)
+		for (int i = 0; i < Pics.Length; i++)
 			Pics[i] = Deplanify(file[startPic + i], Sizes[i][0])
 				.Indices2ByteArray(Palettes[PaletteNumber(i, xml)]);
+		// Build PicsByName dictionary from XML
+		PicsByName = [];
+		foreach (XElement picElement in vgaGraph.Elements("Pic"))
+		{
+			string name = picElement.Attribute("Name")?.Value;
+			if (string.IsNullOrEmpty(name))
+				continue;
+			if (!ushort.TryParse(picElement.Attribute("Number")?.Value, out ushort picNumber))
+				continue;
+			if (picNumber < Pics.Length)
+				PicsByName[name] = picNumber;
+		}
+		// Build PrefixFonts array from Font elements with Prefix attribute
+		List<XElement> prefixFontElements = [.. vgaGraph
+			.Elements("Font")
+			.Where(e => !string.IsNullOrEmpty(e.Attribute("Prefix")?.Value))];
+		PrefixFonts = new Dictionary<char, int>[prefixFontElements.Count];
+		for (int i = 0; i < prefixFontElements.Count; i++)
+		{
+			XElement fontElement = prefixFontElements[i];
+			string prefix = fontElement.Attribute("Prefix").Value;
+			PrefixFonts[i] = [];
+			foreach (XElement picElement in vgaGraph.Elements("Pic"))
+			{
+				string name = picElement.Attribute("Name")?.Value;
+				if (string.IsNullOrEmpty(name) || !name.StartsWith(prefix))
+					continue;
+				string charAttr = picElement.Attribute("Character")?.Value;
+				if (string.IsNullOrEmpty(charAttr))
+					continue;
+				if (ushort.TryParse(picElement.Attribute("Number")?.Value, out ushort picNumber))
+					if (picNumber < Pics.Length)
+						PrefixFonts[i][charAttr[0]] = picNumber;
+			}
+		}
 	}
-	public static uint PaletteNumber(uint picNumber, XElement xml) =>
+	public static int PaletteNumber(int picNumber, XElement xml) =>
 		xml?.Element("VgaGraph")?.Elements("Pic")?.Where(
-			e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == picNumber
-			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
+			e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort number) && number == picNumber
+			)?.Select(e => ushort.TryParse(e.Attribute("Palette")?.Value, out ushort palette) ? palette : (ushort)0)
 		?.FirstOrDefault() ?? 0;
 	public static uint[] ParseHead(Stream stream)
 	{

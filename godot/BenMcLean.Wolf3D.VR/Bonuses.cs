@@ -70,9 +70,9 @@ public partial class Bonuses : Node3D
 		Dictionary<ushort, int> instanceCounts = [];
 
 		// Static bonuses from map - materialize to list to avoid re-enumeration issues
-		List<MapAnalysis.StaticSpawn> staticBonuses = mapAnalysis.StaticSpawns
-			.Where(s => s.StatType == StatType.bonus)
-			.ToList();  // Materialize to avoid multiple enumeration
+		List<MapAnalysis.StaticSpawn> staticBonuses = [.. mapAnalysis
+			.StaticSpawns
+			.Where(s => s.StatType == StatType.bonus)];
 
 		foreach (MapAnalysis.StaticSpawn bonus in staticBonuses)
 			instanceCounts[bonus.Shape] = instanceCounts.GetValueOrDefault(bonus.Shape) + 1;
@@ -140,7 +140,7 @@ public partial class Bonuses : Node3D
 	/// <param name="tileY">Tile Y coordinate (Wolf3D Y, becomes Godot Z)</param>
 	public void ShowBonus(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
 	{
-		if (!MeshInstances.ContainsKey(shape))
+		if (!MeshInstances.TryGetValue(shape, out MultiMeshInstance3D instance))
 		{
 			GD.PrintErr($"ERROR: No MultiMesh found for bonus shape {shape}");
 			GD.PrintErr($"  Available shapes: {string.Join(", ", MeshInstances.Keys)}");
@@ -166,7 +166,7 @@ public partial class Bonuses : Node3D
 
 		Transform3D transform = Transform3D.Identity;
 		transform.Origin = position;
-		MeshInstances[shape].Multimesh.SetInstanceTransform(localIndex, transform);
+		instance.Multimesh.SetInstanceTransform(localIndex, transform);
 	}
 
 	/// <summary>
@@ -204,7 +204,7 @@ public partial class Bonuses : Node3D
 		MultiMesh multiMesh = new()
 		{
 			TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
-			Mesh = Constants.WallMesh,  // Reuse wall quad mesh for sprites
+			Mesh = Constants.WallMesh,
 			InstanceCount = instanceCount,
 		};
 
@@ -287,8 +287,7 @@ public partial class Bonuses : Node3D
 	/// <param name="sim">The simulator instance to subscribe to</param>
 	public void Subscribe(Simulator.Simulator sim)
 	{
-		if (sim == null)
-			throw new ArgumentNullException(nameof(sim));
+		ArgumentNullException.ThrowIfNull(sim);
 
 		// Unsubscribe from previous simulator if any
 		Unsubscribe();

@@ -8,7 +8,7 @@ public class Assets
 {
 	public readonly XElement XML;
 	public readonly GameMap[] Maps;
-	//public readonly VgaGraph VgaGraph;
+	public readonly VgaGraph VgaGraph;
 	public readonly VSwap VSwap;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
 	public static Assets Load(string xmlPath)
@@ -21,7 +21,7 @@ public class Assets
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
-		//VgaGraph = VgaGraph.Load(xml, folder);
+		VgaGraph = VgaGraph.Load(xml, folder);
 		VSwap = VSwap.Load(xml, folder);
 		Maps = GameMap.Load(xml, folder);
 		MapAnalyses = [.. new MapAnalyzer(xml).Analyze(Maps)];
