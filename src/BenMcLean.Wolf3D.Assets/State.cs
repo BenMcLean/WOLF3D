@@ -75,7 +75,7 @@ public class State
 	/// <param name="element">The XElement containing state data</param>
 	/// <param name="spriteResolver">Optional function to resolve sprite names to numbers. If null, Shape will be set to -1.</param>
 	/// <returns>A new State instance</returns>
-	public static State FromXElement(XElement element, Func<string, short>? spriteResolver = null)
+	public static State FromXElement(XElement element, Func<string, short> spriteResolver = null)
 	{
 		State state = new()
 		{
@@ -88,7 +88,7 @@ public class State
 		};
 
 		// Handle Shape attribute - can be either a number or a sprite name
-		string? shapeAttr = element.Attribute("Shape")?.Value;
+		string shapeAttr = element.Attribute("Shape")?.Value;
 		if (!string.IsNullOrEmpty(shapeAttr))
 		{
 			if (short.TryParse(shapeAttr, out short shapeNum))
@@ -114,7 +114,7 @@ public class State
 		}
 
 		// Handle Next attribute - store name for linking phase
-		string? nextAttr = element.Attribute("Next")?.Value;
+		string nextAttr = element.Attribute("Next")?.Value;
 		if (!string.IsNullOrEmpty(nextAttr))
 		{
 			state.NextStateName = nextAttr;
@@ -184,7 +184,7 @@ public class StateCollection
 	/// </summary>
 	/// <param name="element">The XElement containing state data</param>
 	/// <param name="spriteResolver">Optional function to resolve sprite names to numbers</param>
-	public void AddStateFromXml(XElement element, Func<string, short>? spriteResolver = null)
+	public void AddStateFromXml(XElement element, Func<string, short> spriteResolver = null)
 	{
 		State state = State.FromXElement(element, spriteResolver);
 		States[state.Name] = state;
@@ -197,12 +197,10 @@ public class StateCollection
 	/// </summary>
 	/// <param name="elements">Collection of XElements representing states</param>
 	/// <param name="spriteResolver">Optional function to resolve sprite names to numbers</param>
-	public void LoadStatesFromXml(IEnumerable<XElement> elements, Func<string, short>? spriteResolver = null)
+	public void LoadStatesFromXml(IEnumerable<XElement> elements, Func<string, short> spriteResolver = null)
 	{
 		foreach (XElement element in elements)
-		{
 			AddStateFromXml(element, spriteResolver);
-		}
 	}
 
 	/// <summary>
@@ -219,7 +217,7 @@ public class StateCollection
 
 			if (!string.IsNullOrEmpty(state.NextStateName))
 			{
-				if (States.TryGetValue(state.NextStateName, out State? nextState))
+				if (States.TryGetValue(state.NextStateName, out State nextState))
 					state.Next = nextState;
 				else
 					throw new InvalidOperationException($"State '{state.Name}' references unknown next state '{state.NextStateName}'");

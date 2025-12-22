@@ -7,6 +7,7 @@ namespace BenMcLean.Wolf3D.Assets;
 public class Assets
 {
 	public readonly XElement XML;
+	public readonly AudioT AudioT;
 	public readonly GameMap[] Maps;
 	public readonly VgaGraph VgaGraph;
 	public readonly VSwap VSwap;
@@ -21,6 +22,7 @@ public class Assets
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
+		AudioT = AudioT.Load(xml, folder);
 		VgaGraph = VgaGraph.Load(xml, folder);
 		VSwap = VSwap.Load(xml, folder);
 		Maps = GameMap.Load(xml, folder);

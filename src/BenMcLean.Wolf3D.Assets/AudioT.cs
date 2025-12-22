@@ -12,7 +12,7 @@ namespace BenMcLean.Wolf3D.Assets;
 /// </summary>
 public sealed class AudioT
 {
-	public static AudioT Load(string folder, XElement xml)
+	public static AudioT Load(XElement xml, string folder = "")
 	{
 		using FileStream audioHead = new(System.IO.Path.Combine(folder, xml.Element("Audio").Attribute("AudioHead").Value), FileMode.Open);
 		using FileStream audioTStream = new(System.IO.Path.Combine(folder, xml.Element("Audio").Attribute("AudioT").Value), FileMode.Open);
