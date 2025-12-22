@@ -23,6 +23,15 @@ public partial class Root : Node3D
 		// Try scaleFactor: 4 for better performance, or 8 for maximum quality
 		VRAssetManager.Initialize(scaleFactor: 8);
 
+		// Add OplPlayer to scene tree for music
+		AddChild(Shared.OPL.SoundBlaster.OplPlayer);
+
+		// Play the first level's music
+		string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Song;
+		if (!string.IsNullOrWhiteSpace(songName)
+			&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out Assets.AudioT.Song song))
+			Shared.OPL.SoundBlaster.Song = song;
+
 		// For now, boot directly into ActionStage
 		// TODO: Boot to DOSScreen → MenuStage → ActionStage
 		ActionStage actionStage = new() { LevelIndex = CurrentLevelIndex };

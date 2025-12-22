@@ -5,8 +5,8 @@ namespace BenMcLean.Wolf3D.Shared.OPL;
 
 public partial class OplPlayer : AudioStreamPlayer
 {
-	public const int MixRate = 44100;
-	public const int FramesPerUpdate = 63; // 700 Hz interval
+	public const int MixRate = 44100,
+		FramesPerUpdate = 63; // 700 Hz interval
 	public OplPlayer()
 	{
 		Name = "OplPlayer";
@@ -16,7 +16,6 @@ public partial class OplPlayer : AudioStreamPlayer
 			BufferLength = 0.05f, // Keep this as short as possible to minimize latency
 		};
 	}
-
 	public IAdlibSignaller AdlibSignaller
 	{
 		get => adlibSignaller;
@@ -27,7 +26,6 @@ public partial class OplPlayer : AudioStreamPlayer
 		}
 	}
 	private IAdlibSignaller adlibSignaller = null;
-
 	public IOpl Opl
 	{
 		get => opl;
@@ -41,27 +39,23 @@ public partial class OplPlayer : AudioStreamPlayer
 		}
 	}
 	private IOpl opl;
-
 	public override void _Ready() => Play();
-
 	public override void _Process(double delta)
 	{
 		if (Playing && AdlibSignaller != null)
-			if (Opl == null)
+			if (Opl is null)
 				Stop();
 			else
 				FillBuffer();
 	}
-
 	public OplPlayer FillBuffer()
 	{
-		if (Opl == null)
+		if (Opl is null)
 			return this;
 		int toFill = ((AudioStreamGeneratorPlayback)GetStreamPlayback()).GetFramesAvailable();
-		if (ShortBuffer == null || ShortBuffer.Length < toFill)
+		if (ShortBuffer is null || ShortBuffer.Length < toFill)
 			ShortBuffer = new short[toFill];
 		int pos = 0;
-
 		while (LeftoverFrames > 0 && pos + LeftoverFrames < toFill && LeftoverFrames > FramesPerUpdate)
 		{
 			Opl.ReadBuffer(ShortBuffer, pos, FramesPerUpdate);
@@ -84,7 +78,6 @@ public partial class OplPlayer : AudioStreamPlayer
 				LeftoverFrames = 0;
 			}
 		}
-
 		if (pos > 0)
 		{
 			Vector2[] vector2Buffer = new Vector2[pos];
