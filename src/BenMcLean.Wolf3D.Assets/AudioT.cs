@@ -18,7 +18,7 @@ public sealed class AudioT
 		using FileStream audioTStream = new(System.IO.Path.Combine(folder, xml.Element("Audio").Attribute("AudioT").Value), FileMode.Open);
 		return new AudioT(audioHead, audioTStream, xml.Element("Audio"));
 	}
-	public Adl[] Sounds { get; private init; }
+	public Dictionary<string, Adl> Sounds { get; private init; }
 	public Dictionary<string, Song> Songs { get; private init; }
 	public static uint[] ParseHead(Stream stream)
 	{
@@ -59,11 +59,16 @@ public sealed class AudioT
 	public AudioT(byte[][] file, XElement xml)
 	{
 		uint startAdlibSounds = (uint)xml.Attribute("StartAdlibSounds");
-		Sounds = new Adl[xml.Elements("Sound").Count()];
-		for (uint i = 0; i < Sounds.Length; i++)
-			if (file[startAdlibSounds + i] != null)
-				using (MemoryStream sound = new(file[startAdlibSounds + i]))
-					Sounds[i] = new Adl(sound);
+		Sounds = [];
+		foreach (XElement soundElement in xml.Elements("Sound"))
+		{
+			uint number = (uint)soundElement.Attribute("Number");
+			string name = soundElement.Attribute("Name")?.Value;
+			if (!string.IsNullOrWhiteSpace(name)
+				&& file[startAdlibSounds + number] is byte[] bytes)
+				using (MemoryStream sound = new(bytes))
+					Sounds.Add(name, new Adl(sound));
+		}
 		uint startMusic = (uint)xml.Attribute("StartMusic"),
 			endMusic = (uint)file.Length - startMusic;
 		Songs = [];
