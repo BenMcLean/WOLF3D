@@ -49,7 +49,7 @@ public sealed class AudioT
 	public class Song
 	{
 		public string Name { get; set; }
-		public MidiFile Midi { get; set; }
+		public Midi Midi { get; set; }
 		public Imf[] Imf { get; set; }
 		public bool IsImf => Imf != null;
 		public override bool Equals(object obj) => obj is Song song && (Name?.Equals(song.Name) ?? false);
@@ -98,7 +98,7 @@ public sealed class AudioT
 								&& !string.IsNullOrWhiteSpace(name)) ?
 									name
 									: i.ToString(),
-							Midi = MidiFile.Parse(midiData),
+							Midi = Midi.Parse(midiData),
 						};
 						Songs.Add(newSong.Name, newSong);
 					}

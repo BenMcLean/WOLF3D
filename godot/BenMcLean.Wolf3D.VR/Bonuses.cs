@@ -8,8 +8,10 @@ using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 namespace BenMcLean.Wolf3D.VR;
 
 /// <summary>
-/// Generates MultiMesh instances for all bonus/pickup objects in a Wolfenstein 3D map.
+/// Manages dynamic rendering of bonus/pickup objects in a Wolfenstein 3D map using MultiMesh.
 /// Uses MultiMesh for efficient rendering of billboarded bonus sprites in VR.
+/// Supports unlimited bonus spawning - dynamically creates additional MultiMeshes as needed.
+/// Each sprite type starts with 256-instance capacity, growing by adding more MultiMeshes.
 /// Only handles bonus items with game logic (not fixtures/scenery).
 /// Sprites rotate each frame to face opposite of the player's Y-axis orientation (billboard effect).
 /// This node contains all bonus multimeshes as children - just add it to the scene tree.
@@ -17,9 +19,10 @@ namespace BenMcLean.Wolf3D.VR;
 public partial class Bonuses : Node3D
 {
 	/// <summary>
-	/// Dictionary of MultiMeshInstance3D nodes, indexed by sprite page number.
+	/// Dictionary of MultiMeshInstance3D lists, indexed by sprite page number.
+	/// Each sprite type can have multiple MultiMeshes for dynamic capacity growth.
 	/// </summary>
-	public Dictionary<ushort, MultiMeshInstance3D> MeshInstances { get; private init; }
+	public Dictionary<ushort, List<MultiMeshInstance3D>> MeshInstances { get; private init; }
 
 	/// <summary>
 	/// Delegate that returns the camera's Y-axis rotation angle for billboard effect.
@@ -47,16 +50,23 @@ public partial class Bonuses : Node3D
 	/// </summary>
 	private struct BonusRenderData
 	{
-		public ushort SpriteShape;   // Which MultiMesh (sprite page number)
+		public ushort SpriteShape;   // Which sprite page number
+		public int MultiMeshIndex;   // Which MultiMesh in the list for this sprite
 		public int LocalIndex;       // Index within that MultiMesh
 	}
 
 	/// <summary>
-	/// Creates bonus sprite geometry with pre-allocated slots.
+	/// Initial and growth capacity for MultiMesh instances.
+	/// Generous enough to handle most scenarios without needing additional MultiMeshes.
+	/// </summary>
+	private const int MultiMeshCapacity = 256;
+
+	/// <summary>
+	/// Creates bonus sprite geometry that grows dynamically as bonuses spawn.
 	/// All slots start hidden (scaled to zero) until BonusSpawnedEvent fires.
 	/// </summary>
 	/// <param name="spriteMaterials">Dictionary of sprite materials from GodotResources.SpriteMaterials</param>
-	/// <param name="mapAnalysis">Map analysis containing static bonus spawn data and enemy counts</param>
+	/// <param name="mapAnalysis">Map analysis containing static bonus spawn data</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
 	public Bonuses(
 		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
@@ -66,66 +76,25 @@ public partial class Bonuses : Node3D
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
 
-		// Calculate instance counts per sprite page
-		Dictionary<ushort, int> instanceCounts = [];
+		// Initialize with empty lists - MultiMeshes will be created on-demand as bonuses spawn
+		MeshInstances = [];
 
 		// Static bonuses from map - materialize to list to avoid re-enumeration issues
 		List<MapAnalysis.StaticSpawn> staticBonuses = [.. mapAnalysis
 			.StaticSpawns
 			.Where(s => s.StatType == StatType.bonus)];
 
-		foreach (MapAnalysis.StaticSpawn bonus in staticBonuses)
-			instanceCounts[bonus.Shape] = instanceCounts.GetValueOrDefault(bonus.Shape) + 1;
-
-		// Reserve slots for enemy drops
-		// Each enemy can drop at most one item when killed
-		foreach (MapAnalysis.EnemySpawn enemy in mapAnalysis.EnemySpawns)
-		{
-			ushort dropShape = GetEnemyDropShape(enemy.Type);
-			if (dropShape != 0)
-				instanceCounts[dropShape] = instanceCounts.GetValueOrDefault(dropShape) + 1;
-		}
-
-		// Initialize slot tracking
-		foreach (ushort shape in instanceCounts.Keys)
-			_nextSlotIndex[shape] = 0;
-
-		// Create MultiMesh for each sprite page with exact pre-allocated size
-		MeshInstances = instanceCounts.Keys.ToDictionary(
-			page => page,
-			page => CreateMultiMeshForPage(page, instanceCounts[page]));
-
-		// Add all multimeshes as children of this node
-		foreach (MultiMeshInstance3D meshInstance in MeshInstances.Values)
-			AddChild(meshInstance);
-
 		// Display all static bonuses immediately (no need for events)
 		int globalStaticIndex = 0;
 		foreach (MapAnalysis.StaticSpawn bonus in staticBonuses)
 		{
-			int localIndex = _nextSlotIndex[bonus.Shape]++;
-
 			// Map using global index (negative to distinguish from dynamic simulator indices)
 			// Each static bonus gets a unique negative index
 			int staticIndex = -(globalStaticIndex + 1);
 			globalStaticIndex++;
 
-			_simulatorToRenderMap[staticIndex] = new BonusRenderData
-			{
-				SpriteShape = bonus.Shape,
-				LocalIndex = localIndex
-			};
-
-			// Set transform to show it
-			Vector3 position = new(
-				Constants.CenterSquare(bonus.X),
-				Constants.HalfWallHeight,
-				Constants.CenterSquare(bonus.Y)
-			);
-
-			Transform3D transform = Transform3D.Identity;
-			transform.Origin = position;
-			MeshInstances[bonus.Shape].Multimesh.SetInstanceTransform(localIndex, transform);
+			// ShowBonus will create the MultiMesh if needed
+			ShowBonusInternal(staticIndex, bonus.Shape, bonus.X, bonus.Y);
 		}
 	}
 
@@ -140,20 +109,46 @@ public partial class Bonuses : Node3D
 	/// <param name="tileY">Tile Y coordinate (Wolf3D Y, becomes Godot Z)</param>
 	public void ShowBonus(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
 	{
-		if (!MeshInstances.TryGetValue(shape, out MultiMeshInstance3D instance))
+		ShowBonusInternal(statObjIndex, shape, tileX, tileY);
+	}
+
+	/// <summary>
+	/// Internal implementation for showing a bonus.
+	/// Handles dynamic MultiMesh creation and growth.
+	/// </summary>
+	private void ShowBonusInternal(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
+	{
+		// Ensure we have a list for this sprite type
+		if (!MeshInstances.TryGetValue(shape, out List<MultiMeshInstance3D> instances))
 		{
-			GD.PrintErr($"ERROR: No MultiMesh found for bonus shape {shape}");
-			GD.PrintErr($"  Available shapes: {string.Join(", ", MeshInstances.Keys)}");
-			return;
+			instances = [];
+			MeshInstances[shape] = instances;
+			_nextSlotIndex[shape] = 0;
 		}
 
-		// Allocate next sequential slot for this sprite
-		int localIndex = _nextSlotIndex[shape]++;
+		// Get current allocation index
+		int totalAllocated = _nextSlotIndex[shape];
+
+		// Calculate which MultiMesh and local index to use
+		int multiMeshIndex = totalAllocated / MultiMeshCapacity;
+		int localIndex = totalAllocated % MultiMeshCapacity;
+
+		// Create new MultiMesh if needed
+		if (multiMeshIndex >= instances.Count)
+		{
+			MultiMeshInstance3D newInstance = CreateMultiMeshForPage(shape);
+			instances.Add(newInstance);
+			AddChild(newInstance);
+		}
+
+		// Increment for next allocation
+		_nextSlotIndex[shape]++;
 
 		// Map simulator index -> render location
 		_simulatorToRenderMap[statObjIndex] = new BonusRenderData
 		{
 			SpriteShape = shape,
+			MultiMeshIndex = multiMeshIndex,
 			LocalIndex = localIndex
 		};
 
@@ -166,7 +161,7 @@ public partial class Bonuses : Node3D
 
 		Transform3D transform = Transform3D.Identity;
 		transform.Origin = position;
-		instance.Multimesh.SetInstanceTransform(localIndex, transform);
+		instances[multiMeshIndex].Multimesh.SetInstanceTransform(localIndex, transform);
 	}
 
 	/// <summary>
@@ -184,7 +179,7 @@ public partial class Bonuses : Node3D
 
 		// Hide by scaling to zero
 		Transform3D transform = Transform3D.Identity.Scaled(Vector3.Zero);
-		MeshInstances[renderData.SpriteShape].Multimesh
+		MeshInstances[renderData.SpriteShape][renderData.MultiMeshIndex].Multimesh
 			.SetInstanceTransform(renderData.LocalIndex, transform);
 
 		// Remove mapping (slot stays allocated but hidden)
@@ -194,24 +189,25 @@ public partial class Bonuses : Node3D
 	/// <summary>
 	/// Creates a MultiMeshInstance3D for bonuses using a specific sprite page.
 	/// All instances start hidden (scaled to zero) until shown by simulator events.
+	/// Uses fixed capacity - multiple MultiMeshes created if needed for dynamic growth.
 	/// </summary>
-	private MultiMeshInstance3D CreateMultiMeshForPage(ushort page, int instanceCount)
+	private MultiMeshInstance3D CreateMultiMeshForPage(ushort page)
 	{
 		// Get material directly by page number (will throw KeyNotFoundException if missing)
 		StandardMaterial3D material = _spriteMaterials[page];
 
-		// Create MultiMesh
+		// Create MultiMesh with fixed capacity
 		MultiMesh multiMesh = new()
 		{
 			TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
 			Mesh = Constants.WallMesh,
-			InstanceCount = instanceCount,
+			InstanceCount = MultiMeshCapacity,
 		};
 
 		// Initialize all instances as hidden (scaled to zero)
-		// They'll be shown when BonusSpawnedEvent fires from simulator
+		// They'll be shown when bonuses spawn
 		Transform3D hiddenTransform = Transform3D.Identity.Scaled(Vector3.Zero);
-		for (int i = 0; i < instanceCount; i++)
+		for (int i = 0; i < MultiMeshCapacity; i++)
 			multiMesh.SetInstanceTransform(i, hiddenTransform);
 
 		// Precompute custom AABB that encompasses all potential billboards
@@ -219,12 +215,17 @@ public partial class Bonuses : Node3D
 		// This prevents incorrect frustum culling and avoids expensive RecomputeAabb() each frame
 		multiMesh.CustomAabb = new Aabb(Vector3.Zero, new Vector3(1000, 100, 1000));
 
+		// Count how many MultiMeshes exist for this page to create unique names
+		int meshCount = MeshInstances.TryGetValue(page, out List<MultiMeshInstance3D> existing)
+			? existing.Count
+			: 0;
+
 		// Create MultiMeshInstance3D
 		MultiMeshInstance3D meshInstance = new()
 		{
 			Multimesh = multiMesh,
 			MaterialOverride = material,
-			Name = $"Bonuses_Page_{page}",
+			Name = $"Bonuses_Page_{page}_{meshCount}",
 		};
 
 		return meshInstance;
@@ -243,13 +244,19 @@ public partial class Bonuses : Node3D
 		{
 			BonusRenderData renderData = kvp.Value;
 
-			if (!MeshInstances.ContainsKey(renderData.SpriteShape))
+			if (!MeshInstances.TryGetValue(renderData.SpriteShape, out List<MultiMeshInstance3D> instances))
 			{
 				GD.PrintErr($"ERROR in _Process: Shape {renderData.SpriteShape} not in MeshInstances!");
 				continue;
 			}
 
-			MultiMeshInstance3D meshInstance = MeshInstances[renderData.SpriteShape];
+			if (renderData.MultiMeshIndex >= instances.Count)
+			{
+				GD.PrintErr($"ERROR in _Process: MultiMeshIndex {renderData.MultiMeshIndex} out of range for shape {renderData.SpriteShape} (count: {instances.Count})");
+				continue;
+			}
+
+			MultiMeshInstance3D meshInstance = instances[renderData.MultiMeshIndex];
 			Transform3D transform = meshInstance.Multimesh.GetInstanceTransform(renderData.LocalIndex);
 
 			// Keep position, update only rotation
