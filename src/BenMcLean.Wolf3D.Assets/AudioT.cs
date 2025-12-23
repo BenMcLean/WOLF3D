@@ -49,7 +49,7 @@ public sealed class AudioT
 	public class Song
 	{
 		public string Name { get; set; }
-		public byte[] Bytes { get; set; }
+		public MidiFile Midi { get; set; }
 		public Imf[] Imf { get; set; }
 		public bool IsImf => Imf != null;
 		public override bool Equals(object obj) => obj is Song song && (Name?.Equals(song.Name) ?? false);
@@ -79,6 +79,16 @@ public sealed class AudioT
 				{
 					if (midi)
 					{
+						// Skip first 2 bytes (MusicGroup.length header from original C struct)
+						byte[] midiData = new byte[file[startMusic + i].Length - 2];
+						Array.Copy(
+							sourceArray: file[startMusic + i],
+							sourceIndex: 2,
+							destinationArray: midiData,
+							destinationIndex: 0,
+							length: midiData.Length
+							);
+
 						Song newSong = new()
 						{
 							Name = (xml.Elements("MIDI").Where(
@@ -88,16 +98,8 @@ public sealed class AudioT
 								&& !string.IsNullOrWhiteSpace(name)) ?
 									name
 									: i.ToString(),
-							Bytes = new byte[file[startMusic + i].Length - 2],
+							Midi = MidiFile.Parse(midiData),
 						};
-						// Super 3D Noah's Ark adds two bytes of junk data to the start of all its MIDI songs and I don't know why.
-						Array.Copy(
-							sourceArray: file[startMusic + i],
-							sourceIndex: 2,
-							destinationArray: newSong.Bytes,
-							destinationIndex: 0,
-							length: newSong.Bytes.Length
-							);
 						Songs.Add(newSong.Name, newSong);
 					}
 					else

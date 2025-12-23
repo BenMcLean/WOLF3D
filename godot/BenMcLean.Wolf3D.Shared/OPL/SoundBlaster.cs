@@ -15,6 +15,7 @@ public static class SoundBlaster
 	};
 	public static readonly ImfSignaller ImfSignaller = new();
 	public static readonly IdAdlSignaller IdAdlSignaller = new();
+	public static readonly MidiSignaller MidiSignaller = new();
 	public static readonly OplPlayer OplPlayer = new()
 	{
 		Opl = new WoodyEmulatorOpl(OplType.Opl2),
@@ -37,17 +38,22 @@ public static class SoundBlaster
 		get => song;
 		set
 		{
-			//MidiPlayer.Call("stop");
 			if (//Settings.MusicMuted ||
 				(song = value) is not AudioT.Song s)
-				ImfSignaller.ImfQueue.Enqueue(null);
-			else if (s.IsImf)
-				ImfSignaller.ImfQueue.Enqueue(s.Imf);
-			else
 			{
 				ImfSignaller.ImfQueue.Enqueue(null);
-				//MidiPlayer.Set("smf_data", SMF.Call("read_data", s.Bytes));
-				//MidiPlayer.Call("play", 0f);
+				MidiSignaller.Midi = null;
+				OplPlayer.AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller);
+			}
+			else if (s.IsImf)
+			{
+				ImfSignaller.ImfQueue.Enqueue(s.Imf);
+				OplPlayer.AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller);
+			}
+			else
+			{
+				MidiSignaller.Midi = s.Midi;
+				OplPlayer.AdlibSignaller = new AdlibMultiplexer(MidiSignaller, IdAdlSignaller);
 			}
 		}
 	}

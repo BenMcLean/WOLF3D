@@ -12,7 +12,7 @@ This document defines the mapping between original Wolf3D C data types and C# ty
 
 3. **Intentional Extensions**: Where we've deliberately provided more bits than the original, document this decision
 
-4. **Source Documentation**: Reference original Wolf3D source files and variable names in comments
+4. **Source Documentation**: Reference original Wolf3D source files and variable names in comments (not line numbers, because these will be different in different versions)
 
 ### Key Intentional Extensions
 

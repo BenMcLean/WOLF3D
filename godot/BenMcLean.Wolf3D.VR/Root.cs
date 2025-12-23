@@ -1,3 +1,4 @@
+using System.Linq;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -31,6 +32,15 @@ public partial class Root : Node3D
 		if (!string.IsNullOrWhiteSpace(songName)
 			&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out Assets.AudioT.Song song))
 			Shared.OPL.SoundBlaster.Song = song;
+
+		// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
+		//System.Xml.Linq.XDocument n3dXml = System.Xml.Linq.XDocument.Load(@"..\..\games\N3D.xml");
+		//Assets.AudioT n3dAudioT = Assets.AudioT.Load(n3dXml.Root, @"..\..\games\N3D");
+		//if (n3dAudioT.Songs.Count > 0)
+		//{
+		//	Assets.AudioT.Song firstSong = n3dAudioT.Songs.Values.First();
+		//	Shared.OPL.SoundBlaster.Song = firstSong;
+		//}
 
 		// For now, boot directly into ActionStage
 		// TODO: Boot to DOSScreen → MenuStage → ActionStage

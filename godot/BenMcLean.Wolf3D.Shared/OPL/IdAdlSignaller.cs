@@ -28,24 +28,24 @@ public class IdAdlSignaller : IAdlibSignaller
 		opl?.WriteReg(0xC0, 0); // WOLF3D's code ignores this value in its sound data, always setting it to zero instead.
 		return this;
 	}
-	public static readonly ConcurrentQueue<Adl> IdAdlQueue = new ConcurrentQueue<Adl>();
+	public static readonly ConcurrentQueue<Adl> IdAdlQueue = new();
 	public uint Update(IOpl opl)
 	{
 		if (IdAdlQueue.TryDequeue(out Adl adl)
-			&& (Adl == null || adl == null || Adl == adl || adl.Priority >= Adl.Priority))
+			&& (Adl is null || adl is null || Adl == adl || adl.Priority >= Adl.Priority))
 		{
 			CurrentNote = 0;
-			if (opl != null)
+			if (opl is not null)
 			{
 				SetNote(false, opl); // Must send a signal to stop the previous sound before starting a new sound
-				if ((Adl = adl) != null)
+				if ((Adl = adl) is not null)
 				{
 					SetInstrument(opl);
 					SetNote(true, opl);
 				}
 			}
 		}
-		if (Adl != null)
+		if (Adl is not null)
 		{
 			if (Adl.Notes[CurrentNote] == 0)
 				SetNote(false, opl);
