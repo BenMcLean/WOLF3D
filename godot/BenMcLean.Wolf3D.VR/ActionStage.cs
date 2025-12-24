@@ -32,6 +32,7 @@ void sky() {
 	private Walls _walls;
 	private Fixtures _fixtures;
 	private Bonuses _bonuses;
+	private Actors _actors;
 	private Doors _doors;
 	private SimulatorController _simulatorController;
 
@@ -96,6 +97,12 @@ void sky() {
 			() => _freeLookCamera.GlobalRotation.Y);  // Delegate returns camera Y rotation for billboard effect
 		AddChild(_bonuses);
 
+		// Create actors (dynamic actor sprites with game logic) for the current level and add to scene
+		_actors = new Actors(
+			VRAssetManager.SpriteMaterials,
+			() => _freeLookCamera.GlobalPosition,      // Viewer position for directional sprites (player pos, or future MR camera)
+			() => _freeLookCamera.GlobalRotation.Y);   // Camera Y rotation for billboard effect
+		AddChild(_actors);
 		// Create doors for the current level and add to scene
 		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(currentLevel.Doors);
 		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = VRAssetManager.CreateFlippedMaterialsForDoors(doorTextureIndices);
@@ -111,7 +118,8 @@ void sky() {
 		_simulatorController.Initialize(
 			currentLevel,
 			_doors,
-			_bonuses);
+			_bonuses,
+			_actors);
 	}
 
 	public override void _Input(InputEvent @event)

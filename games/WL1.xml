@@ -1026,11 +1026,186 @@
 			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 		</WallPlane>
+		<SpritePlane>
+			<Sprite Page="106" Name="SPR_DEMO" />
+			<Sprite Page="107" Name="SPR_DEATHCAM" />
+			<Sprite Page="156" Name="SPR_GRD_S_1" />
+			<Sprite Page="157" Name="SPR_GRD_S_2" />
+			<Sprite Page="158" Name="SPR_GRD_S_3" />
+			<Sprite Page="159" Name="SPR_GRD_S_4" />
+			<Sprite Page="160" Name="SPR_GRD_S_5" />
+			<Sprite Page="161" Name="SPR_GRD_S_6" />
+			<Sprite Page="162" Name="SPR_GRD_S_7" />
+			<Sprite Page="163" Name="SPR_GRD_S_8" />
+			<Sprite Page="164" Name="SPR_GRD_W1_1" />
+			<Sprite Page="165" Name="SPR_GRD_W1_2" />
+			<Sprite Page="166" Name="SPR_GRD_W1_3" />
+			<Sprite Page="167" Name="SPR_GRD_W1_4" />
+			<Sprite Page="168" Name="SPR_GRD_W1_5" />
+			<Sprite Page="169" Name="SPR_GRD_W1_6" />
+			<Sprite Page="170" Name="SPR_GRD_W1_7" />
+			<Sprite Page="171" Name="SPR_GRD_W1_8" />
+			<Sprite Page="172" Name="SPR_GRD_W2_1" />
+			<Sprite Page="173" Name="SPR_GRD_W2_2" />
+			<Sprite Page="174" Name="SPR_GRD_W2_3" />
+			<Sprite Page="175" Name="SPR_GRD_W2_4" />
+			<Sprite Page="176" Name="SPR_GRD_W2_5" />
+			<Sprite Page="177" Name="SPR_GRD_W2_6" />
+			<Sprite Page="178" Name="SPR_GRD_W2_7" />
+			<Sprite Page="179" Name="SPR_GRD_W2_8" />
+			<Sprite Page="180" Name="SPR_GRD_W3_1" />
+			<Sprite Page="181" Name="SPR_GRD_W3_2" />
+			<Sprite Page="182" Name="SPR_GRD_W3_3" />
+			<Sprite Page="183" Name="SPR_GRD_W3_4" />
+			<Sprite Page="184" Name="SPR_GRD_W3_5" />
+			<Sprite Page="185" Name="SPR_GRD_W3_6" />
+			<Sprite Page="186" Name="SPR_GRD_W3_7" />
+			<Sprite Page="187" Name="SPR_GRD_W3_8" />
+			<Sprite Page="188" Name="SPR_GRD_W4_1" />
+			<Sprite Page="189" Name="SPR_GRD_W4_2" />
+			<Sprite Page="190" Name="SPR_GRD_W4_3" />
+			<Sprite Page="191" Name="SPR_GRD_W4_4" />
+			<Sprite Page="192" Name="SPR_GRD_W4_5" />
+			<Sprite Page="193" Name="SPR_GRD_W4_6" />
+			<Sprite Page="194" Name="SPR_GRD_W4_7" />
+			<Sprite Page="195" Name="SPR_GRD_W4_8" />
+			<Sprite Page="196" Name="SPR_GRD_PAIN_1" />
+			<Sprite Page="197" Name="SPR_GRD_DIE_1" />
+			<Sprite Page="198" Name="SPR_GRD_DIE_2" />
+			<Sprite Page="199" Name="SPR_GRD_DIE_3" />
+			<Sprite Page="200" Name="SPR_GRD_PAIN_2" />
+			<Sprite Page="201" Name="SPR_GRD_DEAD" />
+			<Sprite Page="202" Name="SPR_GRD_SHOOT1" />
+			<Sprite Page="203" Name="SPR_GRD_SHOOT2" />
+			<Sprite Page="204" Name="SPR_GRD_SHOOT3" />
+			<Sprite Page="205" Name="SPR_DOG_W1_1" />
+			<Sprite Page="206" Name="SPR_DOG_W1_2" />
+			<Sprite Page="207" Name="SPR_DOG_W1_3" />
+			<Sprite Page="208" Name="SPR_DOG_W1_4" />
+			<Sprite Page="209" Name="SPR_DOG_W1_5" />
+			<Sprite Page="210" Name="SPR_DOG_W1_6" />
+			<Sprite Page="211" Name="SPR_DOG_W1_7" />
+			<Sprite Page="212" Name="SPR_DOG_W1_8" />
+			<Sprite Page="213" Name="SPR_DOG_W2_1" />
+			<Sprite Page="214" Name="SPR_DOG_W2_2" />
+			<Sprite Page="215" Name="SPR_DOG_W2_3" />
+			<Sprite Page="216" Name="SPR_DOG_W2_4" />
+			<Sprite Page="217" Name="SPR_DOG_W2_5" />
+			<Sprite Page="218" Name="SPR_DOG_W2_6" />
+			<Sprite Page="219" Name="SPR_DOG_W2_7" />
+			<Sprite Page="220" Name="SPR_DOG_W2_8" />
+			<Sprite Page="221" Name="SPR_DOG_W3_1" />
+			<Sprite Page="222" Name="SPR_DOG_W3_2" />
+			<Sprite Page="223" Name="SPR_DOG_W3_3" />
+			<Sprite Page="224" Name="SPR_DOG_W3_4" />
+			<Sprite Page="225" Name="SPR_DOG_W3_5" />
+			<Sprite Page="226" Name="SPR_DOG_W3_6" />
+			<Sprite Page="227" Name="SPR_DOG_W3_7" />
+			<Sprite Page="228" Name="SPR_DOG_W3_8" />
+			<Sprite Page="229" Name="SPR_DOG_W4_1" />
+			<Sprite Page="230" Name="SPR_DOG_W4_2" />
+			<Sprite Page="231" Name="SPR_DOG_W4_3" />
+			<Sprite Page="232" Name="SPR_DOG_W4_4" />
+			<Sprite Page="233" Name="SPR_DOG_W4_5" />
+			<Sprite Page="234" Name="SPR_DOG_W4_6" />
+			<Sprite Page="235" Name="SPR_DOG_W4_7" />
+			<Sprite Page="236" Name="SPR_DOG_W4_8" />
+			<Sprite Page="237" Name="SPR_DOG_DIE_1" />
+			<Sprite Page="238" Name="SPR_DOG_DIE_2" />
+			<Sprite Page="239" Name="SPR_DOG_DIE_3" />
+			<Sprite Page="240" Name="SPR_DOG_DEAD" />
+			<Sprite Page="241" Name="SPR_DOG_JUMP1" />
+			<Sprite Page="242" Name="SPR_DOG_JUMP2" />
+			<Sprite Page="243" Name="SPR_DOG_JUMP3" />
+			<Sprite Page="244" Name="SPR_SS_S_1" />
+			<Sprite Page="245" Name="SPR_SS_S_2" />
+			<Sprite Page="246" Name="SPR_SS_S_3" />
+			<Sprite Page="247" Name="SPR_SS_S_4" />
+			<Sprite Page="248" Name="SPR_SS_S_5" />
+			<Sprite Page="249" Name="SPR_SS_S_6" />
+			<Sprite Page="250" Name="SPR_SS_S_7" />
+			<Sprite Page="251" Name="SPR_SS_S_8" />
+			<Sprite Page="252" Name="SPR_SS_W1_1" />
+			<Sprite Page="253" Name="SPR_SS_W1_2" />
+			<Sprite Page="254" Name="SPR_SS_W1_3" />
+			<Sprite Page="255" Name="SPR_SS_W1_4" />
+			<Sprite Page="256" Name="SPR_SS_W1_5" />
+			<Sprite Page="257" Name="SPR_SS_W1_6" />
+			<Sprite Page="258" Name="SPR_SS_W1_7" />
+			<Sprite Page="259" Name="SPR_SS_W1_8" />
+			<Sprite Page="260" Name="SPR_SS_W2_1" />
+			<Sprite Page="261" Name="SPR_SS_W2_2" />
+			<Sprite Page="262" Name="SPR_SS_W2_3" />
+			<Sprite Page="263" Name="SPR_SS_W2_4" />
+			<Sprite Page="264" Name="SPR_SS_W2_5" />
+			<Sprite Page="265" Name="SPR_SS_W2_6" />
+			<Sprite Page="266" Name="SPR_SS_W2_7" />
+			<Sprite Page="267" Name="SPR_SS_W2_8" />
+			<Sprite Page="268" Name="SPR_SS_W3_1" />
+			<Sprite Page="269" Name="SPR_SS_W3_2" />
+			<Sprite Page="270" Name="SPR_SS_W3_3" />
+			<Sprite Page="271" Name="SPR_SS_W3_4" />
+			<Sprite Page="272" Name="SPR_SS_W3_5" />
+			<Sprite Page="273" Name="SPR_SS_W3_6" />
+			<Sprite Page="274" Name="SPR_SS_W3_7" />
+			<Sprite Page="275" Name="SPR_SS_W3_8" />
+			<Sprite Page="276" Name="SPR_SS_W4_1" />
+			<Sprite Page="277" Name="SPR_SS_W4_2" />
+			<Sprite Page="278" Name="SPR_SS_W4_3" />
+			<Sprite Page="279" Name="SPR_SS_W4_4" />
+			<Sprite Page="280" Name="SPR_SS_W4_5" />
+			<Sprite Page="281" Name="SPR_SS_W4_6" />
+			<Sprite Page="282" Name="SPR_SS_W4_7" />
+			<Sprite Page="283" Name="SPR_SS_W4_8" />
+			<Sprite Page="284" Name="SPR_SS_PAIN_1" />
+			<Sprite Page="285" Name="SPR_SS_DIE_1" />
+			<Sprite Page="286" Name="SPR_SS_DIE_2" />
+			<Sprite Page="287" Name="SPR_SS_DIE_3" />
+			<Sprite Page="288" Name="SPR_SS_PAIN_2" />
+			<Sprite Page="289" Name="SPR_SS_DEAD" />
+			<Sprite Page="290" Name="SPR_SS_SHOOT1" />
+			<Sprite Page="291" Name="SPR_SS_SHOOT2" />
+			<Sprite Page="292" Name="SPR_SS_SHOOT3" />
+			<Sprite Page="402" Name="SPR_BOSS_W1" />
+			<Sprite Page="403" Name="SPR_BOSS_W2" />
+			<Sprite Page="404" Name="SPR_BOSS_W3" />
+			<Sprite Page="405" Name="SPR_BOSS_W4" />
+			<Sprite Page="406" Name="SPR_BOSS_SHOOT1" />
+			<Sprite Page="407" Name="SPR_BOSS_SHOOT2" />
+			<Sprite Page="408" Name="SPR_BOSS_SHOOT3" />
+			<Sprite Page="409" Name="SPR_BOSS_DEAD" />
+			<Sprite Page="410" Name="SPR_BOSS_DIE1" />
+			<Sprite Page="411" Name="SPR_BOSS_DIE2" />
+			<Sprite Page="412" Name="SPR_BOSS_DIE3" />
+		</SpritePlane>
+		<SoundPlane>
+			<DigiSound Number="0" Name="HALTSND" />
+			<DigiSound Number="1" Name="DOGBARKSND" />
+			<DigiSound Number="2" Name="CLOSEDOORSND" />
+			<DigiSound Number="3" Name="OPENDOORSND" />
+			<DigiSound Number="4" Name="ATKMACHINEGUNSND" />
+			<DigiSound Number="5" Name="ATKPISTOLSND" />
+			<DigiSound Number="6" Name="ATKGATLINGSND" />
+			<DigiSound Number="7" Name="SCHUTZADSND" />
+			<DigiSound Number="8" Name="GUTENTAGSND" />
+			<DigiSound Number="9" Name="MUTTISND" />
+			<DigiSound Number="10" Name="BOSSFIRESND" />
+			<DigiSound Number="11" Name="SSFIRESND" />
+			<DigiSound Number="12" Name="DEATHSCREAM1SND" />
+			<DigiSound Number="13" Name="DEATHSCREAM2SND" />
+			<DigiSound Number="14" Name="TAKEDAMAGESND" />
+			<DigiSound Number="14" Name="DEATHSCREAM3SND" />
+			<DigiSound Number="15" Name="PUSHWALLSND" />
+			<DigiSound Number="20" Name="LEBENSND" />
+			<DigiSound Number="21" Name="NAZIFIRESND" />
+			<DigiSound Number="22" Name="SLURPIESND" />
+			<DigiSound Number="32" Name="YEAHSND" />
+		</SoundPlane>
 		<StatInfo>
-			<ObjectType Number="19" ObClass="playerobj" Facing="E" Name="Player Start East" />
-			<ObjectType Number="20" ObClass="playerobj" Facing="N" Name="Player Start North" />
-			<ObjectType Number="21" ObClass="playerobj" Facing="W" Name="Player Start West" />
-			<ObjectType Number="22" ObClass="playerobj" Facing="S" Name="Player Start South" />
+			<ObjectType Number="19" ObClass="playerobj" Direction="E" Name="Player Start East" />
+			<ObjectType Number="20" ObClass="playerobj" Direction="N" Name="Player Start North" />
+			<ObjectType Number="21" ObClass="playerobj" Direction="W" Name="Player Start West" />
+			<ObjectType Number="22" ObClass="playerobj" Direction="S" Name="Player Start South" />
 			<ObjectType Number="23" ObClass="dressing" Page="108" Name="Pool of Water" />
 			<ObjectType Number="24" ObClass="block" Page="109" Name="Oil Drum" />
 			<ObjectType Number="25" ObClass="block" Page="110" Name="Table with Chairs" />
@@ -1096,68 +1271,68 @@
 			<Turn Number="97" Direction="SE" Name="Turn SE" />
 			<Pushwall Number="98" DigiSound="PUSHWALLSND" Name="Secret Door" />
 			<Trigger Number="99" Name="End Game Trigger" />
-			<Spawn Number="108" Actor="Guard" Direction="E" Difficulty="1" State="s_grdstand" />
-			<Spawn Number="109" Actor="Guard" Direction="N" Difficulty="1" State="s_grdstand" />
-			<Spawn Number="110" Actor="Guard" Direction="W" Difficulty="1" State="s_grdstand" />
-			<Spawn Number="111" Actor="Guard" Direction="S" Difficulty="1" State="s_grdstand" />
-			<Spawn Number="112" Actor="Guard" Direction="E" Difficulty="1" State="s_grdpath1" />
-			<Spawn Number="113" Actor="Guard" Direction="N" Difficulty="1" State="s_grdpath1" />
-			<Spawn Number="114" Actor="Guard" Direction="W" Difficulty="1" State="s_grdpath1" />
-			<Spawn Number="115" Actor="Guard" Direction="S" Difficulty="1" State="s_grdpath1" />
+			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="1" State="s_grdstand" />
+			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="1" State="s_grdstand" />
+			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="1" State="s_grdstand" />
+			<ObjectType Number="111" ObClass="actor" Actor="Guard" Direction="S" Difficulty="1" State="s_grdstand" />
+			<ObjectType Number="112" ObClass="actor" Actor="Guard" Direction="E" Difficulty="1" State="s_grdpath1" />
+			<ObjectType Number="113" ObClass="actor" Actor="Guard" Direction="N" Difficulty="1" State="s_grdpath1" />
+			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="1" State="s_grdpath1" />
+			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="1" State="s_grdpath1" />
 			<ObjectType Number="124" ObClass="dressing" Page="201" Name="Dead Guard" />
-			<Spawn Number="126" Actor="SS" Direction="E" Difficulty="1" State="s_ssstand" />
-			<Spawn Number="127" Actor="SS" Direction="N" Difficulty="1" State="s_ssstand" />
-			<Spawn Number="128" Actor="SS" Direction="W" Difficulty="1" State="s_ssstand" />
-			<Spawn Number="129" Actor="SS" Direction="S" Difficulty="1" State="s_ssstand" />
-			<Spawn Number="130" Actor="SS" Direction="E" Difficulty="1" State="s_sspath1" />
-			<Spawn Number="131" Actor="SS" Direction="N" Difficulty="1" State="s_sspath1" />
-			<Spawn Number="132" Actor="SS" Direction="W" Difficulty="1" State="s_sspath1" />
-			<Spawn Number="133" Actor="SS" Direction="S" Difficulty="1" State="s_sspath1" />
-			<Spawn Number="138" Actor="Dog" Direction="E" Difficulty="1" State="s_dogpath1" />
-			<Spawn Number="139" Actor="Dog" Direction="N" Difficulty="1" State="s_dogpath1" />
-			<Spawn Number="140" Actor="Dog" Direction="W" Difficulty="1" State="s_dogpath1" />
-			<Spawn Number="141" Actor="Dog" Direction="S" Difficulty="1" State="s_dogpath1" />
-			<Spawn Number="144" Actor="Guard" Direction="E" Difficulty="3" State="s_grdstand" />
-			<Spawn Number="145" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
-			<Spawn Number="146" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
-			<Spawn Number="147" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
-			<Spawn Number="148" Actor="Guard" Direction="E" Difficulty="3" State="s_grdpath1" />
-			<Spawn Number="149" Actor="Guard" Direction="N" Difficulty="3" State="s_grdpath1" />
-			<Spawn Number="150" Actor="Guard" Direction="W" Difficulty="3" State="s_grdpath1" />
-			<Spawn Number="151" Actor="Guard" Direction="S" Difficulty="3" State="s_grdpath1" />
-			<Spawn Number="162" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
-			<Spawn Number="163" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
-			<Spawn Number="164" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
-			<Spawn Number="165" Actor="SS" Direction="S" Difficulty="3" State="s_ssstand" />
-			<Spawn Number="166" Actor="SS" Direction="E" Difficulty="3" State="s_sspath1" />
-			<Spawn Number="167" Actor="SS" Direction="N" Difficulty="3" State="s_sspath1" />
-			<Spawn Number="168" Actor="SS" Direction="W" Difficulty="3" State="s_sspath1" />
-			<Spawn Number="169" Actor="SS" Direction="S" Difficulty="3" State="s_sspath1" />
-			<Spawn Number="174" Actor="Dog" Direction="E" Difficulty="3" State="s_dogpath1" />
-			<Spawn Number="175" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
-			<Spawn Number="176" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
-			<Spawn Number="177" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
-			<Spawn Number="180" Actor="Guard" Direction="E" Difficulty="4" State="s_grdstand" />
-			<Spawn Number="181" Actor="Guard" Direction="N" Difficulty="4" State="s_grdstand" />
-			<Spawn Number="182" Actor="Guard" Direction="W" Difficulty="4" State="s_grdstand" />
-			<Spawn Number="183" Actor="Guard" Direction="S" Difficulty="4" State="s_grdstand" />
-			<Spawn Number="183" Actor="Guard" Direction="E" Difficulty="4" State="s_grdpath1" />
-			<Spawn Number="183" Actor="Guard" Direction="N" Difficulty="4" State="s_grdpath1" />
-			<Spawn Number="183" Actor="Guard" Direction="W" Difficulty="4" State="s_grdpath1" />
-			<Spawn Number="183" Actor="Guard" Direction="S" Difficulty="4" State="s_grdpath1" />
-			<Spawn Number="198" Actor="SS" Direction="E" Difficulty="4" State="s_ssstand" />
-			<Spawn Number="199" Actor="SS" Direction="N" Difficulty="4" State="s_ssstand" />
-			<Spawn Number="200" Actor="SS" Direction="W" Difficulty="4" State="s_ssstand" />
-			<Spawn Number="201" Actor="SS" Direction="S" Difficulty="4" State="s_ssstand" />
-			<Spawn Number="202" Actor="SS" Direction="E" Difficulty="4" State="s_sspath1" />
-			<Spawn Number="203" Actor="SS" Direction="N" Difficulty="4" State="s_sspath1" />
-			<Spawn Number="204" Actor="SS" Direction="W" Difficulty="4" State="s_sspath1" />
-			<Spawn Number="205" Actor="SS" Direction="S" Difficulty="4" State="s_sspath1" />
-			<Spawn Number="210" Actor="Dog" Direction="E" Difficulty="4" State="s_dogpath1" />
-			<Spawn Number="211" Actor="Dog" Direction="N" Difficulty="4" State="s_dogpath1" />
-			<Spawn Number="212" Actor="Dog" Direction="W" Difficulty="4" State="s_dogpath1" />
-			<Spawn Number="213" Actor="Dog" Direction="S" Difficulty="4" State="s_dogpath1" />
-			<Spawn Number="214" Actor="Hans" Direction="S" State="s_bossstand" />
+			<ObjectType Number="126" ObClass="actor" Actor="SS" Direction="E" Difficulty="1" State="s_ssstand" />
+			<ObjectType Number="127" ObClass="actor" Actor="SS" Direction="N" Difficulty="1" State="s_ssstand" />
+			<ObjectType Number="128" ObClass="actor" Actor="SS" Direction="W" Difficulty="1" State="s_ssstand" />
+			<ObjectType Number="129" ObClass="actor" Actor="SS" Direction="S" Difficulty="1" State="s_ssstand" />
+			<ObjectType Number="130" ObClass="actor" Actor="SS" Direction="E" Difficulty="1" State="s_sspath1" />
+			<ObjectType Number="131" ObClass="actor" Actor="SS" Direction="N" Difficulty="1" State="s_sspath1" />
+			<ObjectType Number="132" ObClass="actor" Actor="SS" Direction="W" Difficulty="1" State="s_sspath1" />
+			<ObjectType Number="133" ObClass="actor" Actor="SS" Direction="S" Difficulty="1" State="s_sspath1" />
+			<ObjectType Number="138" ObClass="actor" Actor="Dog" Direction="E" Difficulty="1" State="s_dogpath1" />
+			<ObjectType Number="139" ObClass="actor" Actor="Dog" Direction="N" Difficulty="1" State="s_dogpath1" />
+			<ObjectType Number="140" ObClass="actor" Actor="Dog" Direction="W" Difficulty="1" State="s_dogpath1" />
+			<ObjectType Number="141" ObClass="actor" Actor="Dog" Direction="S" Difficulty="1" State="s_dogpath1" />
+			<ObjectType Number="144" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="145" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="146" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="147" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="148" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="149" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="150" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="151" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="162" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="163" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="164" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="165" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="166" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="167" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="168" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="169" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="174" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="175" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="176" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="177" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="180" ObClass="actor" Actor="Guard" Direction="E" Difficulty="4" State="s_grdstand" />
+			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="4" State="s_grdstand" />
+			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="4" State="s_grdstand" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="4" State="s_grdstand" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="E" Difficulty="4" State="s_grdpath1" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="N" Difficulty="4" State="s_grdpath1" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="W" Difficulty="4" State="s_grdpath1" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="4" State="s_grdpath1" />
+			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="4" State="s_ssstand" />
+			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="4" State="s_ssstand" />
+			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="4" State="s_ssstand" />
+			<ObjectType Number="201" ObClass="actor" Actor="SS" Direction="S" Difficulty="4" State="s_ssstand" />
+			<ObjectType Number="202" ObClass="actor" Actor="SS" Direction="E" Difficulty="4" State="s_sspath1" />
+			<ObjectType Number="203" ObClass="actor" Actor="SS" Direction="N" Difficulty="4" State="s_sspath1" />
+			<ObjectType Number="204" ObClass="actor" Actor="SS" Direction="W" Difficulty="4" State="s_sspath1" />
+			<ObjectType Number="205" ObClass="actor" Actor="SS" Direction="S" Difficulty="4" State="s_sspath1" />
+			<ObjectType Number="210" ObClass="actor" Actor="Dog" Direction="E" Difficulty="4" State="s_dogpath1" />
+			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="4" State="s_dogpath1" />
+			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="4" State="s_dogpath1" />
+			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="4" State="s_dogpath1" />
+			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
 			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" AddTo="Score" Add="100" >
 				<PlaceItem>
 					<ObjectType Number="49" ObClass="bonus" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="4" Sound="GETAMMOSND" Flash="#FFFF00" Name="bo_clip2" />
@@ -1321,181 +1496,6 @@
 			</Actor>
 			-->
 		</StatInfo>
-		<Sprites>
-			<Sprite Page="106" Name="SPR_DEMO" />
-			<Sprite Page="107" Name="SPR_DEATHCAM" />
-			<Sprite Page="156" Name="SPR_GRD_S_1" />
-			<Sprite Page="157" Name="SPR_GRD_S_2" />
-			<Sprite Page="158" Name="SPR_GRD_S_3" />
-			<Sprite Page="159" Name="SPR_GRD_S_4" />
-			<Sprite Page="160" Name="SPR_GRD_S_5" />
-			<Sprite Page="161" Name="SPR_GRD_S_6" />
-			<Sprite Page="162" Name="SPR_GRD_S_7" />
-			<Sprite Page="163" Name="SPR_GRD_S_8" />
-			<Sprite Page="164" Name="SPR_GRD_W1_1" />
-			<Sprite Page="165" Name="SPR_GRD_W1_2" />
-			<Sprite Page="166" Name="SPR_GRD_W1_3" />
-			<Sprite Page="167" Name="SPR_GRD_W1_4" />
-			<Sprite Page="168" Name="SPR_GRD_W1_5" />
-			<Sprite Page="169" Name="SPR_GRD_W1_6" />
-			<Sprite Page="170" Name="SPR_GRD_W1_7" />
-			<Sprite Page="171" Name="SPR_GRD_W1_8" />
-			<Sprite Page="172" Name="SPR_GRD_W2_1" />
-			<Sprite Page="173" Name="SPR_GRD_W2_2" />
-			<Sprite Page="174" Name="SPR_GRD_W2_3" />
-			<Sprite Page="175" Name="SPR_GRD_W2_4" />
-			<Sprite Page="176" Name="SPR_GRD_W2_5" />
-			<Sprite Page="177" Name="SPR_GRD_W2_6" />
-			<Sprite Page="178" Name="SPR_GRD_W2_7" />
-			<Sprite Page="179" Name="SPR_GRD_W2_8" />
-			<Sprite Page="180" Name="SPR_GRD_W3_1" />
-			<Sprite Page="181" Name="SPR_GRD_W3_2" />
-			<Sprite Page="182" Name="SPR_GRD_W3_3" />
-			<Sprite Page="183" Name="SPR_GRD_W3_4" />
-			<Sprite Page="184" Name="SPR_GRD_W3_5" />
-			<Sprite Page="185" Name="SPR_GRD_W3_6" />
-			<Sprite Page="186" Name="SPR_GRD_W3_7" />
-			<Sprite Page="187" Name="SPR_GRD_W3_8" />
-			<Sprite Page="188" Name="SPR_GRD_W4_1" />
-			<Sprite Page="189" Name="SPR_GRD_W4_2" />
-			<Sprite Page="190" Name="SPR_GRD_W4_3" />
-			<Sprite Page="191" Name="SPR_GRD_W4_4" />
-			<Sprite Page="192" Name="SPR_GRD_W4_5" />
-			<Sprite Page="193" Name="SPR_GRD_W4_6" />
-			<Sprite Page="194" Name="SPR_GRD_W4_7" />
-			<Sprite Page="195" Name="SPR_GRD_W4_8" />
-			<Sprite Page="196" Name="SPR_GRD_PAIN_1" />
-			<Sprite Page="197" Name="SPR_GRD_DIE_1" />
-			<Sprite Page="198" Name="SPR_GRD_DIE_2" />
-			<Sprite Page="199" Name="SPR_GRD_DIE_3" />
-			<Sprite Page="200" Name="SPR_GRD_PAIN_2" />
-			<Sprite Page="201" Name="SPR_GRD_DEAD" />
-			<Sprite Page="202" Name="SPR_GRD_SHOOT1" />
-			<Sprite Page="203" Name="SPR_GRD_SHOOT2" />
-			<Sprite Page="204" Name="SPR_GRD_SHOOT3" />
-			<Sprite Page="205" Name="SPR_DOG_W1_1" />
-			<Sprite Page="206" Name="SPR_DOG_W1_2" />
-			<Sprite Page="207" Name="SPR_DOG_W1_3" />
-			<Sprite Page="208" Name="SPR_DOG_W1_4" />
-			<Sprite Page="209" Name="SPR_DOG_W1_5" />
-			<Sprite Page="210" Name="SPR_DOG_W1_6" />
-			<Sprite Page="211" Name="SPR_DOG_W1_7" />
-			<Sprite Page="212" Name="SPR_DOG_W1_8" />
-			<Sprite Page="213" Name="SPR_DOG_W2_1" />
-			<Sprite Page="214" Name="SPR_DOG_W2_2" />
-			<Sprite Page="215" Name="SPR_DOG_W2_3" />
-			<Sprite Page="216" Name="SPR_DOG_W2_4" />
-			<Sprite Page="217" Name="SPR_DOG_W2_5" />
-			<Sprite Page="218" Name="SPR_DOG_W2_6" />
-			<Sprite Page="219" Name="SPR_DOG_W2_7" />
-			<Sprite Page="220" Name="SPR_DOG_W2_8" />
-			<Sprite Page="221" Name="SPR_DOG_W3_1" />
-			<Sprite Page="222" Name="SPR_DOG_W3_2" />
-			<Sprite Page="223" Name="SPR_DOG_W3_3" />
-			<Sprite Page="224" Name="SPR_DOG_W3_4" />
-			<Sprite Page="225" Name="SPR_DOG_W3_5" />
-			<Sprite Page="226" Name="SPR_DOG_W3_6" />
-			<Sprite Page="227" Name="SPR_DOG_W3_7" />
-			<Sprite Page="228" Name="SPR_DOG_W3_8" />
-			<Sprite Page="229" Name="SPR_DOG_W4_1" />
-			<Sprite Page="230" Name="SPR_DOG_W4_2" />
-			<Sprite Page="231" Name="SPR_DOG_W4_3" />
-			<Sprite Page="232" Name="SPR_DOG_W4_4" />
-			<Sprite Page="233" Name="SPR_DOG_W4_5" />
-			<Sprite Page="234" Name="SPR_DOG_W4_6" />
-			<Sprite Page="235" Name="SPR_DOG_W4_7" />
-			<Sprite Page="236" Name="SPR_DOG_W4_8" />
-			<Sprite Page="237" Name="SPR_DOG_DIE_1" />
-			<Sprite Page="238" Name="SPR_DOG_DIE_2" />
-			<Sprite Page="239" Name="SPR_DOG_DIE_3" />
-			<Sprite Page="240" Name="SPR_DOG_DEAD" />
-			<Sprite Page="241" Name="SPR_DOG_JUMP1" />
-			<Sprite Page="242" Name="SPR_DOG_JUMP2" />
-			<Sprite Page="243" Name="SPR_DOG_JUMP3" />
-			<Sprite Page="244" Name="SPR_SS_S_1" />
-			<Sprite Page="245" Name="SPR_SS_S_2" />
-			<Sprite Page="246" Name="SPR_SS_S_3" />
-			<Sprite Page="247" Name="SPR_SS_S_4" />
-			<Sprite Page="248" Name="SPR_SS_S_5" />
-			<Sprite Page="249" Name="SPR_SS_S_6" />
-			<Sprite Page="250" Name="SPR_SS_S_7" />
-			<Sprite Page="251" Name="SPR_SS_S_8" />
-			<Sprite Page="252" Name="SPR_SS_W1_1" />
-			<Sprite Page="253" Name="SPR_SS_W1_2" />
-			<Sprite Page="254" Name="SPR_SS_W1_3" />
-			<Sprite Page="255" Name="SPR_SS_W1_4" />
-			<Sprite Page="256" Name="SPR_SS_W1_5" />
-			<Sprite Page="257" Name="SPR_SS_W1_6" />
-			<Sprite Page="258" Name="SPR_SS_W1_7" />
-			<Sprite Page="259" Name="SPR_SS_W1_8" />
-			<Sprite Page="260" Name="SPR_SS_W2_1" />
-			<Sprite Page="261" Name="SPR_SS_W2_2" />
-			<Sprite Page="262" Name="SPR_SS_W2_3" />
-			<Sprite Page="263" Name="SPR_SS_W2_4" />
-			<Sprite Page="264" Name="SPR_SS_W2_5" />
-			<Sprite Page="265" Name="SPR_SS_W2_6" />
-			<Sprite Page="266" Name="SPR_SS_W2_7" />
-			<Sprite Page="267" Name="SPR_SS_W2_8" />
-			<Sprite Page="268" Name="SPR_SS_W3_1" />
-			<Sprite Page="269" Name="SPR_SS_W3_2" />
-			<Sprite Page="270" Name="SPR_SS_W3_3" />
-			<Sprite Page="271" Name="SPR_SS_W3_4" />
-			<Sprite Page="272" Name="SPR_SS_W3_5" />
-			<Sprite Page="273" Name="SPR_SS_W3_6" />
-			<Sprite Page="274" Name="SPR_SS_W3_7" />
-			<Sprite Page="275" Name="SPR_SS_W3_8" />
-			<Sprite Page="276" Name="SPR_SS_W4_1" />
-			<Sprite Page="277" Name="SPR_SS_W4_2" />
-			<Sprite Page="278" Name="SPR_SS_W4_3" />
-			<Sprite Page="279" Name="SPR_SS_W4_4" />
-			<Sprite Page="280" Name="SPR_SS_W4_5" />
-			<Sprite Page="281" Name="SPR_SS_W4_6" />
-			<Sprite Page="282" Name="SPR_SS_W4_7" />
-			<Sprite Page="283" Name="SPR_SS_W4_8" />
-			<Sprite Page="284" Name="SPR_SS_PAIN_1" />
-			<Sprite Page="285" Name="SPR_SS_DIE_1" />
-			<Sprite Page="286" Name="SPR_SS_DIE_2" />
-			<Sprite Page="287" Name="SPR_SS_DIE_3" />
-			<Sprite Page="288" Name="SPR_SS_PAIN_2" />
-			<Sprite Page="289" Name="SPR_SS_DEAD" />
-			<Sprite Page="290" Name="SPR_SS_SHOOT1" />
-			<Sprite Page="291" Name="SPR_SS_SHOOT2" />
-			<Sprite Page="292" Name="SPR_SS_SHOOT3" />
-			<Sprite Page="402" Name="SPR_BOSS_W1" />
-			<Sprite Page="403" Name="SPR_BOSS_W2" />
-			<Sprite Page="404" Name="SPR_BOSS_W3" />
-			<Sprite Page="405" Name="SPR_BOSS_W4" />
-			<Sprite Page="406" Name="SPR_BOSS_SHOOT1" />
-			<Sprite Page="407" Name="SPR_BOSS_SHOOT2" />
-			<Sprite Page="408" Name="SPR_BOSS_SHOOT3" />
-			<Sprite Page="409" Name="SPR_BOSS_DEAD" />
-			<Sprite Page="410" Name="SPR_BOSS_DIE1" />
-			<Sprite Page="411" Name="SPR_BOSS_DIE2" />
-			<Sprite Page="412" Name="SPR_BOSS_DIE3" />
-		</Sprites>
-		<DigiSounds>
-			<DigiSound Number="0" Name="HALTSND" />
-			<DigiSound Number="1" Name="DOGBARKSND" />
-			<DigiSound Number="2" Name="CLOSEDOORSND" />
-			<DigiSound Number="3" Name="OPENDOORSND" />
-			<DigiSound Number="4" Name="ATKMACHINEGUNSND" />
-			<DigiSound Number="5" Name="ATKPISTOLSND" />
-			<DigiSound Number="6" Name="ATKGATLINGSND" />
-			<DigiSound Number="7" Name="SCHUTZADSND" />
-			<DigiSound Number="8" Name="GUTENTAGSND" />
-			<DigiSound Number="9" Name="MUTTISND" />
-			<DigiSound Number="10" Name="BOSSFIRESND" />
-			<DigiSound Number="11" Name="SSFIRESND" />
-			<DigiSound Number="12" Name="DEATHSCREAM1SND" />
-			<DigiSound Number="13" Name="DEATHSCREAM2SND" />
-			<DigiSound Number="14" Name="TAKEDAMAGESND" />
-			<DigiSound Number="14" Name="DEATHSCREAM3SND" />
-			<DigiSound Number="15" Name="PUSHWALLSND" />
-			<DigiSound Number="20" Name="LEBENSND" />
-			<DigiSound Number="21" Name="NAZIFIRESND" />
-			<DigiSound Number="22" Name="SLURPIESND" />
-			<DigiSound Number="32" Name="YEAHSND" />
-		</DigiSounds>
 	</VSwap>
 	<Palette>
 		<Color Hex="#000000"/>

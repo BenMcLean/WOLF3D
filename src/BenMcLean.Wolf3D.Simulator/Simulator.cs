@@ -89,6 +89,26 @@ public class Simulator
 	/// </summary>
 	public event Action<BonusPickedUpEvent> BonusPickedUp;
 
+	/// <summary>
+	/// Fired when an actor spawns in the world.
+	/// WL_GAME.C:ScanInfoPlane
+	/// </summary>
+	public event Action<ActorSpawnedEvent> ActorSpawned;
+	/// <summary>
+	/// Fired when an actor moves to a new position.
+	/// WL_ACT2.C movement logic
+	/// </summary>
+	public event Action<ActorMovedEvent> ActorMoved;
+	/// <summary>
+	/// Fired when an actor's sprite changes (animation, state, rotation).
+	/// WL_DEF.H:statestruct - fires very frequently
+	/// </summary>
+	public event Action<ActorSpriteChangedEvent> ActorSpriteChanged;
+	/// <summary>
+	/// Fired when an actor is removed from the world (death, despawn).
+	/// WL_ACT1.C:KillActor
+	/// </summary>
+	public event Action<ActorDespawnedEvent> ActorDespawned;
 	#endregion
 
 	/// <summary>
@@ -424,5 +444,39 @@ public class Simulator
 
 			lastStatObj++;
 		}
+	}
+
+	/// <summary>
+	/// Initialize actors from MapAnalyzer data - fires ActorSpawnedEvent for each.
+	/// Based on WL_GAME.C:ScanInfoPlane
+	/// NOTE: This is a DUMMY implementation - just fires events, no actual Actor objects yet.
+	/// Full actor simulation logic (state machine, AI, movement) will be added later.
+	/// </summary>
+	public void LoadActorsFromMapAnalysis(MapAnalysis mapAnalysis)
+	{
+		// int actorIndex = 0;
+		// foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
+		// {
+		// 	// Use initial sprite page from spawn data (from XML ObjectType Page attribute)
+		// 	// Later: Look up sprite from initial actor state when state machine is implemented
+		// 	ushort initialShape = spawn.Page;
+		// 	// TODO: Determine IsRotated from actor state (walking/standing = true, shooting/dying = false)
+		// 	// For now, assume standing sprites are rotated (8-directional)
+		// 	bool isRotated = true;  // PLACEHOLDER - will be determined by initial state
+		// 	// Convert 4-way cardinal direction from map data to 8-way simulator direction
+		// 	Direction facing = ConvertCardinalToSimulatorDirection(spawn.Facing);
+		// 	// Fire spawn event - presentation layer will create visual representation
+		// 	ActorSpawned?.Invoke(new ActorSpawnedEvent
+		// 	{
+		// 		Timestamp = CurrentTic * TicDuration,
+		// 		ActorIndex = actorIndex,
+		// 		TileX = spawn.X,
+		// 		TileY = spawn.Y,
+		// 		Facing = facing,
+		// 		Shape = initialShape,
+		// 		IsRotated = isRotated
+		// 	});
+		// 	actorIndex++;
+		// }
 	}
 }

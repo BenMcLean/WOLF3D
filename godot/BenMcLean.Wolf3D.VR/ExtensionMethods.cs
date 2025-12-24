@@ -66,4 +66,12 @@ public static class ExtensionMethods
 		}
 		return scaled;
 	}
+	public static Simulator.Direction ConvertCardinalToSimulatorDirection(this Assets.Direction cardinalDir) => cardinalDir switch
+	{
+		Assets.Direction.N => Simulator.Direction.N,
+		Assets.Direction.E => Simulator.Direction.E,
+		Assets.Direction.S => Simulator.Direction.S,
+		Assets.Direction.W => Simulator.Direction.W,
+		_ => Simulator.Direction.E
+	};
 }

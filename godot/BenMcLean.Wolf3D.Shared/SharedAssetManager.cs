@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using RectpackSharp;
+using Microsoft.Extensions.Logging;
+using static BenMcLean.Wolf3D.Shared.GodotLogger;
 
 namespace BenMcLean.Wolf3D.Shared;
 
@@ -43,6 +45,10 @@ public static class SharedAssetManager
 	/// </summary>
 	public static IReadOnlyDictionary<string, Godot.AudioStreamWav> DigiSounds => _digiSounds;
 	private static Dictionary<string, Godot.AudioStreamWav> _digiSounds;
+	/// <summary>
+	/// Logger factory configured to route logs to Godot.
+	/// </summary>
+	private static ILoggerFactory _loggerFactory;
 	#endregion Data
 	#region Textures
 	/// <summary>
@@ -476,7 +482,13 @@ public static class SharedAssetManager
 	public static void LoadGame(string xmlPath)
 	{
 		Cleanup();
-		CurrentGame = Assets.AssetManager.Load(xmlPath);
+		// Configure logging to route to Godot
+		_loggerFactory = LoggerFactory.Create(builder =>
+		{
+			builder.AddProvider(new GodotLoggerProvider());
+			builder.SetMinimumLevel(LogLevel.Warning);  // Only show warnings and errors
+		});
+		CurrentGame = Assets.AssetManager.Load(xmlPath, _loggerFactory);
 		BuildAtlas();
 		BuildDigiSounds();
 	}
@@ -507,5 +519,7 @@ public static class SharedAssetManager
 		AtlasImage?.Dispose();
 		AtlasImage = null;
 		CurrentGame = null;
+		_loggerFactory?.Dispose();
+		_loggerFactory = null;
 	}
 }

@@ -5,11 +5,14 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BenMcLean.Wolf3D.Assets;
 
 public class MapAnalyzer
 {
+	private readonly ILogger<MapAnalyzer> _logger;
 	#region Data
 	public XElement XML;
 
@@ -33,12 +36,18 @@ public class MapAnalyzer
 	// Patrol tile metadata (map layer)
 	public Dictionary<ushort, Direction> PatrolTiles { get; private set; }
 
+	// State definitions (state name -> shape name)
+	public Dictionary<string, string> States { get; private set; }
+	// Sprite definitions (sprite name -> page number) - provided by VSwap
+	public IReadOnlyDictionary<string, ushort> Sprites { get; private set; }
 	public ushort FloorCodeFirst { get; private set; }
 	public ushort FloorCodes { get; private set; }
 	#endregion Data
-	public MapAnalyzer(XElement xml)
+	public MapAnalyzer(XElement xml, IReadOnlyDictionary<string, ushort> spritesByName, ILogger<MapAnalyzer> logger = null)
 	{
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
+		Sprites = spritesByName ?? throw new ArgumentNullException(nameof(spritesByName));
+		_logger = logger ?? NullLogger<MapAnalyzer>.Instance;
 
 		// Parse WallPlane element attributes (required)
 		XElement wallsElement = XML.Element("VSwap")?.Element("WallPlane")
@@ -88,6 +97,16 @@ public class MapAnalyzer
 			Doors[(ushort)(tileNum + 1)] = info;
 		}
 
+		// Parse states BEFORE objects (needed for state->sprite lookup)
+		States = [];
+		IEnumerable<XElement> stateElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("State") ?? [];
+		foreach (XElement state in stateElements)
+		{
+			string name = state.Attribute("Name")?.Value;
+			string shape = state.Attribute("Shape")?.Value;
+			if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(shape))
+				States[name] = shape;
+		}
 		// Parse object metadata - unified <ObjectType> elements
 		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? [];
 		Objects = [];
@@ -98,7 +117,7 @@ public class MapAnalyzer
 				continue;
 
 			Direction? facing = null;
-			if (Enum.TryParse(obj.Attribute("Facing")?.Value, out Direction dir))
+			if (Enum.TryParse(obj.Attribute("Direction")?.Value, out Direction dir))
 				facing = dir;
 
 			// Parse ObClass case-insensitively
@@ -107,19 +126,34 @@ public class MapAnalyzer
 			if (!string.IsNullOrEmpty(obclassStr) && Enum.TryParse(obclassStr, ignoreCase: true, out ObClass parsedClass))
 				objectClass = parsedClass;
 
-			// Parse sprite page number (optional for some object types like player start)
-			_ = ushort.TryParse(obj.Attribute("Page")?.Value, out ushort page);
+			// Parse sprite page number
+			// Try explicit Page attribute first, then fall back to State->Shape->Page lookup
+			ushort page = 0;
+			if (!ushort.TryParse(obj.Attribute("Page")?.Value, out page))
+			{
+				// No explicit Page - try looking up from State attribute
+				string stateName = obj.Attribute("State")?.Value;
+				if (!string.IsNullOrEmpty(stateName)
+					&& States.TryGetValue(stateName, out string shapeName)
+					&& Sprites.TryGetValue(shapeName, out ushort pageFromState))
+				{
+					page = pageFromState;
+				}
+			}
+			// Parse actor type (for ObClass.actor - guard, ss, dog, etc.)
+			string actorType = obj.Attribute("Actor")?.Value;
 
 			ObjectInfo info = new()
 			{
 				Number = number,
 				ObjectClass = objectClass,
+				Actor = actorType,
 				Page = page,
 				Facing = facing,
 				Patrol = obj.IsTrue("Patrol"),
 				Ambush = obj.IsTrue("Ambush"),
-				IsEnemy = false,  // TODO: Set based on object class when enemy types are added
-				IsActive = false  // TODO: Set based on object class when active types are added
+				IsEnemy = objectClass == ObClass.actor,  // Actors are enemies
+				IsActive = objectClass == ObClass.actor  // Actors are active objects
 			};
 
 			Objects[number] = info;
@@ -183,7 +217,7 @@ public class MapAnalyzer
 		_ => StatType.dressing // default
 	};
 
-	public MapAnalysis Analyze(GameMap map) => new(this, map);
+	public MapAnalysis Analyze(GameMap map) => new(this, map, _logger);
 	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Select(Analyze);
 	#region Inner classes
 	public sealed class MapAnalysis
@@ -226,8 +260,8 @@ public class MapAnalyzer
 
 		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
 		// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
-		public readonly record struct EnemySpawn(ObClass Type, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol);
-		public ReadOnlyCollection<EnemySpawn> EnemySpawns { get; private set; }
+		public readonly record struct ActorSpawn(string ActorType, ushort Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol);
+		public ReadOnlyCollection<ActorSpawn> ActorSpawns { get; private set; }
 
 		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
 		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Shape, ushort X, ushort Y);
@@ -251,8 +285,9 @@ public class MapAnalyzer
 		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Y, bool FacesEastWest = false);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
-		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap)
+		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap, ILogger logger = null)
 		{
+			logger ??= NullLogger.Instance;
 			#region XML Attributes
 			XElement xml = mapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault()
 				?? throw new InvalidDataException($"XML tag for map \"{gameMap.Name}\" was not found!");
@@ -288,12 +323,13 @@ public class MapAnalyzer
 						|| (y < Depth - 1 && Transparent[(y + 1) * Width + x]);
 			#endregion Masks
 			#region Object Layer Parsing
-			List<EnemySpawn> enemies = [];
+			List<ActorSpawn> enemies = [];
 			List<StaticSpawn> statics = [];
 			List<PatrolPoint> patrolPoints = [];
 			PlayerSpawn? playerStart = null;
 
 			// Scan object layer
+			logger.LogInformation("Starting object scan: {TileCount} total tiles", gameMap.ObjectData.Length);
 			for (int i = 0; i < gameMap.ObjectData.Length; i++)
 			{
 				ushort objectCode = gameMap.ObjectData[i];
@@ -314,17 +350,26 @@ public class MapAnalyzer
 					if (objInfo.Facing.HasValue)
 						playerStart = new PlayerSpawn(x, y, objInfo.Facing.Value);
 				}
-				// Enemies
-				else if (MapAnalyzer.IsEnemy(objectClass))
+				// Enemies/Actors
+				else if (objectClass == ObClass.actor)
 				{
-					if (objInfo.Facing.HasValue)
+					logger.LogDebug("Found actor: Code={ObjectCode}, Actor={Actor}, Facing={Facing}, Page={Page} at ({X},{Y})",
+						objectCode, objInfo.Actor, objInfo.Facing, objInfo.Page, x, y);
+					if (objInfo.Facing.HasValue && !string.IsNullOrEmpty(objInfo.Actor))
 					{
-						enemies.Add(new EnemySpawn(
-							objectClass,
+						logger.LogDebug("Adding actor spawn: {Actor}", objInfo.Actor);
+						enemies.Add(new ActorSpawn(
+							objInfo.Actor,
+							objInfo.Page,
 							x, y,
 							objInfo.Facing.Value,
 							objInfo.Ambush,
 							objInfo.Patrol));
+					}
+					else
+					{
+						logger.LogWarning("Skipped actor: Facing={HasFacing}, Actor present={HasActor}",
+							objInfo.Facing.HasValue, !string.IsNullOrEmpty(objInfo.Actor));
 					}
 				}
 				// Static objects (dressing, block, bonus items)
@@ -335,6 +380,7 @@ public class MapAnalyzer
 				}
 			}
 
+			logger.LogInformation("Object scan complete: {ActorCount} actors, {StaticCount} statics", enemies.Count, statics.Count);
 			// Scan map layer for patrol tiles
 			for (int i = 0; i < gameMap.MapData.Length; i++)
 			{
@@ -349,7 +395,7 @@ public class MapAnalyzer
 			}
 
 			PlayerStart = playerStart;
-			EnemySpawns = Array.AsReadOnly([.. enemies]);
+			ActorSpawns = Array.AsReadOnly([.. enemies]);
 			StaticSpawns = Array.AsReadOnly([.. statics]);
 			PatrolPoints = Array.AsReadOnly([.. patrolPoints]);
 			#endregion Object Layer Parsing
@@ -471,6 +517,7 @@ public record ObjectInfo
 {
 	public ushort Number { get; init; }      // Tile number in map
 	public ObClass? ObjectClass { get; init; } // Wolf3D obclass (classtype or stat_t)
+	public string Actor { get; init; }       // Actor type for ObClass.actor (guard, ss, dog, etc.)
 	public ushort Page { get; init; }        // VSwap sprite page number for rendering
 	public Direction? Facing { get; init; }  // N/S/E/W (for player & enemies)
 	public bool Patrol { get; init; }        // Enemy patrols (vs. standing still)
@@ -500,6 +547,8 @@ public enum ObClass
 
 	// Bonus/pickup items (stat_t with bo_ prefix)
 	bonus,       // Pickup items (health, ammo, keys, treasure, etc.)
+	// Active objects (enemies/NPCs) (classtype)
+	actor,       // Enemies and NPCs - specific type defined by Actor attribute
 }
 
 // Static object type (Wolf3D stat_t enum)

@@ -15,22 +15,26 @@ public partial class SimulatorController : Node3D
 	private Simulator.Simulator simulator;
 	private Doors doors;
 	private Bonuses bonuses;
+	private Actors actors;
 
 	/// <summary>
-	/// Initializes the simulator with door and bonus data from MapAnalysis.
+	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
 	/// Call this after adding the controller to the scene tree.
 	/// </summary>
 	/// <param name="mapAnalysis">Map analysis containing all spawn data</param>
 	/// <param name="doorsNode">The Doors node that will render the doors</param>
 	/// <param name="bonusesNode">The Bonuses node that will render bonus items</param>
+	/// <param name="actorsNode">The Actors node that will render actors</param>
 	public void Initialize(
 		MapAnalysis mapAnalysis,
 		Doors doorsNode,
-		Bonuses bonusesNode)
+		Bonuses bonusesNode,
+		Actors actorsNode)
 	{
 		simulator = new Simulator.Simulator();
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
+		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
 
 		// Load doors into simulator
 		simulator.LoadDoorsFromMapAnalysis(mapAnalysis.Doors);
@@ -39,9 +43,17 @@ public partial class SimulatorController : Node3D
 		// VR layer displays them directly from MapAnalysis - no events needed
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
 
+		// Load actors into presentation layer directly
+		GD.Print($"SimulatorController: Loading {mapAnalysis.ActorSpawns.Count} actors from map analysis into production layer");
+		actors.LoadFromMapAnalysis(mapAnalysis.ActorSpawns);
+		// Load actors into simulator (placeholder for now)
+		simulator.LoadActorsFromMapAnalysis(mapAnalysis);
+		GD.Print("SimulatorController: Actors loaded");
 		// Subscribe presentation layers to simulator events
 		doors.Subscribe(simulator);
 		bonuses.Subscribe(simulator);
+		actors.Subscribe(simulator);
+		GD.Print("SimulatorController: All presentation layers subscribed");
 	}
 
 	/// <summary>

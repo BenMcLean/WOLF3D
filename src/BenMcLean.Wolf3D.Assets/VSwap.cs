@@ -30,6 +30,7 @@ public sealed class VSwap
 	public byte[][] Pages { get; private init; }
 	public byte[][] DigiSounds { get; private init; }
 	public Dictionary<string, byte[]> DigiSoundsByName { get; private init; }
+	public Dictionary<string, ushort> SpritesByName { get; private init; }
 	public BitArray[] Masks { get; private init; }
 	public ushort SpritePage { get; private init; }
 	public ushort NumPages { get; private init; }
@@ -149,8 +150,18 @@ public sealed class VSwap
 				for (uint bite = 0; bite < DigiSounds[sound].Length; bite++)
 					DigiSounds[sound][bite] = (byte)(soundData[start + bite] - 128); // Godot makes some kind of oddball conversion from the unsigned byte to a signed byte
 			}
+		// Parse sprite name->page mappings
+		// Note: XML Page attributes are absolute VSWAP page numbers
+		SpritesByName = [];
+		foreach (XElement spriteElement in xml.Element("VSwap")?.Element("SpritePlane")?.Elements("Sprite") ?? [])
+		{
+			string name = spriteElement.Attribute("Name")?.Value;
+			if (!string.IsNullOrWhiteSpace(name)
+				&& ushort.TryParse(spriteElement.Attribute("Page")?.Value, out ushort spritePage))
+				SpritesByName.Add(name, spritePage);
+		}
 		DigiSoundsByName = [];
-		foreach (XElement digiSoundElement in xml.Elements("DigiSounds").Elements("DigiSound"))
+		foreach (XElement digiSoundElement in xml.Element("VSwap")?.Element("SoundPlane")?.Elements("DigiSound") ?? [])
 		{
 			uint number = (uint)digiSoundElement.Attribute("Number");
 			string name = digiSoundElement.Attribute("Name")?.Value;
