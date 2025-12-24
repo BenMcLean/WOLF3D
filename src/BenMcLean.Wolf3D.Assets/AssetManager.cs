@@ -4,20 +4,20 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
 
-public class Assets
+public class AssetManager
 {
 	public readonly XElement XML;
 	public readonly AudioT AudioT;
-	public readonly GameMap[] Maps;
 	public readonly VgaGraph VgaGraph;
 	public readonly VSwap VSwap;
+	public readonly GameMap[] Maps;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
-	public static Assets Load(string xmlPath)
+	public static AssetManager Load(string xmlPath)
 	{
 		XElement xml = XDocument.Load(xmlPath).Root;
 		return new(xml, Path.Combine(Path.GetDirectoryName(xmlPath), xml.Attribute("Path")?.Value));
 	}
-	public Assets(XElement xml, string folder = "")
+	public AssetManager(XElement xml, string folder = "")
 	{
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);

@@ -51,7 +51,7 @@ public sealed class AudioT
 		public string Name { get; set; }
 		public Midi Midi { get; set; }
 		public Imf[] Imf { get; set; }
-		public bool IsImf => Imf != null;
+		public bool IsImf => Imf is not null;
 		public override bool Equals(object obj) => obj is Song song && (Name?.Equals(song.Name) ?? false);
 		public override int GetHashCode() => base.GetHashCode();
 		public override string ToString() => Name;

@@ -16,7 +16,7 @@ public static class SharedAssetManager
 	/// <summary>
 	/// The currently loaded game data (VSwap, Maps, etc.).
 	/// </summary>
-	public static Assets.Assets CurrentGame { get; private set; }
+	public static Assets.AssetManager CurrentGame { get; private set; }
 	/// <summary>
 	/// The master texture atlas containing all VSwap pages, VgaGraph Pics, and Font characters.
 	/// </summary>
@@ -476,7 +476,7 @@ public static class SharedAssetManager
 	public static void LoadGame(string xmlPath)
 	{
 		Cleanup();
-		CurrentGame = Assets.Assets.Load(xmlPath);
+		CurrentGame = Assets.AssetManager.Load(xmlPath);
 		BuildAtlas();
 		BuildDigiSounds();
 	}
