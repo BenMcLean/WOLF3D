@@ -29,6 +29,7 @@ public partial class Doors : Node3D
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> opaqueMaterials;
 	private readonly IReadOnlyDictionary<ushort, ShaderMaterial> flippedMaterials;
 	private readonly Dictionary<ushort, int> nextInstanceIndex = []; // Tracks next available instance per texture
+	private readonly IReadOnlyDictionary<string, AudioStreamWav> digiSounds; // Sound library
 
 	private class DoorData
 	{
@@ -37,6 +38,7 @@ public partial class Doors : Node3D
 		public bool FacesEastWest;            // true = door can face E/W (runs N-S), false = door can face N/S (runs E-W)
 		public uint BaseGridX, BaseGridZ;     // Fixed-point 16:16 base coordinates
 		public uint CurrentX, CurrentZ;       // Fixed-point 16:16 current coordinates (for sliding)
+		public AudioStreamPlayer3D Speaker;   // 3D audio speaker for this door
 	}
 
 	/// <summary>
@@ -60,10 +62,16 @@ public partial class Doors : Node3D
 	/// <param name="opaqueMaterials">Dictionary of opaque materials with normal UVs from GodotResources.OpaqueMaterials</param>
 	/// <param name="flippedMaterials">Dictionary of flipped materials by texture index</param>
 	/// <param name="doorSpawns">Collection of door spawn data from map analysis</param>
-	public Doors(IReadOnlyDictionary<ushort, StandardMaterial3D> opaqueMaterials, IReadOnlyDictionary<ushort, ShaderMaterial> flippedMaterials, IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
+	/// <param name="digiSounds">Dictionary of digi sounds from SharedAssetManager</param>
+	public Doors(
+		IReadOnlyDictionary<ushort, StandardMaterial3D> opaqueMaterials,
+		IReadOnlyDictionary<ushort, ShaderMaterial> flippedMaterials,
+		IEnumerable<MapAnalysis.DoorSpawn> doorSpawns,
+		IReadOnlyDictionary<string, AudioStreamWav> digiSounds)
 	{
 		this.opaqueMaterials = opaqueMaterials ?? throw new ArgumentNullException(nameof(opaqueMaterials));
 		this.flippedMaterials = flippedMaterials ?? throw new ArgumentNullException(nameof(flippedMaterials));
+		this.digiSounds = digiSounds ?? throw new ArgumentNullException(nameof(digiSounds));
 
 		if (doorSpawns is null || !doorSpawns.Any())
 		{
@@ -131,6 +139,15 @@ public partial class Doors : Node3D
 			// Allocate ONE instance for this door (same index used in both back-cull and front-cull multimeshes)
 			int instanceIndex = AllocateInstance(textureIndex);
 
+			// Create audio speaker for this door
+			// Position will be updated in UpdateDoorTransforms to sweep across doorframe
+			AudioStreamPlayer3D speaker = new()
+			{
+				Name = $"DoorSpeaker_{i}",
+				MaxDistance = 30.0f,  // Sound audible from ~30 Godot units away
+				UnitSize = 2.0f,      // Wolf3D scale
+			};
+			AddChild(speaker);
 			DoorData data = new()
 			{
 				TextureIndex = textureIndex,
@@ -140,6 +157,7 @@ public partial class Doors : Node3D
 				BaseGridZ = baseZ,
 				CurrentX = baseX,
 				CurrentZ = baseZ,
+				Speaker = speaker,
 			};
 
 			doors.Add(data);
@@ -192,30 +210,18 @@ public partial class Doors : Node3D
 	/// </summary>
 	private void UpdateDoorTransforms(DoorData door)
 	{
-		// Convert 16.16 fixed-point to float (tile units with fractional part)
-		float tileX = door.CurrentX / 65536f;
-		float tileZ = door.CurrentZ / 65536f;
-
-		// Convert from tile coordinates to VR space (meters)
 		Vector3 position = new(
-			Constants.VrCoordinate(tileX),
-			Constants.HalfWallHeight,
-			Constants.VrCoordinate(tileZ)
-		);
-
+			x: door.CurrentX.ToMeters(),
+			y: Constants.HalfWallHeight,
+			z: door.CurrentZ.ToMeters());
 		// Determine base rotation based on door orientation
 		float rotationY;
 		if (door.FacesEastWest)
-		{
 			// Door runs N-S, faces E or W
 			rotationY = Constants.HalfPi;  // Base rotation faces East
-		}
 		else
-		{
 			// Door runs E-W, faces N or S
 			rotationY = 0f;  // Base rotation faces South
-		}
-
 		// Set transforms for both instances at same position/rotation
 		// For North-South doors: normal material on normal scale, flipped material on flipped scale
 		// For East-West doors: SWAP them - flipped material on normal scale, normal material on flipped scale
@@ -231,8 +237,20 @@ public partial class Doors : Node3D
 			SetInstanceTransform(door.TextureIndex, door.InstanceIndex, position, rotationY, new Vector3(1, 1, 1), useFlipped: false);
 			SetInstanceTransform(door.TextureIndex, door.InstanceIndex, position, rotationY, new Vector3(-1, 1, 1), useFlipped: true);
 		}
+		// Update speaker position to sweep across doorframe as door opens/closes
+		// Speaker starts at edge opposite to opening direction and moves with door
+		if (door.Speaker is not null)
+		{
+			Vector3 speakerPosition = position;
+			if (door.FacesEastWest)
+				// Door faces E/W and opens North (+Z), speaker starts at South edge
+				speakerPosition.Z -= Constants.HalfWallWidth;  // Half tile South of door center
+			else
+				// Door faces N/S and opens East (+X), speaker starts at West edge
+				speakerPosition.X -= Constants.HalfWallWidth;  // Half tile West of door center
+			door.Speaker.Position = speakerPosition;
+		}
 	}
-
 	/// <summary>
 	/// Sets the transform for a specific instance in a MultiMesh.
 	/// </summary>
@@ -329,6 +347,7 @@ public partial class Doors : Node3D
 		simulator.DoorPositionChanged += OnDoorPositionChanged;
 		simulator.DoorClosing += OnDoorClosing;
 		simulator.DoorClosed += OnDoorClosed;
+		simulator.DoorPlaySound += OnDoorPlaySound;
 	}
 
 	/// <summary>
@@ -345,6 +364,7 @@ public partial class Doors : Node3D
 		simulator.DoorPositionChanged -= OnDoorPositionChanged;
 		simulator.DoorClosing -= OnDoorClosing;
 		simulator.DoorClosed -= OnDoorClosed;
+		simulator.DoorPlaySound -= OnDoorPlaySound;
 
 		simulator = null;
 	}
@@ -387,6 +407,36 @@ public partial class Doors : Node3D
 	private void OnDoorClosed(Simulator.DoorClosedEvent evt)
 	{
 		UpdateDoorVisualPosition(evt.DoorIndex);
+	}
+
+	/// <summary>
+	/// Handles door sound event - plays sound at door speaker position.
+	/// </summary>
+	private void OnDoorPlaySound(Simulator.DoorPlaySoundEvent evt)
+	{
+		if (evt.DoorIndex >= doors.Count)
+		{
+			GD.PrintErr($"ERROR: DoorIndex {evt.DoorIndex} >= doors.Count {doors.Count}");
+			return;
+		}
+
+		DoorData door = doors[evt.DoorIndex];
+		if (door.Speaker == null)
+		{
+			GD.PrintErr($"ERROR: Door {evt.DoorIndex} has no speaker");
+			return;
+		}
+
+		// Look up sound from digi sounds library
+		if (!digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
+		{
+			GD.PrintErr($"WARNING: Sound '{evt.SoundName}' not found in digi sounds library");
+			return;
+		}
+
+		// Play the sound at the door's speaker
+		door.Speaker.Stream = sound;
+		door.Speaker.Play();
 	}
 
 	/// <summary>

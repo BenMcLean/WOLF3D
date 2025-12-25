@@ -156,14 +156,32 @@ public class StateFunction
 	/// </summary>
 	public string Name { get; set; }
 	/// <summary>
-	/// The function body - will eventually be Lua script code.
-	/// For now, just stored as a string.
+	/// The function body - Lua script code stored as a string.
+	/// Will be compiled to bytecode by Simulator at startup.
 	/// </summary>
 	public string Code { get; set; }
 	/// <summary>
 	/// Optional description/comment for this function
 	/// </summary>
 	public string Description { get; set; }
+	/// <summary>
+	/// Creates a StateFunction instance from an XElement.
+	/// </summary>
+	/// <param name="element">The XElement containing function data (either &lt;Function&gt; or &lt;ThinkFunction&gt;/&lt;ActionFunction&gt;)</param>
+	/// <returns>A new StateFunction instance</returns>
+	public static StateFunction FromXElement(XElement element)
+	{
+		string name = element.Attribute("Name")?.Value ?? throw new ArgumentException($"{element.Name.LocalName} element must have a Name attribute");
+		string code = element.Value?.Trim() ?? string.Empty;
+		string description = element.Attribute("Description")?.Value;
+
+		return new StateFunction
+		{
+			Name = name,
+			Code = code,
+			Description = description
+		};
+	}
 }
 /// <summary>
 /// Container for all state-related data loaded from XML.
@@ -179,13 +197,58 @@ public class StateCollection
 	/// </summary>
 	public Dictionary<string, StateFunction> Functions { get; set; } = [];
 	/// <summary>
+	/// Adds a state function to the collection.
+	/// </summary>
+	/// <param name="function">The StateFunction to add</param>
+	public void AddFunction(StateFunction function)
+	{
+		if (Functions.ContainsKey(function.Name))
+			throw new InvalidOperationException($"Duplicate state function name: '{function.Name}'");
+		Functions[function.Name] = function;
+	}
+	/// <summary>
+	/// Adds a state function from an XElement.
+	/// </summary>
+	/// <param name="element">The XElement containing function data</param>
+	public void AddFunctionFromXml(XElement element)
+	{
+		StateFunction function = StateFunction.FromXElement(element);
+		AddFunction(function);
+	}
+	/// <summary>
+	/// Loads multiple state functions from XML elements.
+	/// </summary>
+	/// <param name="elements">Collection of XElements representing functions</param>
+	public void LoadFunctionsFromXml(IEnumerable<XElement> elements)
+	{
+		foreach (XElement element in elements)
+			AddFunctionFromXml(element);
+	}
+	/// <summary>
 	/// Adds a state from an XElement.
 	/// Use this in Phase 1, then call LinkStates() for Phase 2.
+	/// Automatically registers any inline ThinkFunction or ActionFunction elements.
 	/// </summary>
 	/// <param name="element">The XElement containing state data</param>
 	/// <param name="spriteResolver">Optional function to resolve sprite names to numbers</param>
 	public void AddStateFromXml(XElement element, Func<string, short> spriteResolver = null)
 	{
+		// Check for inline ThinkFunction and ActionFunction elements
+		XElement thinkFunctionElement = element.Element("ThinkFunction");
+		XElement actionFunctionElement = element.Element("ActionFunction");
+
+		// Register inline functions if they exist
+		if (thinkFunctionElement != null)
+		{
+			StateFunction thinkFunc = StateFunction.FromXElement(thinkFunctionElement);
+			AddFunction(thinkFunc);
+		}
+		if (actionFunctionElement != null)
+		{
+			StateFunction actionFunc = StateFunction.FromXElement(actionFunctionElement);
+			AddFunction(actionFunc);
+		}
+
 		State state = State.FromXElement(element, spriteResolver);
 		States[state.Name] = state;
 	}
@@ -226,6 +289,40 @@ public class StateCollection
 			{
 				// If no next state specified, loop to self (common pattern in original code)
 				state.Next = state;
+			}
+		}
+	}
+	/// <summary>
+	/// Validates that all Think and Action function references in states exist in the Functions collection.
+	/// Call this after loading all states and functions from XML (Phase 3).
+	/// </summary>
+	public void ValidateFunctionReferences()
+	{
+		// TODO: In final release, this should throw hard errors with helpful messages for modders.
+		// For now, just log warnings to allow testing with incomplete function sets.
+		// Final behavior should be:
+		//   throw new InvalidOperationException($"State '{state.Name}' references unknown Think function '{state.Think}'. Please add a <Function Name=\"{state.Think}\"> element to define this function.");
+
+		foreach (State state in States.Values)
+		{
+			// Validate Think function reference if present
+			if (!string.IsNullOrEmpty(state.Think))
+			{
+				if (!Functions.ContainsKey(state.Think))
+				{
+					// TODO: Restore hard error for final release (see method summary)
+					System.Diagnostics.Debug.WriteLine($"WARNING: State '{state.Name}' references unknown Think function '{state.Think}' - function will be skipped during execution");
+				}
+			}
+
+			// Validate Action function reference if present
+			if (!string.IsNullOrEmpty(state.Action))
+			{
+				if (!Functions.ContainsKey(state.Action))
+				{
+					// TODO: Restore hard error for final release (see method summary)
+					System.Diagnostics.Debug.WriteLine($"WARNING: State '{state.Name}' references unknown Action function '{state.Action}' - function will be skipped during execution");
+				}
 			}
 		}
 	}

@@ -52,9 +52,9 @@ void sky() {
 			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = currentLevel.PlayerStart.Value;
 			// Center of the player's starting grid square
 			cameraPosition = new Vector3(
-				Constants.CenterSquare(playerStart.X),
+				playerStart.X.ToMetersCentered(),
 				Constants.HalfWallHeight,
-				Constants.CenterSquare(playerStart.Y)
+				playerStart.Y.ToMetersCentered()
 			);
 			// Convert Direction enum to rotation (N=0, E=1, S=2, W=3)
 			// In Godot, Y rotation: 0=North(-Z), 90=East(+X), 180=South(+Z), 270=West(-X)
@@ -109,17 +109,23 @@ void sky() {
 		_doors = new Doors(
 			VRAssetManager.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
 			flippedDoorMaterials,  // Flipped materials (only for door textures)
-			currentLevel.Doors);
+			currentLevel.Doors,
+			Shared.SharedAssetManager.DigiSounds);  // Sound library for door sounds
 		AddChild(_doors);
 
 		// Create simulator controller and initialize with map data
 		_simulatorController = new SimulatorController();
 		AddChild(_simulatorController);
+		// TODO: Load StateCollection from game data
+		// For now, pass null - actors won't function but basic simulation will work
 		_simulatorController.Initialize(
+			Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
 			currentLevel,
 			_doors,
 			_bonuses,
-			_actors);
+			_actors,
+			null,  // TODO: Load from Shared.SharedAssetManager.CurrentGame or similar
+			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 	}
 
 	public override void _Input(InputEvent @event)

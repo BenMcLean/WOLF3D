@@ -13,6 +13,7 @@ public class AssetManager
 	public readonly VgaGraph VgaGraph;
 	public readonly VSwap VSwap;
 	public readonly GameMap[] Maps;
+	public readonly MapAnalyzer MapAnalyzer;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
 	public static AssetManager Load(string xmlPath, ILoggerFactory loggerFactory = null)
 	{
@@ -31,6 +32,7 @@ public class AssetManager
 		// Create logger for MapAnalyzer
 		ILogger<MapAnalyzer> mapAnalyzerLogger = loggerFactory?.CreateLogger<MapAnalyzer>()
 			?? NullLogger<MapAnalyzer>.Instance;
-		MapAnalyses = [.. new MapAnalyzer(xml, VSwap.SpritesByName, mapAnalyzerLogger).Analyze(Maps)];
+		MapAnalyzer = new MapAnalyzer(xml, VSwap.SpritesByName, mapAnalyzerLogger);
+		MapAnalyses = [.. MapAnalyzer.Analyze(Maps)];
 	}
 }

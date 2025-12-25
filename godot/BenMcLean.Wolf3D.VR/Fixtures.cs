@@ -51,12 +51,10 @@ public partial class Fixtures : Node3D
 		// Create MultiMesh for each unique sprite page
 		MeshInstances = fixturesByPage.Keys.ToDictionary(
 			page => page,
-			page => CreateMultiMeshForPage(page, fixturesByPage[page], spritePageOffset));
-
+			page => CreateMultiMeshForPage(page, fixturesByPage[page]));
 		// Track instance indices for rotation updates
 		foreach (KeyValuePair<ushort, MapAnalysis.StaticSpawn[]> kvp in fixturesByPage)
 			_instancesByPage[kvp.Key] = [.. Enumerable.Range(0, kvp.Value.Length)];
-
 		// Add all multimeshes as children of this node
 		foreach (MultiMeshInstance3D meshInstance in MeshInstances.Values)
 			AddChild(meshInstance);
@@ -67,12 +65,10 @@ public partial class Fixtures : Node3D
 	/// </summary>
 	private MultiMeshInstance3D CreateMultiMeshForPage(
 		ushort page,
-		MapAnalysis.StaticSpawn[] fixtures,
-		ushort spritePageOffset)
+		MapAnalysis.StaticSpawn[] fixtures)
 	{
 		// Get material directly by page number (will throw KeyNotFoundException if missing)
 		StandardMaterial3D material = _spriteMaterials[page];
-
 		// Create MultiMesh
 		MultiMesh multiMesh = new()
 		{
@@ -80,28 +76,23 @@ public partial class Fixtures : Node3D
 			Mesh = Constants.WallMesh,  // Reuse wall quad mesh for sprites
 			InstanceCount = fixtures.Length,
 		};
-
 		// Set initial transforms for all fixtures
 		// They will be rotated each frame in _Process()
 		for (int i = 0; i < fixtures.Length; i++)
 		{
 			MapAnalysis.StaticSpawn fixture = fixtures[i];
 			Vector3 position = new(
-				Constants.CenterSquare(fixture.X),
-				Constants.HalfWallHeight,
-				Constants.CenterSquare(fixture.Y)
-			);
-
+				x: fixture.X.ToMetersCentered(),
+				y: Constants.HalfWallHeight,
+				z: fixture.Y.ToMetersCentered());
 			// Initial rotation (will be updated each frame)
 			Transform3D transform = Transform3D.Identity;
 			transform.Origin = position;
 			multiMesh.SetInstanceTransform(i, transform);
 		}
-
 		// Precompute custom AABB that encompasses all billboards at all Y-axis rotations
 		// This prevents incorrect frustum culling and avoids expensive RecomputeAabb() each frame
 		multiMesh.CustomAabb = ComputeBillboardAabb(fixtures);
-
 		// Create MultiMeshInstance3D
 		MultiMeshInstance3D meshInstance = new()
 		{
@@ -109,10 +100,8 @@ public partial class Fixtures : Node3D
 			MaterialOverride = material,
 			Name = $"Fixtures_Page_{page}",
 		};
-
 		return meshInstance;
 	}
-
 	/// <summary>
 	/// Computes an AABB that fully encloses all billboard fixtures across all Y-axis rotations.
 	/// When rotating around Y-axis, a billboard extends ±HalfWallWidth in XZ, ±HalfWallHeight in Y.
@@ -126,8 +115,14 @@ public partial class Fixtures : Node3D
 			minZ = fixtures.Min(fixture => fixture.Y),
 			maxZ = fixtures.Max(fixture => fixture.Y);
 		return new Aabb(
-			position: new(Constants.FloatCoordinate(minX), 0f, Constants.FloatCoordinate(minZ)),
-			size: new(Constants.FloatCoordinate(maxX - minX + 1), Constants.WallHeight, Constants.FloatCoordinate(maxZ - minZ + 1)));
+			position: new(
+				x: minX.ToMeters(),
+				y: 0f,
+				z: minZ.ToMeters()),
+			size: new(
+				x: (maxX - minX + 1) * Constants.WallWidth,
+				y: Constants.WallHeight,
+				z: (maxZ - minZ + 1) * Constants.WallWidth));
 	}
 
 	/// <summary>

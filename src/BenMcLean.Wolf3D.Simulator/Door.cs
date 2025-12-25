@@ -30,6 +30,9 @@ public class Door
 	// Modders can define unlimited custom keys in WOLF3D.xml
 	public string Lock { get; }
 
+	// Door type identifier for looking up metadata (sounds, etc.) from MapAnalyzer.Doors
+	public ushort TileNumber { get; }
+
 	// Dynamic state (serialized for save games)
 
 	// WL_DEF.H:doorstruct:action
@@ -44,11 +47,12 @@ public class Door
 	// Used for auto-close timer when door is open
 	public short TicCount { get; set; }
 
-	public Door(ushort tileX, ushort tileY, bool facesEastWest)
+	public Door(ushort tileX, ushort tileY, bool facesEastWest, ushort tileNumber)
 	{
 		TileX = tileX;
 		TileY = tileY;
 		FacesEastWest = facesEastWest;
+		TileNumber = tileNumber;
 		Action = DoorAction.Closed;
 		Position = 0;
 		TicCount = 0;

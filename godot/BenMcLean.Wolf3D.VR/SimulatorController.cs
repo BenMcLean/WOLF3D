@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Simulator;
+using BenMcLean.Wolf3D.Assets;
 using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -16,28 +17,48 @@ public partial class SimulatorController : Node3D
 	private Doors doors;
 	private Bonuses bonuses;
 	private Actors actors;
+	private Func<(int X, int Y)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
 	/// Call this after adding the controller to the scene tree.
 	/// </summary>
+	/// <param name="mapAnalyzer">Map analyzer containing metadata (door sounds, etc.)</param>
 	/// <param name="mapAnalysis">Map analysis containing all spawn data</param>
 	/// <param name="doorsNode">The Doors node that will render the doors</param>
 	/// <param name="bonusesNode">The Bonuses node that will render bonus items</param>
 	/// <param name="actorsNode">The Actors node that will render actors</param>
+	/// <param name="stateCollection">State collection loaded from game XML (e.g., WL1.xml)</param>
+	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y)</param>
 	public void Initialize(
+		MapAnalyzer mapAnalyzer,
 		MapAnalysis mapAnalysis,
 		Doors doorsNode,
 		Bonuses bonusesNode,
-		Actors actorsNode)
+		Actors actorsNode,
+		StateCollection stateCollection,
+		Func<(int X, int Y)> getPlayerPosition)
 	{
-		simulator = new Simulator.Simulator();
+		// TODO: Load stateCollection from WL1.xml or game data file
+		// For now, create a placeholder if none provided
+		if (stateCollection == null)
+		{
+			GD.PrintErr("WARNING: No StateCollection provided - creating empty collection (actors will not function)");
+			stateCollection = new StateCollection();
+		}
+
+		// Create deterministic RNG and GameClock
+		var rng = new RNG(0); // TODO: Use seed from game settings or save file
+		var gameClock = new GameClock();
+
+		simulator = new Simulator.Simulator(stateCollection, rng, gameClock);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
 		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
+		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
 
 		// Load doors into simulator
-		simulator.LoadDoorsFromMapAnalysis(mapAnalysis.Doors);
+		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis.Doors);
 
 		// Load static bonuses into simulator for gameplay tracking
 		// VR layer displays them directly from MapAnalysis - no events needed
@@ -46,9 +67,30 @@ public partial class SimulatorController : Node3D
 		// Load actors into presentation layer directly
 		GD.Print($"SimulatorController: Loading {mapAnalysis.ActorSpawns.Count} actors from map analysis into production layer");
 		actors.LoadFromMapAnalysis(mapAnalysis.ActorSpawns);
-		// Load actors into simulator (placeholder for now)
-		simulator.LoadActorsFromMapAnalysis(mapAnalysis);
+
+		// Load actors into simulator with state machine data
+		// TODO: Load actorInitialStates and actorHitPoints from game data
+		var actorInitialStates = new Dictionary<string, string>
+		{
+			// TODO: These mappings should come from game data file
+			{ "guard", "s_grdstand" },
+			{ "ss", "s_ssstand" },
+			{ "dog", "s_dogstand" },
+			{ "officer", "s_ofcstand" },
+			{ "mutant", "s_mutstand" }
+		};
+		var actorHitPoints = new Dictionary<string, short>
+		{
+			// TODO: These values should come from game data file
+			{ "guard", 25 },
+			{ "ss", 100 },
+			{ "dog", 1 },
+			{ "officer", 50 },
+			{ "mutant", 55 }
+		};
+		simulator.LoadActorsFromMapAnalysis(mapAnalysis, actorInitialStates, actorHitPoints);
 		GD.Print("SimulatorController: Actors loaded");
+
 		// Subscribe presentation layers to simulator events
 		doors.Subscribe(simulator);
 		bonuses.Subscribe(simulator);
@@ -62,12 +104,15 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	public override void _Process(double delta)
 	{
-		if (simulator == null)
+		if (simulator == null || getPlayerPosition == null)
 			return;
 
-		// Update simulator with elapsed time
+		// Get player position from delegate (Wolf3D 16.16 fixed-point coordinates)
+		(int playerX, int playerY) = getPlayerPosition();
+
+		// Update simulator with elapsed time and player position
 		// Events are automatically dispatched to subscribers (Doors, Bonuses, etc.)
-		simulator.Update(delta);
+		simulator.Update(delta, playerX, playerY);
 	}
 
 	/// <summary>

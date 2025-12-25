@@ -1338,6 +1338,42 @@
 					<ObjectType Number="49" ObClass="bonus" Page="134" If="Ammo" LessThan="99" AddTo="Ammo" Add="4" Sound="GETAMMOSND" Flash="#FFFF00" Name="bo_clip2" />
 				</PlaceItem>
 			</Actor>
+			<!-- State Functions (Lua implementations of Think/Action) -->
+			<Function Name="T_Stand" Description="Guard standing idle, watching for player">
+-- WL_ACT2.C:T_Stand - calls SightPlayer
+-- WL_STATE.C:SightPlayer - check for player and transition to chase if spotted
+
+-- Check if reaction timer is counting down
+local reactionTimer = GetReactionTimer()
+if reactionTimer > 0 then
+	SetReactionTimer(reactionTimer - 1)
+	return
+end
+
+-- FL_AMBUSH (0x40) - check if in ambush mode
+if HasFlag(0x40) then
+	-- Ambush actors only activate with line of sight
+	if not CheckSight() then
+		return
+	end
+	ClearFlag(0x40)  -- Clear ambush flag
+end
+
+-- Check if player is visible
+if CheckSight() then
+	-- Player spotted! Set reaction time (guard = 1 + Random()/4)
+	SetReactionTimer(1 + Random() / 4)
+
+	-- Play alert sound
+	PlayDigiSound("HALTSND")
+
+	-- Transition to chase state
+	ChangeState("s_grdchase1")
+
+	-- Set attack mode flag (0x10)
+	SetFlag(0x10)
+end
+			</Function>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
 			<State Name="s_grdpath1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="5" Speed="512" Next="s_grdpath2" />

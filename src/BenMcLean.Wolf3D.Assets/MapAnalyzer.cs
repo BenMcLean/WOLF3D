@@ -282,7 +282,12 @@ public class MapAnalyzer
 
 		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
 		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
-		public readonly record struct DoorSpawn(ushort Shape, ushort X, ushort Y, bool FacesEastWest = false);
+		public readonly record struct DoorSpawn(
+			ushort Shape,
+			ushort X,
+			ushort Y,
+			bool FacesEastWest = false,
+			ushort TileNumber = 0);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap, ILogger logger = null)
@@ -469,14 +474,14 @@ public class MapAnalyzer
 						// Door frames on north and south sides (run E-W, face N/S)
 						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y - 1), false));
 						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y + 1), true));
-						doors.Add(new DoorSpawn(doorPage, x, y, true));  // FacesEastWest = true
+						doors.Add(new DoorSpawn(doorPage, x, y, true, tile));  // FacesEastWest = true, TileNumber = tile
 					}
 					else  // Horizontal door (runs E-W, faces N/S)
 					{
 						// Door frames on west and east sides (run N-S, face E/W)
 						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x - 1), y, true));
 						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x + 1), y, false));
-						doors.Add(new DoorSpawn(doorPage, x, y));  // FacesEastWest = false (default)
+						doors.Add(new DoorSpawn(doorPage, x, y, false, tile));  // FacesEastWest = false, TileNumber = tile
 					}
 				}
 				else if (mapAnalyzer.ElevatorTiles.Contains(tile))

@@ -83,9 +83,9 @@ public partial class Actors : Node3D
 		GD.Print($"Actors.ShowActor: Creating actor {actorIndex} at tile ({tileX},{tileY}) with shape {shape}, isRotated={isRotated}");
 		// Calculate world position at tile center
 		Vector3 position = new(
-			Constants.CenterSquare(tileX),
+			tileX.ToMetersCentered(),
 			Constants.HalfWallHeight,
-			Constants.CenterSquare(tileY)
+			tileY.ToMetersCentered()
 		);
 		GD.Print($"  World position: {position}");
 		// Create MeshInstance3D for this actor
@@ -141,9 +141,10 @@ public partial class Actors : Node3D
 		if (!_actorNodes.TryGetValue(actorIndex, out MeshInstance3D node))
 			return;
 		// Convert 16.16 fixed-point to Godot world coordinates
-		float godotX = Constants.VrCoordinate(fixedX),
-			godotZ = Constants.VrCoordinate(fixedY);  // Wolf3D Y -> Godot Z
-		Vector3 newPosition = new(godotX, Constants.HalfWallHeight, godotZ);
+		Vector3 newPosition = new(
+			x: fixedX.ToMeters(),
+			y: Constants.HalfWallHeight,
+			z: fixedY.ToMeters());
 		// Update node position
 		node.Position = newPosition;
 		// Update stored position in actor data for directional sprite calculation

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BenMcLean.Wolf3D.Assets;
 using MoonSharp.Interpreter;
 
 namespace BenMcLean.Wolf3D.Simulator.Scripting;
@@ -12,6 +13,7 @@ public class LuaScriptEngine
 {
 	private readonly Script luaScript;
 	private readonly Dictionary<string, DynValue> cachedFunctions = [];
+	private readonly Dictionary<string, DynValue> compiledStateFunctions = [];
 	/// <summary>
 	/// Current execution context (injected before each script call)
 	/// </summary>
@@ -167,6 +169,82 @@ public class LuaScriptEngine
 		catch (Exception ex)
 		{
 			throw new InvalidOperationException($"Error calling '{functionName}' in '{scriptId}': {ex.Message}", ex);
+		}
+	}
+	/// <summary>
+	/// Eagerly compiles all state functions from a StateCollection.
+	/// Call this once at simulator startup to pre-compile all Lua bytecode.
+	/// </summary>
+	/// <param name="stateCollection">The collection of states and functions to compile</param>
+	public void CompileAllStateFunctions(StateCollection stateCollection)
+	{
+		compiledStateFunctions.Clear();
+		foreach (var function in stateCollection.Functions.Values)
+		{
+			CompileStateFunction(function.Name, function.Code);
+		}
+	}
+	/// <summary>
+	/// Compiles a single state function to bytecode without executing it.
+	/// </summary>
+	/// <param name="functionName">Unique name for this function (e.g., "T_Stand", "A_DeathScream")</param>
+	/// <param name="luaCode">The Lua code to compile</param>
+	public void CompileStateFunction(string functionName, string luaCode)
+	{
+		if (string.IsNullOrWhiteSpace(luaCode))
+		{
+			// Empty functions are allowed - just store nil
+			compiledStateFunctions[functionName] = DynValue.Nil;
+			return;
+		}
+		try
+		{
+			// Load (compile) the code without executing it
+			DynValue compiled = luaScript.LoadString(luaCode, null, functionName);
+			compiledStateFunctions[functionName] = compiled;
+		}
+		catch (Exception ex)
+		{
+			throw new InvalidOperationException($"Failed to compile state function '{functionName}': {ex.Message}", ex);
+		}
+	}
+	/// <summary>
+	/// Executes a pre-compiled state function with the given context.
+	/// </summary>
+	/// <param name="functionName">Name of the function to execute</param>
+	/// <param name="context">Execution context providing game state access</param>
+	/// <returns>The result of the Lua script execution</returns>
+	public DynValue ExecuteStateFunction(string functionName, IScriptContext context)
+	{
+		// TODO: In final release, missing functions should throw hard errors with helpful messages for modders.
+		// For now, silently skip missing functions to allow testing with incomplete function sets.
+		// Final behavior should be:
+		//   throw new InvalidOperationException($"State function '{functionName}' not compiled. Did you call CompileAllStateFunctions?");
+
+		if (!compiledStateFunctions.TryGetValue(functionName, out DynValue compiled))
+		{
+			// TODO: Restore hard error for final release (see method summary)
+			return DynValue.Nil; // Silently skip missing function for testing
+		}
+		if (compiled.Type == DataType.Nil)
+		{
+			// Empty function - nothing to execute
+			return DynValue.Nil;
+		}
+		try
+		{
+			// Set context for this execution
+			IScriptContext previousContext = CurrentContext;
+			CurrentContext = context;
+			// Execute the compiled function
+			DynValue result = luaScript.Call(compiled);
+			// Restore previous context
+			CurrentContext = previousContext;
+			return result;
+		}
+		catch (Exception ex)
+		{
+			throw new InvalidOperationException($"Error executing state function '{functionName}': {ex.Message}", ex);
 		}
 	}
 }

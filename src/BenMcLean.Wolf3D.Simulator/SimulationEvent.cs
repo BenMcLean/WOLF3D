@@ -231,3 +231,50 @@ public struct ActorDespawnedEvent : ISimulationEvent
 	public required ushort TileX { get; init; }
 	public required ushort TileY { get; init; }
 }
+
+/// <summary>
+/// An actor should play a digi sound.
+/// Triggered by actor scripts (WL_STATE.C:PlaySoundLocActor).
+/// Presentation layer attaches sound to the actor - sound moves with actor during playback.
+/// </summary>
+public struct ActorPlaySoundEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+	// Index of the actor playing the sound
+	public required int ActorIndex { get; init; }
+	// Sound name (e.g., "HALTSND", "SCHUTZSND", "DEATHSND")
+	// String-based for modding flexibility and Lua compatibility
+	public required string SoundName { get; init; }
+	// Sound ID for presentation layer lookup if needed
+	// Can be -1 if using name-based lookup only
+	public int SoundId { get; init; }
+}
+
+/// <summary>
+/// A door should play a digi sound.
+/// Triggered by door events (WL_ACT1.C:DoorOpening, DoorClosing).
+/// Presentation layer attaches sound to the door - can sweep across doorframe as it opens/closes.
+/// </summary>
+public struct DoorPlaySoundEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+	// Index of the door playing the sound
+	public required ushort DoorIndex { get; init; }
+	// Sound name (e.g., "OPENDOORSND", "CLOSEDOORSND")
+	public required string SoundName { get; init; }
+	// Sound ID for presentation layer lookup if needed
+	public int SoundId { get; init; }
+}
+
+/// <summary>
+/// Play a global (non-positional) sound directly.
+/// For UI sounds, music, narrator, or other sounds that bypass spatial audio.
+/// </summary>
+public struct PlayGlobalSoundEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+	// Sound name (e.g., "BONUS1SND", "NOWAYSND" for UI feedback)
+	public required string SoundName { get; init; }
+	// Sound ID for presentation layer lookup if needed
+	public int SoundId { get; init; }
+}

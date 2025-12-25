@@ -12,83 +12,89 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// </summary>
 public class Simulator
 {
-	public const double TicRate = 70.0; // Hz
-	public const double TicDuration = 1.0 / TicRate; // ~14.2857ms
+	public const double TicRate = 70.0, // Hz
+		TicDuration = 1.0 / TicRate; // ~14.2857ms
 	public const int MaxTicsPerUpdate = 10; // Prevent spiral of death
-
 	private double accumulatedTime;
 	private readonly List<PlayerAction> pendingActions = [];
-
 	public IReadOnlyList<Door> Doors => doors;
 	private readonly List<Door> doors = [];
-
 	// WL_ACT1.C:statobjlist[MAXSTATS]
-	// Array of bonus/pickup objects (not fixtures - those are display-only)
+	// Array of bonus/pickup objects (not fixtures - those are not simulated)
 	public StatObj[] StatObjList { get; private set; } = new StatObj[StatObj.MAXSTATS];
-
 	// WL_ACT1.C:laststatobj - pointer to next free slot
 	private int lastStatObj;
-
+	// WL_DEF.H:objlist[MAXACTORS] - array of active actors
+	// Using List instead of fixed array for modern flexibility
+	public IReadOnlyList<Actor> Actors => actors;
+	private readonly List<Actor> actors = [];
+	// State machine data for actors
+	private readonly StateCollection stateCollection;
+	// Lua script engine for state functions
+	private readonly Scripting.LuaScriptEngine luaScriptEngine;
+	// RNG and GameClock for deterministic simulation
+	private readonly RNG rng;
+	private readonly GameClock gameClock;
+	// Map analyzer for accessing door metadata (sounds, etc.)
+	private MapAnalyzer mapAnalyzer;
+	// Map analysis for line-of-sight calculations and navigation
+	private MapAnalysis mapAnalysis;
 	// WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
 	// Current simulation time in tics
 	public long CurrentTic { get; private set; }
-
+	// Player position (updated each Update call by presentation layer)
+	// WL_DEF.H:player->x, player->y (16.16 fixed-point)
+	public int PlayerX { get; private set; }
+	public int PlayerY { get; private set; }
+	// Derived player tile coordinates
+	public ushort PlayerTileX => (ushort)(PlayerX >> 16);
+	public ushort PlayerTileY => (ushort)(PlayerY >> 16);
 	#region C# Events for Observer Pattern
-
 	/// <summary>
 	/// Fired when a door starts opening (position was 0).
 	/// WL_ACT1.C:DoorOpening
 	/// </summary>
 	public event Action<DoorOpeningEvent> DoorOpening;
-
 	/// <summary>
 	/// Fired when a door finishes opening (position reached 0xFFFF).
 	/// WL_ACT1.C:DoorOpening
 	/// </summary>
 	public event Action<DoorOpenedEvent> DoorOpened;
-
 	/// <summary>
 	/// Fired every tic while a door is moving (opening or closing).
 	/// WL_ACT1.C:DoorOpening and DoorClosing
 	/// </summary>
 	public event Action<DoorPositionChangedEvent> DoorPositionChanged;
-
 	/// <summary>
 	/// Fired when a door starts closing.
 	/// WL_ACT1.C:CloseDoor
 	/// </summary>
 	public event Action<DoorClosingEvent> DoorClosing;
-
 	/// <summary>
 	/// Fired when a door finishes closing (position reached 0).
 	/// WL_ACT1.C:DoorClosing
 	/// </summary>
 	public event Action<DoorClosedEvent> DoorClosed;
-
 	/// <summary>
 	/// Fired when player tries to open a locked door without the required key.
 	/// WL_ACT1.C:OperateDoor
 	/// </summary>
 	public event Action<DoorLockedEvent> DoorLocked;
-
 	/// <summary>
 	/// Fired when a door is blocked from closing by an actor or player.
 	/// WL_ACT1.C:DoorClosing
 	/// </summary>
 	public event Action<DoorBlockedEvent> DoorBlocked;
-
 	/// <summary>
 	/// Fired when a bonus object spawns (static placement or enemy drop).
 	/// WL_GAME.C:ScanInfoPlane or WL_ACT1.C:PlaceItemType
 	/// </summary>
 	public event Action<BonusSpawnedEvent> BonusSpawned;
-
 	/// <summary>
 	/// Fired when a bonus object is picked up by the player.
 	/// WL_AGENT.C:GetBonus
 	/// </summary>
 	public event Action<BonusPickedUpEvent> BonusPickedUp;
-
 	/// <summary>
 	/// Fired when an actor spawns in the world.
 	/// WL_GAME.C:ScanInfoPlane
@@ -109,24 +115,59 @@ public class Simulator
 	/// WL_ACT1.C:KillActor
 	/// </summary>
 	public event Action<ActorDespawnedEvent> ActorDespawned;
+	/// <summary>
+	/// Fired when an actor plays a sound.
+	/// WL_STATE.C:PlaySoundLocActor
+	/// Presentation layer attaches sound to actor - sound moves with actor.
+	/// </summary>
+	public event Action<ActorPlaySoundEvent> ActorPlaySound;
+	/// <summary>
+	/// Fired when a door plays a sound.
+	/// WL_ACT1.C:DoorOpening, DoorClosing
+	/// Presentation layer can sweep sound across doorframe.
+	/// </summary>
+	public event Action<DoorPlaySoundEvent> DoorPlaySound;
+	/// <summary>
+	/// Fired when a global (non-positional) sound should play.
+	/// For UI sounds, music, narrator - bypasses spatial audio.
+	/// </summary>
+	public event Action<PlayGlobalSoundEvent> PlayGlobalSound;
 	#endregion
-
+	/// <summary>
+	/// Creates a new Simulator instance.
+	/// </summary>
+	/// <param name="stateCollection">State machine data for actors</param>
+	/// <param name="rng">Deterministic random number generator</param>
+	/// <param name="gameClock">Deterministic game clock</param>
+	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock)
+	{
+		this.stateCollection = stateCollection ?? throw new ArgumentNullException(nameof(stateCollection));
+		this.rng = rng ?? throw new ArgumentNullException(nameof(rng));
+		this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
+		// Initialize Lua script engine and compile all state functions
+		luaScriptEngine = new Scripting.LuaScriptEngine();
+		luaScriptEngine.CompileAllStateFunctions(stateCollection);
+	}
 	/// <summary>
 	/// Update the simulation with elapsed real time.
 	/// Events are dispatched to subscribers via C# events as they occur.
 	/// Based on WL_PLAY.C:PlayLoop and WL_DRAW.C:CalcTics.
 	/// </summary>
-	public void Update(double deltaTime)
+	/// <param name="deltaTime">Elapsed real time in seconds</param>
+	/// <param name="playerX">Player X position in 16.16 fixed-point (from HMD tracking)</param>
+	/// <param name="playerY">Player Y position in 16.16 fixed-point (from HMD tracking)</param>
+	public void Update(double deltaTime, int playerX, int playerY)
 	{
-		accumulatedTime += deltaTime;
+		// Update player position from presentation layer
+		PlayerX = playerX;
+		PlayerY = playerY;
 
+		accumulatedTime += deltaTime;
 		// WL_DRAW.C:CalcTics - calculate tics since last refresh
 		int ticsToProcess = (int)(accumulatedTime / TicDuration);
 		if (ticsToProcess > MaxTicsPerUpdate)
 			ticsToProcess = MaxTicsPerUpdate;
-
 		accumulatedTime -= ticsToProcess * TicDuration;
-
 		// WL_PLAY.C:PlayLoop - process each tic
 		for (int i = 0; i < ticsToProcess; i++)
 		{
@@ -139,35 +180,25 @@ public class Simulator
 	/// Queue a player action to be processed on the next tic.
 	/// Ensures determinism by quantizing inputs to tic boundaries.
 	/// </summary>
-	public void QueueAction(PlayerAction action)
-	{
-		pendingActions.Add(action);
-	}
-
+	public void QueueAction(PlayerAction action)=>pendingActions.Add(action);
 	private void ProcessTic()
 	{
 		// Process queued player actions
 		foreach (PlayerAction action in pendingActions)
-		{
 			ProcessAction(action);
-		}
 		pendingActions.Clear();
-
 		// WL_ACT1.C:MoveDoors - update all doors
 		for (int i = 0; i < doors.Count; i++)
-		{
 			UpdateDoor(i);
-		}
+		// WL_ACT2.C:DoActor - update all actors
+		for (int i = 0; i < actors.Count; i++)
+			UpdateActor(i);
 	}
-
 	private void ProcessAction(PlayerAction action)
 	{
 		if (action is OperateDoorAction operateDoor)
-		{
 			OperateDoor(operateDoor.DoorIndex);
-		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:OperateDoor (line 644)
 	/// The player wants to change the door's direction
@@ -176,9 +207,7 @@ public class Simulator
 	{
 		if (doorIndex >= doors.Count)
 			return;
-
 		Door door = doors[doorIndex];
-
 		// WL_ACT1.C:OperateDoor lines 658-668 - toggle door state
 		switch (door.Action)
 		{
@@ -186,44 +215,34 @@ public class Simulator
 			case DoorAction.Closing:
 				OpenDoor(doorIndex);
 				break;
-
 			case DoorAction.Open:
 			case DoorAction.Opening:
 				CloseDoor(doorIndex);
 				break;
 		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:OpenDoor (line 546)
 	/// </summary>
 	private void OpenDoor(ushort doorIndex)
 	{
 		Door door = doors[doorIndex];
-
 		if (door.Action == DoorAction.Open)
-		{
 			// Door already open, just reset the timer (WL_ACT1.C:549)
 			door.TicCount = 0;
-		}
 		else
-		{
 			// Start opening (WL_ACT1.C:551)
 			door.Action = DoorAction.Opening;
-		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:CloseDoor (line 563)
 	/// </summary>
 	private void CloseDoor(ushort doorIndex)
 	{
 		Door door = doors[doorIndex];
-
 		// TODO: Check for blocking actors/player (WL_ACT1.C:574-611)
 		// For now, just start closing
 		door.Action = DoorAction.Closing;
-
 		DoorClosing?.Invoke(new DoorClosingEvent
 		{
 			Timestamp = CurrentTic * TicDuration,
@@ -231,8 +250,13 @@ public class Simulator
 			TileX = door.TileX,
 			TileY = door.TileY
 		});
+		// Emit door closing sound
+		if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
+			&& !string.IsNullOrEmpty(doorInfo.CloseSound))
+		{
+			EmitDoorPlaySound(doorIndex, doorInfo.CloseSound);
+		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:MoveDoors (line 832)
 	/// Called from PlayLoop
@@ -240,28 +264,23 @@ public class Simulator
 	private void UpdateDoor(int doorIndex)
 	{
 		Door door = doors[doorIndex];
-
 		// WL_ACT1.C:MoveDoors lines 842-856
 		switch (door.Action)
 		{
 			case DoorAction.Open:
 				UpdateDoorOpen(doorIndex);
 				break;
-
 			case DoorAction.Opening:
 				UpdateDoorOpening(doorIndex);
 				break;
-
 			case DoorAction.Closing:
 				UpdateDoorClosing(doorIndex);
 				break;
-
 			case DoorAction.Closed:
 				// Nothing to do
 				break;
 		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:DoorOpen (line 684)
 	/// Close the door after three seconds
@@ -269,17 +288,12 @@ public class Simulator
 	private void UpdateDoorOpen(int doorIndex)
 	{
 		Door door = doors[doorIndex];
-
 		// WL_ACT1.C:686 - accumulate tics
 		door.TicCount += 1; // Always 1 tic per call in our simplified version
-
 		// WL_ACT1.C:686 - check if time to close
 		if (door.TicCount >= Door.OpenTics)
-		{
 			CloseDoor((ushort)doorIndex);
-		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:DoorOpening (line 700)
 	/// </summary>
@@ -287,7 +301,6 @@ public class Simulator
 	{
 		Door door = doors[doorIndex];
 		int newPosition = door.Position;
-
 		// WL_ACT1.C:707 - door just starting to open
 		if (newPosition == 0)
 		{
@@ -299,14 +312,17 @@ public class Simulator
 				TileX = door.TileX,
 				TileY = door.TileY
 			});
-
+			// Emit door opening sound
+			if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
+				&& !string.IsNullOrEmpty(doorInfo.OpenSound))
+			{
+				EmitDoorPlaySound((ushort)doorIndex, doorInfo.OpenSound);
+			}
 			// TODO: WL_ACT1.C:710-733 - connect areas for sound/sight
 		}
-
 		// WL_ACT1.C:739 - slide the door by an adaptive amount
 		// position += tics<<10 (we use 1 tic per update)
 		newPosition += 1 << 10;
-
 		// WL_ACT1.C:740 - check if fully open
 		if (newPosition >= 0xFFFF)
 		{
@@ -315,7 +331,6 @@ public class Simulator
 			door.Position = (ushort)newPosition;
 			door.TicCount = 0;
 			door.Action = DoorAction.Open;
-
 			DoorOpened?.Invoke(new DoorOpenedEvent
 			{
 				Timestamp = CurrentTic * TicDuration,
@@ -323,14 +338,10 @@ public class Simulator
 				TileX = door.TileX,
 				TileY = door.TileY
 			});
-
 			// TODO: WL_ACT1.C:748 - clear actorat for door tile
 		}
 		else
-		{
 			door.Position = (ushort)newPosition;
-		}
-
 		// Emit position changed event every tic
 		DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 		{
@@ -342,7 +353,6 @@ public class Simulator
 			Action = door.Action
 		});
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:DoorClosing (line 763)
 	/// </summary>
@@ -350,14 +360,11 @@ public class Simulator
 	{
 		Door door = doors[doorIndex];
 		int newPosition = door.Position;
-
 		// TODO: WL_ACT1.C:773-778 - check if something is blocking the door
 		// If blocked, call OpenDoor(doorIndex) and return
-
 		// WL_ACT1.C:785 - slide the door by an adaptive amount
 		// position -= tics<<10 (we use 1 tic per update)
 		newPosition -= 1 << 10;
-
 		// WL_ACT1.C:786 - check if fully closed
 		if (newPosition <= 0)
 		{
@@ -365,7 +372,6 @@ public class Simulator
 			newPosition = 0;
 			door.Position = (ushort)newPosition;
 			door.Action = DoorAction.Closed;
-
 			DoorClosed?.Invoke(new DoorClosedEvent
 			{
 				Timestamp = CurrentTic * TicDuration,
@@ -373,14 +379,10 @@ public class Simulator
 				TileX = door.TileX,
 				TileY = door.TileY
 			});
-
 			// TODO: WL_ACT1.C:795-813 - disconnect areas
 		}
 		else
-		{
 			door.Position = (ushort)newPosition;
-		}
-
 		// Emit position changed event every tic
 		DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 		{
@@ -392,19 +394,107 @@ public class Simulator
 			Action = door.Action
 		});
 	}
-
+	#region Actor Update Logic
+	/// <summary>
+	/// WL_ACT2.C:DoActor - Called every tic for each actor
+	/// Executes Think function and handles state transitions
+	/// </summary>
+	private void UpdateActor(int actorIndex)
+	{
+		Actor actor = actors[actorIndex];
+		// Execute Think function if present
+		if (!string.IsNullOrEmpty(actor.CurrentState.Think))
+		{
+			var context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+			try
+			{
+				luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
+			}
+			catch (Exception ex)
+			{
+				// TODO: Decide on error handling strategy
+				// For now, silently continue (original game would crash)
+				System.Diagnostics.Debug.WriteLine($"Error executing Think function '{actor.CurrentState.Think}' for actor {actorIndex}: {ex.Message}");
+			}
+		}
+		// Decrement tic counter
+		if (actor.TicCount > 0)
+		{
+			actor.TicCount--;
+		}
+		// Check for state transition
+		if (actor.TicCount <= 0 && actor.CurrentState.Next != null)
+		{
+			TransitionActorState(actorIndex, actor.CurrentState.Next);
+		}
+	}
+	/// <summary>
+	/// Transitions an actor to a new state by state name.
+	/// Public wrapper for Lua scripts to call.
+	/// </summary>
+	public void TransitionActorStateByName(int actorIndex, string stateName)
+	{
+		if (stateCollection.States.TryGetValue(stateName, out State nextState))
+		{
+			TransitionActorState(actorIndex, nextState);
+		}
+	}
+	/// <summary>
+	/// Transitions an actor to a new state.
+	/// Updates sprite, tics, executes Action function, and fires events.
+	/// </summary>
+	private void TransitionActorState(int actorIndex, State nextState)
+	{
+		Actor actor = actors[actorIndex];
+		short oldShape = actor.ShapeNum;
+		// Update state
+		actor.CurrentState = nextState;
+		actor.TicCount = nextState.Tics;
+		actor.Speed = nextState.Speed;
+		// Update sprite (may be modified by rotation logic later)
+		actor.ShapeNum = nextState.Shape;
+		// Execute Action function if present
+		if (!string.IsNullOrEmpty(nextState.Action))
+		{
+			var context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+			try
+			{
+				luaScriptEngine.ExecuteStateFunction(nextState.Action, context);
+			}
+			catch (Exception ex)
+			{
+				// TODO: Decide on error handling strategy
+				System.Diagnostics.Debug.WriteLine($"Error executing Action function '{nextState.Action}' for actor {actorIndex}: {ex.Message}");
+			}
+		}
+		// Fire sprite changed event if sprite actually changed
+		if (oldShape != actor.ShapeNum)
+		{
+			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
+			{
+				Timestamp = CurrentTic * TicDuration,
+				ActorIndex = actorIndex,
+				Shape = (ushort)actor.ShapeNum,
+				IsRotated = nextState.Rotate
+			});
+		}
+	}
+	#endregion
 	/// <summary>
 	/// Initialize doors from MapAnalyzer data.
-	/// Looks up door properties directly from MapAnalyzer.Doors dictionary.
+	/// Stores MapAnalyzer reference for looking up door metadata (sounds, etc.).
 	/// </summary>
 	public void LoadDoorsFromMapAnalysis(
+		MapAnalyzer mapAnalyzer,
 		IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
+		// Store MapAnalyzer for looking up door sounds when emitting events
+		this.mapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
+
 		doors.Clear();
 		foreach (MapAnalysis.DoorSpawn spawn in doorSpawns)
-			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest));
+			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest, spawn.TileNumber));
 	}
-
 	/// <summary>
 	/// Initialize static bonus objects from MapAnalyzer data.
 	/// Based on WL_GAME.C:ScanInfoPlane and WL_ACT1.C:InitStaticList
@@ -415,24 +505,18 @@ public class Simulator
 	{
 		// WL_ACT1.C:InitStaticList - reset to beginning
 		lastStatObj = 0;
-
 		// Initialize all slots as free (ShapeNum = -1)
 		for (int i = 0; i < StatObj.MAXSTATS; i++)
 			StatObjList[i] = new StatObj();
-
 		// WL_GAME.C:ScanInfoPlane - spawn static bonus objects from map
 		IEnumerable<MapAnalysis.StaticSpawn> staticBonuses = mapAnalysis.StaticSpawns
 			.Where(s => s.StatType == StatType.bonus);
-
 		foreach (MapAnalysis.StaticSpawn spawn in staticBonuses)
 		{
 			if (lastStatObj >= StatObj.MAXSTATS)
-			{
 				// Too many static objects - this would be a Quit() in original
 				// For now, just stop spawning (should never happen with proper maps)
 				break;
-			}
-
 			// Create the bonus object in StatObjList for gameplay tracking
 			// WL_DEF.H:statstruct - note: shapenum is signed, can be -1
 			StatObjList[lastStatObj] = new StatObj(
@@ -441,42 +525,151 @@ public class Simulator
 				(short)spawn.Shape,  // Cast ushort to short (safe, shape numbers are small)
 				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
 				(byte)spawn.Type);  // itemnumber (ObClass enum -> byte)
-
 			lastStatObj++;
 		}
 	}
+	/// <summary>
+	/// Initialize actors from MapAnalyzer data - creates Actor instances and fires ActorSpawnedEvent for each.
+	/// Based on WL_GAME.C:ScanInfoPlane
+	/// </summary>
+	/// <param name="mapAnalysis">Map analysis containing actor spawn data</param>
+	/// <param name="actorInitialStates">Dictionary mapping actor types to their initial state names</param>
+	/// <param name="actorHitPoints">Dictionary mapping actor types to their initial hit points</param>
+	public void LoadActorsFromMapAnalysis(
+		MapAnalysis mapAnalysis,
+		Dictionary<string, string> actorInitialStates,
+		Dictionary<string, short> actorHitPoints)
+	{
+		// Store map analysis for line-of-sight calculations
+		this.mapAnalysis = mapAnalysis;
+
+		actors.Clear();
+		int actorIndex = 0;
+		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
+		{
+			// Look up initial state for this actor type
+			if (!actorInitialStates.TryGetValue(spawn.ActorType, out string initialStateName))
+			{
+				System.Diagnostics.Debug.WriteLine($"Warning: No initial state defined for actor type '{spawn.ActorType}', skipping");
+				continue;
+			}
+			if (!stateCollection.States.TryGetValue(initialStateName, out State initialState))
+			{
+				System.Diagnostics.Debug.WriteLine($"Warning: Initial state '{initialStateName}' not found for actor type '{spawn.ActorType}', skipping");
+				continue;
+			}
+			// Look up initial hit points for this actor type
+			if (!actorHitPoints.TryGetValue(spawn.ActorType, out short hitPoints))
+			{
+				System.Diagnostics.Debug.WriteLine($"Warning: No hit points defined for actor type '{spawn.ActorType}', using default 1");
+				hitPoints = 1;
+			}
+			// Convert 4-way cardinal direction from map data to 8-way simulator direction
+			Direction facing = ConvertCardinalToSimulatorDirection(spawn.Facing);
+			// Create actor instance
+			Actor actor = new Actor(
+				spawn.ActorType,
+				initialState,
+				spawn.X,
+				spawn.Y,
+				facing,
+				hitPoints);
+			// Set additional flags from spawn data
+			if (spawn.Ambush)
+				actor.Flags |= ActorFlags.Ambush;
+			if (spawn.Patrol)
+				actor.Flags |= ActorFlags.Patrolling;
+			actors.Add(actor);
+			// Execute initial Action function if present
+			if (!string.IsNullOrEmpty(initialState.Action))
+			{
+				var context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				try
+				{
+					luaScriptEngine.ExecuteStateFunction(initialState.Action, context);
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine($"Error executing initial Action function '{initialState.Action}' for actor {actorIndex}: {ex.Message}");
+				}
+			}
+			// Fire spawn event - presentation layer will create visual representation
+			ActorSpawned?.Invoke(new ActorSpawnedEvent
+			{
+				Timestamp = CurrentTic * TicDuration,
+				ActorIndex = actorIndex,
+				TileX = spawn.X,
+				TileY = spawn.Y,
+				Facing = facing,
+				Shape = (ushort)actor.ShapeNum,
+				IsRotated = initialState.Rotate
+			});
+			actorIndex++;
+		}
+	}
+	/// <summary>
+	/// Converts 4-way cardinal direction from MapAnalyzer to 8-way simulator direction.
+	/// Maps N/E/S/W to closest 8-way direction.
+	/// </summary>
+	private Direction ConvertCardinalToSimulatorDirection(Assets.Direction cardinalDir)
+	{
+		return cardinalDir switch
+		{
+			Assets.Direction.N => Direction.N,
+			Assets.Direction.E => Direction.E,
+			Assets.Direction.S => Direction.S,
+			Assets.Direction.W => Direction.W,
+			_ => Direction.E  // Default to East
+		};
+	}
 
 	/// <summary>
-	/// Initialize actors from MapAnalyzer data - fires ActorSpawnedEvent for each.
-	/// Based on WL_GAME.C:ScanInfoPlane
-	/// NOTE: This is a DUMMY implementation - just fires events, no actual Actor objects yet.
-	/// Full actor simulation logic (state machine, AI, movement) will be added later.
+	/// Emits an actor sound event - sound will be attached to the actor.
+	/// Called from ActorScriptContext.
+	/// WL_STATE.C:PlaySoundLocActor
 	/// </summary>
-	public void LoadActorsFromMapAnalysis(MapAnalysis mapAnalysis)
+	/// <param name="actorIndex">Index of the actor playing the sound</param>
+	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
+	public void EmitActorPlaySound(int actorIndex, string soundName)
 	{
-		// int actorIndex = 0;
-		// foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
-		// {
-		// 	// Use initial sprite page from spawn data (from XML ObjectType Page attribute)
-		// 	// Later: Look up sprite from initial actor state when state machine is implemented
-		// 	ushort initialShape = spawn.Page;
-		// 	// TODO: Determine IsRotated from actor state (walking/standing = true, shooting/dying = false)
-		// 	// For now, assume standing sprites are rotated (8-directional)
-		// 	bool isRotated = true;  // PLACEHOLDER - will be determined by initial state
-		// 	// Convert 4-way cardinal direction from map data to 8-way simulator direction
-		// 	Direction facing = ConvertCardinalToSimulatorDirection(spawn.Facing);
-		// 	// Fire spawn event - presentation layer will create visual representation
-		// 	ActorSpawned?.Invoke(new ActorSpawnedEvent
-		// 	{
-		// 		Timestamp = CurrentTic * TicDuration,
-		// 		ActorIndex = actorIndex,
-		// 		TileX = spawn.X,
-		// 		TileY = spawn.Y,
-		// 		Facing = facing,
-		// 		Shape = initialShape,
-		// 		IsRotated = isRotated
-		// 	});
-		// 	actorIndex++;
-		// }
+		ActorPlaySound?.Invoke(new ActorPlaySoundEvent
+		{
+			Timestamp = CurrentTic * TicDuration,
+			ActorIndex = actorIndex,
+			SoundName = soundName,
+			SoundId = -1 // Name-based lookup
+		});
+	}
+
+	/// <summary>
+	/// Emits a door sound event - sound will be attached to the door.
+	/// WL_ACT1.C:DoorOpening, DoorClosing
+	/// </summary>
+	/// <param name="doorIndex">Index of the door playing the sound</param>
+	/// <param name="soundName">Sound name (e.g., "OPENDOORSND")</param>
+	public void EmitDoorPlaySound(ushort doorIndex, string soundName)
+	{
+		DoorPlaySound?.Invoke(new DoorPlaySoundEvent
+		{
+			Timestamp = CurrentTic * TicDuration,
+			DoorIndex = doorIndex,
+			SoundName = soundName,
+			SoundId = -1
+		});
+	}
+
+	/// <summary>
+	/// Emits a global (non-positional) sound event.
+	/// For UI sounds, music, narrator, etc.
+	/// </summary>
+	/// <param name="soundName">Sound name (e.g., "BONUS1SND")</param>
+	public void EmitGlobalSound(string soundName)
+	{
+		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
+		{
+			Timestamp = CurrentTic * TicDuration,
+			SoundName = soundName,
+			SoundId = -1
+		});
 	}
 }

@@ -151,14 +151,11 @@ public partial class Bonuses : Node3D
 			MultiMeshIndex = multiMeshIndex,
 			LocalIndex = localIndex
 		};
-
 		// Set transform to show it (position only, rotation updated in _Process)
 		Vector3 position = new(
-			Constants.CenterSquare(tileX),
-			Constants.HalfWallHeight,
-			Constants.CenterSquare(tileY)
-		);
-
+			x: tileX.ToMetersCentered(),
+			y: Constants.HalfWallHeight,
+			z: tileY.ToMetersCentered());
 		Transform3D transform = Transform3D.Identity;
 		transform.Origin = position;
 		instances[multiMeshIndex].Multimesh.SetInstanceTransform(localIndex, transform);

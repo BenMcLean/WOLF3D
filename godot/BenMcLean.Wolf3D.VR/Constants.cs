@@ -12,6 +12,9 @@ public static class Constants
 		PixelWidth = 0.0381f,
 		WallWidth = 2.4384f,
 		HalfWallWidth = 1.2192f,
+		// Wolf3D uses 16.16 fixed-point coordinates where 65536 units = 1 tile.
+		// This constant converts directly from fixed-point to Godot meters.
+		FixedPointToMeters = WallWidth / 65536f,
 		// Wolfenstein 3-D ran in SVGA screen mode 13h, which has a 320x200 resolution in a 4:3 aspect ratio.
 		// This means that the pixels are not square! They have a 1.2:1 aspect ratio.
 		PixelHeight = 0.04572f,
@@ -44,33 +47,6 @@ public static class Constants
 		HeadXZ = PixelWidth * 3f;
 	public static readonly float HeadDiagonal = Mathf.Sqrt(Mathf.Pow(HeadXZ, 2) * 2f), // Pythagorean theorem
 		ShotRange = Mathf.Sqrt(Mathf.Pow(64 * WallWidth, 2) * 2f + Mathf.Pow(WallHeight, 2));
-	/// <param name="x">A distance in meters</param>
-	/// <returns>The corresponding map coordinate</returns>
-	public static int IntCoordinate(float x) => Mathf.FloorToInt(x / WallWidth);
-	/// <param name="x">A map coordinate</param>
-	/// <returns>Center of the map square in meters</returns>
-	public static float CenterSquare(int x) => FloatCoordinate(x) + HalfWallWidth;
-	public static float CenterSquare(uint x) => CenterSquare((int)x);
-	public static float CenterSquare(ushort x) => CenterSquare((int)x);
-	public static float CenterSquare(short x) => CenterSquare((int)x);
-	/// <param name="x">A map coordinate</param>
-	/// <returns>North or east corner of map square in meters</returns>
-	public static float FloatCoordinate(int x) => x * WallWidth;
-	public static float FloatCoordinate(uint x) => FloatCoordinate((int)x);
-	public static float FloatCoordinate(ushort x) => FloatCoordinate((int)x);
-	public static float FloatCoordinate(short x) => FloatCoordinate((int)x);
-	/// <summary>
-	/// Converts a tile coordinate (with fractional part) to VR space position (meters).
-	/// Use this for coordinates that already include sub-tile precision (e.g., door positions, actor positions).
-	/// </summary>
-	/// <param name="tileCoordinate">Position in tile units (e.g., 32.68 = tile 32, offset 0.68)</param>
-	/// <returns>Position in VR space (meters)</returns>
-	public static float VrCoordinate(float tileCoordinate) => tileCoordinate * WallWidth;
-	public static readonly Vector3 Scale = new(1f, 1.2f, 1f);
-	//public static readonly Transform WallTransform = new Transform(Basis.Identity, new Vector3(HalfWallWidth, HalfWallHeight, 0));
-	//public static readonly Transform WallTransformFlipped = new Transform(Basis.Identity.Rotated(Godot.Vector3.Up, Mathf.Pi), WallTransform.origin);
-	public static float TicsToSeconds(int tics) => tics / TicsPerSecond;
-	public static short SecondsToTics(float seconds) => (short)(seconds * TicsPerSecond);
 	public static readonly QuadMesh WallMesh = new()
 	{
 		Size = new Vector2(WallWidth, WallHeight),
@@ -79,14 +55,7 @@ public static class Constants
 	{
 		Size = new Vector3(WallWidth, WallHeight, WallWidth),
 	};
+	public static readonly Vector3 Scale = new(1f, 1.2f, 1f);
 	public static readonly Vector3 Rotate90 = new(0, Godot.Mathf.Pi / 2f, 0);
-	public static Vector2 Vector2(this Vector3 vector3) => new(vector3.X, vector3.Z);
-	public static Vector3 Vector3(this Vector2 vector2) => new(vector2.X, 0f, vector2.Y);
-	public static Vector3 Axis(Vector3.Axis axis) => axis switch
-	{
-		Godot.Vector3.Axis.X => Rotate90,
-		Godot.Vector3.Axis.Y => Godot.Vector3.Up,
-		_ => Godot.Vector3.Zero,
-	};
 	public static readonly Godot.Color White = Godot.Color.Color8(255, 255, 255, 255);
 }
