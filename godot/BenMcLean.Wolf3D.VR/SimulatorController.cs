@@ -48,8 +48,8 @@ public partial class SimulatorController : Node3D
 		}
 
 		// Create deterministic RNG and GameClock
-		var rng = new RNG(0); // TODO: Use seed from game settings or save file
-		var gameClock = new GameClock();
+		RNG rng = new(0); // TODO: Use seed from game settings or save file
+		GameClock gameClock = new();
 
 		simulator = new Simulator.Simulator(stateCollection, rng, gameClock);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
@@ -57,20 +57,23 @@ public partial class SimulatorController : Node3D
 		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
 
-		// Load doors into simulator
+		// CRITICAL: Subscribe presentation layers to simulator events BEFORE loading data
+		// This ensures they receive spawn events during initialization
+		doors.Subscribe(simulator);
+		bonuses.Subscribe(simulator);
+		actors.Subscribe(simulator);
+
+		// Load doors into simulator (no spawn events - doors are fixed count)
 		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis.Doors);
 
-		// Load static bonuses into simulator for gameplay tracking
-		// VR layer displays them directly from MapAnalysis - no events needed
+		// Load bonuses into simulator - emits BonusSpawnedEvent for each bonus
+		// VR layer receives these events and displays bonuses
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
 
-		// Load actors into presentation layer directly
-		GD.Print($"SimulatorController: Loading {mapAnalysis.ActorSpawns.Count} actors from map analysis into production layer");
-		actors.LoadFromMapAnalysis(mapAnalysis.ActorSpawns);
-
-		// Load actors into simulator with state machine data
+		// Load actors into simulator - emits ActorSpawnedEvent for each actor
+		// VR layer receives these events and creates actor visuals
 		// TODO: Load actorInitialStates and actorHitPoints from game data
-		var actorInitialStates = new Dictionary<string, string>
+		Dictionary<string, string> actorInitialStates = new Dictionary<string, string>
 		{
 			// TODO: These mappings should come from game data file
 			{ "guard", "s_grdstand" },
@@ -79,7 +82,7 @@ public partial class SimulatorController : Node3D
 			{ "officer", "s_ofcstand" },
 			{ "mutant", "s_mutstand" }
 		};
-		var actorHitPoints = new Dictionary<string, short>
+		Dictionary<string, short> actorHitPoints = new Dictionary<string, short>
 		{
 			// TODO: These values should come from game data file
 			{ "guard", 25 },
@@ -89,13 +92,6 @@ public partial class SimulatorController : Node3D
 			{ "mutant", 55 }
 		};
 		simulator.LoadActorsFromMapAnalysis(mapAnalysis, actorInitialStates, actorHitPoints);
-		GD.Print("SimulatorController: Actors loaded");
-
-		// Subscribe presentation layers to simulator events
-		doors.Subscribe(simulator);
-		bonuses.Subscribe(simulator);
-		actors.Subscribe(simulator);
-		GD.Print("SimulatorController: All presentation layers subscribed");
 	}
 
 	/// <summary>

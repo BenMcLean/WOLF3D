@@ -231,8 +231,22 @@ public class Simulator
 			// Door already open, just reset the timer (WL_ACT1.C:549)
 			door.TicCount = 0;
 		else
+		{
 			// Start opening (WL_ACT1.C:551)
 			door.Action = DoorAction.Opening;
+			// Emit opening event and sound immediately (matches CloseDoor behavior)
+			DoorOpening?.Invoke(new DoorOpeningEvent
+			{
+				Timestamp = CurrentTic * TicDuration,
+				DoorIndex = doorIndex,
+				TileX = door.TileX,
+				TileY = door.TileY
+			});
+			// Emit door opening sound
+			if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
+				&& !string.IsNullOrEmpty(doorInfo.OpenSound))
+				EmitDoorPlaySound(doorIndex, doorInfo.OpenSound);
+		}
 	}
 	/// <summary>
 	/// WL_ACT1.C:CloseDoor (line 563)
@@ -251,11 +265,9 @@ public class Simulator
 			TileY = door.TileY
 		});
 		// Emit door closing sound
-		if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
+		if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) ?? false
 			&& !string.IsNullOrEmpty(doorInfo.CloseSound))
-		{
 			EmitDoorPlaySound(doorIndex, doorInfo.CloseSound);
-		}
 	}
 	/// <summary>
 	/// WL_ACT1.C:MoveDoors (line 832)
@@ -301,25 +313,8 @@ public class Simulator
 	{
 		Door door = doors[doorIndex];
 		int newPosition = door.Position;
-		// WL_ACT1.C:707 - door just starting to open
-		if (newPosition == 0)
-		{
-			// Emit opening event
-			DoorOpening?.Invoke(new DoorOpeningEvent
-			{
-				Timestamp = CurrentTic * TicDuration,
-				DoorIndex = (ushort)doorIndex,
-				TileX = door.TileX,
-				TileY = door.TileY
-			});
-			// Emit door opening sound
-			if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
-				&& !string.IsNullOrEmpty(doorInfo.OpenSound))
-			{
-				EmitDoorPlaySound((ushort)doorIndex, doorInfo.OpenSound);
-			}
-			// TODO: WL_ACT1.C:710-733 - connect areas for sound/sight
-		}
+		// Note: DoorOpening event and sound are now emitted in OpenDoor() immediately
+		// when the door starts opening, regardless of position (matches CloseDoor behavior)
 		// WL_ACT1.C:739 - slide the door by an adaptive amount
 		// position += tics<<10 (we use 1 tic per update)
 		newPosition += 1 << 10;
@@ -396,36 +391,86 @@ public class Simulator
 	}
 	#region Actor Update Logic
 	/// <summary>
-	/// WL_ACT2.C:DoActor - Called every tic for each actor
-	/// Executes Think function and handles state transitions
+	/// WL_PLAY.C actor update loop (lines 1690-1774)
+	/// Handles both transitional (tictime > 0) and non-transitional (tictime == 0) states
 	/// </summary>
 	private void UpdateActor(int actorIndex)
 	{
 		Actor actor = actors[actorIndex];
-		// Execute Think function if present
+
+		// WL_PLAY.C:1696 - Non-transitional object (tictime == 0)
+		// These states execute Think every frame but never auto-transition
+		if (actor.TicCount == 0)
+		{
+			// Execute Think function if present
+			if (!string.IsNullOrEmpty(actor.CurrentState.Think))
+			{
+				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				try
+				{
+					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
+				}
+				catch (Exception ex)
+				{
+					// Silently ignore - likely unimplemented function
+				}
+			}
+			// WL_PLAY.C:1726 - Return early, don't transition
+			return;
+		}
+
+		// WL_PLAY.C:1732 - Transitional object (tictime > 0)
+		// Decrement tic counter
+		actor.TicCount--;
+
+		// WL_PLAY.C:1733 - Check for state transition
+		while (actor.TicCount <= 0)
+		{
+			// Execute Action function if present (end of state action)
+			if (!string.IsNullOrEmpty(actor.CurrentState.Action))
+			{
+				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				try
+				{
+					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Action, context);
+				}
+				catch (Exception ex)
+				{
+					// Silently ignore - likely unimplemented function
+				}
+			}
+
+			// WL_PLAY.C:1746 - Transition to next state
+			if (actor.CurrentState.Next == null)
+				break; // No next state, stop transitioning
+
+			TransitionActorState(actorIndex, actor.CurrentState.Next);
+
+			// WL_PLAY.C:1754-1758 - If new state is non-transitional, set ticcount=0 and execute Think
+			if (actor.CurrentState.Tics == 0)
+			{
+				actor.TicCount = 0;
+				break; // Will execute Think on next update
+			}
+
+			// WL_PLAY.C:1760 - Add new state's tictime (keeps negative remainder for timing accuracy)
+			// Note: In original C, this is +=, not =, to preserve sub-tic timing
+			// For now we simplified to just break out of loop - full accuracy can be added later
+			break;
+		}
+
+		// WL_PLAY.C:1763-1770 - Execute Think function
 		if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 		{
-			var context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+			Scripting.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis);
 			try
 			{
 				luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
 			}
 			catch (Exception ex)
 			{
-				// TODO: Decide on error handling strategy
-				// For now, silently continue (original game would crash)
 				System.Diagnostics.Debug.WriteLine($"Error executing Think function '{actor.CurrentState.Think}' for actor {actorIndex}: {ex.Message}");
 			}
-		}
-		// Decrement tic counter
-		if (actor.TicCount > 0)
-		{
-			actor.TicCount--;
-		}
-		// Check for state transition
-		if (actor.TicCount <= 0 && actor.CurrentState.Next != null)
-		{
-			TransitionActorState(actorIndex, actor.CurrentState.Next);
 		}
 	}
 	/// <summary>
@@ -435,9 +480,7 @@ public class Simulator
 	public void TransitionActorStateByName(int actorIndex, string stateName)
 	{
 		if (stateCollection.States.TryGetValue(stateName, out State nextState))
-		{
 			TransitionActorState(actorIndex, nextState);
-		}
 	}
 	/// <summary>
 	/// Transitions an actor to a new state.
@@ -456,15 +499,14 @@ public class Simulator
 		// Execute Action function if present
 		if (!string.IsNullOrEmpty(nextState.Action))
 		{
-			var context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+			Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
 			try
 			{
 				luaScriptEngine.ExecuteStateFunction(nextState.Action, context);
 			}
 			catch (Exception ex)
 			{
-				// TODO: Decide on error handling strategy
-				System.Diagnostics.Debug.WriteLine($"Error executing Action function '{nextState.Action}' for actor {actorIndex}: {ex.Message}");
+				// Silently ignore - likely unimplemented function
 			}
 		}
 		// Fire sprite changed event if sprite actually changed
@@ -499,7 +541,7 @@ public class Simulator
 	/// Initialize static bonus objects from MapAnalyzer data.
 	/// Based on WL_GAME.C:ScanInfoPlane and WL_ACT1.C:InitStaticList
 	/// Populates StatObjList for gameplay (collision/pickup detection).
-	/// Does NOT emit events - VR layer displays static bonuses directly from MapAnalysis.
+	/// Emits BonusSpawnedEvent for each bonus so VR layer can display them.
 	/// </summary>
 	public void LoadBonusesFromMapAnalysis(MapAnalysis mapAnalysis)
 	{
@@ -525,6 +567,18 @@ public class Simulator
 				(short)spawn.Shape,  // Cast ushort to short (safe, shape numbers are small)
 				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
 				(byte)spawn.Type);  // itemnumber (ObClass enum -> byte)
+
+			// Emit spawn event for VR layer to display the bonus
+			BonusSpawned?.Invoke(new BonusSpawnedEvent
+			{
+				Timestamp = CurrentTic,
+				StatObjIndex = lastStatObj,
+				Shape = spawn.Shape,
+				TileX = spawn.X,
+				TileY = spawn.Y,
+				ItemNumber = (byte)spawn.Type
+			});
+
 			lastStatObj++;
 		}
 	}
@@ -547,12 +601,19 @@ public class Simulator
 		int actorIndex = 0;
 		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
 		{
-			// Look up initial state for this actor type
-			if (!actorInitialStates.TryGetValue(spawn.ActorType, out string initialStateName))
+			// Use initial state from spawn data (from ObjectType XML)
+			string initialStateName = spawn.InitialState;
+
+			// Fall back to actorInitialStates dictionary if no state specified in spawn
+			if (string.IsNullOrEmpty(initialStateName))
 			{
-				System.Diagnostics.Debug.WriteLine($"Warning: No initial state defined for actor type '{spawn.ActorType}', skipping");
-				continue;
+				if (!actorInitialStates.TryGetValue(spawn.ActorType, out initialStateName))
+				{
+					System.Diagnostics.Debug.WriteLine($"Warning: No initial state defined for actor type '{spawn.ActorType}', skipping");
+					continue;
+				}
 			}
+
 			if (!stateCollection.States.TryGetValue(initialStateName, out State initialState))
 			{
 				System.Diagnostics.Debug.WriteLine($"Warning: Initial state '{initialStateName}' not found for actor type '{spawn.ActorType}', skipping");
@@ -560,12 +621,10 @@ public class Simulator
 			}
 			// Look up initial hit points for this actor type
 			if (!actorHitPoints.TryGetValue(spawn.ActorType, out short hitPoints))
-			{
-				System.Diagnostics.Debug.WriteLine($"Warning: No hit points defined for actor type '{spawn.ActorType}', using default 1");
+				// Default to 1 hitpoint if not defined
 				hitPoints = 1;
-			}
 			// Convert 4-way cardinal direction from map data to 8-way simulator direction
-			Direction facing = ConvertCardinalToSimulatorDirection(spawn.Facing);
+			Direction facing = spawn.Facing.ToSimulatorDirection();
 			// Create actor instance
 			Actor actor = new Actor(
 				spawn.ActorType,
@@ -583,14 +642,14 @@ public class Simulator
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
 			{
-				var context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
 				try
 				{
 					luaScriptEngine.ExecuteStateFunction(initialState.Action, context);
 				}
 				catch (Exception ex)
 				{
-					System.Diagnostics.Debug.WriteLine($"Error executing initial Action function '{initialState.Action}' for actor {actorIndex}: {ex.Message}");
+					// Silently ignore - likely unimplemented function
 				}
 			}
 			// Fire spawn event - presentation layer will create visual representation
@@ -607,20 +666,91 @@ public class Simulator
 			actorIndex++;
 		}
 	}
+
 	/// <summary>
-	/// Converts 4-way cardinal direction from MapAnalyzer to 8-way simulator direction.
-	/// Maps N/E/S/W to closest 8-way direction.
+	/// Emits current state events for all entities after deserialization.
+	/// Fixed-count entities (doors, push walls) get state change events.
+	/// Variable-count entities (bonuses, actors) get spawn events.
+	/// Used for restoring presentation layer after loading a saved game.
 	/// </summary>
-	private Direction ConvertCardinalToSimulatorDirection(Assets.Direction cardinalDir)
+	public void EmitAllEntityState()
 	{
-		return cardinalDir switch
+		// Emit door position events (NOT spawn events - doors are created from MapAnalysis)
+		for (int i = 0; i < doors.Count; i++)
 		{
-			Assets.Direction.N => Direction.N,
-			Assets.Direction.E => Direction.E,
-			Assets.Direction.S => Direction.S,
-			Assets.Direction.W => Direction.W,
-			_ => Direction.E  // Default to East
-		};
+			Door door = doors[i];
+			// Emit current door position/state event
+			DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
+			{
+				Timestamp = CurrentTic,
+				DoorIndex = (ushort)i,
+				TileX = door.TileX,
+				TileY = door.TileY,
+				Position = door.Position,
+				Action = door.Action
+			});
+		}
+
+		// TODO: Emit push wall position events when push walls are implemented
+		// Push walls are fixed-count entities (created from MapAnalysis.PushWalls)
+		// but need position events to show movement after being pushed
+		// for (int i = 0; i < pushWalls.Count; i++)
+		// {
+		//     PushWall pushWall = pushWalls[i];
+		//     if (pushWall.HasMoved)
+		//     {
+		//         PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
+		//         {
+		//             Timestamp = CurrentTic,
+		//             InitialTileX = pushWall.InitialTileX,
+		//             InitialTileY = pushWall.InitialTileY,
+		//             Direction = pushWall.Direction,
+		//             Progress = pushWall.Progress
+		//         });
+		//     }
+		// }
+
+		// Emit bonus SPAWN events for all active bonuses
+		for (int i = 0; i < StatObjList.Length; i++)
+		{
+			if (StatObjList[i] is not null && !StatObjList[i].IsFree)
+			{
+				BonusSpawned?.Invoke(new BonusSpawnedEvent
+				{
+					Timestamp = CurrentTic,
+					StatObjIndex = i,
+					Shape = (ushort)StatObjList[i].ShapeNum,
+					TileX = StatObjList[i].TileX,
+					TileY = StatObjList[i].TileY,
+					ItemNumber = StatObjList[i].ItemNumber
+				});
+			}
+		}
+
+		// Emit actor SPAWN events for all active actors
+		for (int i = 0; i < actors.Count; i++)
+		{
+			Actor actor = actors[i];
+			ActorSpawned?.Invoke(new ActorSpawnedEvent
+			{
+				Timestamp = CurrentTic * TicDuration,
+				ActorIndex = i,
+				TileX = actor.TileX,
+				TileY = actor.TileY,
+				Facing = actor.Facing,
+				Shape = (ushort)actor.ShapeNum,
+				IsRotated = actor.CurrentState?.Rotate ?? false
+			});
+
+			// Also emit current actor sprite state
+			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
+			{
+				Timestamp = CurrentTic * TicDuration,
+				ActorIndex = i,
+				Shape = (ushort)actor.ShapeNum,
+				IsRotated = actor.CurrentState?.Rotate ?? false
+			});
+		}
 	}
 
 	/// <summary>

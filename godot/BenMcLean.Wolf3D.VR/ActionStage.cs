@@ -93,7 +93,6 @@ void sky() {
 		// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
 		_bonuses = new Bonuses(
 			VRAssetManager.SpriteMaterials,
-			currentLevel,
 			() => _freeLookCamera.GlobalRotation.Y);  // Delegate returns camera Y rotation for billboard effect
 		AddChild(_bonuses);
 
@@ -116,15 +115,14 @@ void sky() {
 		// Create simulator controller and initialize with map data
 		_simulatorController = new SimulatorController();
 		AddChild(_simulatorController);
-		// TODO: Load StateCollection from game data
-		// For now, pass null - actors won't function but basic simulation will work
+		// Initialize with StateCollection from game assets
 		_simulatorController.Initialize(
 			Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
 			currentLevel,
 			_doors,
 			_bonuses,
 			_actors,
-			null,  // TODO: Load from Shared.SharedAssetManager.CurrentGame or similar
+			Shared.SharedAssetManager.CurrentGame.StateCollection,
 			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 	}
 

@@ -1531,6 +1531,82 @@ end
 				</Animation>
 			</Actor>
 			-->
+			<!-- WL_ACT2.C:T_Path -->
+			<Function Name="T_Path"><![CDATA[
+-- WL_ACT2.C:T_Path (line 4073)
+-- Patrol behavior - actor follows a predetermined path
+-- If player is sighted, immediately stop patrolling (return early)
+
+-- Check if we spot the player - if so, exit patrol mode
+-- (State machine will handle transition to chase via SightPlayer)
+if CheckSight() then
+	-- Player spotted! The state machine will transition us to chase
+	-- Set reaction timer like in SightPlayer
+	local reaction = 1 + Random() / 6
+	SetReactionTimer(reaction)
+	return
+end
+
+-- Continue patrolling
+-- Movement is handled by the actor's Speed property and state tics
+-- The C code handles complex door-waiting and tile-to-tile movement
+-- For now, we trust the state machine to advance through patrol states
+-- TODO: Implement SelectPathDir logic for choosing patrol direction
+-- TODO: Implement MoveObj for actual movement
+-- TODO: Handle door-opening logic (ob->distance < 0 means waiting for door)
+			]]></Function>
+
+			<!-- WL_ACT2.C:T_Chase -->
+			<Function Name="T_Chase"><![CDATA[
+-- WL_ACT2.C:T_Chase (line 3744)
+-- Chase behavior - actively pursue and attack the player
+
+-- Calculate distance to player
+local playerTileX = GetPlayerTileX()
+local playerTileY = GetPlayerTileY()
+local actorTileX = GetTileX()
+local actorTileY = GetTileY()
+
+local dx = playerTileX - actorTileX
+local dy = playerTileY - actorTileY
+if dx < 0 then dx = -dx end
+if dy < 0 then dy = -dy end
+local dist = dx
+if dy > dx then dist = dy end
+
+-- Check if we have line of sight to player
+if CheckSight() then
+	-- Calculate chance to attack based on distance
+	local chance = 0
+	if dist == 0 or (dist == 1) then
+		chance = 300  -- Very close - high attack chance
+	else
+		-- tics is typically 1, so chance ~= 16/dist
+		chance = 16 / dist
+	end
+
+	-- Random chance to attack
+	if Random() < chance then
+		-- Transition to shooting state
+		-- The actual state transition happens via state machine
+		-- State machine will handle which shoot state to use based on actor type
+		-- For now, just indicate attack intent
+		-- TODO: Transition to appropriate shoot state (s_grdshoot1, s_ssshoot1, etc.)
+		return
+	end
+end
+
+-- No attack - continue chasing
+-- Turn to face player
+FacePlayer()
+
+-- Movement is handled by Speed and state machine tics
+-- The C code has complex door-handling and SelectChaseDir/SelectDodgeDir logic
+-- TODO: Implement SelectChaseDir for pathfinding toward player
+-- TODO: Implement SelectDodgeDir for evasive movement
+-- TODO: Implement MoveObj for actual movement with collision
+-- TODO: Handle door-waiting logic
+			]]></Function>
 		</StatInfo>
 	</VSwap>
 	<Palette>

@@ -434,7 +434,12 @@ public partial class Doors : Node3D
 			return;
 		}
 
-		// Play the sound at the door's speaker
+		// Stop any currently playing sound on this door before starting the new one
+		// Most recent sound event takes priority (e.g., open sound interrupts close sound)
+		if (door.Speaker.Playing)
+			door.Speaker.Stop();
+
+		// Play the new sound at the door's speaker
 		door.Speaker.Stream = sound;
 		door.Speaker.Play();
 	}

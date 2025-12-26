@@ -15,6 +15,7 @@ public class AssetManager
 	public readonly GameMap[] Maps;
 	public readonly MapAnalyzer MapAnalyzer;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
+	public readonly StateCollection StateCollection;
 	public static AssetManager Load(string xmlPath, ILoggerFactory loggerFactory = null)
 	{
 		XElement xml = XDocument.Load(xmlPath).Root;
@@ -34,5 +35,36 @@ public class AssetManager
 			?? NullLogger<MapAnalyzer>.Instance;
 		MapAnalyzer = new MapAnalyzer(xml, VSwap.SpritesByName, mapAnalyzerLogger);
 		MapAnalyses = [.. MapAnalyzer.Analyze(Maps)];
+		// Load StateCollection from XML
+		StateCollection = LoadStateCollection(xml);
+	}
+	private StateCollection LoadStateCollection(XElement xml)
+	{
+		StateCollection stateCollection = new StateCollection();
+		// Sprite name resolver - uses VSwap.SpritesByName dictionary
+		short ResolveSpriteNameToNumber(string spriteName)
+		{
+			if (VSwap?.SpritesByName != null && VSwap.SpritesByName.TryGetValue(spriteName, out ushort spriteNum))
+				return (short)spriteNum;
+			return -1; // Unknown sprite
+		}
+		// Find the StatInfo element inside VSwap
+		XElement vswapElement = xml.Element("VSwap");
+		XElement statInfoElement = vswapElement?.Element("StatInfo");
+		if (statInfoElement == null)
+			return stateCollection; // No states defined
+		// Load state functions first
+		var functionElements = statInfoElement.Elements("Function");
+		if (functionElements != null)
+			stateCollection.LoadFunctionsFromXml(functionElements);
+		// Load states (Phase 1: Create all state objects)
+		var stateElements = statInfoElement.Elements("State");
+		if (stateElements != null)
+			stateCollection.LoadStatesFromXml(stateElements, ResolveSpriteNameToNumber);
+		// Phase 2: Link state references
+		stateCollection.LinkStates();
+		// Phase 3: Validate function references
+		stateCollection.ValidateFunctionReferences();
+		return stateCollection;
 	}
 }

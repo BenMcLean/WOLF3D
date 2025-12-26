@@ -143,6 +143,9 @@ public class MapAnalyzer
 			// Parse actor type (for ObClass.actor - guard, ss, dog, etc.)
 			string actorType = obj.Attribute("Actor")?.Value;
 
+			// Parse initial state (for actors - s_grdstand, s_grdpath1, etc.)
+			string initialState = obj.Attribute("State")?.Value;
+
 			ObjectInfo info = new()
 			{
 				Number = number,
@@ -153,7 +156,8 @@ public class MapAnalyzer
 				Patrol = obj.IsTrue("Patrol"),
 				Ambush = obj.IsTrue("Ambush"),
 				IsEnemy = objectClass == ObClass.actor,  // Actors are enemies
-				IsActive = objectClass == ObClass.actor  // Actors are active objects
+				IsActive = objectClass == ObClass.actor,  // Actors are active objects
+				State = initialState
 			};
 
 			Objects[number] = info;
@@ -260,7 +264,7 @@ public class MapAnalyzer
 
 		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
 		// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
-		public readonly record struct ActorSpawn(string ActorType, ushort Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol);
+		public readonly record struct ActorSpawn(string ActorType, ushort Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol, string InitialState);
 		public ReadOnlyCollection<ActorSpawn> ActorSpawns { get; private set; }
 
 		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
@@ -369,7 +373,8 @@ public class MapAnalyzer
 							x, y,
 							objInfo.Facing.Value,
 							objInfo.Ambush,
-							objInfo.Patrol));
+							objInfo.Patrol,
+							objInfo.State));
 					}
 					else
 					{
@@ -529,6 +534,7 @@ public record ObjectInfo
 	public bool Ambush { get; init; }        // Enemy doesn't move until spotted (FL_AMBUSH flag)
 	public bool IsEnemy { get; init; }       // Counts toward kill percentage (gamestate.killcount/killtotal)
 	public bool IsActive { get; init; }      // Active object (classtype vs stat_t)
+	public string State { get; init; }       // Initial state for actors (e.g., "s_grdstand", "s_grdpath1")
 }
 
 // Direction enum (Wolf3D: NORTH=0, EAST=1, SOUTH=2, WEST=3)

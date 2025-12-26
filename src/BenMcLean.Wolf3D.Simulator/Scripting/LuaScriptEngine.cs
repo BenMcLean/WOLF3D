@@ -179,7 +179,7 @@ public class LuaScriptEngine
 	public void CompileAllStateFunctions(StateCollection stateCollection)
 	{
 		compiledStateFunctions.Clear();
-		foreach (var function in stateCollection.Functions.Values)
+		foreach (StateFunction function in stateCollection.Functions.Values)
 		{
 			CompileStateFunction(function.Name, function.Code);
 		}

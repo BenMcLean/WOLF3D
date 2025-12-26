@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Simulator;
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -49,30 +50,9 @@ public partial class Actors : Node3D
 		Func<Vector3> getViewerPosition,
 		Func<float> getCameraYRotation)
 	{
-		GD.Print("Actors: Constructor called");
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		_getViewerPosition = getViewerPosition ?? throw new ArgumentNullException(nameof(getViewerPosition));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
-		GD.Print($"Actors: Constructor completed, {_spriteMaterials.Count} sprite materials available");
-	}
-	/// <summary>
-	/// Loads initial actors directly from map analysis data.
-	/// Treats this as the source of truth for initial state.
-	/// </summary>
-	public void LoadFromMapAnalysis(IEnumerable<MapAnalysis.ActorSpawn> spawns)
-	{
-		GD.Print($"Actors: Loading from MapAnalysis...");
-		int actorIndex = 0;
-		foreach (MapAnalysis.ActorSpawn spawn in spawns)
-		{
-			// Convert 4-way cardinal direction from map data to 8-way simulator direction
-			Simulator.Direction facing = spawn.Facing.ConvertCardinalToSimulatorDirection();
-			// Assume standing sprites are rotated (8-directional) for now
-			// TODO: improved logic when state machine is available
-			bool isRotated = true;
-			ShowActor(++actorIndex, spawn.Page, isRotated, spawn.X, spawn.Y, facing);
-		}
-		GD.Print($"Actors: Loaded {actorIndex} initial actors");
 	}
 	/// <summary>
 	/// Shows a newly spawned actor.
@@ -80,14 +60,12 @@ public partial class Actors : Node3D
 	/// </summary>
 	private void ShowActor(int actorIndex, ushort shape, bool isRotated, ushort tileX, ushort tileY, Simulator.Direction facing)
 	{
-		GD.Print($"Actors.ShowActor: Creating actor {actorIndex} at tile ({tileX},{tileY}) with shape {shape}, isRotated={isRotated}");
 		// Calculate world position at tile center
 		Vector3 position = new(
 			tileX.ToMetersCentered(),
 			Constants.HalfWallHeight,
 			tileY.ToMetersCentered()
 		);
-		GD.Print($"  World position: {position}");
 		// Create MeshInstance3D for this actor
 		MeshInstance3D node = new()
 		{
@@ -101,7 +79,6 @@ public partial class Actors : Node3D
 		{
 			// Calculate initial directional sprite
 			ushort directionalSprite = CalculateDirectionalSprite(position, facing, shape, _getViewerPosition());
-			GD.Print($"  Using directional sprite {directionalSprite} (base={shape}, facing={facing})");
 			if (!_spriteMaterials.TryGetValue(directionalSprite, out StandardMaterial3D material))
 			{
 				GD.PrintErr($"ERROR: Sprite material {directionalSprite} not found!");
@@ -112,7 +89,6 @@ public partial class Actors : Node3D
 		else
 		{
 			// Single sprite for all viewing angles
-			GD.Print($"  Using single sprite {shape}");
 			if (!_spriteMaterials.TryGetValue(shape, out StandardMaterial3D material))
 			{
 				GD.PrintErr($"ERROR: Sprite material {shape} not found!");
@@ -122,14 +98,13 @@ public partial class Actors : Node3D
 		}
 		// Add to scene and track
 		AddChild(node);
-		GD.Print($"  Actor {actorIndex} added to scene tree");
 		_actorNodes[actorIndex] = node;
 		_actorData[actorIndex] = new ActorRenderData
 		{
 			Position = position,
 			Facing = facing,
 			BaseShape = shape,
-			IsRotated = isRotated
+			IsRotated = isRotated,
 		};
 	}
 	/// <summary>
@@ -199,7 +174,7 @@ public partial class Actors : Node3D
 	/// Only used for rotated sprites (walking, standing, etc).
 	/// Enum values directly correspond to sprite offsets (0-7).
 	/// </summary>
-	private ushort CalculateDirectionalSprite(Vector3 actorPosition, Simulator.Direction actorFacing, ushort baseShape, Vector3 viewerPosition)
+	private static ushort CalculateDirectionalSprite(Vector3 actorPosition, Simulator.Direction actorFacing, ushort baseShape, Vector3 viewerPosition)
 	{
 		// Calculate viewing angle from viewer to actor
 		Vector3 toActor = actorPosition - viewerPosition;
@@ -251,7 +226,6 @@ public partial class Actors : Node3D
 	/// </summary>
 	public void Subscribe(Simulator.Simulator sim)
 	{
-		GD.Print("Actors: Subscribe called");
 		ArgumentNullException.ThrowIfNull(sim);
 		// Unsubscribe from previous simulator if any
 		Unsubscribe();
@@ -261,14 +235,13 @@ public partial class Actors : Node3D
 		_simulator.ActorMoved += OnActorMoved;
 		_simulator.ActorSpriteChanged += OnActorSpriteChanged;
 		_simulator.ActorDespawned += OnActorDespawned;
-		GD.Print("Actors: Subscribed to simulator events");
 	}
 	/// <summary>
 	/// Unsubscribes from simulator events.
 	/// </summary>
 	public void Unsubscribe()
 	{
-		if (_simulator == null)
+		if (_simulator is null)
 			return;
 		_simulator.ActorSpawned -= OnActorSpawned;
 		_simulator.ActorMoved -= OnActorMoved;
@@ -279,11 +252,7 @@ public partial class Actors : Node3D
 	/// <summary>
 	/// Handles ActorSpawnedEvent - shows a newly spawned actor.
 	/// </summary>
-	private void OnActorSpawned(Simulator.ActorSpawnedEvent evt)
-	{
-		GD.Print($"Actors.OnActorSpawned: Index={evt.ActorIndex}, Shape={evt.Shape}, IsRotated={evt.IsRotated}, Pos=({evt.TileX},{evt.TileY}), Facing={evt.Facing}");
-		ShowActor(evt.ActorIndex, evt.Shape, evt.IsRotated, evt.TileX, evt.TileY, evt.Facing);
-	}
+	private void OnActorSpawned(Simulator.ActorSpawnedEvent evt) => ShowActor(evt.ActorIndex, evt.Shape, evt.IsRotated, evt.TileX, evt.TileY, evt.Facing);
 	/// <summary>
 	/// Handles ActorMovedEvent - moves an actor to new position.
 	/// </summary>

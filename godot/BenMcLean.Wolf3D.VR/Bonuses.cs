@@ -66,11 +66,9 @@ public partial class Bonuses : Node3D
 	/// All slots start hidden (scaled to zero) until BonusSpawnedEvent fires.
 	/// </summary>
 	/// <param name="spriteMaterials">Dictionary of sprite materials from GodotResources.SpriteMaterials</param>
-	/// <param name="mapAnalysis">Map analysis containing static bonus spawn data</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
 	public Bonuses(
 		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
-		MapAnalysis mapAnalysis,
 		Func<float> getCameraYRotation)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
@@ -79,29 +77,14 @@ public partial class Bonuses : Node3D
 		// Initialize with empty lists - MultiMeshes will be created on-demand as bonuses spawn
 		MeshInstances = [];
 
-		// Static bonuses from map - materialize to list to avoid re-enumeration issues
-		List<MapAnalysis.StaticSpawn> staticBonuses = [.. mapAnalysis
-			.StaticSpawns
-			.Where(s => s.StatType == StatType.bonus)];
-
-		// Display all static bonuses immediately (no need for events)
-		int globalStaticIndex = 0;
-		foreach (MapAnalysis.StaticSpawn bonus in staticBonuses)
-		{
-			// Map using global index (negative to distinguish from dynamic simulator indices)
-			// Each static bonus gets a unique negative index
-			int staticIndex = -(globalStaticIndex + 1);
-			globalStaticIndex++;
-
-			// ShowBonus will create the MultiMesh if needed
-			ShowBonusInternal(staticIndex, bonus.Shape, bonus.X, bonus.Y);
-		}
+		// All bonuses (both static and dynamic) now spawn via BonusSpawnedEvent
+		// Subscribe to Simulator events before calling Simulator.LoadBonusesFromMapAnalysis()
 	}
 
 	/// <summary>
-	/// Shows a dynamically spawned bonus (enemy drops).
+	/// Shows a bonus (both static from map and dynamically spawned from enemies).
 	/// Called from SimulatorController when BonusSpawnedEvent fires.
-	/// Static bonuses are displayed directly in the constructor - this is only for dynamic spawns.
+	/// All bonuses now spawn via events - this is the unified display path.
 	/// </summary>
 	/// <param name="statObjIndex">Index in simulator's StatObjList</param>
 	/// <param name="shape">VSwap sprite page number</param>
