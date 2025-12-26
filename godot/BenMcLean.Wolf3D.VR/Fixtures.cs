@@ -83,7 +83,7 @@ public partial class Fixtures : Node3D
 			MapAnalysis.StaticSpawn fixture = fixtures[i];
 			Vector3 position = new(
 				x: fixture.X.ToMetersCentered(),
-				y: Constants.HalfWallHeight,
+				y: Constants.HalfTileHeight,
 				z: fixture.Y.ToMetersCentered());
 			// Initial rotation (will be updated each frame)
 			Transform3D transform = Transform3D.Identity;
@@ -120,9 +120,9 @@ public partial class Fixtures : Node3D
 				y: 0f,
 				z: minZ.ToMeters()),
 			size: new(
-				x: (maxX - minX + 1) * Constants.WallWidth,
-				y: Constants.WallHeight,
-				z: (maxZ - minZ + 1) * Constants.WallWidth));
+				x: (maxX - minX + 1) * Constants.TileWidth,
+				y: Constants.TileHeight,
+				z: (maxZ - minZ + 1) * Constants.TileWidth));
 	}
 
 	/// <summary>

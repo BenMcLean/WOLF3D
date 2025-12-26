@@ -73,15 +73,15 @@ public static class ExtensionMethods
 	/// </summary>
 	/// <param name="tile">Tile coordinate (0, 1, 2, ...)</param>
 	/// <returns>Position in meters (north/east corner of tile)</returns>
-	public static float ToMeters(this short tile) => tile * Constants.WallWidth;
-	public static float ToMeters(this ushort tile) => tile * Constants.WallWidth;
+	public static float ToMeters(this short tile) => tile * Constants.TileWidth;
+	public static float ToMeters(this ushort tile) => tile * Constants.TileWidth;
 	/// <summary>
 	/// Converts a tile coordinate to meters (at tile center).
 	/// </summary>
 	/// <param name="tile">Tile coordinate (0, 1, 2, ...)</param>
 	/// <returns>Position in meters (center of tile)</returns>
-	public static float ToMetersCentered(this short tile) => tile.ToMeters() + Constants.HalfWallWidth;
-	public static float ToMetersCentered(this ushort tile) => tile.ToMeters() + Constants.HalfWallWidth;
+	public static float ToMetersCentered(this short tile) => tile.ToMeters() + Constants.HalfTileWidth;
+	public static float ToMetersCentered(this ushort tile) => tile.ToMeters() + Constants.HalfTileWidth;
 	/// <summary>
 	/// Converts a 16.16 fixed-point coordinate to meters.
 	/// </summary>
@@ -94,7 +94,7 @@ public static class ExtensionMethods
 	/// </summary>
 	/// <param name="meters">Position in meters</param>
 	/// <returns>Tile coordinate</returns>
-	public static int ToTile(this float meters) => Mathf.FloorToInt(meters / Constants.WallWidth);
+	public static int ToTile(this float meters) => Mathf.FloorToInt(meters / Constants.TileWidth);
 	/// <summary>
 	/// Converts a meter position to a 16.16 fixed-point coordinate.
 	/// </summary>
@@ -102,8 +102,6 @@ public static class ExtensionMethods
 	/// <returns>16.16 fixed-point coordinate</returns>
 	public static int ToFixedPoint(this float meters) => (int)(meters / Constants.FixedPointToMeters);
 	#endregion Coordinates
-	public static float TicsToSeconds(this int tics) => tics / Constants.TicsPerSecond;
-	public static short SecondsToTics(this float seconds) => (short)(seconds * Constants.TicsPerSecond);
 	public static Vector2 Vector2(this Vector3 vector3) => new(vector3.X, vector3.Z);
 	public static Vector3 Vector3(this Vector2 vector2) => new(vector2.X, 0f, vector2.Y);
 	public static Vector3 Axis(this Vector3.Axis axis) => axis switch

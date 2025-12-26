@@ -212,7 +212,7 @@ public partial class Doors : Node3D
 	{
 		Vector3 position = new(
 			x: door.CurrentX.ToMeters(),
-			y: Constants.HalfWallHeight,
+			y: Constants.HalfTileHeight,
 			z: door.CurrentZ.ToMeters());
 		// Determine base rotation based on door orientation
 		float rotationY;
@@ -244,10 +244,10 @@ public partial class Doors : Node3D
 			Vector3 speakerPosition = position;
 			if (door.FacesEastWest)
 				// Door faces E/W and opens North (+Z), speaker starts at South edge
-				speakerPosition.Z -= Constants.HalfWallWidth;  // Half tile South of door center
+				speakerPosition.Z -= Constants.HalfTileWidth;  // Half tile South of door center
 			else
 				// Door faces N/S and opens East (+X), speaker starts at West edge
-				speakerPosition.X -= Constants.HalfWallWidth;  // Half tile West of door center
+				speakerPosition.X -= Constants.HalfTileWidth;  // Half tile West of door center
 			door.Speaker.Position = speakerPosition;
 		}
 	}

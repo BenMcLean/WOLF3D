@@ -63,7 +63,7 @@ public partial class Actors : Node3D
 		// Calculate world position at tile center
 		Vector3 position = new(
 			tileX.ToMetersCentered(),
-			Constants.HalfWallHeight,
+			Constants.HalfTileHeight,
 			tileY.ToMetersCentered()
 		);
 		// Create MeshInstance3D for this actor
@@ -118,7 +118,7 @@ public partial class Actors : Node3D
 		// Convert 16.16 fixed-point to Godot world coordinates
 		Vector3 newPosition = new(
 			x: fixedX.ToMeters(),
-			y: Constants.HalfWallHeight,
+			y: Constants.HalfTileHeight,
 			z: fixedY.ToMeters());
 		// Update node position
 		node.Position = newPosition;

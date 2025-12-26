@@ -53,7 +53,7 @@ void sky() {
 			// Center of the player's starting grid square
 			cameraPosition = new Vector3(
 				playerStart.X.ToMetersCentered(),
-				Constants.HalfWallHeight,
+				Constants.HalfTileHeight,
 				playerStart.Y.ToMetersCentered()
 			);
 			// Convert Direction enum to rotation (N=0, E=1, S=2, W=3)
@@ -63,7 +63,7 @@ void sky() {
 		else
 		{
 			// Fallback to origin if no player start found
-			cameraPosition = new Vector3(0, Constants.HalfWallHeight, 0);
+			cameraPosition = new Vector3(0, Constants.HalfTileHeight, 0);
 			GD.PrintErr("Warning: No player start found in map!");
 		}
 
@@ -153,13 +153,13 @@ void sky() {
 		float forwardX = Mathf.Sin(rotationY);
 		float forwardZ = -Mathf.Cos(rotationY);
 		Vector3 forwardPoint = cameraPos + new Vector3(
-			forwardX * -Constants.WallWidth,
+			forwardX * -Constants.TileWidth,
 			0f,
-			forwardZ * Constants.WallWidth);
+			forwardZ * Constants.TileWidth);
 
 		// Convert world position to tile coordinates
-		ushort tileX = (ushort)(forwardPoint.X / Constants.WallWidth);
-		ushort tileY = (ushort)(forwardPoint.Z / Constants.WallWidth);
+		ushort tileX = (ushort)(forwardPoint.X / Constants.TileWidth);
+		ushort tileY = (ushort)(forwardPoint.Z / Constants.TileWidth);
 
 		// Find door at this tile
 		ushort? doorIndex = FindDoorAtTile(tileX, tileY);

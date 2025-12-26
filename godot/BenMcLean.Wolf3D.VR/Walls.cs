@@ -141,20 +141,20 @@ public partial class Walls : Node3D
 	{
 		Vector3 centerPosition = new(
 			x: fixedX.ToMeters(),
-			y: Constants.HalfWallHeight,
+			y: Constants.HalfTileHeight,
 			z: fixedY.ToMeters());
 		// North face (Shape texture, facing north at -Z edge)
 		SetInstanceTransform(data.ShapeTexture, data.NorthInstanceIndex,
-			centerPosition + new Vector3(0, 0, -Constants.HalfWallWidth), Mathf.Pi);
+			centerPosition + new Vector3(0, 0, -Constants.HalfTileWidth), Mathf.Pi);
 		// South face (Shape texture, facing south at +Z edge)
 		SetInstanceTransform(data.ShapeTexture, data.SouthInstanceIndex,
-			centerPosition + new Vector3(0, 0, Constants.HalfWallWidth), 0f);
+			centerPosition + new Vector3(0, 0, Constants.HalfTileWidth), 0f);
 		// East face (DarkSide texture, facing east at +X edge)
 		SetInstanceTransform((ushort)(data.ShapeTexture + 1), data.EastInstanceIndex,
-			centerPosition + new Vector3(Constants.HalfWallWidth, 0, 0), Constants.HalfPi);
+			centerPosition + new Vector3(Constants.HalfTileWidth, 0, 0), Constants.HalfPi);
 		// West face (DarkSide texture, facing west at -X edge)
 		SetInstanceTransform((ushort)(data.ShapeTexture + 1), data.WestInstanceIndex,
-			centerPosition + new Vector3(-Constants.HalfWallWidth, 0, 0), -Constants.HalfPi);
+			centerPosition + new Vector3(-Constants.HalfTileWidth, 0, 0), -Constants.HalfPi);
 	}
 	/// <summary>
 	/// Sets the transform for a specific instance in a MultiMesh.
@@ -234,9 +234,9 @@ public partial class Walls : Node3D
 			// Wall block at (X, Z) - show west face (Flip=false) or east face (Flip=true)
 			position = new Vector3(
 				x: wall.Flip ?
-					wall.X.ToMeters() + Constants.WallWidth
+					wall.X.ToMeters() + Constants.TileWidth
 					: wall.X.ToMeters(),
-				y: Constants.HalfWallHeight,
+				y: Constants.HalfTileHeight,
 				z: wall.Y.ToMetersCentered());
 			// West face looks west (-90°), East face looks east (90°)
 			rotationY = wall.Flip ? Constants.HalfPi : -Constants.HalfPi;
@@ -246,10 +246,10 @@ public partial class Walls : Node3D
 			// Wall block at (X, Z) - show south face (Flip=false) or north face (Flip=true)
 			position = new Vector3(
 				wall.X.ToMetersCentered(),
-				Constants.HalfWallHeight,
+				Constants.HalfTileHeight,
 				wall.Flip ?
 					wall.Y.ToMeters()
-					: wall.Y.ToMeters() + Constants.WallWidth);
+					: wall.Y.ToMeters() + Constants.TileWidth);
 			// South face looks south (0°), North face looks north (180°)
 			rotationY = wall.Flip ? Mathf.Pi : 0f;
 		}

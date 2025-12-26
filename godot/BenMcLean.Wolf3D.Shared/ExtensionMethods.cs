@@ -5,17 +5,51 @@ namespace BenMcLean.Wolf3D.Shared;
 
 public static class ExtensionMethods
 {
+	#region Time
+	/// <summary>
+	/// Converts Wolf3D tics to seconds (Godot delta time)
+	/// </summary>
+	public static double ToSeconds(this int tics) => tics * Constants.SecondsPerTic;
+	/// <summary>
+	/// Converts Wolf3D tics to seconds (Godot delta time)
+	/// </summary>
+	public static double ToSeconds(this long tics) => tics * Constants.SecondsPerTic;
+	/// <summary>
+	/// Converts Wolf3D tics to TimeSpan
+	/// </summary>
+	public static TimeSpan ToTimeSpan(this int tics) =>
+		TimeSpan.FromTicks(tics * Constants.TimeSpanTicksPerTic);
+	/// <summary>
+	/// Converts Wolf3D tics to TimeSpan
+	/// </summary>
+	public static TimeSpan ToTimeSpan(this long tics) =>
+		TimeSpan.FromTicks(tics * Constants.TimeSpanTicksPerTic);
+	/// <summary>
+	/// Converts seconds (Godot delta time) to Wolf3D tics
+	/// </summary>
+	public static int ToTics(this double seconds) =>
+		(int)Math.Round(seconds * Constants.TicsPerSecond);
+	/// <summary>
+	/// Converts seconds (Godot delta time) to Wolf3D tics as long
+	/// </summary>
+	public static long ToTicsLong(this double seconds) =>
+		(long)Math.Round(seconds * Constants.TicsPerSecond);
+	/// <summary>
+	/// Converts seconds (Godot delta time) to TimeSpan
+	/// </summary>
+	public static TimeSpan ToTimeSpan(this double seconds) => TimeSpan.FromSeconds(seconds);
+	/// <summary>
+	/// Converts TimeSpan to Wolf3D tics
+	/// </summary>
+	public static int ToTics(this TimeSpan timeSpan) =>
+		(int)Math.Round(timeSpan.Ticks * Constants.TicsPerTimeSpanTick);
+	/// <summary>
+	/// Converts TimeSpan to Wolf3D tics as long
+	/// </summary>
+	public static long ToTicsLong(this TimeSpan timeSpan) =>
+		(long)Math.Round(timeSpan.Ticks * Constants.TicsPerTimeSpanTick);
+	#endregion Time
 	#region Drawing
-	public const uint Red = 0xFF0000FFu,
-		Yellow = 0xFFFF00FFu,
-		Black = 0x000000FFu,
-		White = 0xFFFFFFFFu,
-		Green = 0x00FF00FFu,
-		Blue = 0x0000FFFFu,
-		Orange = 0xFFA500FFu,
-		Indigo = 0x4B0082FFu,
-		Violet = 0x8F00FFFFu,
-		Purple = 0xFF00FFFFu;
 	/// <summary>
 	/// Draws one pixel of the specified color
 	/// </summary>
@@ -23,7 +57,7 @@ public static class ExtensionMethods
 	/// <param name="color">rgba color to draw</param>
 	/// <param name="width">width of texture or 0 to assume square texture</param>
 	/// <returns>same texture with pixel drawn</returns>
-	public static byte[] DrawPixel(this byte[] texture, ushort x, ushort y, uint color = White, ushort width = 0)
+	public static byte[] DrawPixel(this byte[] texture, ushort x, ushort y, uint color = Constants.White, ushort width = 0)
 	{
 		ushort xSide = (ushort)((width < 1 ? (ushort)Math.Sqrt(texture.Length >> 2) : width) << 2),
 			ySide = (ushort)((width < 1 ? xSide : texture.Length / width) >> 2);
@@ -45,7 +79,7 @@ public static class ExtensionMethods
 	/// <param name="y">upper left corner of rectangle</param>
 	/// <param name="width">width of texture or 0 to assume square texture</param>
 	/// <returns>same texture with rectangle drawn</returns>
-	public static byte[] DrawRectangle(this byte[] texture, int x, int y, uint color = White, int rectWidth = 1, int rectHeight = 1, ushort width = 0)
+	public static byte[] DrawRectangle(this byte[] texture, int x, int y, uint color = Constants.White, int rectWidth = 1, int rectHeight = 1, ushort width = 0)
 	{
 		if (rectWidth == 1 && rectHeight == 1)
 			return texture.DrawPixel((ushort)x, (ushort)y, color, width);
