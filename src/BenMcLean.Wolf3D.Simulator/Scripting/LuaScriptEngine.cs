@@ -20,6 +20,9 @@ public class LuaScriptEngine
 	public IScriptContext CurrentContext { get; set; }
 	public LuaScriptEngine()
 	{
+		// Register C# types for MoonSharp UserData
+		UserData.RegisterType<ActorScriptContext>();
+		UserData.RegisterType<ActionScriptContext>();
 		// Create MoonSharp script instance
 		luaScript = new Script(CoreModules.Preset_SoftSandbox);
 		// Additional sandboxing and deterministic overrides
@@ -99,6 +102,86 @@ public class LuaScriptEngine
 			});
 		// TODO: Add more API functions as needed
 	}
+	private readonly HashSet<string> exposedMethodNames = [];
+
+	/// <summary>
+	/// Cleanup ActorScriptContext globals after script execution.
+	/// </summary>
+	private void CleanupActorScriptContextGlobals()
+	{
+		foreach (string name in exposedMethodNames)
+			luaScript.Globals[name] = DynValue.Nil;
+		exposedMethodNames.Clear();
+	}
+
+	/// <summary>
+	/// Expose ActorScriptContext methods as global Lua functions using reflection.
+	/// This allows Lua code to call CheckSight() instead of ctx:CheckSight().
+	/// </summary>
+	private void ExposeContextMethodsAsGlobals(ActorScriptContext ctx)
+	{
+		// Get all public instance methods from ActorScriptContext
+		var methods = typeof(ActorScriptContext).GetMethods(
+			System.Reflection.BindingFlags.Public |
+			System.Reflection.BindingFlags.Instance |
+			System.Reflection.BindingFlags.DeclaredOnly);
+
+		foreach (var method in methods)
+		{
+			// Skip property getters/setters and special methods
+			if (method.IsSpecialName)
+				continue;
+
+			string methodName = method.Name;
+			var parameters = method.GetParameters();
+			var returnType = method.ReturnType;
+
+			// Create a callback that invokes the method via reflection
+			luaScript.Globals[methodName] = DynValue.NewCallback((c, args) =>
+			{
+				// Convert Lua arguments to C# types
+				object[] invokeArgs = new object[parameters.Length];
+				for (int i = 0; i < parameters.Length; i++)
+				{
+					if (i < args.Count)
+					{
+						var luaArg = args[i];
+						var paramType = parameters[i].ParameterType;
+
+						// Convert based on parameter type
+						if (paramType == typeof(int))
+							invokeArgs[i] = (int)luaArg.Number;
+						else if (paramType == typeof(string))
+							invokeArgs[i] = luaArg.String;
+						else if (paramType == typeof(bool))
+							invokeArgs[i] = luaArg.Boolean;
+						else if (paramType == typeof(double))
+							invokeArgs[i] = luaArg.Number;
+						else
+							invokeArgs[i] = luaArg.ToObject();
+					}
+				}
+
+				// Invoke the method
+				object result = method.Invoke(ctx, invokeArgs);
+
+				// Convert return value to Lua type
+				if (returnType == typeof(void))
+					return DynValue.Nil;
+				else if (returnType == typeof(int) || returnType == typeof(short) || returnType == typeof(ushort))
+					return DynValue.NewNumber(Convert.ToDouble(result));
+				else if (returnType == typeof(bool))
+					return DynValue.NewBoolean((bool)result);
+				else if (returnType == typeof(string))
+					return DynValue.NewString((string)result);
+				else
+					return DynValue.FromObject(luaScript, result);
+			});
+
+			exposedMethodNames.Add(methodName);
+		}
+	}
+
 	#region Deterministic Standard Library Overrides
 	private DynValue MathRandom(ScriptExecutionContext ctx, CallbackArguments args)
 	{
@@ -236,8 +319,26 @@ public class LuaScriptEngine
 			// Set context for this execution
 			IScriptContext previousContext = CurrentContext;
 			CurrentContext = context;
+
+			// Expose context methods as global functions in Lua
+			// This makes ActorScriptContext methods directly callable (e.g., CheckSight(), GetSpeed())
+			if (context is ActorScriptContext actorCtx)
+			{
+				luaScript.Globals["ctx"] = UserData.Create(actorCtx);
+				// Expose all methods as globals for direct calling
+				ExposeContextMethodsAsGlobals(actorCtx);
+			}
+
 			// Execute the compiled function
 			DynValue result = luaScript.Call(compiled);
+
+			// Clean up globals
+			if (context is ActorScriptContext)
+			{
+				luaScript.Globals["ctx"] = DynValue.Nil;
+				CleanupActorScriptContextGlobals();
+			}
+
 			// Restore previous context
 			CurrentContext = previousContext;
 			return result;

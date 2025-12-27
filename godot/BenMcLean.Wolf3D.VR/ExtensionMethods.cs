@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BenMcLean.Wolf3D.Simulator;
+using BenMcLean.Wolf3D.Assets;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -134,6 +134,58 @@ public static class ExtensionMethods
 		else
 			return Direction.N; // [7π/4, 2π) wraps to North
 	}
+	/// <summary>
+	/// Converts Godot camera Y rotation to an 8-way Direction.
+	/// Snaps to the nearest of 8 directions: N, NE, E, SE, S, SW, W, NW.
+	/// Godot Y rotation: 0=North(-Z), π/2=West(-X), π=South(+Z), 3π/2=East(+X)
+	/// </summary>
+	/// <param name="rotationY">Camera Y rotation in radians</param>
+	/// <returns>8-way direction</returns>
+	public static Direction ToDirection(this float rotationY)
+	{
+		// Normalize rotation to [0, 2π)
+		float normalized = rotationY % Mathf.Tau;
+		if (normalized < 0)
+			normalized += Mathf.Tau;
+		// Divide circle into 8 octants centered on 8-way directions
+		// Each octant is π/4 (45°) wide, with boundaries at π/8 (22.5°) intervals
+		// North: [0°, 22.5°) and [337.5°, 360°)
+		// Northwest: [22.5°, 67.5°)
+		// West: [67.5°, 112.5°)
+		// Southwest: [112.5°, 157.5°)
+		// South: [157.5°, 202.5°)
+		// Southeast: [202.5°, 247.5°)
+		// East: [247.5°, 292.5°)
+		// Northeast: [292.5°, 337.5°)
+		if (normalized < Constants.EighthPi)
+			return Direction.N;
+		else if (normalized < 3f * Constants.EighthPi)
+			return Direction.NW;
+		else if (normalized < 5f * Constants.EighthPi)
+			return Direction.W;
+		else if (normalized < 7f * Constants.EighthPi)
+			return Direction.SW;
+		else if (normalized < 9f * Constants.EighthPi)
+			return Direction.S;
+		else if (normalized < 11f * Constants.EighthPi)
+			return Direction.SE;
+		else if (normalized < 13f * Constants.EighthPi)
+			return Direction.E;
+		else if (normalized < 15f * Constants.EighthPi)
+			return Direction.NE;
+		else
+			return Direction.N; // [337.5°, 360°) wraps to North
+	}
+	/// <summary>
+	/// Converts a Direction enum to a Godot Y rotation angle in radians.
+	/// Wolf3D +Y (south/down map) → Godot -Z requires negating the angle to flip the Z axis.
+	/// Standard atan2 convention: 0=East(+X), π/2=South(+Z), π=West(-X), 3π/2=North(-Z)
+	/// Direction enum: E=0, NE=1, N=2, NW=3, W=4, SW=5, S=6, SE=7
+	/// </summary>
+	/// <param name="direction">Direction to convert</param>
+	/// <returns>Godot Y rotation in radians</returns>
+	public static float ToAngle(this Direction direction) =>
+		-(byte)direction * Constants.QuarterPi;
 	public static Vector2 Vector2(this Vector3 vector3) => new(vector3.X, vector3.Z);
 	public static Vector3 Vector3(this Vector2 vector2) => new(vector2.X, 0f, vector2.Y);
 	public static Vector3 Axis(this Vector3.Axis axis) => axis switch

@@ -163,12 +163,12 @@ public class MapAnalyzer
 			Objects[number] = info;
 		}
 
-		// Patrol tiles (map layer)
+		// Patrol tiles (map layer) - parse from <Turn> elements in StatInfo
 		PatrolTiles = [];
-		IEnumerable<XElement> patrolElements = XML.Element("Maps")?.Element("PatrolTiles")?.Elements("Tile") ?? [];
-		foreach (XElement tile in patrolElements)
-			if (ushort.TryParse(tile.Attribute("Number")?.Value, out ushort tileNum)
-				&& Enum.TryParse(tile.Attribute("Turn")?.Value, out Direction turnDir))
+		IEnumerable<XElement> turnElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("Turn") ?? [];
+		foreach (XElement turn in turnElements)
+			if (ushort.TryParse(turn.Attribute("Number")?.Value, out ushort tileNum)
+				&& Enum.TryParse(turn.Attribute("Direction")?.Value, out Direction turnDir))
 				PatrolTiles[tileNum] = turnDir;
 
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("WallPlane")?.Attribute("FloorCodeFirst")?.Value, out ushort floorCodeFirst))
@@ -193,7 +193,7 @@ public class MapAnalyzer
 	public bool IsNavigable(ushort mapData, ushort objectData) =>
 		IsTransparent(mapData, objectData) && (
 			!Objects.TryGetValue(objectData, out ObjectInfo objInfo)
-			|| objInfo.ObjectClass == ObClass.dressing);
+			|| objInfo.ObjectClass != ObClass.block); // Only blocking objects block navigation
 
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
 		(!IsWall(mapData) || PushableTiles.Contains(objectData))
@@ -391,12 +391,12 @@ public class MapAnalyzer
 			}
 
 			logger.LogInformation("Object scan complete: {ActorCount} actors, {StaticCount} statics", enemies.Count, statics.Count);
-			// Scan map layer for patrol tiles
-			for (int i = 0; i < gameMap.MapData.Length; i++)
+			// Scan object layer for patrol point tiles (Turn markers 90-97)
+			for (int i = 0; i < gameMap.ObjectData.Length; i++)
 			{
-				ushort mapCode = gameMap.MapData[i];
+				ushort objectCode = gameMap.ObjectData[i];
 
-				if (mapAnalyzer.PatrolTiles.TryGetValue(mapCode, out Direction turn))
+				if (mapAnalyzer.PatrolTiles.TryGetValue(objectCode, out Direction turn))
 				{
 					ushort x = gameMap.X(i);
 					ushort y = gameMap.Y(i);
@@ -537,13 +537,29 @@ public record ObjectInfo
 	public string State { get; init; }       // Initial state for actors (e.g., "s_grdstand", "s_grdpath1")
 }
 
-// Direction enum (Wolf3D: NORTH=0, EAST=1, SOUTH=2, WEST=3)
+/// <summary>
+/// Eight-way direction enum for Wolf3D actors and patrol points.
+/// WL_DEF.H:dirtype - values match original Wolf3D: east=0, northeast=1, north=2, etc.
+/// In Wolf3D coordinates: +X is east, -X is west, +Y is south (down the map), -Y is north (up the map).
+/// </summary>
 public enum Direction : byte
 {
-	N = 0,  // North (negative Y)
-	E = 1,  // East (positive X)
-	S = 2,  // South (positive Y)
-	W = 3   // West (negative X)
+	/// <summary>East - 0 degrees, facing +X in Wolf3D coordinates</summary>
+	E = 0,
+	/// <summary>Northeast - 45 degrees, facing +X/-Y</summary>
+	NE = 1,
+	/// <summary>North - 90 degrees, facing -Y in Wolf3D coordinates (up the map)</summary>
+	N = 2,
+	/// <summary>Northwest - 135 degrees, facing -X/-Y</summary>
+	NW = 3,
+	/// <summary>West - 180 degrees, facing -X in Wolf3D coordinates</summary>
+	W = 4,
+	/// <summary>Southwest - 225 degrees, facing -X/+Y</summary>
+	SW = 5,
+	/// <summary>South - 270 degrees, facing +Y in Wolf3D coordinates (down the map)</summary>
+	S = 6,
+	/// <summary>Southeast - 315 degrees, facing +X/+Y</summary>
+	SE = 7
 }
 
 // Object class enum (Wolf3D classtype and stat_t enums combined)

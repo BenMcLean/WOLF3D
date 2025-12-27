@@ -66,8 +66,9 @@ public class Actor
 	/// WL_DEF.H:objstruct:dir (original: dirtype enum)
 	/// Current facing direction (8-way).
 	/// Used for sprite rotation and movement.
+	/// Null represents "nodir" (blocked, no valid direction).
 	/// </summary>
-	public Direction Facing { get; set; }
+	public Direction? Facing { get; set; }
 
 	/// <summary>
 	/// WL_DEF.H:objstruct:hitpoints (original: int = 16-bit signed)
@@ -97,10 +98,10 @@ public class Actor
 
 	/// <summary>
 	/// WL_DEF.H:objstruct:distance (original: long = 32-bit signed)
-	/// Distance to player (for AI decisions).
-	/// Updated each tic by Think functions.
+	/// Distance remaining in current movement to next tile center (TILEGLOBAL = 0x10000).
+	/// If negative, encodes door waiting: value = -(doorIndex+1), e.g. -1 = door 0, -2 = door 1
 	/// </summary>
-	public int DistanceToPlayer { get; set; }
+	public int Distance { get; set; }
 
 	/// <summary>
 	/// WL_STATE.C: Reaction timer (ob->temp2 in original code).
@@ -133,7 +134,7 @@ public class Actor
 		Speed = initialState.Speed;
 		ShapeNum = initialState.Shape;
 		Flags = ActorFlags.None;
-		DistanceToPlayer = 0;
+		Distance = 0;
 	}
 
 	/// <summary>

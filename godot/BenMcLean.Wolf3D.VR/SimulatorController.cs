@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Assets;
-using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.VR;
 
@@ -34,7 +33,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y)</param>
 	public void Initialize(
 		MapAnalyzer mapAnalyzer,
-		MapAnalysis mapAnalysis,
+		MapAnalyzer.MapAnalysis mapAnalysis,
 		Doors doorsNode,
 		Walls wallsNode,
 		Bonuses bonusesNode,
@@ -144,7 +143,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="tileX">Tile X coordinate of the pushwall</param>
 	/// <param name="tileY">Tile Y coordinate of the pushwall</param>
 	/// <param name="direction">Direction the player is facing (pushwall moves away from player)</param>
-	public void ActivatePushWall(ushort tileX, ushort tileY, Simulator.Direction direction)
+	public void ActivatePushWall(ushort tileX, ushort tileY, Direction direction)
 	{
 		if (simulator == null)
 			return;

@@ -43,16 +43,21 @@ public class Simulator
 	private MapAnalyzer mapAnalyzer;
 	// Map analysis for line-of-sight calculations and navigation
 	private MapAnalysis mapAnalysis;
+	// Patrol direction lookup (WL_ACT2.C:SelectPathDir reads from map layer 1)
+	// Key encoding: (Y << 16) | X
+	private Dictionary<uint, Assets.Direction> patrolDirectionAtTile;
 	// Map dimensions
 	private ushort mapWidth, mapHeight;
 	// Spatial index arrays - track what occupies each tile (WL_DEF.H:actorat equivalent)
 	// Index calculation: y * mapWidth + x
 	// -1 = tile is empty, >= 0 = index into respective collection
+	// NOTE: actorAtTile[actor.TileX][actor.TileY] points to the actor's DESTINATION tile,
+	// not its current position! Updated via clear-think-set pattern in UpdateActors.
 	private short[] actorAtTile;     // Actor index occupying this tile (-1 if none)
 	private short[] doorAtTile;      // Door index at this tile (-1 if none)
 	private short[] pushWallAtTile;  // PushWall index at this tile (-1 if none)
-	// WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
-	// Current simulation time in tics
+									 // WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
+									 // Current simulation time in tics
 	public long CurrentTic { get; private set; }
 	// Player position (updated each Update call by presentation layer)
 	// WL_DEF.H:player->x, player->y (16.16 fixed-point)
@@ -203,7 +208,7 @@ public class Simulator
 	/// Queue a player action to be processed on the next tic.
 	/// Ensures determinism by quantizing inputs to tic boundaries.
 	/// </summary>
-	public void QueueAction(PlayerAction action)=>pendingActions.Add(action);
+	public void QueueAction(PlayerAction action) => pendingActions.Add(action);
 	private void ProcessTic()
 	{
 		// Process queued player actions
@@ -265,7 +270,6 @@ public class Simulator
 			// Emit opening event and sound immediately (matches CloseDoor behavior)
 			DoorOpening?.Invoke(new DoorOpeningEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				DoorIndex = doorIndex,
 				TileX = door.TileX,
 				TileY = door.TileY
@@ -287,7 +291,6 @@ public class Simulator
 		door.Action = DoorAction.Closing;
 		DoorClosing?.Invoke(new DoorClosingEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = doorIndex,
 			TileX = door.TileX,
 			TileY = door.TileY
@@ -330,7 +333,7 @@ public class Simulator
 		Door door = doors[doorIndex];
 		// WL_ACT1.C:686 - accumulate tics
 		door.TicCount += 1; // Always 1 tic per call in our simplified version
-		// WL_ACT1.C:686 - check if time to close
+							// WL_ACT1.C:686 - check if time to close
 		if (door.TicCount >= Constants.DoorOpenTics)
 			CloseDoor((ushort)doorIndex);
 	}
@@ -356,7 +359,6 @@ public class Simulator
 			door.Action = DoorAction.Open;
 			DoorOpened?.Invoke(new DoorOpenedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				DoorIndex = (ushort)doorIndex,
 				TileX = door.TileX,
 				TileY = door.TileY
@@ -368,7 +370,6 @@ public class Simulator
 		// Emit position changed event every tic
 		DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = (ushort)doorIndex,
 			TileX = door.TileX,
 			TileY = door.TileY,
@@ -397,7 +398,6 @@ public class Simulator
 			door.Action = DoorAction.Closed;
 			DoorClosed?.Invoke(new DoorClosedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				DoorIndex = (ushort)doorIndex,
 				TileX = door.TileX,
 				TileY = door.TileY
@@ -409,7 +409,6 @@ public class Simulator
 		// Emit position changed event every tic
 		DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = (ushort)doorIndex,
 			TileX = door.TileX,
 			TileY = door.TileY,
@@ -517,7 +516,6 @@ public class Simulator
 		// Fire position changed event
 		PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			PushWallIndex = (ushort)pushWallIndex,
 			X = pushWall.X,
 			Y = pushWall.Y,
@@ -537,7 +535,6 @@ public class Simulator
 			// Fire final position event
 			PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				PushWallIndex = (ushort)pushWallIndex,
 				X = pushWall.X,
 				Y = pushWall.Y,
@@ -555,6 +552,10 @@ public class Simulator
 	{
 		Actor actor = actors[actorIndex];
 
+		// WL_PLAY.C:DoActor - Clear actorat before executing Think
+		// This implements the clear-think-set pattern from original Wolf3D
+		int tileIdx = GetTileIndex(actor.TileX, actor.TileY);
+		actorAtTile[tileIdx] = -1;
 		// WL_PLAY.C:1696 - Non-transitional object (tictime == 0)
 		// These states execute Think every frame but never auto-transition
 		if (actor.TicCount == 0)
@@ -572,6 +573,9 @@ public class Simulator
 					// Silently ignore - likely unimplemented function
 				}
 			}
+			// Set actorat after Think (actor.TileX/TileY may have changed)
+			tileIdx = GetTileIndex(actor.TileX, actor.TileY);
+			actorAtTile[tileIdx] = (short)actorIndex;
 			// WL_PLAY.C:1726 - Return early, don't transition
 			return;
 		}
@@ -629,6 +633,9 @@ public class Simulator
 				System.Diagnostics.Debug.WriteLine($"Error executing Think function '{actor.CurrentState.Think}' for actor {actorIndex}: {ex.Message}");
 			}
 		}
+		// Set actorat after Think (actor.TileX/TileY may have changed)
+		tileIdx = GetTileIndex(actor.TileX, actor.TileY);
+		actorAtTile[tileIdx] = (short)actorIndex;
 	}
 	/// <summary>
 	/// Transitions an actor to a new state by state name.
@@ -671,7 +678,6 @@ public class Simulator
 		{
 			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				ActorIndex = actorIndex,
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = nextState.Rotate
@@ -782,7 +788,6 @@ public class Simulator
 			// Emit spawn event for VR layer to display the bonus
 			BonusSpawned?.Invoke(new BonusSpawnedEvent
 			{
-				Timestamp = CurrentTic,
 				StatObjIndex = lastStatObj,
 				Shape = spawn.Shape,
 				TileX = spawn.X,
@@ -832,15 +837,13 @@ public class Simulator
 			if (!actorHitPoints.TryGetValue(spawn.ActorType, out short hitPoints))
 				// Default to 1 hitpoint if not defined
 				hitPoints = 1;
-			// Convert 4-way cardinal direction from map data to 8-way simulator direction
-			Direction facing = spawn.Facing.ToSimulatorDirection();
 			// Create actor instance
 			Actor actor = new(
 				actorType: spawn.ActorType,
 				initialState: initialState,
 				tileX: spawn.X,
 				tileY: spawn.Y,
-				facing: facing,
+				facing: spawn.Facing,
 				hitPoints: hitPoints);
 			// Set additional flags from spawn data
 			if (spawn.Ambush)
@@ -849,9 +852,38 @@ public class Simulator
 				actor.Flags |= ActorFlags.Patrolling;
 			actors.Add(actor);
 
-			// Update spatial index - actor occupies its spawn tile
-			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
-			actorAtTile[tileIdx] = (short)actorIndex;
+			// WL_ACT2.C: Two spawn patterns based on initial state's movement properties
+			// SpawnPatrol (line 1246): Speed > 0, initializes for immediate movement
+			//   - Clear spawn tile, move TileX/TileY to adjacent, set Distance=TILEGLOBAL
+			// SpawnStand: Speed = 0, stationary until state changes
+			//   - Stay at spawn tile, Distance remains 0
+			bool needsMovementInit = initialState.Speed > 0;
+			if (needsMovementInit)
+			{
+				// WL_ACT2.C:1246-1262 - Initialize actor ready to move
+				int spawnTileIdx = GetTileIndex(actor.TileX, actor.TileY);
+				actorAtTile[spawnTileIdx] = -1; // Clear spawn tile
+				// Move TileX/TileY to destination (adjacent tile in facing direction)
+				// This sets up ob->tilex/tiley to point to the first destination
+				switch (spawn.Facing)
+				{
+					case Direction.E: actor.TileX++; break;
+					case Direction.NE: actor.TileX++; actor.TileY--; break;
+					case Direction.N: actor.TileY--; break;
+					case Direction.NW: actor.TileX--; actor.TileY--; break;
+					case Direction.W: actor.TileX--; break;
+					case Direction.SW: actor.TileX--; actor.TileY++; break;
+					case Direction.S: actor.TileY++; break;
+					case Direction.SE: actor.TileX++; actor.TileY++; break;
+				}
+				// WL_ACT2.C:1242 - Set distance to move one full tile
+				actor.Distance = 0x10000; // TILEGLOBAL
+				// Claim destination tile
+				int destTileIdx = GetTileIndex(actor.TileX, actor.TileY);
+				actorAtTile[destTileIdx] = (short)actorIndex;
+			}
+			// Note: Stationary actors don't claim spawn tile - they'll be added to actorat
+			// when they first move (via the clear-think-set pattern in UpdateActors)
 
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
@@ -869,16 +901,57 @@ public class Simulator
 			// Fire spawn event - presentation layer will create visual representation
 			ActorSpawned?.Invoke(new ActorSpawnedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				ActorIndex = actorIndex,
 				TileX = spawn.X,
 				TileY = spawn.Y,
-				Facing = facing,
+				Facing = spawn.Facing,
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = initialState.Rotate
 			});
 			actorIndex++;
 		}
+		// Load patrol points automatically (actors need them for patrol movement)
+		LoadPatrolPoints(mapAnalysis);
+	}
+	/// <summary>
+	/// Initialize patrol direction lookup from MapAnalysis.PatrolPoints.
+	/// Called automatically by LoadActorsFromMapAnalysis.
+	/// WL_ACT2.C:SelectPathDir reads patrol arrows from map layer 1 via MAPSPOT macro.
+	/// </summary>
+	private void LoadPatrolPoints(MapAnalysis mapAnalysis)
+	{
+		patrolDirectionAtTile = [];
+		foreach (MapAnalysis.PatrolPoint patrolPoint in mapAnalysis.PatrolPoints)
+		{
+			uint tileKey = ((uint)patrolPoint.Y << 16) | patrolPoint.X;
+			patrolDirectionAtTile[tileKey] = patrolPoint.Turn;
+		}
+	}
+	/// <summary>
+	/// Helper for ActorScriptContext.SelectPathDir() - looks up patrol direction at a tile.
+	/// </summary>
+	public bool TryGetPatrolDirection(ushort tileX, ushort tileY, out Assets.Direction direction)
+	{
+		if (patrolDirectionAtTile is not null)
+		{
+			uint tileKey = ((uint)tileY << 16) | tileX;
+			return patrolDirectionAtTile.TryGetValue(tileKey, out direction);
+		}
+		direction = default;
+		return false;
+	}
+	/// <summary>
+	/// Helper for ActorScriptContext.MoveObj() - fires ActorMovedEvent.
+	/// </summary>
+	public void FireActorMovedEvent(int actorIndex, int x, int y, Direction? facing)
+	{
+		ActorMoved?.Invoke(new ActorMovedEvent
+		{
+			ActorIndex = actorIndex,
+			X = x,
+			Y = y,
+			Facing = facing
+		});
 	}
 
 	/// <summary>
@@ -896,7 +969,6 @@ public class Simulator
 			// Emit current door position/state event
 			DoorPositionChanged?.Invoke(new DoorPositionChangedEvent
 			{
-				Timestamp = CurrentTic,
 				DoorIndex = (ushort)i,
 				TileX = door.TileX,
 				TileY = door.TileY,
@@ -918,7 +990,6 @@ public class Simulator
 			{
 				PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
 				{
-					Timestamp = CurrentTic * TicDuration,
 					PushWallIndex = (ushort)i,
 					X = pushWall.X,
 					Y = pushWall.Y,
@@ -934,7 +1005,6 @@ public class Simulator
 			{
 				BonusSpawned?.Invoke(new BonusSpawnedEvent
 				{
-					Timestamp = CurrentTic,
 					StatObjIndex = i,
 					Shape = (ushort)StatObjList[i].ShapeNum,
 					TileX = StatObjList[i].TileX,
@@ -950,7 +1020,6 @@ public class Simulator
 			Actor actor = actors[i];
 			ActorSpawned?.Invoke(new ActorSpawnedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				ActorIndex = i,
 				TileX = actor.TileX,
 				TileY = actor.TileY,
@@ -962,7 +1031,6 @@ public class Simulator
 			// Also emit current actor sprite state
 			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
 			{
-				Timestamp = CurrentTic * TicDuration,
 				ActorIndex = i,
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = actor.CurrentState?.Rotate ?? false
@@ -981,7 +1049,6 @@ public class Simulator
 	{
 		ActorPlaySound?.Invoke(new ActorPlaySoundEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			ActorIndex = actorIndex,
 			SoundName = soundName,
 			SoundId = -1 // Name-based lookup
@@ -998,7 +1065,6 @@ public class Simulator
 	{
 		DoorPlaySound?.Invoke(new DoorPlaySoundEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			DoorIndex = doorIndex,
 			SoundName = soundName,
 			SoundId = -1
@@ -1014,7 +1080,6 @@ public class Simulator
 	{
 		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			SoundName = soundName,
 			SoundId = -1
 		});
@@ -1030,7 +1095,6 @@ public class Simulator
 	{
 		PushWallPlaySound?.Invoke(new PushWallPlaySoundEvent
 		{
-			Timestamp = CurrentTic * TicDuration,
 			PushWallIndex = pushWallIndex,
 			SoundName = soundName,
 			SoundId = -1

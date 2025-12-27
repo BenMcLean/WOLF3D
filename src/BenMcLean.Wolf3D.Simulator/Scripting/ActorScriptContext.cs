@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets;
 using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
@@ -34,6 +35,19 @@ public class ActorScriptContext(
 	/// <summary>Get actor's fixed-point Y coordinate</summary>
 	public int GetY() => actor.Y;
 
+	/// <summary>
+	/// Set actor's exact position (fixed-point coordinates).
+	/// Used for snapping to tile centers after crossing boundaries.
+	/// NOTE: Does NOT update spatial index - caller (MoveObj) already did that.
+	/// </summary>
+	public void SetPosition(int x, int y)
+	{
+		actor.X = x;
+		actor.Y = y;
+		// Update tile coordinates (spatial index already updated by MoveObj)
+		actor.TileX = (ushort)(x >> 16);
+		actor.TileY = (ushort)(y >> 16);
+	}
 	/// <summary>Get actor's current hit points</summary>
 	public int GetHitPoints() => actor.HitPoints;
 
@@ -43,8 +57,16 @@ public class ActorScriptContext(
 	/// <summary>Get actor's current speed</summary>
 	public int GetSpeed() => actor.Speed;
 
-	/// <summary>Get distance to player (updated each tic)</summary>
-	public int GetDistanceToPlayer() => actor.DistanceToPlayer;
+	/// <summary>
+	/// Calculate distance to player using tile coordinates.
+	/// Original Wolf3D calculates this on-demand in AI functions, not stored.
+	/// </summary>
+	public int CalculateDistanceToPlayer()
+	{
+		int dx = System.Math.Abs(simulator.PlayerTileX - actor.TileX);
+		int dy = System.Math.Abs(simulator.PlayerTileY - actor.TileY);
+		return System.Math.Max(dx, dy); // Chebyshev distance (matching original)
+	}
 
 	/// <summary>WL_STATE.C: Get actor reaction timer (ob->temp2)</summary>
 	public int GetReactionTimer() => actor.ReactionTimer;
@@ -67,6 +89,16 @@ public class ActorScriptContext(
 	/// </summary>
 	public int Random() => rng.Next(256);
 
+	/// <summary>
+	/// Bitwise right shift for Lua (value >> bits).
+	/// Lua doesn't have native bit shift operators, so we provide them here.
+	/// </summary>
+	public int BitShiftRight(int value, int bits) => value >> bits;
+	/// <summary>
+	/// Bitwise left shift for Lua (value << bits).
+	/// Lua doesn't have native bit shift operators, so we provide them here.
+	/// </summary>
+	public int BitShiftLeft(int value, int bits) => value << bits;
 	/// <summary>
 	/// Check line of sight to player using raycasting.
 	/// WL_STATE.C:CheckSight(ob)
@@ -153,6 +185,99 @@ public class ActorScriptContext(
 	}
 
 	/// <summary>
+	/// WL_ACT2.C:SelectPathDir (lines 4046-4062)
+	/// Reads patrol direction from current tile (optional turn marker).
+	/// If patrol point found, sets ob->dir to new direction.
+	/// Sets ob->distance = TILEGLOBAL and calls TryWalk.
+	/// If TryWalk fails (blocked), sets ob->dir = nodir (null in C#).
+	/// NOTE: This updates actor.TileX/TileY to DESTINATION tile (ob->tilex/tiley).
+	/// </summary>
+	public void SelectPathDir()
+	{
+		// WL_ACT2.C:4050 - Read patrol arrow at current tile (optional turn marker)
+		if (simulator.TryGetPatrolDirection(actor.TileX, actor.TileY, out Assets.Direction direction))
+		{
+			// Found patrol point - change direction
+			actor.Facing = direction;
+		}
+		// If no patrol point found, keep current direction (don't modify actor.Facing)
+		// WL_ACT2.C:4058 - Set distance to move one full tile
+		actor.Distance = 0x10000; // TILEGLOBAL
+		// WL_ACT2.C:4060 - TryWalk: update tilex/tiley to destination and check collision
+		if (actor.Facing != null)
+		{
+			// Save current position in case move is blocked
+			ushort oldTileX = actor.TileX;
+			ushort oldTileY = actor.TileY;
+			// WL_STATE.C:216-250 - Update tilex/tiley based on direction
+			switch (actor.Facing.Value)
+			{
+				case Direction.N:  actor.TileY--; break;
+				case Direction.NE: actor.TileX++; actor.TileY--; break;
+				case Direction.E:  actor.TileX++; break;
+				case Direction.SE: actor.TileX++; actor.TileY++; break;
+				case Direction.S:  actor.TileY++; break;
+				case Direction.SW: actor.TileX--; actor.TileY++; break;
+				case Direction.W:  actor.TileX--; break;
+				case Direction.NW: actor.TileX--; actor.TileY--; break;
+			}
+			// WL_STATE.C:253+ - Check if destination tile is navigable
+			if (!simulator.IsTileNavigable(actor.TileX, actor.TileY))
+			{
+				// WL_ACT2.C:4061 - Blocked, revert position and set dir = nodir
+				actor.TileX = oldTileX;
+				actor.TileY = oldTileY;
+				actor.Facing = null;
+			}
+		}
+	}
+	/// <summary>
+	/// WL_STATE.C:MoveObj (lines 723-833)
+	/// Move actor in current direction by specified distance.
+	/// Updates ONLY fixed-point position (ob->x, ob->y), NOT tile coordinates.
+	/// Tile coordinates (ob->tilex, ob->tiley) are ONLY updated by TryWalk/SelectPathDir.
+	/// </summary>
+	public void MoveObj(int move)
+	{
+		// Can't move if no direction (nodir)
+		if (actor.Facing == null)
+			return;
+		// Debug: log first few moves
+		if (actorIndex < 3 && move > 0)
+			System.Diagnostics.Debug.WriteLine($"[MoveObj] Actor {actorIndex}: Facing={actor.Facing} (value={(int)actor.Facing}), move={move}");
+		// WL_STATE.C:727-763 - Apply movement to fixed-point coordinates
+		switch (actor.Facing.Value)
+		{
+			case Direction.N:  actor.Y -= move; break;
+			case Direction.NE: actor.Y -= move; actor.X += move; break;
+			case Direction.E:  actor.X += move; break;
+			case Direction.SE: actor.X += move; actor.Y += move; break;
+			case Direction.S:  actor.Y += move; break;
+			case Direction.SW: actor.X -= move; actor.Y += move; break;
+			case Direction.W:  actor.X -= move; break;
+			case Direction.NW: actor.X -= move; actor.Y -= move; break;
+		}
+		// Decrement distance remaining to destination
+		actor.Distance -= move;
+		// Fire movement event
+		simulator.FireActorMovedEvent(actorIndex, actor.X, actor.Y, actor.Facing);
+	}
+	/// <summary>Get current distance to next tile (ob->distance)</summary>
+	public int GetDistance() => actor.Distance;
+	/// <summary>Set distance to next tile (ob->distance)</summary>
+	public void SetDistance(int distance) => actor.Distance = distance;
+	/// <summary>
+	/// Check if a tile is navigable (walkable, no walls, no actors).
+	/// WL_ACT1.C:TryWalk equivalent.
+	/// </summary>
+	public bool IsTileNavigable(int tileX, int tileY) =>
+		simulator.IsTileNavigable((ushort)tileX, (ushort)tileY);
+	/// <summary>
+	/// Check if actor has a valid direction (not nodir/null).
+	/// For Lua scripts to check ob->dir != nodir.
+	/// </summary>
+	public bool HasDirection() => actor.Facing != null;
+	/// <summary>
 	/// Move actor to a specific tile position.
 	/// </summary>
 	/// <param name="tileX">Target tile X coordinate</param>
@@ -234,18 +359,6 @@ public class ActorScriptContext(
 	/// WL_DEF.H:player->y
 	/// </summary>
 	public int GetPlayerY() => simulator.PlayerY;
-
-	/// <summary>
-	/// Calculate Manhattan distance to player (in tiles).
-	/// </summary>
-	public int CalculateDistanceToPlayer()
-	{
-		int dx = System.Math.Abs(GetPlayerTileX() - actor.TileX);
-		int dy = System.Math.Abs(GetPlayerTileY() - actor.TileY);
-		int distance = dx + dy;
-		actor.DistanceToPlayer = distance;
-		return distance;
-	}
 
 	/// <summary>
 	/// Find nearby actors within a radius.

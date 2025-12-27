@@ -31,6 +31,7 @@ void sky() {
 	private Camera3D _camera;
 	private FreeLookCamera _freeLookCamera;
 	private Walls _walls;
+	private PatrolArrows _patrolArrows;
 	private Fixtures _fixtures;
 	private Bonuses _bonuses;
 	private Actors _actors;
@@ -85,6 +86,10 @@ void sky() {
 			currentLevel,
 			Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
 		AddChild(_walls);
+
+		// Create patrol arrows for debugging patrol points
+		_patrolArrows = new PatrolArrows(currentLevel);
+		AddChild(_patrolArrows);
 
 		// Create fixtures (billboarded sprites) for the current level and add to scene
 		_fixtures = new Fixtures(
@@ -179,7 +184,7 @@ void sky() {
 		if (pushWallIndex.HasValue)
 		{
 			// Determine push direction from camera rotation (extension method in ExtensionMethods.cs)
-			Simulator.Direction dir = rotationY.ToCardinalDirection();
+			Direction dir = rotationY.ToCardinalDirection();
 			GD.Print($"Activating pushwall at ({tileX}, {tileY}) in direction {dir}");
 			_simulatorController.ActivatePushWall(tileX, tileY, dir);
 		}

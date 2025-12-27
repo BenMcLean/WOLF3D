@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Assets;
 using BenMcLean.Wolf3D.Simulator;
 using Godot;
 using System;
@@ -34,7 +35,7 @@ public partial class Actors : Node3D
 	private struct ActorRenderData
 	{
 		public Vector3 Position;                 // World position (Godot coordinates)
-		public Simulator.Direction Facing;       // Actor's facing direction (for rotated sprites, 8-way)
+		public Direction? Facing;       // Actor's facing direction (for rotated sprites, 8-way)
 		public ushort BaseShape;                 // Base sprite page
 		public bool IsRotated;                   // True = 8-directional, False = single sprite
 	}
@@ -58,7 +59,7 @@ public partial class Actors : Node3D
 	/// Shows a newly spawned actor.
 	/// Called from event handler when ActorSpawnedEvent fires.
 	/// </summary>
-	private void ShowActor(int actorIndex, ushort shape, bool isRotated, ushort tileX, ushort tileY, Simulator.Direction facing)
+	private void ShowActor(int actorIndex, ushort shape, bool isRotated, ushort tileX, ushort tileY, Direction? facing)
 	{
 		// Calculate world position at tile center
 		Vector3 position = new(
@@ -78,7 +79,7 @@ public partial class Actors : Node3D
 		if (isRotated)
 		{
 			// Calculate initial directional sprite
-			ushort directionalSprite = CalculateDirectionalSprite(position, facing, shape, _getViewerPosition());
+			ushort directionalSprite = CalculateDirectionalSprite(position, shape, _getViewerPosition(), facing);
 			if (!_spriteMaterials.TryGetValue(directionalSprite, out StandardMaterial3D material))
 			{
 				GD.PrintErr($"ERROR: Sprite material {directionalSprite} not found!");
@@ -152,7 +153,7 @@ public partial class Actors : Node3D
 		{
 			// Rotated: calculate directional sprite (will be updated in _Process too)
 			ushort directionalSprite = CalculateDirectionalSprite(
-				data.Position, data.Facing, newShape, _getViewerPosition());
+				data.Position, newShape, _getViewerPosition(), data.Facing);
 			node.MaterialOverride = _spriteMaterials[directionalSprite];
 		}
 	}
@@ -174,16 +175,15 @@ public partial class Actors : Node3D
 	/// Only used for rotated sprites (walking, standing, etc).
 	/// Enum values directly correspond to sprite offsets (0-7).
 	/// </summary>
-	private static ushort CalculateDirectionalSprite(Vector3 actorPosition, Simulator.Direction actorFacing, ushort baseShape, Vector3 viewerPosition)
+	private static ushort CalculateDirectionalSprite(Vector3 actorPosition, ushort baseShape, Vector3 viewerPosition, Direction? actorFacing = 0)
 	{
 		// Calculate viewing angle from viewer to actor
 		Vector3 toActor = actorPosition - viewerPosition;
 		float viewAngle = Mathf.Atan2(toActor.Z, toActor.X);  // Angle in radians
 		// Convert to [0, 2π) range
 		if (viewAngle < 0) viewAngle += Mathf.Tau;
-		// Calculate actor's facing angle based on 8-way enum
-		// E=0 (0°), NE=1 (45°), N=2 (90°), NW=3 (135°), W=4 (180°), SW=5 (225°), S=6 (270°), SE=7 (315°)
-		float actorAngle = (int)actorFacing * (Mathf.Tau / 8),
+		// Calculate actor's facing angle in Godot coordinates using extension method
+		float actorAngle = actorFacing.Value.ToAngle(),
 		// Relative angle (viewer's perspective looking at actor, not actor looking at viewer)
 		// Add π to flip from "actor to viewer" to "viewer to actor"
 		// Swap order to reverse clockwise/counter-clockwise direction
@@ -215,7 +215,7 @@ public partial class Actors : Node3D
 			if (_actorData.TryGetValue(actorIndex, out ActorRenderData data) && data.IsRotated)
 			{
 				ushort directionalSprite = CalculateDirectionalSprite(
-					data.Position, data.Facing, data.BaseShape, viewerPosition);
+					data.Position, data.BaseShape, viewerPosition, data.Facing);
 				node.MaterialOverride = _spriteMaterials[directionalSprite];
 			}
 		}

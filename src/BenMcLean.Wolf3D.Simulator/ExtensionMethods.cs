@@ -40,18 +40,4 @@ public static class ExtensionMethods
 	/// <param name="fixedPoint">16.16 fixed-point coordinate</param>
 	/// <returns>Tile coordinate (upper 16 bits)</returns>
 	public static short ToTile(this int fixedPoint) => (short)(fixedPoint >> 16);
-	/// <summary>
-	/// Extracts the fractional position within a tile from a Wolf3D 16.16 fixed-point coordinate.
-	/// </summary>
-	/// <param name="fixedPoint">16.16 fixed-point coordinate</param>
-	/// <returns>Fractional position (0-65535, where 0 = tile corner, 32768 = center, 65535 = next corner)</returns>
-	public static ushort ToFractional(this int fixedPoint) => (ushort)(fixedPoint & 0xFFFF);
-	public static Direction ToSimulatorDirection(this Assets.Direction cardinalDir) => cardinalDir switch
-	{
-		Assets.Direction.N => Direction.N,
-		Assets.Direction.E => Direction.E,
-		Assets.Direction.S => Direction.S,
-		Assets.Direction.W => Direction.W,
-		_ => Direction.E
-	};
 }

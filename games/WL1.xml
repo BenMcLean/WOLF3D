@@ -1316,10 +1316,6 @@
 			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="4" State="s_grdstand" />
 			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="4" State="s_grdstand" />
 			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="4" State="s_grdstand" />
-			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="E" Difficulty="4" State="s_grdpath1" />
-			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="N" Difficulty="4" State="s_grdpath1" />
-			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="W" Difficulty="4" State="s_grdpath1" />
-			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="4" State="s_grdpath1" />
 			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="4" State="s_ssstand" />
 			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="4" State="s_ssstand" />
 			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="4" State="s_ssstand" />
@@ -1343,36 +1339,37 @@
 -- WL_ACT2.C:T_Stand - calls SightPlayer
 -- WL_STATE.C:SightPlayer - check for player and transition to chase if spotted
 
--- Check if reaction timer is counting down
-local reactionTimer = GetReactionTimer()
-if reactionTimer > 0 then
-	SetReactionTimer(reactionTimer - 1)
-	return
-end
-
--- FL_AMBUSH (0x40) - check if in ambush mode
-if HasFlag(0x40) then
-	-- Ambush actors only activate with line of sight
-	if not CheckSight() then
-		return
-	end
-	ClearFlag(0x40)  -- Clear ambush flag
-end
-
--- Check if player is visible
-if CheckSight() then
-	-- Player spotted! Set reaction time (guard = 1 + Random()/4)
-	SetReactionTimer(1 + Random() / 4)
-
-	-- Play alert sound
-	PlayDigiSound("HALTSND")
-
-	-- Transition to chase state
-	ChangeState("s_grdchase1")
-
-	-- Set attack mode flag (0x10)
-	SetFlag(0x10)
-end
+-- TODO: Re-enable when chase/combat is implemented
+---- Check if reaction timer is counting down
+--local reactionTimer = GetReactionTimer()
+--if reactionTimer > 0 then
+--	SetReactionTimer(reactionTimer - 1)
+--	return
+--end
+--
+---- FL_AMBUSH (0x40) - check if in ambush mode
+--if HasFlag(0x40) then
+--	-- Ambush actors only activate with line of sight
+--	if not CheckSight() then
+--		return
+--	end
+--	ClearFlag(0x40)  -- Clear ambush flag
+--end
+--
+---- Check if player is visible
+--if CheckSight() then
+--	-- Player spotted! Set reaction time (guard = 1 + Random()/4)
+--	SetReactionTimer(1 + Random() / 4)
+--
+--	-- Play alert sound
+--	PlayDigiSound("HALTSND")
+--
+--	-- Transition to chase state
+--	ChangeState("s_grdchase1")
+--
+--	-- Set attack mode flag (0x10)
+--	SetFlag(0x10)
+--end
 			</Function>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
@@ -1533,27 +1530,66 @@ end
 			-->
 			<!-- WL_ACT2.C:T_Path -->
 			<Function Name="T_Path"><![CDATA[
--- WL_ACT2.C:T_Path (line 4073)
--- Patrol behavior - actor follows a predetermined path
--- If player is sighted, immediately stop patrolling (return early)
+-- WL_ACT2.C:T_Path (lines 4073-4128)
+-- Patrol behavior - actor follows patrol path arrows on map
 
--- Check if we spot the player - if so, exit patrol mode
--- (State machine will handle transition to chase via SightPlayer)
-if CheckSight() then
-	-- Player spotted! The state machine will transition us to chase
-	-- Set reaction timer like in SightPlayer
-	local reaction = 1 + Random() / 6
-	SetReactionTimer(reaction)
-	return
+-- TODO: Re-enable when chase/combat is implemented
+--if CheckSight() then
+--	-- Player spotted! Set reaction timer and exit
+--	local reaction = 1 + Random() / 6
+--	SetReactionTimer(reaction)
+--	return
+--end
+
+-- WL_ACT2.C:4081 - if (ob->dir == nodir)
+if not HasDirection() then
+	SelectPathDir()
+
+	-- WL_ACT2.C:4084 - if (ob->dir == nodir) return
+	if not HasDirection() then
+		return  -- All movement is blocked
+	end
 end
 
--- Continue patrolling
--- Movement is handled by the actor's Speed property and state tics
--- The C code handles complex door-waiting and tile-to-tile movement
--- For now, we trust the state machine to advance through patrol states
--- TODO: Implement SelectPathDir logic for choosing patrol direction
--- TODO: Implement MoveObj for actual movement
--- TODO: Handle door-opening logic (ob->distance < 0 means waiting for door)
+-- Calculate movement this tic: move = ob->speed * tics
+local move = GetSpeed()  -- Already accounts for tics in C# simulator
+
+-- Movement loop (original: while(move))
+while move > 0 do
+	if GetDistance() < 0 then
+		-- Waiting for door to open
+		-- TODO: OpenDoor(-GetDistance() - 1)
+		-- TODO: Check if door is open, return if not
+		SetDistance(0x10000)  -- Door open, proceed
+	end
+
+	if move < GetDistance() then
+		-- Move partial distance within current tile
+		MoveObj(move)
+		break
+	end
+
+	-- Reached next tile - crossed tile boundary
+	-- WL_ACT2.C:4119-4120 - Snap to exact tile center
+	-- ob->x = ((long)ob->tilex<<TILESHIFT)+TILEGLOBAL/2;
+	-- ob->y = ((long)ob->tiley<<TILESHIFT)+TILEGLOBAL/2;
+	local tileX = GetTileX()
+	local tileY = GetTileY()
+	local centerX = (tileX * 65536) + 32768  -- Tile center in 16.16 fixed-point
+	local centerY = (tileY * 65536) + 32768
+	SetPosition(centerX, centerY)
+
+	-- WL_ACT2.C:4121 - Subtract the distance we just traveled to reach the center
+	move = move - GetDistance()
+
+	-- WL_ACT2.C:4123 - SelectPathDir sets new direction and distance = TILEGLOBAL
+	SelectPathDir()
+
+	-- WL_ACT2.C:4125 - if (ob->dir == nodir) return
+	if not HasDirection() then
+		return  -- All movement is blocked
+	end
+end
 			]]></Function>
 
 			<!-- WL_ACT2.C:T_Chase -->
