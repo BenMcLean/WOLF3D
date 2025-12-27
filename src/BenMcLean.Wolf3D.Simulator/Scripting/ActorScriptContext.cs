@@ -222,9 +222,20 @@ public class ActorScriptContext(
 				case Direction.NW: actor.TileX--; actor.TileY--; break;
 			}
 			// WL_STATE.C:253+ - Check if destination tile is navigable
+			// WL_STATE.C:364-369 - If blocked by door, open it and set distance = -doornum-1
+			int doorIndex = simulator.GetDoorIndexAtTile(actor.TileX, actor.TileY);
+			if (doorIndex >= 0)
+			{
+				// Found a door - request it to open
+				simulator.OpenDoor((ushort)doorIndex);
+				// WL_STATE.C:367 - Set distance to -(doornum+1) to indicate waiting for door
+				actor.Distance = -(doorIndex + 1);
+				// Keep the destination tile coordinates and direction
+				return;
+			}
 			if (!simulator.IsTileNavigable(actor.TileX, actor.TileY))
 			{
-				// WL_ACT2.C:4061 - Blocked, revert position and set dir = nodir
+				// WL_ACT2.C:4061 - Blocked by wall/actor, revert position and set dir = nodir
 				actor.TileX = oldTileX;
 				actor.TileY = oldTileY;
 				actor.Facing = null;
@@ -381,6 +392,41 @@ public class ActorScriptContext(
 	{
 		// TODO: Create and emit custom actor event
 		// simulator.EmitCustomActorEvent(actor, eventType);
+	}
+
+	/// <summary>
+	/// Request a door to open (actor-safe version).
+	/// Actors can only request opening, not close/toggle doors.
+	/// Guard check prevents actors from interrupting door opening sound.
+	/// WL_ACT1.C:OpenDoor
+	/// </summary>
+	/// <param name="doorIndex">Door index (0-based)</param>
+	public void OpenDoor(int doorIndex)
+	{
+		if (doorIndex >= 0 && doorIndex < simulator.Doors.Count)
+		{
+			// Actor guard: only call OpenDoor if door is NOT already Open or Opening
+			// This prevents actors from re-triggering the door opening sound
+			Door door = simulator.Doors[doorIndex];
+			if (door.Action != DoorAction.Open && door.Action != DoorAction.Opening)
+			{
+				simulator.OpenDoor((ushort)doorIndex);
+			}
+			// else: door is already Open or Opening, do nothing (just wait)
+		}
+	}
+
+	/// <summary>
+	/// Check if a door is fully open.
+	/// WL_ACT2.C:4099 - doorobjlist[doornum].action == dr_open
+	/// </summary>
+	/// <param name="doorIndex">Door index (0-based)</param>
+	/// <returns>True if door is fully open</returns>
+	public bool IsDoorOpen(int doorIndex)
+	{
+		if (doorIndex >= 0 && doorIndex < simulator.Doors.Count)
+			return simulator.Doors[doorIndex].Action == DoorAction.Open;
+		return false;
 	}
 
 	// ActionScriptContext abstract method implementations

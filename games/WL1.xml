@@ -1558,9 +1558,15 @@ local move = GetSpeed()  -- Already accounts for tics in C# simulator
 while move > 0 do
 	if GetDistance() < 0 then
 		-- Waiting for door to open
-		-- TODO: OpenDoor(-GetDistance() - 1)
-		-- TODO: Check if door is open, return if not
-		SetDistance(0x10000)  -- Door open, proceed
+		-- WL_ACT2.C:4098 - OpenDoor(-ob->distance-1)
+		local doorIndex = -GetDistance() - 1
+		OpenDoor(doorIndex)
+		-- WL_ACT2.C:4099 - if (doorobjlist[doornum].action != dr_open) return
+		if not IsDoorOpen(doorIndex) then
+			return  -- Door not open yet, wait
+		end
+		-- WL_ACT2.C:4101 - Door is now open, proceed
+		SetDistance(0x10000)  -- TILEGLOBAL
 	end
 
 	if move < GetDistance() then

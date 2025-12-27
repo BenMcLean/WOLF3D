@@ -257,17 +257,19 @@ public class Simulator
 	/// <summary>
 	/// WL_ACT1.C:OpenDoor (line 546)
 	/// </summary>
-	private void OpenDoor(ushort doorIndex)
+	public void OpenDoor(ushort doorIndex)
 	{
 		Door door = doors[doorIndex];
 		if (door.Action == DoorAction.Open)
+		{
 			// Door already open, just reset the timer (WL_ACT1.C:549)
 			door.TicCount = 0;
+		}
 		else
 		{
-			// Start opening (WL_ACT1.C:551)
+			// Door is Closed or Closing - start/restart opening (WL_ACT1.C:551)
 			door.Action = DoorAction.Opening;
-			// Emit opening event and sound immediately (matches CloseDoor behavior)
+			// Emit opening event and sound
 			DoorOpening?.Invoke(new DoorOpeningEvent
 			{
 				DoorIndex = doorIndex,
@@ -363,7 +365,9 @@ public class Simulator
 				TileX = door.TileX,
 				TileY = door.TileY
 			});
-			// TODO: WL_ACT1.C:748 - clear actorat for door tile
+			// WL_ACT1.C:748 - clear actorat for door tile (allows actors to pathfind through)
+			int tileIdx = GetTileIndex(door.TileX, door.TileY);
+			doorAtTile[tileIdx] = -1;
 		}
 		else
 			door.Position = (ushort)newPosition;
@@ -383,9 +387,39 @@ public class Simulator
 	private void UpdateDoorClosing(int doorIndex)
 	{
 		Door door = doors[doorIndex];
+
+		// WL_ACT1.C:773-778 - check if something is blocking the door
+		int tileIdx = GetTileIndex(door.TileX, door.TileY);
+		// Check if an actor is in the doorway
+		if (actorAtTile[tileIdx] >= 0)
+		{
+			// Actor blocking door - reopen it
+			OpenDoor((ushort)doorIndex);
+			return;
+		}
+		// Check if player is in the doorway
+		if (PlayerTileX == door.TileX && PlayerTileY == door.TileY)
+		{
+			// Player blocking door - reopen it
+			OpenDoor((ushort)doorIndex);
+			return;
+		}
+		// Check if a spawned bonus object is in the doorway
+		// WL_ACT1.C:773 - actorat check includes static objects (values 1-127)
+		// Only spawned objects (ShapeNum != -1) block the door
+		for (int i = 0; i < lastStatObj; i++)
+		{
+			if (StatObjList[i] != null && !StatObjList[i].IsFree
+				&& StatObjList[i].TileX == door.TileX
+				&& StatObjList[i].TileY == door.TileY)
+			{
+				// Spawned bonus object blocking door - reopen it
+				OpenDoor((ushort)doorIndex);
+				return;
+			}
+		}
+
 		int newPosition = door.Position;
-		// TODO: WL_ACT1.C:773-778 - check if something is blocking the door
-		// If blocked, call OpenDoor(doorIndex) and return
 		// WL_ACT1.C:785 - slide the door by an adaptive amount
 		// position -= tics<<10 (we use 1 tic per update)
 		newPosition -= 1 << 10;
@@ -396,13 +430,15 @@ public class Simulator
 			newPosition = 0;
 			door.Position = (ushort)newPosition;
 			door.Action = DoorAction.Closed;
+			// Restore door to spatial index (blocks movement again)
+			doorAtTile[tileIdx] = (short)doorIndex;
 			DoorClosed?.Invoke(new DoorClosedEvent
 			{
 				DoorIndex = (ushort)doorIndex,
 				TileX = door.TileX,
 				TileY = door.TileY
 			});
-			// TODO: WL_ACT1.C:795-813 - disconnect areas
+			// TODO: WL_ACT1.C:795-813 - disconnect areas (for advanced area connectivity)
 		}
 		else
 			door.Position = (ushort)newPosition;
@@ -1145,6 +1181,19 @@ public class Simulator
 		}
 
 		return true;
+	}
+
+	/// <summary>
+	/// Get the door index at a specific tile.
+	/// WL_STATE.C:TryWalk uses this to detect doors during pathfinding.
+	/// </summary>
+	/// <param name="x">Tile X coordinate</param>
+	/// <param name="y">Tile Y coordinate</param>
+	/// <returns>Door index (0-based) or -1 if no door at this tile</returns>
+	public int GetDoorIndexAtTile(ushort x, ushort y)
+	{
+		int tileIdx = GetTileIndex(x, y);
+		return doorAtTile[tileIdx];
 	}
 	#endregion
 }
