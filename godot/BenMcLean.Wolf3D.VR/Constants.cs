@@ -22,6 +22,7 @@ public static class Constants
 		DeadZone = 0.5f,
 		HalfPi = Mathf.Pi / 2f,
 		QuarterPi = Mathf.Pi / 4f,
+		EighthPi = Mathf.Pi / 8f,
 		/// <summary>
 		/// This value is used to determine how big the player's head is for collision detection
 		/// </summary>

@@ -22,6 +22,8 @@ public partial class Walls : Node3D
 	private readonly List<PushWallData> pushWalls = [];
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> wallMaterials;
 	private readonly Dictionary<ushort, int> nextInstanceIndex = []; // Tracks next available instance per texture
+	private readonly IReadOnlyDictionary<string, AudioStreamWav> digiSounds; // Sound library
+	private Simulator.Simulator simulator;
 	private class PushWallData
 	{
 		public ushort ShapeTexture;      // Horizontal/lighter texture (north/south faces)
@@ -30,15 +32,21 @@ public partial class Walls : Node3D
 			SouthInstanceIndex,   // In MeshInstances for ShapeTexture
 			EastInstanceIndex,    // In MeshInstances for ShapeTexture + 1
 			WestInstanceIndex;    // In MeshInstances for ShapeTexture + 1
+		public AudioStreamPlayer3D Speaker; // 3D audio speaker for this pushwall
 	}
 	/// <summary>
 	/// Creates wall geometry from map data.
 	/// </summary>
 	/// <param name="wallMaterials">Dictionary of wall materials from GodotResources.OpaqueMaterials</param>
 	/// <param name="mapAnalysis">Map analysis containing wall and pushwall spawn data</param>
-	public Walls(IReadOnlyDictionary<ushort, StandardMaterial3D> wallMaterials, MapAnalysis mapAnalysis)
+	/// <param name="digiSounds">Dictionary of digi sounds from SharedAssetManager</param>
+	public Walls(
+		IReadOnlyDictionary<ushort, StandardMaterial3D> wallMaterials,
+		MapAnalysis mapAnalysis,
+		IReadOnlyDictionary<string, AudioStreamWav> digiSounds)
 	{
 		this.wallMaterials = wallMaterials;
+		this.digiSounds = digiSounds ?? throw new System.ArgumentNullException(nameof(digiSounds));
 		// Group walls by texture (Shape = VSwap page number)
 		Dictionary<ushort, List<MapAnalysis.WallSpawn>> wallsByTexture = mapAnalysis.Walls
 			.GroupBy(w => w.Shape)
@@ -76,6 +84,43 @@ public partial class Walls : Node3D
 				AddPushWall(pw.Shape, pw.X, pw.Y);
 	}
 	/// <summary>
+	/// Subscribes to simulator events for pushwall movement and sounds.
+	/// Call this after the simulator is initialized.
+	/// </summary>
+	public void Subscribe(Simulator.Simulator simulator)
+	{
+		this.simulator = simulator;
+		simulator.PushWallPositionChanged += OnPushWallPositionChanged;
+		simulator.PushWallPlaySound += OnPushWallPlaySound;
+	}
+	/// <summary>
+	/// Handles pushwall position changes from the simulator.
+	/// </summary>
+	private void OnPushWallPositionChanged(Simulator.PushWallPositionChangedEvent evt)
+	{
+		MovePushWall(evt.PushWallIndex, evt.X, evt.Y);
+	}
+	/// <summary>
+	/// Handles pushwall sound playback requests from the simulator.
+	/// </summary>
+	private void OnPushWallPlaySound(Simulator.PushWallPlaySoundEvent evt)
+	{
+		if (evt.PushWallIndex >= pushWalls.Count)
+		{
+			GD.PrintErr($"Invalid pushwall index for sound: {evt.PushWallIndex}");
+			return;
+		}
+
+		PushWallData data = pushWalls[evt.PushWallIndex];
+		if (digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav stream))
+		{
+			data.Speaker.Stream = stream;
+			data.Speaker.Play();
+		}
+		else
+			GD.PrintErr($"Sound not found: {evt.SoundName}");
+	}
+	/// <summary>
 	/// Adds a pushwall to the rendering system.
 	/// A pushwall is a 4-sided cube (north, south, east, west faces).
 	/// NOTE: Usually called automatically by constructor. Pushwall IDs match their index in MapAnalysis.PushWalls.
@@ -88,6 +133,16 @@ public partial class Walls : Node3D
 	{
 		ushort shapeTexture = wallTexture,
 			darkSideTexture = (ushort)(wallTexture + 1);
+		// Create audio speaker for this pushwall
+		// Position will be updated in UpdatePushWallTransforms as the pushwall moves
+		ushort pushWallId = (ushort)pushWalls.Count;
+		AudioStreamPlayer3D speaker = new()
+		{
+			Name = $"PushWallSpeaker_{pushWallId}",
+			MaxDistance = 30.0f,  // Sound audible from ~30 Godot units away
+			UnitSize = 2.0f,      // Wolf3D scale
+		};
+		AddChild(speaker);
 		PushWallData data = new()
 		{
 			ShapeTexture = shapeTexture,
@@ -95,10 +150,10 @@ public partial class Walls : Node3D
 			SouthInstanceIndex = AllocateInstance(shapeTexture),
 			EastInstanceIndex = AllocateInstance(darkSideTexture),
 			WestInstanceIndex = AllocateInstance(darkSideTexture),
+			Speaker = speaker,
 		};
 		// Set initial transforms at grid position (convert tiles to fixed-point centered)
 		UpdatePushWallTransforms(data, tileX.ToFixedPointCenter(), tileY.ToFixedPointCenter());
-		ushort pushWallId = (ushort)pushWalls.Count;
 		pushWalls.Add(data);
 		return pushWallId;
 	}
@@ -143,6 +198,8 @@ public partial class Walls : Node3D
 			x: fixedX.ToMeters(),
 			y: Constants.HalfTileHeight,
 			z: fixedY.ToMeters());
+		// Update audio speaker position
+		data.Speaker.Position = centerPosition;
 		// North face (Shape texture, facing north at -Z edge)
 		SetInstanceTransform(data.ShapeTexture, data.NorthInstanceIndex,
 			centerPosition + new Vector3(0, 0, -Constants.HalfTileWidth), Mathf.Pi);

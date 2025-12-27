@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets;
+using BenMcLean.Wolf3D.Simulator;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -79,7 +80,10 @@ void sky() {
 		_freeLookCamera.Enabled = true;
 
 		// Create walls for the current level and add to scene
-		_walls = new Walls(VRAssetManager.OpaqueMaterials, currentLevel);
+		_walls = new Walls(
+			VRAssetManager.OpaqueMaterials,
+			currentLevel,
+			Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
 		AddChild(_walls);
 
 		// Create fixtures (billboarded sprites) for the current level and add to scene
@@ -120,6 +124,7 @@ void sky() {
 			Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
 			currentLevel,
 			_doors,
+			_walls,
 			_bonuses,
 			_actors,
 			Shared.SharedAssetManager.CurrentGame.StateCollection,
@@ -132,23 +137,23 @@ void sky() {
 		{
 			if (keyEvent.Keycode == Key.R)
 			{
-				// Use door player is facing
-				OperateDoorPlayerIsFacing();
+				// Use door or pushwall player is facing
+				OperateDoorOrPushWallPlayerIsFacing();
 			}
 		}
 	}
 
 	/// <summary>
-	/// Finds and operates the door the player is facing.
+	/// Finds and operates the door or pushwall the player is facing.
 	/// Projects 1 WallWidth forward from camera position/rotation and checks that tile.
 	/// </summary>
-	private void OperateDoorPlayerIsFacing()
+	private void OperateDoorOrPushWallPlayerIsFacing()
 	{
 		// Get camera's position and Y rotation
 		Vector3 cameraPos = _freeLookCamera.GlobalPosition;
 		float rotationY = _freeLookCamera.GlobalRotation.Y;
 
-		// Project forward 1.5 tiles to reliably detect doors in front
+		// Project forward 1.5 tiles to reliably detect doors/pushwalls in front
 		// In Godot: Y rotation of 0 = facing -Z (North), rotating clockwise
 		float forwardX = Mathf.Sin(rotationY);
 		float forwardZ = -Mathf.Cos(rotationY);
@@ -161,12 +166,26 @@ void sky() {
 		ushort tileX = (ushort)(forwardPoint.X / Constants.TileWidth);
 		ushort tileY = (ushort)(forwardPoint.Z / Constants.TileWidth);
 
-		// Find door at this tile
+		// Try door first
 		ushort? doorIndex = FindDoorAtTile(tileX, tileY);
-
 		if (doorIndex.HasValue)
 		{
 			_simulatorController.OperateDoor(doorIndex.Value);
+			return;
+		}
+
+		// Try pushwall second
+		ushort? pushWallIndex = FindPushWallAtTile(tileX, tileY);
+		if (pushWallIndex.HasValue)
+		{
+			// Determine push direction from camera rotation (extension method in ExtensionMethods.cs)
+			Simulator.Direction dir = rotationY.ToCardinalDirection();
+			GD.Print($"Activating pushwall at ({tileX}, {tileY}) in direction {dir}");
+			_simulatorController.ActivatePushWall(tileX, tileY, dir);
+		}
+		else
+		{
+			GD.Print($"No pushwall found at tile ({tileX}, {tileY})");
 		}
 	}
 
@@ -186,6 +205,22 @@ void sky() {
 		return null;
 	}
 
+	/// <summary>
+	/// Finds the pushwall index at the specified tile coordinates.
+	/// Returns null if no pushwall exists at that tile.
+	/// </summary>
+	private ushort? FindPushWallAtTile(ushort tileX, ushort tileY)
+	{
+		// Search through all pushwalls in the simulator
+		for (int i = 0; i < _simulatorController.PushWalls.Count; i++)
+		{
+			Simulator.PushWall pushWall = _simulatorController.PushWalls[i];
+			(ushort pwTileX, ushort pwTileY) = pushWall.GetTilePosition();
+			if (pwTileX == tileX && pwTileY == tileY)
+				return (ushort)i;
+		}
+		return null;
+	}
 	/// <summary>
 	/// Sets up the VR sky with floor and ceiling colors from the map properties.
 	/// Converts VGA palette indices to RGB colors.

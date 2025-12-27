@@ -141,11 +141,6 @@ public class Actor
 	/// Useful for collision detection and pathfinding.
 	/// </summary>
 	public (ushort tileX, ushort tileY) GetTilePosition() => (TileX, TileY);
-
-	/// <summary>
-	/// Get the current floating-point position (for rendering).
-	/// </summary>
-	public (float x, float y) GetFloatPosition() => (X / 65536f, Y / 65536f);
 }
 
 /// <summary>

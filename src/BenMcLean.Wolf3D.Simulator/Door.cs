@@ -6,12 +6,6 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// </summary>
 public class Door
 {
-	/// <summary>
-	/// How long a door stays open before auto-closing (in tics).
-	/// WL_ACT1.C:OPENTICS = 300 tics (~4.3 seconds at 70Hz)
-	/// </summary>
-	public const short OpenTics = 300;
-
 	// Static properties (from MapAnalysis.DoorSpawn - not serialized, loaded from map)
 	// WL_DEF.H:doorstruct:tilex (original: byte)
 	// Intentional extension: Using ushort to support maps > 64×64
@@ -57,12 +51,6 @@ public class Door
 		Position = 0;
 		TicCount = 0;
 	}
-
-	/// <summary>
-	/// Get the current normalized open amount (0.0 = closed, 1.0 = fully open).
-	/// Useful for rendering/interpolation.
-	/// </summary>
-	public float GetOpenAmount() => Position / 65535f;
 }
 
 /// <summary>

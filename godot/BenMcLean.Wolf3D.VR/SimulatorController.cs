@@ -15,6 +15,7 @@ public partial class SimulatorController : Node3D
 {
 	private Simulator.Simulator simulator;
 	private Doors doors;
+	private Walls walls;
 	private Bonuses bonuses;
 	private Actors actors;
 	private Func<(int X, int Y)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates
@@ -26,6 +27,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="mapAnalyzer">Map analyzer containing metadata (door sounds, etc.)</param>
 	/// <param name="mapAnalysis">Map analysis containing all spawn data</param>
 	/// <param name="doorsNode">The Doors node that will render the doors</param>
+	/// <param name="wallsNode">The Walls node that will render the walls and pushwalls</param>
 	/// <param name="bonusesNode">The Bonuses node that will render bonus items</param>
 	/// <param name="actorsNode">The Actors node that will render actors</param>
 	/// <param name="stateCollection">State collection loaded from game XML (e.g., WL1.xml)</param>
@@ -34,6 +36,7 @@ public partial class SimulatorController : Node3D
 		MapAnalyzer mapAnalyzer,
 		MapAnalysis mapAnalysis,
 		Doors doorsNode,
+		Walls wallsNode,
 		Bonuses bonusesNode,
 		Actors actorsNode,
 		StateCollection stateCollection,
@@ -53,6 +56,7 @@ public partial class SimulatorController : Node3D
 
 		simulator = new Simulator.Simulator(stateCollection, rng, gameClock);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
+		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
 		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
@@ -60,11 +64,15 @@ public partial class SimulatorController : Node3D
 		// CRITICAL: Subscribe presentation layers to simulator events BEFORE loading data
 		// This ensures they receive spawn events during initialization
 		doors.Subscribe(simulator);
+		walls.Subscribe(simulator);
 		bonuses.Subscribe(simulator);
 		actors.Subscribe(simulator);
 
 		// Load doors into simulator (no spawn events - doors are fixed count)
-		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis.Doors);
+		// IMPORTANT: This must be called first to initialize spatial index arrays
+		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis, mapAnalysis.Doors);
+		// Load pushwalls into simulator (no spawn events - pushwalls are fixed count)
+		simulator.LoadPushWallsFromMapAnalysis(mapAnalysis.PushWalls);
 
 		// Load bonuses into simulator - emits BonusSpawnedEvent for each bonus
 		// VR layer receives these events and displays bonuses
@@ -129,6 +137,26 @@ public partial class SimulatorController : Node3D
 	}
 
 	/// <summary>
+	/// Player attempts to push a pushwall.
+	/// Call this from player input handling (e.g., "use" button pressed near a pushwall).
+	/// Based on WL_ACT1.C pushwall activation logic.
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate of the pushwall</param>
+	/// <param name="tileY">Tile Y coordinate of the pushwall</param>
+	/// <param name="direction">Direction the player is facing (pushwall moves away from player)</param>
+	public void ActivatePushWall(ushort tileX, ushort tileY, Simulator.Direction direction)
+	{
+		if (simulator == null)
+			return;
+
+		simulator.QueueAction(new ActivatePushWallAction
+		{
+			TileX = tileX,
+			TileY = tileY,
+			Direction = direction
+		});
+	}
+	/// <summary>
 	/// Gets the current simulation time in tics.
 	/// Useful for debugging or time-based game mechanics.
 	/// </summary>
@@ -139,4 +167,9 @@ public partial class SimulatorController : Node3D
 	/// Read-only access to door states.
 	/// </summary>
 	public IReadOnlyList<Simulator.Door> Doors => simulator?.Doors;
+	/// <summary>
+	/// Gets the list of pushwalls in the simulator.
+	/// Read-only access to pushwall states.
+	/// </summary>
+	public IReadOnlyList<Simulator.PushWall> PushWalls => simulator?.PushWalls;
 }

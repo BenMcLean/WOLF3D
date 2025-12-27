@@ -19,6 +19,10 @@ public class Simulator
 	private readonly List<PlayerAction> pendingActions = [];
 	public IReadOnlyList<Door> Doors => doors;
 	private readonly List<Door> doors = [];
+	public IReadOnlyList<PushWall> PushWalls => pushWalls;
+	private readonly List<PushWall> pushWalls = [];
+	// Global lock: only one pushwall can move at a time in the entire level
+	private bool anyPushWallMoving = false;
 	// WL_ACT1.C:statobjlist[MAXSTATS]
 	// Array of bonus/pickup objects (not fixtures - those are not simulated)
 	public StatObj[] StatObjList { get; private set; } = new StatObj[StatObj.MAXSTATS];
@@ -39,6 +43,14 @@ public class Simulator
 	private MapAnalyzer mapAnalyzer;
 	// Map analysis for line-of-sight calculations and navigation
 	private MapAnalysis mapAnalysis;
+	// Map dimensions
+	private ushort mapWidth, mapHeight;
+	// Spatial index arrays - track what occupies each tile (WL_DEF.H:actorat equivalent)
+	// Index calculation: y * mapWidth + x
+	// -1 = tile is empty, >= 0 = index into respective collection
+	private short[] actorAtTile;     // Actor index occupying this tile (-1 if none)
+	private short[] doorAtTile;      // Door index at this tile (-1 if none)
+	private short[] pushWallAtTile;  // PushWall index at this tile (-1 if none)
 	// WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
 	// Current simulation time in tics
 	public long CurrentTic { get; private set; }
@@ -132,6 +144,17 @@ public class Simulator
 	/// For UI sounds, music, narrator - bypasses spatial audio.
 	/// </summary>
 	public event Action<PlayGlobalSoundEvent> PlayGlobalSound;
+	/// <summary>
+	/// Fired every tic while a pushwall is moving.
+	/// WL_ACT1.C pushwall movement logic
+	/// </summary>
+	public event Action<PushWallPositionChangedEvent> PushWallPositionChanged;
+	/// <summary>
+	/// Fired when a pushwall plays a sound.
+	/// WL_ACT1.C pushwall activation
+	/// Presentation layer attaches sound to pushwall - sound moves with pushwall.
+	/// </summary>
+	public event Action<PushWallPlaySoundEvent> PushWallPlaySound;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -190,6 +213,9 @@ public class Simulator
 		// WL_ACT1.C:MoveDoors - update all doors
 		for (int i = 0; i < doors.Count; i++)
 			UpdateDoor(i);
+		// WL_ACT1.C:MovePWalls - update all pushwalls
+		for (int i = 0; i < pushWalls.Count; i++)
+			UpdatePushWall(i);
 		// WL_ACT2.C:DoActor - update all actors
 		for (int i = 0; i < actors.Count; i++)
 			UpdateActor(i);
@@ -198,6 +224,8 @@ public class Simulator
 	{
 		if (action is OperateDoorAction operateDoor)
 			OperateDoor(operateDoor.DoorIndex);
+		else if (action is ActivatePushWallAction activatePushWall)
+			ActivatePushWall(activatePushWall.TileX, activatePushWall.TileY, activatePushWall.Direction);
 	}
 	/// <summary>
 	/// WL_ACT1.C:OperateDoor (line 644)
@@ -303,7 +331,7 @@ public class Simulator
 		// WL_ACT1.C:686 - accumulate tics
 		door.TicCount += 1; // Always 1 tic per call in our simplified version
 		// WL_ACT1.C:686 - check if time to close
-		if (door.TicCount >= Door.OpenTics)
+		if (door.TicCount >= Constants.DoorOpenTics)
 			CloseDoor((ushort)doorIndex);
 	}
 	/// <summary>
@@ -389,6 +417,135 @@ public class Simulator
 			Action = door.Action
 		});
 	}
+	#region PushWall Logic
+	/// <summary>
+	/// Player attempts to activate a pushwall.
+	/// Based on WL_ACT1.C pushwall activation logic.
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate of wall being pushed</param>
+	/// <param name="tileY">Tile Y coordinate of wall being pushed</param>
+	/// <param name="direction">Direction pushwall should move (away from player)</param>
+	private void ActivatePushWall(ushort tileX, ushort tileY, Direction direction)
+	{
+		// Rule 3: Only one pushwall can move at a time in the entire level
+		if (anyPushWallMoving)
+			return; // Another pushwall is already moving
+
+		int tileIdx = GetTileIndex(tileX, tileY);
+
+		// Check if there's a pushwall at this location
+		if (pushWallAtTile[tileIdx] < 0)
+			return; // No pushwall here
+
+		int pushWallIndex = pushWallAtTile[tileIdx];
+		PushWall pushWall = pushWalls[pushWallIndex];
+
+		// Check if pushwall is already moving
+		if (pushWall.Action == PushWallAction.Pushing)
+			return; // Already moving
+
+		// Rule 1: Pushwalls move TWO tiles, not one
+		// Calculate first and second destination tiles based on direction
+		ushort dest1X = tileX, dest1Y = tileY;
+		ushort dest2X = tileX, dest2Y = tileY;
+		switch (direction)
+		{
+			case Direction.N: dest1Y--; dest2Y -= 2; break;
+			case Direction.S: dest1Y++; dest2Y += 2; break;
+			case Direction.E: dest1X++; dest2X += 2; break;
+			case Direction.W: dest1X--; dest2X -= 2; break;
+			default: return; // Invalid direction (only cardinal directions for pushwalls)
+		}
+
+		// Check if both destination tiles are navigable
+		if (!IsTileNavigable(dest1X, dest1Y) || !IsTileNavigable(dest2X, dest2Y))
+			return; // Can't push - destination blocked
+
+		// Start pushing!
+		pushWall.Action = PushWallAction.Pushing;
+		pushWall.Direction = direction;
+		pushWall.TicCount = (short)(2 * PushWall.PushTics); // 2 tiles × 128 tics/tile = 256 tics
+		anyPushWallMoving = true; // Set global lock
+
+		// Play pushwall sound
+		EmitPushWallPlaySound((ushort)pushWallIndex, "PUSHWALLSND");
+	}
+
+	/// <summary>
+	/// Updates a single pushwall during movement.
+	/// Based on WL_ACT1.C:MovePWalls
+	/// </summary>
+	private void UpdatePushWall(int pushWallIndex)
+	{
+		PushWall pushWall = pushWalls[pushWallIndex];
+
+		// Only update if actively pushing
+		if (pushWall.Action != PushWallAction.Pushing)
+			return;
+
+		// Rule 4: Track which tile is currently blocked before moving
+		(ushort oldTileX, ushort oldTileY) = pushWall.GetTilePosition();
+
+		// Decrement tic counter
+		pushWall.TicCount--;
+
+		// Rule 1: Calculate movement delta per tic (TWO full tiles over 2*PushTics tics)
+		// Two tiles = 2 * 65536 = 131072, duration = 256 tics, so delta = 131072 / 256 = 512
+		// This maintains original Wolf3D speed of 128 tics per tile
+		int delta = (2 << 16) / (2 * PushWall.PushTics);
+
+		// Move in the specified direction
+		switch (pushWall.Direction)
+		{
+			case Direction.N: pushWall.Y -= delta; break;
+			case Direction.S: pushWall.Y += delta; break;
+			case Direction.E: pushWall.X += delta; break;
+			case Direction.W: pushWall.X -= delta; break;
+		}
+
+		// Rule 4: Check if pushwall crossed into a new tile
+		(ushort newTileX, ushort newTileY) = pushWall.GetTilePosition();
+		if (oldTileX != newTileX || oldTileY != newTileY)
+		{
+			// Pushwall crossed tile boundary - update spatial index
+			int oldIdx = GetTileIndex(oldTileX, oldTileY);
+			int newIdx = GetTileIndex(newTileX, newTileY);
+			pushWallAtTile[oldIdx] = -1; // Old tile is now navigable
+			pushWallAtTile[newIdx] = (short)pushWallIndex; // New tile is now blocked
+		}
+
+		// Fire position changed event
+		PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
+		{
+			Timestamp = CurrentTic * TicDuration,
+			PushWallIndex = (ushort)pushWallIndex,
+			X = pushWall.X,
+			Y = pushWall.Y,
+			Action = pushWall.Action
+		});
+
+		// Check if movement complete
+		if (pushWall.TicCount <= 0)
+		{
+			// Rule 2: Snap to exact final tile center (recenter)
+			(ushort finalX, ushort finalY) = pushWall.GetTilePosition();
+			pushWall.X = (finalX << 16) + 0x8000; // Center in tile
+			pushWall.Y = (finalY << 16) + 0x8000;
+			pushWall.Action = PushWallAction.Idle;
+			anyPushWallMoving = false; // Rule 3: Release global lock
+
+			// Fire final position event
+			PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
+			{
+				Timestamp = CurrentTic * TicDuration,
+				PushWallIndex = (ushort)pushWallIndex,
+				X = pushWall.X,
+				Y = pushWall.Y,
+				Action = pushWall.Action
+			});
+		}
+	}
+	#endregion
 	#region Actor Update Logic
 	/// <summary>
 	/// WL_PLAY.C actor update loop (lines 1690-1774)
@@ -528,14 +685,68 @@ public class Simulator
 	/// </summary>
 	public void LoadDoorsFromMapAnalysis(
 		MapAnalyzer mapAnalyzer,
+		MapAnalysis mapAnalysis,
 		IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
 		// Store MapAnalyzer for looking up door sounds when emitting events
 		this.mapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
 
+		// Initialize spatial index arrays and map dimensions
+		// Must be done before loading any entities (doors, pushwalls, actors)
+		this.mapAnalysis = mapAnalysis;
+		mapWidth = mapAnalysis.Width;
+		mapHeight = mapAnalysis.Depth;
+
+		int tileCount = mapWidth * mapHeight;
+		actorAtTile = new short[tileCount];
+		doorAtTile = new short[tileCount];
+		pushWallAtTile = new short[tileCount];
+
+		// Fill with -1 (empty)
+#if NET6_0_OR_GREATER
+		Array.Fill(actorAtTile, (short)-1);
+		Array.Fill(doorAtTile, (short)-1);
+		Array.Fill(pushWallAtTile, (short)-1);
+#else
+		for (int i = 0; i < tileCount; i++)
+		{
+			actorAtTile[i] = -1;
+			doorAtTile[i] = -1;
+			pushWallAtTile[i] = -1;
+		}
+#endif
+
 		doors.Clear();
+		int doorIndex = 0;
 		foreach (MapAnalysis.DoorSpawn spawn in doorSpawns)
+		{
 			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest, spawn.TileNumber));
+
+			// Update spatial index - door occupies its tile
+			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
+			doorAtTile[tileIdx] = (short)doorIndex;
+			doorIndex++;
+		}
+	}
+
+	/// <summary>
+	/// Initialize pushwalls from MapAnalysis data.
+	/// Pushwalls start in their initial positions and can be activated during gameplay.
+	/// Based on WL_GAME.C:ScanInfoPlane pushwall initialization.
+	/// </summary>
+	public void LoadPushWallsFromMapAnalysis(IEnumerable<MapAnalysis.PushWallSpawn> pushWallSpawns)
+	{
+		pushWalls.Clear();
+		int pushWallIndex = 0;
+		foreach (MapAnalysis.PushWallSpawn spawn in pushWallSpawns)
+		{
+			pushWalls.Add(new PushWall(spawn.Shape, spawn.X, spawn.Y));
+
+			// Update spatial index - pushwall occupies its initial tile
+			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
+			pushWallAtTile[tileIdx] = (short)pushWallIndex;
+			pushWallIndex++;
+		}
 	}
 	/// <summary>
 	/// Initialize static bonus objects from MapAnalyzer data.
@@ -594,9 +805,7 @@ public class Simulator
 		Dictionary<string, string> actorInitialStates,
 		Dictionary<string, short> actorHitPoints)
 	{
-		// Store map analysis for line-of-sight calculations
-		this.mapAnalysis = mapAnalysis;
-
+		// Note: mapAnalysis, mapWidth, mapHeight, and spatial arrays are already initialized by LoadDoorsFromMapAnalysis
 		actors.Clear();
 		int actorIndex = 0;
 		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
@@ -626,19 +835,24 @@ public class Simulator
 			// Convert 4-way cardinal direction from map data to 8-way simulator direction
 			Direction facing = spawn.Facing.ToSimulatorDirection();
 			// Create actor instance
-			Actor actor = new Actor(
-				spawn.ActorType,
-				initialState,
-				spawn.X,
-				spawn.Y,
-				facing,
-				hitPoints);
+			Actor actor = new(
+				actorType: spawn.ActorType,
+				initialState: initialState,
+				tileX: spawn.X,
+				tileY: spawn.Y,
+				facing: facing,
+				hitPoints: hitPoints);
 			// Set additional flags from spawn data
 			if (spawn.Ambush)
 				actor.Flags |= ActorFlags.Ambush;
 			if (spawn.Patrol)
 				actor.Flags |= ActorFlags.Patrolling;
 			actors.Add(actor);
+
+			// Update spatial index - actor occupies its spawn tile
+			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
+			actorAtTile[tileIdx] = (short)actorIndex;
+
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
 			{
@@ -691,24 +905,27 @@ public class Simulator
 			});
 		}
 
-		// TODO: Emit push wall position events when push walls are implemented
+		// Emit push wall position events for pushwalls that have moved
 		// Push walls are fixed-count entities (created from MapAnalysis.PushWalls)
 		// but need position events to show movement after being pushed
-		// for (int i = 0; i < pushWalls.Count; i++)
-		// {
-		//     PushWall pushWall = pushWalls[i];
-		//     if (pushWall.HasMoved)
-		//     {
-		//         PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
-		//         {
-		//             Timestamp = CurrentTic,
-		//             InitialTileX = pushWall.InitialTileX,
-		//             InitialTileY = pushWall.InitialTileY,
-		//             Direction = pushWall.Direction,
-		//             Progress = pushWall.Progress
-		//         });
-		//     }
-		// }
+		for (int i = 0; i < pushWalls.Count; i++)
+		{
+			PushWall pushWall = pushWalls[i];
+			// Only emit if pushwall has moved from initial position
+			if (pushWall.Action == PushWallAction.Pushing ||
+				pushWall.X != ((pushWall.InitialTileX << 16) + 0x8000) ||
+				pushWall.Y != ((pushWall.InitialTileY << 16) + 0x8000))
+			{
+				PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
+				{
+					Timestamp = CurrentTic * TicDuration,
+					PushWallIndex = (ushort)i,
+					X = pushWall.X,
+					Y = pushWall.Y,
+					Action = pushWall.Action
+				});
+			}
+		}
 
 		// Emit bonus SPAWN events for all active bonuses
 		for (int i = 0; i < StatObjList.Length; i++)
@@ -802,4 +1019,68 @@ public class Simulator
 			SoundId = -1
 		});
 	}
+
+	/// <summary>
+	/// Emits a pushwall sound event - sound will be attached to the pushwall.
+	/// WL_ACT1.C pushwall activation
+	/// </summary>
+	/// <param name="pushWallIndex">Index of the pushwall playing the sound</param>
+	/// <param name="soundName">Sound name (e.g., "PUSHWALLSND")</param>
+	public void EmitPushWallPlaySound(ushort pushWallIndex, string soundName)
+	{
+		PushWallPlaySound?.Invoke(new PushWallPlaySoundEvent
+		{
+			Timestamp = CurrentTic * TicDuration,
+			PushWallIndex = pushWallIndex,
+			SoundName = soundName,
+			SoundId = -1
+		});
+	}
+
+	#region Spatial Index
+	/// <summary>
+	/// Converts tile coordinates to array index for spatial index arrays.
+	/// Based on WL_DEF.H actorat array indexing.
+	/// </summary>
+	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
+
+	/// <summary>
+	/// Checks if a tile is navigable (can be moved onto).
+	/// Combines static map analysis with dynamic state (doors, pushwalls, actors).
+	/// Based on Wolf3D collision detection logic.
+	/// </summary>
+	/// <param name="x">Tile X coordinate</param>
+	/// <param name="y">Tile Y coordinate</param>
+	/// <returns>True if the tile can be moved onto</returns>
+	public bool IsTileNavigable(ushort x, ushort y)
+	{
+		// 1. Check static navigability (from MapAnalysis BitArray)
+		if (!mapAnalysis.IsNavigable(x, y))
+			return false;
+
+		int tileIdx = GetTileIndex(x, y);
+
+		// 2. Check for closed doors
+		if (doorAtTile[tileIdx] >= 0)
+		{
+			Door door = doors[doorAtTile[tileIdx]];
+			if (door.Action == DoorAction.Closed)
+				return false;
+		}
+
+		// 3. Check for pushwalls
+		if (pushWallAtTile[tileIdx] >= 0)
+			return false;
+
+		// 4. Check for living actors
+		if (actorAtTile[tileIdx] >= 0)
+		{
+			Actor actor = actors[actorAtTile[tileIdx]];
+			if (actor.HitPoints > 0)
+				return false;
+		}
+
+		return true;
+	}
+	#endregion
 }

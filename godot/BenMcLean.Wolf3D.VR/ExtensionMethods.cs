@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BenMcLean.Wolf3D.Simulator;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -102,6 +103,37 @@ public static class ExtensionMethods
 	/// <returns>16.16 fixed-point coordinate</returns>
 	public static int ToFixedPoint(this float meters) => (int)(meters / Constants.FixedPointToMeters);
 	#endregion Coordinates
+	/// <summary>
+	/// Converts Godot camera Y rotation to a cardinal Direction (for pushwall movement).
+	/// Snaps to the nearest cardinal direction: N, E, S, or W.
+	/// Godot Y rotation: 0=North(-Z), π/2=West(-X), π=South(+Z), 3π/2=East(+X)
+	/// Note: Due to the negative X in projection math, East/West are opposite of typical Godot convention
+	/// </summary>
+	/// <param name="rotationY">Camera Y rotation in radians</param>
+	/// <returns>Cardinal direction (N, E, S, or W)</returns>
+	public static Direction ToCardinalDirection(this float rotationY)
+	{
+		// Normalize rotation to [0, 2π)
+		float normalized = rotationY % Mathf.Tau;
+		if (normalized < 0)
+			normalized += Mathf.Tau;
+		// Divide circle into 4 quadrants centered on cardinal directions
+		// Each quadrant is π/2 (90°) wide, with boundaries at π/4 (45°) intervals
+		// North: [0°, 45°) and [315°, 360°)
+		// West: [45°, 135°)
+		// South: [135°, 225°)
+		// East: [225°, 315°)
+		if (normalized < Constants.QuarterPi)
+			return Direction.N;
+		else if (normalized < 3f * Constants.QuarterPi)
+			return Direction.W;
+		else if (normalized < 5f * Constants.QuarterPi)
+			return Direction.S;
+		else if (normalized < 7f * Constants.QuarterPi)
+			return Direction.E;
+		else
+			return Direction.N; // [7π/4, 2π) wraps to North
+	}
 	public static Vector2 Vector2(this Vector3 vector3) => new(vector3.X, vector3.Z);
 	public static Vector3 Vector3(this Vector2 vector2) => new(vector2.X, 0f, vector2.Y);
 	public static Vector3 Axis(this Vector3.Axis axis) => axis switch

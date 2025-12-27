@@ -278,3 +278,35 @@ public struct PlayGlobalSoundEvent : ISimulationEvent
 	// Sound ID for presentation layer lookup if needed
 	public int SoundId { get; init; }
 }
+
+/// <summary>
+/// A pushwall's position changed during movement animation.
+/// Triggered every tic in WL_ACT1.C while pushwall is moving.
+/// </summary>
+public struct PushWallPositionChangedEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+	// Index in pushwall array
+	public required ushort PushWallIndex { get; init; }
+	// Current position in 16.16 fixed-point
+	public required int X { get; init; }
+	public required int Y { get; init; }
+	// Current action state
+	public required PushWallAction Action { get; init; }
+}
+
+/// <summary>
+/// A pushwall should play a digi sound.
+/// Triggered when pushwall starts moving (WL_ACT1.C).
+/// Presentation layer attaches sound to the pushwall - sound moves with pushwall during playback.
+/// </summary>
+public struct PushWallPlaySoundEvent : ISimulationEvent
+{
+	public required double Timestamp { get; init; }
+	// Index of the pushwall playing the sound
+	public required ushort PushWallIndex { get; init; }
+	// Sound name (e.g., "PUSHWALLSND")
+	public required string SoundName { get; init; }
+	// Sound ID for presentation layer lookup if needed
+	public int SoundId { get; init; }
+}
