@@ -1,9 +1,7 @@
 using BenMcLean.Wolf3D.Assets;
-using BenMcLean.Wolf3D.Simulator;
 using Godot;
 using System;
 using System.Collections.Generic;
-using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.VR;
 
@@ -19,10 +17,14 @@ public partial class Actors : Node3D
 {
 	// Maps ActorIndex -> MeshInstance3D node
 	private readonly Dictionary<int, MeshInstance3D> _actorNodes = [];
+	// Maps ActorIndex -> AudioStreamPlayer3D for spatial sound
+	private readonly Dictionary<int, AudioStreamPlayer3D> _actorSpeakers = [];
 	// Maps ActorIndex -> actor rendering state
 	private readonly Dictionary<int, ActorRenderData> _actorData = [];
 	// Sprite materials from VRAssetManager
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
+	// Digi sound library from SharedAssetManager
+	private readonly IReadOnlyDictionary<string, AudioStreamWav> _digiSounds;
 	// Viewer position for directional sprite calculation (normally player, could be MR camera)
 	private readonly Func<Vector3> _getViewerPosition;
 	// Camera Y rotation delegate for billboard effect
@@ -44,14 +46,17 @@ public partial class Actors : Node3D
 	/// Actors are spawned dynamically via ActorSpawnedEvent - no initial actors shown.
 	/// </summary>
 	/// <param name="spriteMaterials">Dictionary of sprite materials from VRAssetManager.SpriteMaterials</param>
+	/// <param name="digiSounds">Dictionary of digi sounds from SharedAssetManager</param>
 	/// <param name="getViewerPosition">Delegate that returns viewer position for directional sprites</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
 	public Actors(
 		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
+		IReadOnlyDictionary<string, AudioStreamWav> digiSounds,
 		Func<Vector3> getViewerPosition,
 		Func<float> getCameraYRotation)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
+		_digiSounds = digiSounds ?? throw new ArgumentNullException(nameof(digiSounds));
 		_getViewerPosition = getViewerPosition ?? throw new ArgumentNullException(nameof(getViewerPosition));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
 	}
@@ -97,9 +102,18 @@ public partial class Actors : Node3D
 			}
 			node.MaterialOverride = material;
 		}
+		// Create AudioStreamPlayer3D for spatial sound attached to actor
+		AudioStreamPlayer3D speaker = new()
+		{
+			Name = $"ActorSpeaker_{actorIndex}",
+			Position = Vector3.Zero, // Relative to parent node
+			Bus = "DigiSounds",
+		};
+		node.AddChild(speaker);
 		// Add to scene and track
 		AddChild(node);
 		_actorNodes[actorIndex] = node;
+		_actorSpeakers[actorIndex] = speaker;
 		_actorData[actorIndex] = new ActorRenderData
 		{
 			Position = position,
@@ -165,9 +179,10 @@ public partial class Actors : Node3D
 	{
 		if (_actorNodes.TryGetValue(actorIndex, out MeshInstance3D node))
 		{
-			node.QueueFree();  // Remove from scene tree
+			node.QueueFree();  // Remove from scene tree (will also free child speaker)
 			_actorNodes.Remove(actorIndex);
 		}
+		_actorSpeakers.Remove(actorIndex);  // Remove speaker reference
 		_actorData.Remove(actorIndex);
 	}
 	/// <summary>
@@ -235,6 +250,7 @@ public partial class Actors : Node3D
 		_simulator.ActorMoved += OnActorMoved;
 		_simulator.ActorSpriteChanged += OnActorSpriteChanged;
 		_simulator.ActorDespawned += OnActorDespawned;
+		_simulator.ActorPlaySound += OnActorPlaySound;
 	}
 	/// <summary>
 	/// Unsubscribes from simulator events.
@@ -247,6 +263,7 @@ public partial class Actors : Node3D
 		_simulator.ActorMoved -= OnActorMoved;
 		_simulator.ActorSpriteChanged -= OnActorSpriteChanged;
 		_simulator.ActorDespawned -= OnActorDespawned;
+		_simulator.ActorPlaySound -= OnActorPlaySound;
 		_simulator = null;
 	}
 	/// <summary>
@@ -276,6 +293,30 @@ public partial class Actors : Node3D
 	/// </summary>
 	private void OnActorDespawned(Simulator.ActorDespawnedEvent evt) =>
 		HideActor(evt.ActorIndex);
+	/// <summary>
+	/// Handles ActorPlaySoundEvent - plays a sound at the actor's position.
+	/// WL_STATE.C:PlaySoundLocActor
+	/// </summary>
+	private void OnActorPlaySound(Simulator.ActorPlaySoundEvent evt)
+	{
+		if (!_actorSpeakers.TryGetValue(evt.ActorIndex, out AudioStreamPlayer3D speaker))
+		{
+			GD.PrintErr($"ERROR: Actor {evt.ActorIndex} has no speaker");
+			return;
+		}
+		// Look up sound from digi sounds library
+		if (!_digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
+		{
+			GD.PrintErr($"WARNING: Sound '{evt.SoundName}' not found in digi sounds library");
+			return;
+		}
+		// Stop any currently playing sound before starting the new one
+		if (speaker.Playing)
+			speaker.Stop();
+		// Play the new sound at the actor's speaker
+		speaker.Stream = sound;
+		speaker.Play();
+	}
 	/// <summary>
 	/// Cleanup when the node is removed from the scene tree.
 	/// </summary>

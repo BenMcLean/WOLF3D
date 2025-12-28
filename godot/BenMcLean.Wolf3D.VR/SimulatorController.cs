@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Assets;
+using BenMcLean.Wolf3D.Shared;
+using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.VR;
 
@@ -53,7 +55,9 @@ public partial class SimulatorController : Node3D
 		RNG rng = new(0); // TODO: Use seed from game settings or save file
 		GameClock gameClock = new();
 
-		simulator = new Simulator.Simulator(stateCollection, rng, gameClock);
+		// Create logger that routes to Godot console
+		ILogger logger = new GodotLogger("Simulator");
+		simulator = new Simulator.Simulator(stateCollection, rng, gameClock, logger);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));

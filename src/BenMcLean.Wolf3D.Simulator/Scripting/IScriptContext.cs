@@ -19,15 +19,15 @@ public interface IScriptContext
 	// Shared API methods (available in both action and menu stages)
 
 	/// <summary>
-	/// Play a digitized sound effect.
+	/// Play a digitized sound effect by name.
 	/// Implementation varies by context (positional vs global).
 	/// </summary>
-	void PlayDigiSound(int soundId);
+	void PlayDigiSound(string soundName);
 
 	/// <summary>
-	/// Play background music.
+	/// Play background music by name.
 	/// </summary>
-	void PlayMusic(int musicId);
+	void PlayMusic(string musicName);
 
 	/// <summary>
 	/// Stop currently playing music.

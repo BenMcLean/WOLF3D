@@ -144,8 +144,7 @@ public partial class Doors : Node3D
 			AudioStreamPlayer3D speaker = new()
 			{
 				Name = $"DoorSpeaker_{i}",
-				MaxDistance = 30.0f,  // Sound audible from ~30 Godot units away
-				UnitSize = 2.0f,      // Wolf3D scale
+				Bus = "DigiSounds",
 			};
 			AddChild(speaker);
 			DoorData data = new()

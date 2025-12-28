@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets;
+using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.Simulator.Scripting;
@@ -15,11 +16,13 @@ public class ActorScriptContext(
 	int actorIndex,
 	RNG rng,
 	GameClock gameClock,
-	MapAnalysis mapAnalysis) : ActionScriptContext(simulator, rng, gameClock)
+	MapAnalysis mapAnalysis,
+	Microsoft.Extensions.Logging.ILogger logger) : ActionScriptContext(simulator, rng, gameClock)
 {
 	private readonly Actor actor = actor;
 	private readonly int actorIndex = actorIndex;
 	private readonly MapAnalysis mapAnalysis = mapAnalysis;
+	private readonly Microsoft.Extensions.Logging.ILogger logger = logger;
 
 	// Actor property accessors (read-only from Lua)
 
@@ -101,9 +104,9 @@ public class ActorScriptContext(
 	public int BitShiftLeft(int value, int bits) => value << bits;
 	/// <summary>
 	/// Check line of sight to player using raycasting.
-	/// WL_STATE.C:CheckSight(ob)
-	/// Walks from actor to player tile-by-tile, checking MapAnalysis.IsTransparent.
-	/// TODO: Eventually needs to check closed doors blocking sight (for now just uses IsTransparent)
+	/// WL_STATE.C:CheckSight(ob) and CheckLine(ob)
+	/// Walks from actor to player tile-by-tile, checking for walls, closed doors, and pushwalls.
+	/// Actors with a facing direction only see within 90 degrees centered on their facing.
 	/// </summary>
 	public bool CheckSight()
 	{
@@ -118,6 +121,31 @@ public class ActorScriptContext(
 		int playerTileX = simulator.PlayerTileX;
 		int playerTileY = simulator.PlayerTileY;
 
+		// Check field of view (90 degrees centered on facing direction)
+		if (actor.Facing.HasValue)
+		{
+			// Calculate angle from actor to player
+			// Wolf3D coordinates: +X=east, +Y=south (down map), -Y=north (up map)
+			// Direction enum: N=90°=-Y, E=0°=+X, S=270°=+Y, W=180°=-X
+			// Negate Y to match Direction enum's convention where North=positive angle
+			float playerDx = playerTileX - actorTileX;
+			float playerDy = playerTileY - actorTileY;
+			float angleToPlayer = (float)System.Math.Atan2(-playerDy, playerDx);
+			// Normalize to [0, 2π)
+			if (angleToPlayer < 0) angleToPlayer += (float)(2 * System.Math.PI);
+			// Get actor's facing angle
+			// Direction enum: E=0, NE=1, N=2, NW=3, W=4, SW=5, S=6, SE=7
+			// Convert to radians: E=0, NE=π/4, N=π/2, etc.
+			float facingAngle = (byte)actor.Facing.Value * (float)(System.Math.PI / 4);
+			// Calculate angular difference
+			float angleDiff = angleToPlayer - facingAngle;
+			// Normalize to [-PI, PI]
+			while (angleDiff > System.Math.PI) angleDiff -= (float)(2 * System.Math.PI);
+			while (angleDiff < -System.Math.PI) angleDiff += (float)(2 * System.Math.PI);
+			// Check if within 90-degree FOV (45 degrees on each side)
+			if (System.Math.Abs(angleDiff) > System.Math.PI / 4)
+				return false; // Player is outside field of view
+		}
 		// Bresenham's line algorithm to walk from actor to player
 		int dx = System.Math.Abs(playerTileX - actorTileX);
 		int dy = System.Math.Abs(playerTileY - actorTileY);
@@ -138,21 +166,34 @@ public class ActorScriptContext(
 			// Skip the actor's own tile (we start there)
 			if (!(x == actorTileX && y == actorTileY))
 			{
-				if (!mapAnalysis.IsTransparent(x, y))
-					return false; // Wall or obstacle blocks sight
+				// Check static transparency (walls) AND dynamic obstacles (doors, pushwalls)
+				if (!simulator.IsTileTransparentForSight((ushort)x, (ushort)y))
+					return false; // Obstacle blocks sight
 			}
 
-			// Bresenham step
+			// Bresenham step - check both intermediate tiles if moving diagonally
 			int e2 = 2 * err;
+			bool movedX = false;
+			bool movedY = false;
 			if (e2 > -dy)
 			{
 				err -= dy;
 				x += sx;
+				movedX = true;
 			}
 			if (e2 < dx)
 			{
 				err += dx;
 				y += sy;
+				movedY = true;
+			}
+			// If we moved diagonally, check the intermediate tile we might have cut through
+			// This prevents seeing through corners
+			if (movedX && movedY)
+			{
+				// Check the tile at (x - sx, y) - the tile we passed through horizontally
+				if (!simulator.IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
+					return false;
 			}
 		}
 	}
@@ -432,28 +473,21 @@ public class ActorScriptContext(
 	// ActionScriptContext abstract method implementations
 
 	/// <summary>
-	/// Play a digi sound by name (string-based for Lua).
+	/// Play a digi sound by name.
 	/// WL_STATE.C:PlaySoundLocActor
 	/// Sound will be attached to this actor and move with it during playback.
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
-	public void PlayDigiSound(string soundName)
+	public override void PlayDigiSound(string soundName)
 	{
 		// Emit actor sound event - presentation layer will attach sound to actor
 		simulator.EmitActorPlaySound(actorIndex, soundName);
 	}
 
-	public override void PlayDigiSound(int soundId)
-	{
-		// For actors, sounds should be positional (3D audio)
-		// TODO: Emit event with actor position for spatial audio
-		// simulator.EmitPlaySoundEvent(soundId, isPositional: true, actor.X, actor.Y);
-	}
-
-	public override void PlayMusic(int musicId)
+	public override void PlayMusic(string musicName)
 	{
 		// Music is global (not positional)
-		// TODO: Emit event
+		// TODO: Emit event by music name
 	}
 
 	public override void StopMusic()

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets;
 using MoonSharp.Interpreter;
+using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Simulator.Scripting;
 
@@ -14,12 +15,14 @@ public class LuaScriptEngine
 	private readonly Script luaScript;
 	private readonly Dictionary<string, DynValue> cachedFunctions = [];
 	private readonly Dictionary<string, DynValue> compiledStateFunctions = [];
+	private readonly ILogger logger;
 	/// <summary>
 	/// Current execution context (injected before each script call)
 	/// </summary>
 	public IScriptContext CurrentContext { get; set; }
-	public LuaScriptEngine()
+	public LuaScriptEngine(ILogger logger = null)
 	{
+		this.logger = logger;
 		// Register C# types for MoonSharp UserData
 		UserData.RegisterType<ActorScriptContext>();
 		UserData.RegisterType<ActionScriptContext>();
@@ -33,6 +36,8 @@ public class LuaScriptEngine
 		luaScript.Globals["package"] = DynValue.Nil;
 		luaScript.Globals["require"] = DynValue.Nil;
 		luaScript.Globals["debug"] = DynValue.Nil;
+		// Override print() to route to logger
+		luaScript.Globals["print"] = DynValue.NewCallback(LuaPrint);
 		// Get existing math table and override only random/randomseed (keep existing math functions)
 		Table mathTable = luaScript.Globals.Get("math").Table;
 		// Override random functions with deterministic versions
@@ -46,61 +51,7 @@ public class LuaScriptEngine
 		osTable["time"] = DynValue.NewCallback(OsTime);
 		osTable["clock"] = DynValue.NewCallback(OsClock);
 		osTable["date"] = DynValue.NewCallback(OsDate);
-		// Register Wolf3D API (context-dependent functions)
-		RegisterWolf3DAPI();
-	}
-	/// <summary>
-	/// Register Wolf3D game API functions that delegate to CurrentContext
-	/// </summary>
-	private void RegisterWolf3DAPI()
-	{
-		// Shared API (all contexts)
-		luaScript.Globals["PlayDigiSound"] = DynValue.NewCallback(
-			(ScriptExecutionContext ctx, CallbackArguments args) =>
-			{
-				int soundId = (int)args[0].Number;
-				CurrentContext?.PlayDigiSound(soundId);
-				return DynValue.Nil;
-			});
-		luaScript.Globals["PlayMusic"] = DynValue.NewCallback(
-			(ScriptExecutionContext ctx, CallbackArguments args) =>
-			{
-				int musicId = (int)args[0].Number;
-				CurrentContext?.PlayMusic(musicId);
-				return DynValue.Nil;
-			});
-		luaScript.Globals["StopMusic"] = DynValue.NewCallback(
-			(ScriptExecutionContext ctx, CallbackArguments args) =>
-			{
-				CurrentContext?.StopMusic();
-				return DynValue.Nil;
-			});
-		// Action-specific API (only ActionScriptContext)
-		luaScript.Globals["GetPlayerHealth"] = DynValue.NewCallback(
-			(ScriptExecutionContext ctx, CallbackArguments args) =>
-			{
-				if (CurrentContext is ActionScriptContext actionCtx)
-					return DynValue.NewNumber(actionCtx.GetPlayerHealth());
-				return DynValue.NewNumber(0);
-			});
-		luaScript.Globals["GetPlayerMaxHealth"] = DynValue.NewCallback(
-			(ScriptExecutionContext ctx, CallbackArguments args) =>
-			{
-				if (CurrentContext is ActionScriptContext actionCtx)
-					return DynValue.NewNumber(actionCtx.GetPlayerMaxHealth());
-				return DynValue.NewNumber(0);
-			});
-		luaScript.Globals["HealPlayer"] = DynValue.NewCallback(
-			(ScriptExecutionContext ctx, CallbackArguments args) =>
-			{
-				if (CurrentContext is ActionScriptContext actionCtx)
-				{
-					int amount = (int)args[0].Number;
-					actionCtx.HealPlayer(amount);
-				}
-				return DynValue.Nil;
-			});
-		// TODO: Add more API functions as needed
+		// Note: Wolf3D API functions are exposed via reflection in ExposeContextMethodsAsGlobals
 	}
 	private readonly HashSet<string> exposedMethodNames = [];
 
@@ -183,6 +134,27 @@ public class LuaScriptEngine
 	}
 
 	#region Deterministic Standard Library Overrides
+	/// <summary>
+	/// Lua print() function - routes to Microsoft.Extensions.Logging
+	/// </summary>
+	private DynValue LuaPrint(ScriptExecutionContext ctx, CallbackArguments args)
+	{
+		if (args.Count == 0)
+		{
+			logger?.LogInformation("");
+			return DynValue.Nil;
+		}
+		// Concatenate all arguments with tabs (Lua print behavior)
+		string[] parts = new string[args.Count];
+		for (int i = 0; i < args.Count; i++)
+		{
+			DynValue arg = args[i];
+			parts[i] = arg.Type == DataType.Nil ? "nil" : arg.ToString();
+		}
+		string message = string.Join("\t", parts);
+		logger?.LogInformation("{LuaOutput}", message);
+		return DynValue.Nil;
+	}
 	private DynValue MathRandom(ScriptExecutionContext ctx, CallbackArguments args)
 	{
 		if (CurrentContext is null)

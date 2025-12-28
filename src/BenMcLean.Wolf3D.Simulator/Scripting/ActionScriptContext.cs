@@ -14,8 +14,8 @@ public abstract class ActionScriptContext(Simulator simulator, RNG rng, GameCloc
 	public GameClock GameClock => gameClock;
 
 	// Shared API (implemented by derived classes for context-specific behavior)
-	public abstract void PlayDigiSound(int soundId);
-	public abstract void PlayMusic(int musicId);
+	public abstract void PlayDigiSound(string soundName);
+	public abstract void PlayMusic(string musicName);
 	public abstract void StopMusic();
 
 	// Action-specific API
@@ -43,15 +43,15 @@ public class BonusScriptContext(
 {
 
 	// For bonuses, sounds are global (player is standing right next to it)
-	public override void PlayDigiSound(int soundId)
+	public override void PlayDigiSound(string soundName)
 	{
-		// TODO: Emit event for VR layer to play global sound
-		// simulator.EmitPlaySoundEvent(soundId, isPositional: false);
+		// TODO: Emit event for VR layer to play global sound by name
+		// simulator.EmitPlaySoundEvent(soundName, isPositional: false);
 	}
 
-	public override void PlayMusic(int musicId)
+	public override void PlayMusic(string musicName)
 	{
-		// TODO: Emit event
+		// TODO: Emit event by music name
 	}
 
 	public override void StopMusic()

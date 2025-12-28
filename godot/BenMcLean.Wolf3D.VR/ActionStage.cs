@@ -108,6 +108,7 @@ void sky() {
 		// Create actors (dynamic actor sprites with game logic) for the current level and add to scene
 		_actors = new Actors(
 			VRAssetManager.SpriteMaterials,
+			Shared.SharedAssetManager.DigiSounds,      // Digi sounds for actor alert sounds
 			() => _freeLookCamera.GlobalPosition,      // Viewer position for directional sprites (player pos, or future MR camera)
 			() => _freeLookCamera.GlobalRotation.Y);   // Camera Y rotation for billboard effect
 		AddChild(_actors);

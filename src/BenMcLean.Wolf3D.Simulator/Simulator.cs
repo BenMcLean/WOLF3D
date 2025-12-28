@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets;
+using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.Simulator;
@@ -39,6 +40,8 @@ public class Simulator
 	// RNG and GameClock for deterministic simulation
 	private readonly RNG rng;
 	private readonly GameClock gameClock;
+	// Logger for debug output
+	private readonly Microsoft.Extensions.Logging.ILogger logger;
 	// Map analyzer for accessing door metadata (sounds, etc.)
 	private MapAnalyzer mapAnalyzer;
 	// Map analysis for line-of-sight calculations and navigation
@@ -171,13 +174,15 @@ public class Simulator
 	/// <param name="stateCollection">State machine data for actors</param>
 	/// <param name="rng">Deterministic random number generator</param>
 	/// <param name="gameClock">Deterministic game clock</param>
-	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock)
+	/// <param name="logger">Optional logger for Lua script output</param>
+	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock, Microsoft.Extensions.Logging.ILogger logger = null)
 	{
 		this.stateCollection = stateCollection ?? throw new ArgumentNullException(nameof(stateCollection));
 		this.rng = rng ?? throw new ArgumentNullException(nameof(rng));
 		this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
+		this.logger = logger;
 		// Initialize Lua script engine and compile all state functions
-		luaScriptEngine = new Scripting.LuaScriptEngine();
+		luaScriptEngine = new Scripting.LuaScriptEngine(logger);
 		luaScriptEngine.CompileAllStateFunctions(stateCollection);
 	}
 	/// <summary>
@@ -614,14 +619,14 @@ public class Simulator
 			// Execute Think function if present
 			if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 			{
-				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
 					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
 				}
 				catch (Exception ex)
 				{
-					// Silently ignore - likely unimplemented function
+					logger?.LogError(ex, "Error executing Lua function for actor {ActorIndex}: {ErrorMessage}", actorIndex, ex.Message);
 				}
 			}
 			// Set actorat after Think (actor.TileX/TileY may have changed)
@@ -641,14 +646,14 @@ public class Simulator
 			// Execute Action function if present (end of state action)
 			if (!string.IsNullOrEmpty(actor.CurrentState.Action))
 			{
-				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
 					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Action, context);
 				}
 				catch (Exception ex)
 				{
-					// Silently ignore - likely unimplemented function
+					logger?.LogError(ex, "Error executing Lua function for actor {ActorIndex}: {ErrorMessage}", actorIndex, ex.Message);
 				}
 			}
 
@@ -674,7 +679,7 @@ public class Simulator
 		// WL_PLAY.C:1763-1770 - Execute Think function
 		if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 		{
-			Scripting.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+			Scripting.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 			try
 			{
 				luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
@@ -714,14 +719,14 @@ public class Simulator
 		// Execute Action function if present
 		if (!string.IsNullOrEmpty(nextState.Action))
 		{
-			Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+			Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 			try
 			{
 				luaScriptEngine.ExecuteStateFunction(nextState.Action, context);
 			}
 			catch (Exception ex)
 			{
-				// Silently ignore - likely unimplemented function
+				logger?.LogError(ex, "Error executing Action function '{ActionFunction}' for actor {ActorIndex}", nextState.Action, actorIndex);
 			}
 		}
 		// Fire sprite changed event if sprite actually changed
@@ -944,14 +949,14 @@ public class Simulator
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
 			{
-				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis);
+				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
 					luaScriptEngine.ExecuteStateFunction(initialState.Action, context);
 				}
 				catch (Exception ex)
 				{
-					// Silently ignore - likely unimplemented function
+					logger?.LogError(ex, "Error executing Lua function for actor {ActorIndex}: {ErrorMessage}", actorIndex, ex.Message);
 				}
 			}
 			// Fire spawn event - presentation layer will create visual representation
@@ -1164,6 +1169,35 @@ public class Simulator
 	/// </summary>
 	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
 
+	/// <summary>
+	/// Checks if a tile is transparent for line-of-sight purposes.
+	/// Combines static map transparency with dynamic obstacle checks.
+	/// WL_STATE.C:CheckLine - used for enemy vision and hearing
+	/// </summary>
+	/// <param name="x">Tile X coordinate</param>
+	/// <param name="y">Tile Y coordinate</param>
+	/// <returns>True if the tile doesn't block line of sight</returns>
+	public bool IsTileTransparentForSight(ushort x, ushort y)
+	{
+		// 1. Check static map transparency (walls, etc.) from MapAnalysis
+		if (!mapAnalysis.IsTransparent(x, y))
+			return false;
+		int tileIdx = GetTileIndex(x, y);
+		// 2. Check for pushwalls - they block sight
+		if (pushWallAtTile[tileIdx] >= 0)
+			return false;
+		// 3. Check for closed doors - they block sight
+		// Only fully closed doors block line of sight
+		if (doorAtTile[tileIdx] >= 0)
+		{
+			Door door = doors[doorAtTile[tileIdx]];
+			// A door in the Closed state blocks sight
+			// Opening, Open, and Closing states can be seen (and shot) through
+			if (door.Action == DoorAction.Closed)
+				return false;
+		}
+		return true;
+	}
 	/// <summary>
 	/// Checks if a tile is navigable (can be moved onto).
 	/// Combines static map analysis with dynamic state (doors, pushwalls, actors).
