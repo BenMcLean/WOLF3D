@@ -48,6 +48,10 @@ public class Simulator
 	private Dictionary<uint, Assets.Direction> patrolDirectionAtTile;
 	// Map dimensions
 	private ushort mapWidth, mapHeight;
+	// WL_ACT1.C:areaconnect[NUMAREAS][NUMAREAS]
+	// Symmetric matrix tracking how many doors connect each pair of areas/rooms
+	// Each entry is a count: 0 = disconnected, >0 = number of doors connecting the areas
+	public SymmetricMatrix AreaConnect { get; private set; }
 	// Spatial index arrays - track what occupies each tile (WL_DEF.H:actorat equivalent)
 	// Index calculation: y * mapWidth + x
 	// -1 = tile is empty, >= 0 = index into respective collection
@@ -368,6 +372,12 @@ public class Simulator
 			// WL_ACT1.C:748 - clear actorat for door tile (allows actors to pathfind through)
 			int tileIdx = GetTileIndex(door.TileX, door.TileY);
 			doorAtTile[tileIdx] = -1;
+			// WL_ACT1.C:723-726 - increment area connection count for hearing propagation
+			if (door.Area1 >= 0 && door.Area2 >= 0)
+			{
+				short currentCount = AreaConnect[(ushort)door.Area1, (ushort)door.Area2];
+				AreaConnect[(ushort)door.Area1, (ushort)door.Area2] = (short)(currentCount + 1);
+			}
 		}
 		else
 			door.Position = (ushort)newPosition;
@@ -438,7 +448,12 @@ public class Simulator
 				TileX = door.TileX,
 				TileY = door.TileY
 			});
-			// TODO: WL_ACT1.C:795-813 - disconnect areas (for advanced area connectivity)
+			// WL_ACT1.C:798-811 - decrement area connection count for hearing propagation
+			if (door.Area1 >= 0 && door.Area2 >= 0)
+			{
+				short currentCount = AreaConnect[(ushort)door.Area1, (ushort)door.Area2];
+				AreaConnect[(ushort)door.Area1, (ushort)door.Area2] = (short)(currentCount - 1);
+			}
 		}
 		else
 			door.Position = (ushort)newPosition;
@@ -758,15 +773,20 @@ public class Simulator
 		}
 #endif
 
+		// Initialize area connectivity matrix (WL_ACT1.C:areaconnect)
+		// Size is based on number of floor codes defined in the game configuration
+		AreaConnect = new SymmetricMatrix(mapAnalysis.FloorCodeCount);
 		doors.Clear();
 		int doorIndex = 0;
 		foreach (MapAnalysis.DoorSpawn spawn in doorSpawns)
 		{
-			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest, spawn.TileNumber));
+			// Create door with area connectivity from spawn data (calculated by MapAnalysis)
+			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest, spawn.TileNumber, spawn.Area1, spawn.Area2));
 
 			// Update spatial index - door occupies its tile
 			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
 			doorAtTile[tileIdx] = (short)doorIndex;
+
 			doorIndex++;
 		}
 	}

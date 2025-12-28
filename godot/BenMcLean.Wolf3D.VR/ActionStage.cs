@@ -185,12 +185,7 @@ void sky() {
 		{
 			// Determine push direction from camera rotation (extension method in ExtensionMethods.cs)
 			Direction dir = rotationY.ToCardinalDirection();
-			GD.Print($"Activating pushwall at ({tileX}, {tileY}) in direction {dir}");
 			_simulatorController.ActivatePushWall(tileX, tileY, dir);
-		}
-		else
-		{
-			GD.Print($"No pushwall found at tile ({tileX}, {tileY})");
 		}
 	}
 

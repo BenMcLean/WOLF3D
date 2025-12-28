@@ -257,6 +257,38 @@ public class MapAnalyzer
 			x >= 0 && y >= 0 && x < Width && y < Depth
 			&& Mappable[y * Width + x];
 
+		// Reference to the underlying GameMap for accessing raw map data
+		private readonly GameMap gameMap;
+
+		// WL_ACT1.C floor code/area number tracking for enemy hearing propagation
+		// Floor codes are special tile numbers in the "other" layer used to identify rooms
+		// Original Wolf3D: AREATILE constant defines first floor code tile number
+		public ushort FloorCodeFirst { get; private init; }  // First floor code tile number (AREATILE)
+		public ushort FloorCodeCount { get; private init; }  // Number of distinct floor codes
+
+		/// <summary>
+		/// Gets the raw floor code tile at the specified position.
+		/// WL_ACT1.C uses mapsegs[0] to read floor codes from the map's "other" layer.
+		/// </summary>
+		public ushort GetFloorCode(int x, int y) =>
+			x >= 0 && y >= 0 && x < Width && y < Depth
+			? gameMap.OtherData[y * Width + x]
+			: (ushort)0;
+
+		/// <summary>
+		/// Gets the area number (0-based) at the specified position.
+		/// Converts floor code tile to area index by subtracting FloorCodeFirst (AREATILE).
+		/// WL_ACT1.C: area1 = *(map+1) - AREATILE
+		/// Returns -1 if the tile is not a valid floor code.
+		/// </summary>
+		public short GetAreaNumber(int x, int y)
+		{
+			ushort floorCode = GetFloorCode(x, y);
+			if (floorCode >= FloorCodeFirst && floorCode < FloorCodeFirst + FloorCodeCount)
+				return (short)(floorCode - FloorCodeFirst);
+			return -1;
+		}
+
 		// Spawn data (using X, Y coordinate system for Assets layer)
 		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
 		public readonly record struct PlayerSpawn(ushort X, ushort Y, Direction Facing);
@@ -286,16 +318,20 @@ public class MapAnalyzer
 
 		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
 		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
+		// Area1/Area2: WL_ACT1.C:DoorOpening lines 715-728 - which floor codes this door connects
 		public readonly record struct DoorSpawn(
 			ushort Shape,
 			ushort X,
 			ushort Y,
 			bool FacesEastWest = false,
-			ushort TileNumber = 0);
+			ushort TileNumber = 0,
+			short Area1 = -1,
+			short Area2 = -1);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap, ILogger logger = null)
 		{
+			this.gameMap = gameMap ?? throw new ArgumentNullException(nameof(gameMap));
 			logger ??= NullLogger.Instance;
 			#region XML Attributes
 			XElement xml = mapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault()
@@ -330,6 +366,11 @@ public class MapAnalyzer
 						|| (x < Width - 1 && Transparent[y * Width + (x + 1)])
 						|| (y > 0 && Transparent[(y - 1) * Width + x])
 						|| (y < Depth - 1 && Transparent[(y + 1) * Width + x]);
+
+			// Initialize floor code data for enemy hearing propagation (WL_ACT1.C:areaconnect)
+			// Floor codes come from the "other" layer (mapsegs[0] in original Wolf3D)
+			FloorCodeFirst = mapAnalyzer.FloorCodeFirst;
+			FloorCodeCount = mapAnalyzer.FloorCodes;
 			#endregion Masks
 			#region Object Layer Parsing
 			List<ActorSpawn> enemies = [];
@@ -479,14 +520,20 @@ public class MapAnalyzer
 						// Door frames on north and south sides (run E-W, face N/S)
 						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y - 1), false));
 						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y + 1), true));
-						doors.Add(new DoorSpawn(doorPage, x, y, true, tile));  // FacesEastWest = true, TileNumber = tile
+						// Calculate area connectivity: FacesEastWest doors connect left (X-1) and right (X+1)
+						short area1 = GetAreaNumber(x - 1, y);
+						short area2 = GetAreaNumber(x + 1, y);
+						doors.Add(new DoorSpawn(doorPage, x, y, true, tile, area1, area2));
 					}
 					else  // Horizontal door (runs E-W, faces N/S)
 					{
 						// Door frames on west and east sides (run N-S, face E/W)
 						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x - 1), y, true));
 						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x + 1), y, false));
-						doors.Add(new DoorSpawn(doorPage, x, y, false, tile));  // FacesEastWest = false, TileNumber = tile
+						// Calculate area connectivity: horizontal doors connect above (Y-1) and below (Y+1)
+						short area1 = GetAreaNumber(x, y - 1);
+						short area2 = GetAreaNumber(x, y + 1);
+						doors.Add(new DoorSpawn(doorPage, x, y, false, tile, area1, area2));
 					}
 				}
 				else if (mapAnalyzer.ElevatorTiles.Contains(tile))

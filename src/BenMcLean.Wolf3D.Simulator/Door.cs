@@ -27,6 +27,13 @@ public class Door
 	// Door type identifier for looking up metadata (sounds, etc.) from MapAnalyzer.Doors
 	public ushort TileNumber { get; }
 
+	// WL_ACT1.C:DoorOpening lines 715-728 - area connectivity for hearing propagation
+	// These are the two area numbers (floor codes) this door connects
+	// For FacesEastWest doors: Area1 is left (X-1), Area2 is right (X+1)
+	// For horizontal doors: Area1 is above (Y-1), Area2 is below (Y+1)
+	// -1 indicates no valid area on that side
+	public short Area1 { get; }
+	public short Area2 { get; }
 	// Dynamic state (serialized for save games)
 
 	// WL_DEF.H:doorstruct:action
@@ -41,12 +48,14 @@ public class Door
 	// Used for auto-close timer when door is open
 	public short TicCount { get; set; }
 
-	public Door(ushort tileX, ushort tileY, bool facesEastWest, ushort tileNumber)
+	public Door(ushort tileX, ushort tileY, bool facesEastWest, ushort tileNumber, short area1 = -1, short area2 = -1)
 	{
 		TileX = tileX;
 		TileY = tileY;
 		FacesEastWest = facesEastWest;
 		TileNumber = tileNumber;
+		Area1 = area1;
+		Area2 = area2;
 		Action = DoorAction.Closed;
 		Position = 0;
 		TicCount = 0;
