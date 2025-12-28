@@ -46,6 +46,11 @@ public partial class Bonuses : Node3D
 	private readonly Dictionary<ushort, int> _nextSlotIndex = [];
 
 	/// <summary>
+	/// Tracks tile positions of visible bonuses for AABB computation.
+	/// Key: (spriteShape, multiMeshIndex), Value: list of (tileX, tileY, localIndex) tuples.
+	/// </summary>
+	private readonly Dictionary<(ushort, int), List<(ushort tileX, ushort tileY, int localIndex)>> _visibleBonusPositions = [];
+	/// <summary>
 	/// Rendering location for a bonus item.
 	/// </summary>
 	private struct BonusRenderData
@@ -134,6 +139,16 @@ public partial class Bonuses : Node3D
 			MultiMeshIndex = multiMeshIndex,
 			LocalIndex = localIndex
 		};
+
+		// Track position for AABB computation
+		(ushort, int) meshKey = (shape, multiMeshIndex);
+		if (!_visibleBonusPositions.TryGetValue(meshKey, out List<(ushort, ushort, int)> positions))
+		{
+			positions = [];
+			_visibleBonusPositions[meshKey] = positions;
+		}
+		positions.Add((tileX, tileY, localIndex));
+
 		// Set transform to show it (position only, rotation updated in _Process)
 		Vector3 position = new(
 			x: tileX.ToMetersCentered(),
@@ -142,6 +157,9 @@ public partial class Bonuses : Node3D
 		Transform3D transform = Transform3D.Identity;
 		transform.Origin = position;
 		instances[multiMeshIndex].Multimesh.SetInstanceTransform(localIndex, transform);
+
+		// Recompute tight AABB for this MultiMesh based on visible bonuses
+		instances[multiMeshIndex].Multimesh.CustomAabb = ComputeBillboardAabb(positions);
 	}
 
 	/// <summary>
@@ -159,11 +177,47 @@ public partial class Bonuses : Node3D
 
 		// Hide by scaling to zero
 		Transform3D transform = Transform3D.Identity.Scaled(Vector3.Zero);
-		MeshInstances[renderData.SpriteShape][renderData.MultiMeshIndex].Multimesh
-			.SetInstanceTransform(renderData.LocalIndex, transform);
+		MultiMeshInstance3D meshInstance = MeshInstances[renderData.SpriteShape][renderData.MultiMeshIndex];
+		meshInstance.Multimesh.SetInstanceTransform(renderData.LocalIndex, transform);
+
+		// Remove position from tracking
+		(ushort, int) meshKey = (renderData.SpriteShape, renderData.MultiMeshIndex);
+		if (_visibleBonusPositions.TryGetValue(meshKey, out List<(ushort, ushort, int)> positions))
+		{
+			// Remove the position entry with matching localIndex
+			positions.RemoveAll(p => p.Item3 == renderData.LocalIndex);
+
+			// Recompute tight AABB for this MultiMesh based on remaining visible bonuses
+			meshInstance.Multimesh.CustomAabb = ComputeBillboardAabb(positions);
+		}
 
 		// Remove mapping (slot stays allocated but hidden)
 		_simulatorToRenderMap.Remove(statObjIndex);
+	}
+
+	/// <summary>
+	/// Computes an AABB that fully encloses all visible billboard bonuses across all Y-axis rotations.
+	/// When rotating around Y-axis, a billboard extends ±HalfWallWidth in XZ, ±HalfWallHeight in Y.
+	/// </summary>
+	private static Aabb ComputeBillboardAabb(List<(ushort tileX, ushort tileY, int localIndex)> positions)
+	{
+		if (positions.Count == 0)
+			return new Aabb(Vector3.Zero, Vector3.Zero);
+
+		ushort minX = positions.Min(p => p.tileX);
+		ushort maxX = positions.Max(p => p.tileX);
+		ushort minZ = positions.Min(p => p.tileY);
+		ushort maxZ = positions.Max(p => p.tileY);
+
+		return new Aabb(
+			position: new Vector3(
+				x: minX.ToMeters(),
+				y: 0f,
+				z: minZ.ToMeters()),
+			size: new Vector3(
+				x: (maxX - minX + 1) * Constants.TileWidth,
+				y: Constants.TileHeight,
+				z: (maxZ - minZ + 1) * Constants.TileWidth));
 	}
 
 	/// <summary>
@@ -190,10 +244,9 @@ public partial class Bonuses : Node3D
 		for (int i = 0; i < MultiMeshCapacity; i++)
 			multiMesh.SetInstanceTransform(i, hiddenTransform);
 
-		// Precompute custom AABB that encompasses all potential billboards
-		// Use a generous AABB since bonuses can spawn anywhere on the map
+		// Start with empty AABB - will be recomputed when first bonus spawns
 		// This prevents incorrect frustum culling and avoids expensive RecomputeAabb() each frame
-		multiMesh.CustomAabb = new Aabb(Vector3.Zero, new Vector3(1000, 100, 1000));
+		multiMesh.CustomAabb = new Aabb(Vector3.Zero, Vector3.Zero);
 
 		// Count how many MultiMeshes exist for this page to create unique names
 		int meshCount = MeshInstances.TryGetValue(page, out List<MultiMeshInstance3D> existing)

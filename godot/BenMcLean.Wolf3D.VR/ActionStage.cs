@@ -31,7 +31,7 @@ void sky() {
 	private Camera3D _camera;
 	private FreeLookCamera _freeLookCamera;
 	private Walls _walls;
-	private PatrolArrows _patrolArrows;
+	private DebugMarkers _debugMarkers;
 	private Fixtures _fixtures;
 	private Bonuses _bonuses;
 	private Actors _actors;
@@ -58,9 +58,9 @@ void sky() {
 				Constants.HalfTileHeight,
 				playerStart.Y.ToMetersCentered()
 			);
-			// Convert Direction enum to rotation (N=0, E=1, S=2, W=3)
-			// In Godot, Y rotation: 0=North(-Z), 90=East(+X), 180=South(+Z), 270=West(-X)
-			cameraRotationY = (float)playerStart.Facing * Constants.HalfPi;
+			// Convert Direction enum to Godot rotation using ToAngle extension method
+			// Handles Wolf3D coordinate system → Godot coordinate system conversion
+			cameraRotationY = playerStart.Facing.ToAngle();
 		}
 		else
 		{
@@ -87,9 +87,9 @@ void sky() {
 			Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
 		AddChild(_walls);
 
-		// Create patrol arrows for debugging patrol points
-		_patrolArrows = new PatrolArrows(currentLevel);
-		AddChild(_patrolArrows);
+		// Create debug markers for patrol points and ambush actors
+		_debugMarkers = new DebugMarkers(currentLevel);
+		AddChild(_debugMarkers);
 
 		// Create fixtures (billboarded sprites) for the current level and add to scene
 		_fixtures = new Fixtures(

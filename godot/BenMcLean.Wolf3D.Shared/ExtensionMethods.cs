@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using Godot;
 
 namespace BenMcLean.Wolf3D.Shared;
 
@@ -167,6 +168,17 @@ public static class ExtensionMethods
 					length: actualInsertXside);
 		return texture;
 	}
+	/// <summary>
+	/// Converts an RGBA8888 uint to a Godot Color.
+	/// Format: 0xRRGGBBAA (big-endian, matching BinaryPrimitives.WriteUInt32BigEndian)
+	/// </summary>
+	/// <param name="rgba">RGBA8888 color value</param>
+	/// <returns>Godot Color with values normalized to 0.0-1.0 range</returns>
+	public static Color ToColor(this uint rgba) => new(
+		r: ((rgba >> 24) & 0xFF) / 255f,
+		g: ((rgba >> 16) & 0xFF) / 255f,
+		b: ((rgba >> 8) & 0xFF) / 255f,
+		a: (rgba & 0xFF) / 255f);
 	#endregion Drawing
 	#region Utilities
 	/// <summary>

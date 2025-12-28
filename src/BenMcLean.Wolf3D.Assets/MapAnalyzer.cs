@@ -210,7 +210,6 @@ public class MapAnalyzer
 
 	// Wolf3D object class categorization (using enum)
 	private static bool IsPlayerStart(ObClass? obclass) => obclass == ObClass.playerobj;
-	private static bool IsEnemy(ObClass? obclass) => false; // TODO: Add enemy types to enum
 	private static bool IsStatic(ObClass? obclass) => obclass == ObClass.dressing || obclass == ObClass.block || obclass == ObClass.bonus;
 
 	private static StatType GetStatType(ObClass? obclass) => obclass switch
@@ -314,7 +313,8 @@ public class MapAnalyzer
 		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
 		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
-		public ReadOnlyCollection<Tuple<ushort, ushort>> Elevators { get; private set; }
+		public ReadOnlyCollection<uint> Elevators { get; private set; }
+		public ReadOnlyCollection<uint> Ambushes { get; private set; }
 
 		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
 		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
@@ -472,7 +472,8 @@ public class MapAnalyzer
 			ushort doorFrameVert = (ushort)(mapAnalyzer.DoorWall + 3);   // Vertical door frame
 
 			List<WallSpawn> walls = [];
-			List<Tuple<ushort, ushort>> elevators = [];
+			List<uint> elevators = [];
+			List<uint> ambushes = [];
 			List<DoorSpawn> doors = [];
 
 			void EastWest(ushort x, ushort y)
@@ -538,11 +539,15 @@ public class MapAnalyzer
 				}
 				else if (mapAnalyzer.ElevatorTiles.Contains(tile))
 				{
-					elevators.Add(new(x, y));
+					// Elevator tiles are walls (no wall spawning needed)
+					elevators.Add((uint)x | ((uint)y << 16));
 				}
 				else if (!mapAnalyzer.IsWall(tile))
 				{
-					// For empty spaces, check adjacent cells for walls
+					// Track ambush tiles (these are floor tiles, not walls)
+					if (mapAnalyzer.AmbushTiles.Contains(tile))
+						ambushes.Add((uint)x | ((uint)y << 16));
+					// For empty spaces (including ambush tiles), check adjacent cells for walls
 					EastWest(x, y);
 					NorthSouth(x, y);
 				}
@@ -551,6 +556,7 @@ public class MapAnalyzer
 			Walls = Array.AsReadOnly([.. walls]);
 			PushWalls = Array.AsReadOnly([.. pushWalls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
+			Ambushes = Array.AsReadOnly([.. ambushes]);
 			Doors = Array.AsReadOnly([.. doors]);
 			#endregion Wall/Door/PushWall Parsing
 		}

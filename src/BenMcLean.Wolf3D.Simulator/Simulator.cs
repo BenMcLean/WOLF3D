@@ -278,7 +278,7 @@ public class Simulator
 		{
 			// Door is Closed or Closing - start/restart opening (WL_ACT1.C:551)
 			door.Action = DoorAction.Opening;
-			// Emit opening event and sound
+			// Emit opening event and sound when transitioning to Opening state
 			DoorOpening?.Invoke(new DoorOpeningEvent
 			{
 				DoorIndex = doorIndex,
@@ -292,13 +292,56 @@ public class Simulator
 		}
 	}
 	/// <summary>
+	/// Check if a door is blocked by actors, player, or objects.
+	/// WL_ACT1.C:574-611, 773-778
+	/// </summary>
+	private bool IsDoorBlocked(Door door)
+	{
+		int tileIdx = GetTileIndex(door.TileX, door.TileY);
+		// Check if an actor is standing in the doorway (quick check via spatial index)
+		if (actorAtTile[tileIdx] >= 0)
+			return true;
+		// Check if player is in the doorway
+		if (PlayerTileX == door.TileX && PlayerTileY == door.TileY)
+			return true;
+		// Check if any spawned bonus object is on the door tile
+		// WL_ACT1.C:773 - actorat check includes static objects (values 1-127)
+		// Only spawned objects (ShapeNum != -1) block the door
+		// Bonuses only have tile coordinates, so exact tile match is the only check needed
+		for (int i = 0; i < lastStatObj; i++)
+		{
+			if (StatObjList[i] != null && !StatObjList[i].IsFree
+				&& StatObjList[i].TileX == door.TileX
+				&& StatObjList[i].TileY == door.TileY)
+				return true;
+		}
+		// Comprehensive actor collision check - check if any actor's collision box overlaps door tile
+		// This catches actors whose center is in an adjacent tile but body extends into doorway
+		// Fixed-point 16.16 door tile center for proximity checks
+		int doorCenterX = (door.TileX << 16) + 0x8000;
+		int doorCenterY = (door.TileY << 16) + 0x8000;
+		const int TILE_SIZE = 0x10000; // One tile in fixed-point 16.16
+		for (int i = 0; i < actors.Count; i++)
+		{
+			Actor actor = actors[i];
+			// Check if actor's collision box overlaps with door tile (box is 1 tile centered on actor)
+			int deltaX = Math.Abs(actor.X - doorCenterX);
+			int deltaY = Math.Abs(actor.Y - doorCenterY);
+			if (deltaX < TILE_SIZE && deltaY < TILE_SIZE)
+				return true;
+		}
+		return false;
+	}
+	/// <summary>
 	/// WL_ACT1.C:CloseDoor (line 563)
 	/// </summary>
 	private void CloseDoor(ushort doorIndex)
 	{
 		Door door = doors[doorIndex];
-		// TODO: Check for blocking actors/player (WL_ACT1.C:574-611)
-		// For now, just start closing
+		// WL_ACT1.C:574-611 - don't close on anything solid
+		if (IsDoorBlocked(door))
+			return;
+		// Nothing blocking, start closing
 		door.Action = DoorAction.Closing;
 		DoorClosing?.Invoke(new DoorClosingEvent
 		{
@@ -355,8 +398,7 @@ public class Simulator
 	{
 		Door door = doors[doorIndex];
 		int newPosition = door.Position;
-		// Note: DoorOpening event and sound are now emitted in OpenDoor() immediately
-		// when the door starts opening, regardless of position (matches CloseDoor behavior)
+		// Note: DoorOpening event and sound are emitted in OpenDoor() when transitioning to Opening state
 		// WL_ACT1.C:739 - slide the door by an adaptive amount
 		// position += tics<<10 (we use 1 tic per update)
 		newPosition += 1 << 10;
@@ -403,37 +445,15 @@ public class Simulator
 	{
 		Door door = doors[doorIndex];
 
-		// WL_ACT1.C:773-778 - check if something is blocking the door
-		int tileIdx = GetTileIndex(door.TileX, door.TileY);
-		// Check if an actor is in the doorway
-		if (actorAtTile[tileIdx] >= 0)
+		// WL_ACT1.C:773-778 - check if something moved into the doorway while closing
+		if (IsDoorBlocked(door))
 		{
-			// Actor blocking door - reopen it
+			// Something blocking door - reopen it
 			OpenDoor((ushort)doorIndex);
 			return;
-		}
-		// Check if player is in the doorway
-		if (PlayerTileX == door.TileX && PlayerTileY == door.TileY)
-		{
-			// Player blocking door - reopen it
-			OpenDoor((ushort)doorIndex);
-			return;
-		}
-		// Check if a spawned bonus object is in the doorway
-		// WL_ACT1.C:773 - actorat check includes static objects (values 1-127)
-		// Only spawned objects (ShapeNum != -1) block the door
-		for (int i = 0; i < lastStatObj; i++)
-		{
-			if (StatObjList[i] != null && !StatObjList[i].IsFree
-				&& StatObjList[i].TileX == door.TileX
-				&& StatObjList[i].TileY == door.TileY)
-			{
-				// Spawned bonus object blocking door - reopen it
-				OpenDoor((ushort)doorIndex);
-				return;
-			}
 		}
 
+		int tileIdx = GetTileIndex(door.TileX, door.TileY);
 		int newPosition = door.Position;
 		// WL_ACT1.C:785 - slide the door by an adaptive amount
 		// position -= tics<<10 (we use 1 tic per update)
