@@ -72,20 +72,20 @@ public class LuaScriptEngine
 	private void ExposeContextMethodsAsGlobals(ActorScriptContext ctx)
 	{
 		// Get all public instance methods from ActorScriptContext
-		var methods = typeof(ActorScriptContext).GetMethods(
+		System.Reflection.MethodInfo[] methods = typeof(ActorScriptContext).GetMethods(
 			System.Reflection.BindingFlags.Public |
 			System.Reflection.BindingFlags.Instance |
 			System.Reflection.BindingFlags.DeclaredOnly);
 
-		foreach (var method in methods)
+		foreach (System.Reflection.MethodInfo method in methods)
 		{
 			// Skip property getters/setters and special methods
 			if (method.IsSpecialName)
 				continue;
 
 			string methodName = method.Name;
-			var parameters = method.GetParameters();
-			var returnType = method.ReturnType;
+			System.Reflection.ParameterInfo[] parameters = method.GetParameters();
+			Type returnType = method.ReturnType;
 
 			// Create a callback that invokes the method via reflection
 			luaScript.Globals[methodName] = DynValue.NewCallback((c, args) =>
@@ -96,8 +96,8 @@ public class LuaScriptEngine
 				{
 					if (i < args.Count)
 					{
-						var luaArg = args[i];
-						var paramType = parameters[i].ParameterType;
+						DynValue luaArg = args[i];
+						Type paramType = parameters[i].ParameterType;
 
 						// Convert based on parameter type
 						if (paramType == typeof(int))

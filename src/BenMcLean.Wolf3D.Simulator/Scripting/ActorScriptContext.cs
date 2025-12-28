@@ -26,6 +26,12 @@ public class ActorScriptContext(
 
 	// Actor property accessors (read-only from Lua)
 
+	/// <summary>
+	/// Get actor type identifier (e.g., "guard", "ss", "dog", "mutant").
+	/// Lua scripts can use this to implement type-specific behavior,
+	/// similar to how original Wolf3D used switch(ob->obclass).
+	/// </summary>
+	public string GetActorType() => actor.ActorType;
 	/// <summary>Get actor's current tile X coordinate</summary>
 	public int GetTileX() => actor.TileX;
 
@@ -88,9 +94,10 @@ public class ActorScriptContext(
 
 	/// <summary>
 	/// Get random number from 0 to 255 (matching US_RndT from original code).
-	/// WL_DEF.H:US_RndT()
+	/// WL_DEF.H:US_RndT() - Returns a random byte value using the table method.
+	/// Used throughout Wolf3D for reaction times, AI decisions, etc.
 	/// </summary>
-	public int Random() => rng.Next(256);
+	public int US_RndT() => rng.Next(256);
 
 	/// <summary>
 	/// Bitwise right shift for Lua (value >> bits).

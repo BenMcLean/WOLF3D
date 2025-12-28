@@ -1335,16 +1335,23 @@
 				</PlaceItem>
 			</Actor>
 			<!-- State Functions (Lua implementations of Think/Action) -->
-			<Function Name="T_Stand" Description="Guard standing idle, watching for player">
+			<Function Name="T_Stand" Description="Actor standing idle, watching for player (generic for all actor types)">
 -- WL_ACT2.C:T_Stand - calls SightPlayer
--- WL_STATE.C:SightPlayer - check for player and transition to chase if spotted
+-- WL_STATE.C:SightPlayer (lines 1802-1919) - check for player and transition to chase if spotted
 
--- Check if reaction timer is counting down
+-- WL_STATE.C:1807 - Check if reaction timer is counting down
 local reactionTimer = GetReactionTimer()
 if reactionTimer > 0 then
+	-- WL_STATE.C:1812 - Count down reaction time
 	SetReactionTimer(reactionTimer - 1)
-	return
+	if GetReactionTimer() > 0 then
+		return  -- Still counting down, not ready to react
+	end
+	-- Timer just reached 0, fall through to FirstSighting below
 end
+
+-- Timer is 0 (never set or just expired)
+-- WL_STATE.C:1817-1832 - Check visibility conditions
 
 -- FL_AMBUSH (0x40) - check if in ambush mode
 if HasFlag(0x40) then
@@ -1356,19 +1363,57 @@ if HasFlag(0x40) then
 end
 
 -- Check if player is visible
-if CheckSight() then
-	-- Player spotted! Set reaction time (guard = 1 + Random()/4)
-	SetReactionTimer(1 + math.random() / 4)
-
-	-- Play alert sound
-	PlayDigiSound("HALTSND")
-
-	-- Transition to chase state
-	ChangeState("s_grdchase1")
-
-	-- Set attack mode flag (0x10)
-	SetFlag(0x10)
+if not CheckSight() then
+	return  -- Can't see player, nothing to do
 end
+
+-- Player is visible!
+if reactionTimer == 0 and GetReactionTimer() == 0 then
+	-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type
+	local actorType = GetActorType()
+	local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
+
+	if actorType == "Guard" then
+		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
+	elseif actorType == "Dog" then
+		SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8 (fastest!)
+	elseif actorType == "SS" then
+		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6 (approx)
+	elseif actorType == "Hans" then
+		SetReactionTimer(1)  -- Immediate reaction
+	else
+		-- Default for unknown types
+		SetReactionTimer(1)
+	end
+
+	-- WL_STATE.C:1913 - return false (don't transition yet, wait for timer)
+	return
+end
+
+-- Timer has expired (was > 0, now == 0) - WL_STATE.C:1916 - call FirstSighting
+-- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type
+local actorType = GetActorType()
+
+if actorType == "Guard" then
+	PlayDigiSound("HALTSND")
+	ChangeState("s_grdchase1")
+elseif actorType == "Dog" then
+	PlayDigiSound("DOGBARKSND")
+	ChangeState("s_dogchase1")
+elseif actorType == "SS" then
+	PlayDigiSound("SCHUTZADSND")
+	ChangeState("s_sschase1")
+elseif actorType == "Hans" then
+	PlayDigiSound("GUTENTAGSND")
+	ChangeState("s_bosschase1")
+else
+	-- Default fallback
+	ChangeState("s_grdchase1")
+end
+
+-- Set attack mode flags (all actor types)
+SetFlag(0x10)  -- FL_ATTACKMODE
+SetFlag(0x20)  -- FL_FIRSTATTACK
 			</Function>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
@@ -1530,15 +1575,79 @@ end
 			<!-- WL_ACT2.C:T_Path -->
 			<Function Name="T_Path"><![CDATA[
 -- WL_ACT2.C:T_Path (lines 4073-4128)
--- Patrol behavior - actor follows patrol path arrows on map
+-- Patrol behavior - actor follows patrol path arrows on map (generic for all actor types)
 
--- TODO: Re-enable when chase/combat is implemented
---if CheckSight() then
---	-- Player spotted! Set reaction timer and exit
---	local reaction = 1 + Random() / 6
---	SetReactionTimer(reaction)
---	return
---end
+-- WL_ACT2.C:4078 - if (SightPlayer(ob)) return
+-- Implements WL_STATE.C:SightPlayer (lines 1802-1919)
+
+-- Check if reaction timer is counting down
+local reactionTimer = GetReactionTimer()
+if reactionTimer > 0 then
+	-- Count down reaction time
+	SetReactionTimer(reactionTimer - 1)
+	if GetReactionTimer() > 0 then
+		return  -- Still counting down
+	end
+	-- Timer just reached 0, fall through to FirstSighting below
+end
+
+-- Timer is 0 - check visibility
+-- FL_AMBUSH (0x40) - check if in ambush mode
+if HasFlag(0x40) then
+	if not CheckSight() then
+		return
+	end
+	ClearFlag(0x40)
+end
+
+-- Check if player is visible
+if not CheckSight() then
+	-- Continue patrolling (fall through to patrol logic below)
+else
+	-- Player is visible!
+	if reactionTimer == 0 and GetReactionTimer() == 0 then
+		-- First time seeing player, set reaction time based on actor type
+		local actorType = GetActorType()
+		local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
+
+		if actorType == "Guard" then
+			SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
+		elseif actorType == "Dog" then
+			SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8
+		elseif actorType == "SS" then
+			SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6
+		elseif actorType == "Hans" then
+			SetReactionTimer(1)  -- Immediate
+		else
+			SetReactionTimer(1)
+		end
+
+		return  -- Don't transition yet, wait for timer
+	end
+
+	-- Timer has expired - call FirstSighting
+	local actorType = GetActorType()
+
+	if actorType == "Guard" then
+		PlayDigiSound("HALTSND")
+		ChangeState("s_grdchase1")
+	elseif actorType == "Dog" then
+		PlayDigiSound("DOGBARKSND")
+		ChangeState("s_dogchase1")
+	elseif actorType == "SS" then
+		PlayDigiSound("SCHUTZADSND")
+		ChangeState("s_sschase1")
+	elseif actorType == "Hans" then
+		PlayDigiSound("GUTENTAGSND")
+		ChangeState("s_bosschase1")
+	else
+		ChangeState("s_grdchase1")
+	end
+
+	SetFlag(0x10)  -- FL_ATTACKMODE
+	SetFlag(0x20)  -- FL_FIRSTATTACK
+	return
+end
 
 -- WL_ACT2.C:4081 - if (ob->dir == nodir)
 if not HasDirection() then
