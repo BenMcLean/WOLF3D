@@ -1425,19 +1425,19 @@
 			<State Name="s_grdpain" Shape="SPR_GRD_PAIN_1" Tics="10" Speed="0" Next="s_grdchase1" />
 			<State Name="s_grdpain1" Shape="SPR_GRD_PAIN_2" Tics="10" Speed="0" Next="s_grdchase1" />
 			<State Name="s_grdshoot1" Shape="SPR_GRD_SHOOT1" Tics="20" Speed="0" Next="s_grdshoot2" />
-			<State Name="s_grdshoot2" Shape="SPR_GRD_SHOOT2" Tics="20" Act="T_Shoot" Speed="0" Next="s_grdshoot3" />
-			<State Name="s_grdshoot3" Shape="SPR_GRD_SHOOT3" Tics="20" Speed="0" DigiSound="ATKPISTOLSND" Next="s_grdchase1" />
+			<State Name="s_grdshoot2" Shape="SPR_GRD_SHOOT2" Tics="20" Action="T_Shoot" Speed="0" Next="s_grdshoot3" />
+			<State Name="s_grdshoot3" Shape="SPR_GRD_SHOOT3" Tics="20" Speed="0" Next="s_grdchase1" />
 			<State Name="s_grdchase1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_grdchase1s" />
 			<State Name="s_grdchase1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="3" Speed="1536" Next="s_grdchase2" />
 			<State Name="s_grdchase2" Rotate="true" Shape="SPR_GRD_W2_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_grdchase3" />
 			<State Name="s_grdchase3" Rotate="true" Shape="SPR_GRD_W3_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_grdchase3s" />
 			<State Name="s_grdchase3s" Rotate="true" Shape="SPR_GRD_W3_1" Tics="3" Speed="1536" Next="s_grdchase4" />
 			<State Name="s_grdchase4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_grdchase1" />
-			<State Name="s_grddie1" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie2" Alive="false" Mark="false" DigiSound="DEATHSCREAM1SND,DEATHSCREAM2SND,DEATHSCREAM3SND" />
+			<State Name="s_grddie1" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie2" Alive="false" Mark="false" />
 			<State Name="s_grddie2" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddie3" Alive="false" Mark="false" />
 			<State Name="s_grddie3" Shape="SPR_GRD_DIE_3" Tics="15" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertDigiSound="DOGBARKSND" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" AddTo="Score" Add="200" />
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" AddTo="Score" Add="200" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
 			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500" Next="s_dogpath2" />
 			<State Name="s_dogpath2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="15" Think="T_Path" Speed="1500" Next="s_dogpath3" />
@@ -1445,7 +1445,7 @@
 			<State Name="s_dogpath3s" Rotate="true" Shape="SPR_DOG_W3_1" Tics="5" Speed="1500" Next="s_dogpath4" />
 			<State Name="s_dogpath4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="15" Think="T_Path" Speed="1500" Next="s_dogpath1" />
 			<State Name="s_dogjump1" Shape="SPR_DOG_JUMP1" Tics="10" Speed="0" Next="s_dogjump2" />
-			<State Name="s_dogjump2" Shape="SPR_DOG_JUMP2" Tics="10" Act="T_Bite" Speed="0" Next="s_dogjump3" />
+			<State Name="s_dogjump2" Shape="SPR_DOG_JUMP2" Tics="10" Action="T_Bite" Speed="0" Next="s_dogjump3" />
 			<State Name="s_dogjump3" Shape="SPR_DOG_JUMP3" Tics="10" Speed="0" Next="s_dogjump4" />
 			<State Name="s_dogjump4" Shape="SPR_DOG_JUMP1" Tics="10" Speed="0" Next="s_dogjump5" />
 			<State Name="s_dogjump5" Shape="SPR_DOG_W1_1" Tics="10" Speed="0" Next="s_dogchase1" />
@@ -1483,13 +1483,13 @@
 			<State Name="s_sspain" Shape="SPR_SS_PAIN_1" Tics="10" Speed="0" Next="s_sschase1" />
 			<State Name="s_sspain1" Shape="SPR_SS_PAIN_2" Tics="10" Speed="0" Next="s_sschase1" />
 			<State Name="s_ssshoot1" Shape="SPR_SS_SHOOT1" Tics="20" Speed="0" Next="s_ssshoot2" />
-			<State Name="s_ssshoot2" Shape="SPR_SS_SHOOT2" Tics="20" Act="T_Shoot" DigiSound="SSFIRESND" Speed="0" Next="s_ssshoot3" />
+			<State Name="s_ssshoot2" Shape="SPR_SS_SHOOT2" Tics="20" Action="T_Shoot" Speed="0" Next="s_ssshoot3" />
 			<State Name="s_ssshoot3" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_ssshoot4" />
-			<State Name="s_ssshoot4" Shape="SPR_SS_SHOOT2" Tics="10" Act="T_Shoot" DigiSound="SSFIRESND" Speed="0" Next="s_ssshoot5" />
+			<State Name="s_ssshoot4" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0" Next="s_ssshoot5" />
 			<State Name="s_ssshoot5" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_ssshoot6" />
-			<State Name="s_ssshoot6" Shape="SPR_SS_SHOOT2" Tics="10" Act="T_Shoot" DigiSound="SSFIRESND" Speed="0" Next="s_ssshoot7" />
+			<State Name="s_ssshoot6" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0" Next="s_ssshoot7" />
 			<State Name="s_ssshoot7" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_ssshoot8" />
-			<State Name="s_ssshoot8" Shape="SPR_SS_SHOOT2" Tics="10" Act="T_Shoot" DigiSound="SSFIRESND" Speed="0" Next="s_ssshoot9" />
+			<State Name="s_ssshoot8" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0" Next="s_ssshoot9" />
 			<State Name="s_ssshoot9" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_sschase1" />
 			<State Name="s_sschase1" Rotate="true" Shape="SPR_SS_W1_1" Tics="10" Think="T_Chase" Speed="2048" Next="s_sschase1s" />
 			<State Name="s_sschase1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="3" Speed="2048" Next="s_sschase2" />
@@ -1497,7 +1497,7 @@
 			<State Name="s_sschase3" Rotate="true" Shape="SPR_SS_W3_1" Tics="10" Think="T_Chase" Speed="2048" Next="s_sschase3s" />
 			<State Name="s_sschase3s" Rotate="true" Shape="SPR_SS_W3_1" Tics="3" Speed="2048" Next="s_sschase4" />
 			<State Name="s_sschase4" Rotate="true" Shape="SPR_SS_W4_1" Tics="8" Think="T_Chase" Speed="2048" Next="s_sschase1" />
-			<State Name="s_ssdie1" Shape="SPR_SS_DIE_1" Tics="15" Speed="0" Next="s_ssdie2" Alive="false" Mark="false" DigiSound="LEBENSND" />
+			<State Name="s_ssdie1" Shape="SPR_SS_DIE_1" Tics="15" Speed="0" Next="s_ssdie2" Alive="false" Mark="false" />
 			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3" Alive="false" Mark="false" />
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
@@ -1513,17 +1513,17 @@
 			<State Name="s_bosschase3" Shape="SPR_BOSS_W3" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase3s" />
 			<State Name="s_bosschase3s" Shape="SPR_BOSS_W3" Tics="3" Speed="512" Next="s_bosschase4" />
 			<State Name="s_bosschase4" Shape="SPR_BOSS_W4" Tics="8" Think="T_Chase" Speed="512" Next="s_bosschase1" />
-			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" DigiSound="MUTTISND" Next="s_bossdie2" Alive="false" />
+			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Alive="false" />
 			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3" Alive="false" Mark="false" />
 			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
 			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
 			<State Name="s_bossshoot1" Shape="SPR_BOSS_SHOOT1" Tics="30" Speed="0" Next="s_bossshoot2" />
-			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Act="T_Shoot" DigiSound="BOSSFIRESND" Next="s_bossshoot3" />
-			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Act="T_Shoot" Next="s_bossshoot4" />
-			<State Name="s_bossshoot4" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Act="T_Shoot" DigiSound="BOSSFIRESND" Next="s_bossshoot5" />
-			<State Name="s_bossshoot5" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Act="T_Shoot" Next="s_bossshoot6" />
-			<State Name="s_bossshoot6" DigiSound="BOSSFIRESND" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Act="T_Shoot" Next="s_bossshoot7" />
-			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Act="T_Shoot" Next="s_bossshoot8" />
+			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot3" />
+			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot4" />
+			<State Name="s_bossshoot4" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot5" />
+			<State Name="s_bossshoot5" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot6" />
+			<State Name="s_bossshoot6" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot7" />
+			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot8" />
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
 			<!--
 			<Actor Name="BJ" Human="true" AlertDigiSound="YEAHSND" >
@@ -1729,7 +1729,7 @@ if CheckSight() then
 	if dist == 0 or (dist == 1 and GetDistance() < 0x4000) then
 		chance = 300  -- Very close - always attack
 	else
-		chance = BitShiftLeft(1, 4) / dist  -- tics<<4 / dist
+		chance = BitShiftLeft(1, 4) / dist  -- tics<<4 / dist (tics hardcoded as 1)
 	end
 
 	-- Random chance to attack
@@ -1881,6 +1881,67 @@ while move > 0 do
 	if not HasDirection() then
 		return  -- Blocked
 	end
+end
+]]>
+			</Function>
+			<!-- WL_ACT2.C:T_Shoot -->
+			<Function Name="T_Shoot" Description="Enemy shooting action - checks line of sight">
+				<![CDATA[
+-- WL_ACT2.C:T_Shoot (lines 4150-4218)
+-- Attempt to shoot the player based on line of sight and distance
+-- Note: Damage calculation skipped until health system is implemented
+
+-- WL_ACT2.C:4157-4158 - Check if player is in the same area
+-- (skipped - assume player is always reachable for now)
+
+-- WL_ACT2.C:4160-4168 - Check line of sight
+if not CheckLine() then
+	-- Player is behind a wall, can't shoot
+	return
+end
+
+-- WL_ACT2.C:4171-4173 - Calculate distance to player
+local dx = GetPlayerTileX() - GetTileX()
+local dy = GetPlayerTileY() - GetTileY()
+if dx < 0 then dx = -dx end
+if dy < 0 then dy = -dy end
+local dist = dx
+if dy > dx then dist = dy end
+
+-- WL_ACT2.C:4177-4179 - SS and bosses are better shots (2/3 distance)
+local actorType = GetActorType()
+if actorType == "SS" or actorType == "Hans" then
+	dist = (dist * 2) / 3
+end
+
+-- WL_ACT2.C:4181-4194 - Calculate hit chance based on distance and player speed
+-- TODO: Check player speed when that's implemented
+-- For now, assume player is moving and visible
+local hitchance = 160 - (dist * 16)
+
+-- WL_ACT2.C:4196-4210 - Roll for hit and calculate damage
+if US_RndT() < hitchance then
+	-- Hit! Calculate damage based on distance
+	local damage = 0
+	if dist < 2 then
+		damage = US_RndT() / 4  -- Close range
+	elseif dist < 4 then
+		damage = US_RndT() / 8  -- Medium range
+	else
+		damage = US_RndT() / 16  -- Long range
+	end
+
+	-- TODO: TakeDamage(damage) when health system is implemented
+end
+
+-- WL_ACT2.C:4219-4256 - Play appropriate firing sound based on actor type
+if actorType == "SS" then
+	PlayDigiSound("SSFIRESND")
+elseif actorType == "Hans" then
+	PlayDigiSound("BOSSFIRESND")
+else
+	-- Guards, officers, and other enemies use NAZIFIRESND
+	PlayDigiSound("NAZIFIRESND")
 end
 ]]>
 			</Function>

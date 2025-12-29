@@ -663,24 +663,11 @@ public class Simulator
 		// WL_PLAY.C:1733 - Check for state transition
 		while (actor.TicCount <= 0)
 		{
-			// Execute Action function if present (end of state action)
-			if (!string.IsNullOrEmpty(actor.CurrentState.Action))
-			{
-				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
-				try
-				{
-					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Action, context);
-				}
-				catch (Exception ex)
-				{
-					logger?.LogError(ex, "Error executing Lua function for actor {ActorIndex}: {ErrorMessage}", actorIndex, ex.Message);
-				}
-			}
-
 			// WL_PLAY.C:1746 - Transition to next state
 			if (actor.CurrentState.Next == null)
 				break; // No next state, stop transitioning
 
+			// TransitionActorState executes the Action function when entering the new state
 			TransitionActorState(actorIndex, actor.CurrentState.Next);
 
 			// WL_PLAY.C:1754-1758 - If new state is non-transitional, set ticcount=0 and execute Think

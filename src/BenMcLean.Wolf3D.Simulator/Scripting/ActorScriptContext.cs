@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets;
 using Microsoft.Extensions.Logging;
@@ -17,15 +16,20 @@ public class ActorScriptContext(
 	RNG rng,
 	GameClock gameClock,
 	MapAnalysis mapAnalysis,
-	Microsoft.Extensions.Logging.ILogger logger) : ActionScriptContext(simulator, rng, gameClock)
+	ILogger logger) : ActionScriptContext(simulator, rng, gameClock)
 {
 	private readonly Actor actor = actor;
 	private readonly int actorIndex = actorIndex;
 	private readonly MapAnalysis mapAnalysis = mapAnalysis;
-	private readonly Microsoft.Extensions.Logging.ILogger logger = logger;
-
-	// Actor property accessors (read-only from Lua)
-
+	private readonly ILogger logger = logger;
+	#region Logging
+	/// <summary>
+	/// Log a debug message from Lua script.
+	/// Routes to Microsoft.Extensions.Logging.
+	/// </summary>
+	public void Log(string message) => logger?.LogDebug("Lua: {message}", message);
+	#endregion Logging
+	#region Actor property accessors (read-only from Lua)
 	/// <summary>
 	/// Get actor type identifier (e.g., "guard", "ss", "dog", "mutant").
 	/// Lua scripts can use this to implement type-specific behavior,
@@ -98,7 +102,6 @@ public class ActorScriptContext(
 	/// Used throughout Wolf3D for reaction times, AI decisions, etc.
 	/// </summary>
 	public int US_RndT() => rng.Next(256);
-
 	/// <summary>
 	/// Bitwise right shift for Lua (value >> bits).
 	/// Lua doesn't have native bit shift operators, so we provide them here.
@@ -110,10 +113,11 @@ public class ActorScriptContext(
 	/// </summary>
 	public int BitShiftLeft(int value, int bits) => value << bits;
 	/// <summary>
-	/// Check line of sight to player using raycasting.
-	/// WL_STATE.C:CheckSight(ob) and CheckLine(ob)
-	/// Walks from actor to player tile-by-tile, checking for walls, closed doors, and pushwalls.
-	/// Actors with a facing direction only see within 90 degrees centered on their facing.
+	/// Check if actor can see the player (used for initial detection).
+	/// WL_STATE.C:CheckSight (lines 1491-1545)
+	/// Performs area check, close-range auto-detection, field-of-view check, then calls CheckLine.
+	/// The actor must be facing toward the player's general direction (N/S/E/W quadrant).
+	/// Returns true if player has been spotted.
 	/// </summary>
 	public bool CheckSight()
 	{
@@ -162,13 +166,11 @@ public class ActorScriptContext(
 
 		int x = actorTileX;
 		int y = actorTileY;
-
 		while (true)
 		{
 			// Reached player position - line of sight is clear
 			if (x == playerTileX && y == playerTileY)
 				return true;
-
 			// Check if current tile blocks sight
 			// Skip the actor's own tile (we start there)
 			if (!(x == actorTileX && y == actorTileY))
@@ -177,7 +179,6 @@ public class ActorScriptContext(
 				if (!simulator.IsTileTransparentForSight((ushort)x, (ushort)y))
 					return false; // Obstacle blocks sight
 			}
-
 			// Bresenham step - check both intermediate tiles if moving diagonally
 			int e2 = 2 * err;
 			bool movedX = false;
@@ -204,9 +205,71 @@ public class ActorScriptContext(
 			}
 		}
 	}
-
-	// Actor mutation methods (for Think/Action scripts)
-
+	/// <summary>
+	/// Check if there's a clear line to player, ignoring field of view (used for shooting).
+	/// WL_STATE.C:CheckLine (lines 1203-1489)
+	/// Pure raycast - only checks if walls/doors block the line, no FOV or area checks.
+	/// Called by CheckSight after FOV verification, and by T_Shoot to verify shot clearance.
+	/// The actor can shoot even if not perfectly facing the player (chase already turned them).
+	/// </summary>
+	public bool CheckLine()
+	{
+		if (mapAnalysis is null)
+		{
+			// Fallback if no map analysis available
+			return CalculateDistanceToPlayer() < 20;
+		}
+		int actorTileX = actor.TileX,
+			actorTileY = actor.TileY,
+			playerTileX = simulator.PlayerTileX,
+			playerTileY = simulator.PlayerTileY,
+			// No FOV check - CheckLine is used for shooting and doesn't care about facing direction
+			// Bresenham's line algorithm to walk from actor to player
+			dx = System.Math.Abs(playerTileX - actorTileX),
+			dy = System.Math.Abs(playerTileY - actorTileY),
+			sx = actorTileX < playerTileX ? 1 : -1,
+			sy = actorTileY < playerTileY ? 1 : -1,
+			err = dx - dy,
+			x = actorTileX,
+			y = actorTileY;
+		while (true)
+		{
+			// Reached player position - line of sight is clear
+			if (x == playerTileX && y == playerTileY)
+				return true;
+			// Check if current tile blocks sight
+			// Skip the actor's own tile (we start there)
+			if (!(x == actorTileX && y == actorTileY)
+				&& !simulator.IsTileTransparentForSight((ushort)x, (ushort)y))
+				// Check static transparency (walls) AND dynamic obstacles (doors, pushwalls)
+					return false; // Obstacle blocks sight
+			// Bresenham step - check both intermediate tiles if moving diagonally
+			int e2 = 2 * err;
+			bool movedX = false, movedY = false;
+			if (e2 > -dy)
+			{
+				err -= dy;
+				x += sx;
+				movedX = true;
+			}
+			if (e2 < dx)
+			{
+				err += dx;
+				y += sy;
+				movedY = true;
+			}
+			// If we moved diagonally, check the intermediate tile we might have cut through
+			// This prevents seeing through corners
+			if (movedX && movedY)
+			{
+				// Check the tile at (x - sx, y) - the tile we passed through horizontally
+				if (!simulator.IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
+					return false;
+			}
+		}
+	}
+	#endregion Actor property accessors (read-only from Lua)
+	#region Actor mutation methods (for Think/Action scripts)
 	/// <summary>
 	/// Change the actor's current state.
 	/// Triggers state transition with Action function execution.
@@ -217,11 +280,8 @@ public class ActorScriptContext(
 		// Find this actor's index in the simulator
 		int actorIndex = simulator.Actors.ToList().IndexOf(actor);
 		if (actorIndex >= 0)
-		{
 			simulator.TransitionActorStateByName(actorIndex, stateName);
-		}
 	}
-
 	/// <summary>
 	/// Set actor's facing direction.
 	/// </summary>
@@ -231,7 +291,6 @@ public class ActorScriptContext(
 		if (direction >= 0 && direction <= 7)
 			actor.Facing = (Direction)direction;
 	}
-
 	/// <summary>
 	/// WL_ACT2.C:SelectPathDir (lines 4046-4062)
 	/// Reads patrol direction from current tile (optional turn marker).
@@ -244,19 +303,17 @@ public class ActorScriptContext(
 	{
 		// WL_ACT2.C:4050 - Read patrol arrow at current tile (optional turn marker)
 		if (simulator.TryGetPatrolDirection(actor.TileX, actor.TileY, out Assets.Direction direction))
-		{
 			// Found patrol point - change direction
 			actor.Facing = direction;
-		}
 		// If no patrol point found, keep current direction (don't modify actor.Facing)
 		// WL_ACT2.C:4058 - Set distance to move one full tile
 		actor.Distance = 0x10000; // TILEGLOBAL
 		// WL_ACT2.C:4060 - TryWalk: update tilex/tiley to destination and check collision
-		if (actor.Facing != null)
+		if (actor.Facing is not null)
 		{
 			// Save current position in case move is blocked
-			ushort oldTileX = actor.TileX;
-			ushort oldTileY = actor.TileY;
+			ushort oldTileX = actor.TileX,
+				oldTileY = actor.TileY;
 			// WL_STATE.C:216-250 - Update tilex/tiley based on direction
 			switch (actor.Facing.Value)
 			{
@@ -334,18 +391,6 @@ public class ActorScriptContext(
 	/// </summary>
 	public bool HasDirection() => actor.Facing != null;
 	/// <summary>
-	/// Move actor to a specific tile position.
-	/// </summary>
-	/// <param name="tileX">Target tile X coordinate</param>
-	/// <param name="tileY">Target tile Y coordinate</param>
-	public void MoveTo(int tileX, int tileY)
-	{
-		// TODO: Implement movement with collision detection
-		// Should update actor.X, actor.Y, actor.TileX, actor.TileY
-		// Should emit ActorMovedEvent if position changes
-	}
-
-	/// <summary>
 	/// Turn actor to face a specific point.
 	/// </summary>
 	/// <param name="targetX">Target X coordinate (fixed-point)</param>
@@ -353,11 +398,10 @@ public class ActorScriptContext(
 	public void TurnToward(int targetX, int targetY)
 	{
 		// Calculate direction from actor to target
-		int dx = targetX - actor.X;
-		int dy = targetY - actor.Y;
+		int dx = targetX - actor.X,
+			dy = targetY - actor.Y;
 		// TODO: Calculate 8-way direction from dx/dy and set actor.Facing
 	}
-
 	/// <summary>
 	/// Damage the actor.
 	/// </summary>
@@ -367,7 +411,6 @@ public class ActorScriptContext(
 		actor.HitPoints -= (short)amount;
 		// TODO: Check for death, trigger death state transition
 	}
-
 	/// <summary>
 	/// Heal the actor.
 	/// </summary>
@@ -377,9 +420,8 @@ public class ActorScriptContext(
 		actor.HitPoints += (short)amount;
 		// TODO: Clamp to max health
 	}
-
-	// Global simulator queries (for AI decisions)
-
+	#endregion Actor mutation methods (for Think/Action scripts)
+	#region Global simulator queries (for AI decisions)
 	/// <summary>
 	/// Check if actor has line-of-sight to the player.
 	/// </summary>
@@ -391,54 +433,26 @@ public class ActorScriptContext(
 		int dist = CalculateDistanceToPlayer();
 		return dist < 15; // Within ~15 tiles
 	}
-
 	/// <summary>
 	/// Get the player's current tile X coordinate.
 	/// WL_DEF.H:player->tilex
 	/// </summary>
 	public int GetPlayerTileX() => simulator.PlayerTileX;
-
 	/// <summary>
 	/// Get the player's current tile Y coordinate.
 	/// WL_DEF.H:player->tiley
 	/// </summary>
 	public int GetPlayerTileY() => simulator.PlayerTileY;
-
 	/// <summary>
 	/// Get the player's current X position (16.16 fixed-point).
 	/// WL_DEF.H:player->x
 	/// </summary>
 	public int GetPlayerX() => simulator.PlayerX;
-
 	/// <summary>
 	/// Get the player's current Y position (16.16 fixed-point).
 	/// WL_DEF.H:player->y
 	/// </summary>
 	public int GetPlayerY() => simulator.PlayerY;
-
-	/// <summary>
-	/// Find nearby actors within a radius.
-	/// </summary>
-	/// <param name="radius">Search radius in tiles</param>
-	/// <returns>Number of actors found (for now, just a count)</returns>
-	public int FindNearbyActors(int radius)
-	{
-		// TODO: Implement spatial query for nearby actors
-		// Could return actor IDs or populate a list
-		return 0;
-	}
-
-	/// <summary>
-	/// Emit a custom event from the actor script.
-	/// Useful for sounds, visual effects, etc.
-	/// </summary>
-	/// <param name="eventType">Event type identifier (e.g., "bark", "alert", "attack")</param>
-	public void EmitEvent(string eventType)
-	{
-		// TODO: Create and emit custom actor event
-		// simulator.EmitCustomActorEvent(actor, eventType);
-	}
-
 	/// <summary>
 	/// Request a door to open (actor-safe version).
 	/// Actors can only request opening, not close/toggle doors.
@@ -454,84 +468,65 @@ public class ActorScriptContext(
 			// This prevents actors from re-triggering the door opening sound
 			Door door = simulator.Doors[doorIndex];
 			if (door.Action != DoorAction.Open && door.Action != DoorAction.Opening)
-			{
 				simulator.OpenDoor((ushort)doorIndex);
-			}
 			// else: door is already Open or Opening, do nothing (just wait)
 		}
 	}
-
 	/// <summary>
 	/// Check if a door is fully open.
 	/// WL_ACT2.C:4099 - doorobjlist[doornum].action == dr_open
 	/// </summary>
 	/// <param name="doorIndex">Door index (0-based)</param>
 	/// <returns>True if door is fully open</returns>
-	public bool IsDoorOpen(int doorIndex)
-	{
-		if (doorIndex >= 0 && doorIndex < simulator.Doors.Count)
-			return simulator.Doors[doorIndex].Action == DoorAction.Open;
-		return false;
-	}
-
-	// ActionScriptContext abstract method implementations
-
+	public bool IsDoorOpen(int doorIndex) =>
+		doorIndex >= 0 &&
+		doorIndex < simulator.Doors.Count &&
+		simulator.Doors[doorIndex].Action == DoorAction.Open;
+	#endregion Global simulator queries (for AI decisions)
+	#region ActionScriptContext abstract method implementations
 	/// <summary>
 	/// Play a digi sound by name.
 	/// WL_STATE.C:PlaySoundLocActor
 	/// Sound will be attached to this actor and move with it during playback.
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
-	public override void PlayDigiSound(string soundName)
-	{
-		// Emit actor sound event - presentation layer will attach sound to actor
-		simulator.EmitActorPlaySound(actorIndex, soundName);
-	}
-
+	public override void PlayDigiSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
 	public override void PlayMusic(string musicName)
 	{
 		// Music is global (not positional)
 		// TODO: Emit event by music name
 	}
-
 	public override void StopMusic()
 	{
 		// TODO: Emit event
 	}
-
 	public override void SpawnActor(int type, int x, int y)
 	{
 		// TODO: Implement actor spawning from scripts
 	}
-
 	public override void DespawnActor(int actorId)
 	{
 		// TODO: Implement actor despawning
 	}
-
 	public override int GetPlayerHealth()
 	{
 		// TODO: Return actual player health
 		return 100;
 	}
-
 	public override int GetPlayerMaxHealth()
 	{
 		return 100;
 	}
-
 	public override void HealPlayer(int amount)
 	{
 		// TODO: Implement player healing (for friendly NPCs?)
 	}
-
 	public override void DamagePlayer(int amount)
 	{
 		// TODO: Get actual player reference and damage it
 		// For now, just a placeholder
 		// simulator.Player.TakeDamage(amount);
 	}
-
 	/// <summary>
 	/// Move actor forward in its current facing direction.
 	/// Based on WL_ACT2.C movement logic.
@@ -543,7 +538,6 @@ public class ActorScriptContext(
 		// Speed is in fixed-point, so we need to apply it correctly
 		int speed = actor.Speed;
 		int dx = 0, dy = 0;
-
 		// Convert facing direction to dx/dy delta
 		switch (actor.Facing)
 		{
@@ -556,53 +550,43 @@ public class ActorScriptContext(
 			case Direction.S:  dy = speed; break;
 			case Direction.SE: dx = speed; dy = speed; break;
 		}
-
 		// Apply movement (simplified - no collision detection yet)
 		actor.X += dx;
 		actor.Y += dy;
-
 		// Update tile coordinates
 		actor.TileX = (ushort)(actor.X >> 16);
 		actor.TileY = (ushort)(actor.Y >> 16);
-
 		// TODO: Implement proper collision detection
 		// TODO: Emit ActorMovedEvent
-
 		return true;
 	}
-
 	/// <summary>
 	/// Turn actor to face toward the player.
 	/// Based on WL_ACT1.C:SelectChaseDir logic.
 	/// </summary>
 	public void FacePlayer()
 	{
-		int dx = simulator.PlayerX - actor.X;
-		int dy = simulator.PlayerY - actor.Y;
-
+		int dx = simulator.PlayerX - actor.X,
+			dy = simulator.PlayerY - actor.Y;
 		// Calculate 8-way direction
 		// Simplified angle calculation
 		double angle = System.Math.Atan2(dy, dx);
 		int dirInt = (int)(((angle + System.Math.PI) / (2 * System.Math.PI)) * 8 + 0.5) % 8;
 		actor.Facing = (Direction)dirInt;
 	}
-
 	public override void GivePlayerAmmo(int weaponType, int amount)
 	{
 		// TODO: Implement ammo (for friendly NPCs giving items?)
 	}
-
 	public override void GivePlayerKey(int keyColor)
 	{
 		// TODO: Implement key giving
 	}
-
 	public override bool PlayerHasKey(int keyColor)
 	{
 		// TODO: Return actual key state
 		return false;
 	}
-
 	/// <summary>
 	/// Try all 8 directions in random order until one is navigable.
 	/// WL_STATE.C:589-612 - Fixes bug in original code that only tried 3 directions.
@@ -615,37 +599,27 @@ public class ActorScriptContext(
 		// Calculate opposite direction if we should avoid turnaround
 		int opposite = -1;
 		if (avoidTurnaround && actor.Facing.HasValue)
-		{
 			opposite = GetOppositeDirection((int)actor.Facing.Value);
-		}
-
 		// Create array of all 8 directions
-		int[] directions = new int[8] { 0, 1, 2, 3, 4, 5, 6, 7 };
-
+		int[] directions = [0, 1, 2, 3, 4, 5, 6, 7];
 		// Fisher-Yates shuffle using the actor's RNG
 		for (int i = 7; i > 0; i--)
 		{
 			int j = rng.Next(i + 1);
-			int temp = directions[i];
-			directions[i] = directions[j];
-			directions[j] = temp;
+			(directions[j], directions[i]) = (directions[i], directions[j]);
 		}
-
 		// Try each direction
 		foreach (int dir in directions)
 		{
 			if (avoidTurnaround && dir == opposite)
 				continue;
-
 			if (TryDirection(dir, canOpenDoors))
 				return true;
 		}
-
 		// All directions blocked
 		actor.Facing = null;
 		return false;
 	}
-
 	/// <summary>
 	/// Get the opposite direction (for turnaround avoidance).
 	/// WL_STATE.C:opposite[] array
@@ -653,7 +627,6 @@ public class ActorScriptContext(
 	public int GetOppositeDirection(int dir)
 	{
 		if (dir < 0 || dir > 7) return -1;
-
 		Direction direction = (Direction)dir;
 		Direction opposite = direction switch
 		{
@@ -669,12 +642,7 @@ public class ActorScriptContext(
 		};
 		return (int)opposite;
 	}
-
-	private Direction GetOppositeDirection(Direction dir)
-	{
-		return (Direction)GetOppositeDirection((int)dir);
-	}
-
+	private Direction GetOppositeDirection(Direction dir) => (Direction)GetOppositeDirection((int)dir);
 	/// <summary>
 	/// Get diagonal direction from two cardinal directions.
 	/// WL_STATE.C:diagonal[][] lookup table
@@ -696,7 +664,6 @@ public class ActorScriptContext(
 		if (dir1 == 0 && dir2 == 6) return 7;  // E + S = SE
 		return -1; // Invalid combination
 	}
-
 	/// <summary>
 	/// Try to set facing to a specific direction and check if it's navigable.
 	/// WL_STATE.C:TryWalk - Updates tilex/tiley to destination and checks navigability.
@@ -708,17 +675,14 @@ public class ActorScriptContext(
 	{
 		if (dir < 0 || dir > 7)
 			return false;
-
 		actor.Facing = (Direction)dir;
-
 		// Save current position in case move is blocked
-		ushort oldTileX = actor.TileX;
-		ushort oldTileY = actor.TileY;
+		ushort oldTileX = actor.TileX,
+			oldTileY = actor.TileY;
 		// WL_STATE.C:217-354 - Update tilex/tiley to DESTINATION tile
 		// For diagonal movements, also check adjacent tiles (WL_STATE.C:274-355)
 		bool isDiagonal = false;
 		ushort checkX1 = 0, checkY1 = 0, checkX2 = 0, checkY2 = 0;
-
 		switch ((Direction)dir)
 		{
 			case Direction.E:  actor.TileX++; break;
@@ -750,7 +714,6 @@ public class ActorScriptContext(
 				checkX2 = oldTileX; checkY2 = actor.TileY;  // South
 				break;
 		}
-
 		// WL_STATE.C:274-355 - CHECKDIAG for diagonal movements
 		// Check adjacent tiles to prevent corner-cutting
 		if (isDiagonal)
@@ -790,7 +753,6 @@ public class ActorScriptContext(
 		actor.TileY = oldTileY;
 		return false;
 	}
-
 	/// <summary>
 	/// Get primary and secondary cardinal directions toward a target.
 	/// WL_STATE.C:SelectChaseDir - direction selection logic
@@ -801,39 +763,29 @@ public class ActorScriptContext(
 	/// <returns>Tuple of (primary direction, secondary direction). Either can be -1 if delta is 0.</returns>
 	public (int d1, int d2) GetCardinalDirections(int deltaX, int deltaY, bool prioritizeLarger = true)
 	{
-		int d1 = -1;
-		int d2 = -1;
-
+		int d1 = -1, d2 = -1;
 		// Select cardinal direction based on X delta
 		if (deltaX > 0)
 			d1 = 0;  // east
 		else if (deltaX < 0)
 			d1 = 4;  // west
-
 		// Select cardinal direction based on Y delta
 		if (deltaY > 0)
 			d2 = 6;  // south
 		else if (deltaY < 0)
 			d2 = 2;  // north
-
 		// Prioritize direction with larger delta (WL_STATE.C:553)
 		if (prioritizeLarger)
 		{
-			int absDx = deltaX < 0 ? -deltaX : deltaX;
-			int absDy = deltaY < 0 ? -deltaY : deltaY;
+			int absDx = deltaX < 0 ? -deltaX : deltaX,
+				absDy = deltaY < 0 ? -deltaY : deltaY;
 
 			if (absDy > absDx)
-			{
 				// Swap so primary direction is the one with larger delta
-				int temp = d1;
-				d1 = d2;
-				d2 = temp;
-			}
+				(d2, d1) = (d1, d2);
 		}
-
 		return (d1, d2);
 	}
-
 	/// <summary>
 	/// Select direction to chase player using cardinal directions only.
 	/// WL_STATE.C:SelectChaseDir (lines 528-615) - Direct pursuit pathfinding.
@@ -844,39 +796,31 @@ public class ActorScriptContext(
 	public bool SelectChaseDir(bool canOpenDoors = true)
 	{
 		// Calculate delta to player
-		int dx = simulator.PlayerTileX - actor.TileX;
-		int dy = simulator.PlayerTileY - actor.TileY;
-
+		int dx = simulator.PlayerTileX - actor.TileX,
+			dy = simulator.PlayerTileY - actor.TileY;
 		// Get preferred cardinal directions
-		var (d1, d2) = GetCardinalDirections(dx, dy, prioritizeLarger: true);
-
+		(int d1, int d2) = GetCardinalDirections(dx, dy, prioritizeLarger: true);
 		// Skip turnaround direction
 		int opposite = actor.Facing.HasValue ? GetOppositeDirection((int)actor.Facing.Value) : -1;
 		if (d1 == opposite) d1 = -1;
 		if (d2 == opposite) d2 = -1;
-
 		// Try primary direction (WL_STATE.C:566)
 		if (TryDirection(d1, canOpenDoors))
 			return true;
-
 		// Try secondary direction (WL_STATE.C:573)
 		if (TryDirection(d2, canOpenDoors))
 			return true;
-
 		// Try keeping current direction - momentum (WL_STATE.C:582)
 		if (actor.Facing.HasValue && TryDirection((int)actor.Facing.Value, canOpenDoors))
 			return true;
-
 		// Random search through all 8 directions (WL_STATE.C:589)
 		// Fixes original bug that only tried 3 directions
 		if (TryAllDirectionsRandom(avoidTurnaround: true, canOpenDoors))
 			return true;
-
 		// All directions blocked
 		actor.Facing = null;
 		return false;
 	}
-
 	/// <summary>
 	/// Select direction to dodge - evasive movement toward player with diagonal preference.
 	/// WL_STATE.C:SelectDodgeDir (lines 404-515) - Erratic pursuit pathfinding.
@@ -887,16 +831,13 @@ public class ActorScriptContext(
 	public bool SelectDodgeDir(bool canOpenDoors = true)
 	{
 		// Calculate delta to player
-		int dx = simulator.PlayerTileX - actor.TileX;
-		int dy = simulator.PlayerTileY - actor.TileY;
-
+		int dx = simulator.PlayerTileX - actor.TileX,
+			dy = simulator.PlayerTileY - actor.TileY;
 		// Get 5 dodge directions: diagonal + 4 randomized cardinals
 		int[] dodgeDirs = GetDodgeDirections(dx, dy);
-
 		// Get turnaround direction to avoid (WL_STATE.C:411)
 		// Note: Original has FL_FIRSTATTACK logic here, simplified for now
 		int turnaround = actor.Facing.HasValue ? GetOppositeDirection((int)actor.Facing.Value) : -1;
-
 		// Try each direction in priority order (WL_STATE.C:493)
 		for (int i = 0; i < 5; i++)
 		{
@@ -907,16 +848,13 @@ public class ActorScriptContext(
 					return true;
 			}
 		}
-
 		// Turn around only as last resort (WL_STATE.C:506)
 		if (turnaround >= 0 && TryDirection(turnaround, canOpenDoors))
 			return true;
-
 		// All directions blocked
 		actor.Facing = null;
 		return false;
 	}
-
 	/// <summary>
 	/// Get 5 dodge directions (diagonal + 4 randomized cardinals) toward target.
 	/// WL_STATE.C:SelectDodgeDir - direction array setup.
@@ -927,8 +865,7 @@ public class ActorScriptContext(
 	/// <returns>Array of 5 directions: [0]=diagonal, [1-4]=randomized cardinals</returns>
 	public int[] GetDodgeDirections(int deltaX, int deltaY)
 	{
-		int[] dirtry = new int[5] { -1, -1, -1, -1, -1 };
-
+		int[] dirtry = [-1, -1, -1, -1, -1];
 		// WL_STATE.C:432 - Select cardinals based on delta to player
 		if (deltaX > 0)
 		{
@@ -940,7 +877,6 @@ public class ActorScriptContext(
 			dirtry[1] = 4;  // west
 			dirtry[3] = 0;  // east
 		}
-
 		if (deltaY > 0)
 		{
 			dirtry[2] = 6;  // south
@@ -951,38 +887,26 @@ public class ActorScriptContext(
 			dirtry[2] = 2;  // north
 			dirtry[4] = 6;  // south
 		}
-
 		// WL_STATE.C:465 - Randomize based on which delta is larger
-		int absDx = deltaX < 0 ? -deltaX : deltaX;
-		int absDy = deltaY < 0 ? -deltaY : deltaY;
-
+		int absDx = deltaX < 0 ? -deltaX : deltaX,
+			absDy = deltaY < 0 ? -deltaY : deltaY;
 		if (absDx > absDy)
 		{
 			// Swap priorities
-			int temp = dirtry[1];
-			dirtry[1] = dirtry[2];
-			dirtry[2] = temp;
-			temp = dirtry[3];
-			dirtry[3] = dirtry[4];
-			dirtry[4] = temp;
+			(dirtry[2], dirtry[1]) = (dirtry[1], dirtry[2]);
+			(dirtry[4], dirtry[3]) = (dirtry[3], dirtry[4]);
 		}
-
 		// WL_STATE.C:478 - Additional randomization
 		if (rng.Next(256) < 128)
 		{
-			int temp = dirtry[1];
-			dirtry[1] = dirtry[2];
-			dirtry[2] = temp;
-			temp = dirtry[3];
-			dirtry[3] = dirtry[4];
-			dirtry[4] = temp;
+			(dirtry[2], dirtry[1]) = (dirtry[1], dirtry[2]);
+			(dirtry[4], dirtry[3]) = (dirtry[3], dirtry[4]);
 		}
-
 		// WL_STATE.C:488 - Compute diagonal from first two cardinals
 		dirtry[0] = GetDiagonalDirection(dirtry[1], dirtry[2]);
 		if (dirtry[0] == -1)
 			dirtry[0] = dirtry[1]; // Fallback to first cardinal
-
 		return dirtry;
 	}
+	#endregion ActionScriptContext abstract method implementations
 }
