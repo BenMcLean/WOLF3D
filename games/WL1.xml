@@ -1661,7 +1661,7 @@ if not HasDirection() then
 end
 
 -- Calculate movement this tic: move = ob->speed * tics
-local move = GetSpeed()  -- Already accounts for tics in C# simulator
+local move = GetSpeed()
 
 -- Movement loop (original: while(move))
 while move > 0 do
@@ -1751,9 +1751,9 @@ end
 -- Select movement direction
 if not HasDirection() then
 	if dodge then
-		SelectDodgeDir()
+		SelectDodgeDir(true)  -- Guards can open doors
 	else
-		SelectChaseDir()
+		SelectChaseDir(true)  -- Guards can open doors
 	end
 
 	if not HasDirection() then
@@ -1767,9 +1767,23 @@ local move = GetSpeed()
 while move > 0 do
 	local dist = GetDistance()
 
-	-- Safety check: if no distance to move, exit early
+	-- If distance is 0, we need to select a new direction
+	-- This can happen when transitioning from other states (patrol, shoot, etc.)
 	if dist == 0 then
-		return
+		if dodge then
+			SelectDodgeDir(true)  -- Guards can open doors
+		else
+			SelectChaseDir(true)  -- Guards can open doors
+		end
+
+		if not HasDirection() then
+			return  -- Blocked
+		end
+
+		dist = GetDistance()
+		if dist == 0 then
+			return  -- Still no distance, blocked
+		end
 	end
 
 	-- Check if waiting for door
@@ -1800,9 +1814,9 @@ while move > 0 do
 
 	-- Select new direction for next tile
 	if dodge then
-		SelectDodgeDir()
+		SelectDodgeDir(true)  -- Guards can open doors
 	else
-		SelectChaseDir()
+		SelectChaseDir(true)  -- Guards can open doors
 	end
 
 	if not HasDirection() then
@@ -1816,9 +1830,9 @@ end
 				<![CDATA[
 -- WL_ACT2.C:T_DogChase - Fast dodge movement, bite when very close
 
--- Select direction (dogs always dodge)
+-- Select direction (dogs always dodge, cannot open doors)
 if not HasDirection() then
-	SelectDodgeDir()
+	SelectDodgeDir(false)  -- Dogs cannot open doors
 	if not HasDirection() then
 		return  -- Blocked
 	end
@@ -1862,7 +1876,7 @@ while move > 0 do
 	move = move - dist
 
 	-- Select new dodge direction
-	SelectDodgeDir()
+	SelectDodgeDir(false)  -- Dogs cannot open doors
 
 	if not HasDirection() then
 		return  -- Blocked

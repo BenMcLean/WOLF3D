@@ -301,9 +301,6 @@ public class ActorScriptContext(
 		// Can't move if no direction (nodir)
 		if (actor.Facing == null)
 			return;
-		// Debug: log first few moves
-		if (actorIndex < 3 && move > 0)
-			System.Diagnostics.Debug.WriteLine($"[MoveObj] Actor {actorIndex}: Facing={actor.Facing} (value={(int)actor.Facing}), move={move}");
 		// WL_STATE.C:727-763 - Apply movement to fixed-point coordinates
 		switch (actor.Facing.Value)
 		{
@@ -611,62 +608,37 @@ public class ActorScriptContext(
 	/// WL_STATE.C:589-612 - Fixes bug in original code that only tried 3 directions.
 	/// </summary>
 	/// <param name="avoidTurnaround">If true, skip the opposite of current facing direction</param>
+	/// <param name="canOpenDoors">Whether this actor can open doors</param>
 	/// <returns>True if a valid direction was found and set, false if all blocked</returns>
-	public bool TryAllDirectionsRandom(bool avoidTurnaround = true)
+	public bool TryAllDirectionsRandom(bool avoidTurnaround = true, bool canOpenDoors = true)
 	{
 		// Calculate opposite direction if we should avoid turnaround
-		Direction? opposite = null;
+		int opposite = -1;
 		if (avoidTurnaround && actor.Facing.HasValue)
 		{
-			opposite = GetOppositeDirection(actor.Facing.Value);
+			opposite = GetOppositeDirection((int)actor.Facing.Value);
 		}
 
 		// Create array of all 8 directions
-		Direction[] directions = new Direction[8]
-		{
-			Direction.E, Direction.NE, Direction.N, Direction.NW,
-			Direction.W, Direction.SW, Direction.S, Direction.SE
-		};
+		int[] directions = new int[8] { 0, 1, 2, 3, 4, 5, 6, 7 };
 
 		// Fisher-Yates shuffle using the actor's RNG
 		for (int i = 7; i > 0; i--)
 		{
 			int j = rng.Next(i + 1);
-			Direction temp = directions[i];
+			int temp = directions[i];
 			directions[i] = directions[j];
 			directions[j] = temp;
 		}
 
 		// Try each direction
-		foreach (Direction dir in directions)
+		foreach (int dir in directions)
 		{
 			if (avoidTurnaround && dir == opposite)
 				continue;
 
-			// Try this direction
-			actor.Facing = dir;
-
-			// Check if destination is navigable (inline TryWalk logic)
-			ushort destX = actor.TileX;
-			ushort destY = actor.TileY;
-
-			switch (dir)
-			{
-				case Direction.E:  destX++; break;
-				case Direction.NE: destX++; destY--; break;
-				case Direction.N:  destY--; break;
-				case Direction.NW: destX--; destY--; break;
-				case Direction.W:  destX--; break;
-				case Direction.SW: destX--; destY++; break;
-				case Direction.S:  destY++; break;
-				case Direction.SE: destX++; destY++; break;
-			}
-
-			if (simulator.IsTileNavigable(destX, destY))
-			{
-				// Found valid direction - it's already set in actor.Facing
+			if (TryDirection(dir, canOpenDoors))
 				return true;
-			}
 		}
 
 		// All directions blocked
@@ -727,33 +699,96 @@ public class ActorScriptContext(
 
 	/// <summary>
 	/// Try to set facing to a specific direction and check if it's navigable.
+	/// WL_STATE.C:TryWalk - Updates tilex/tiley to destination and checks navigability.
 	/// </summary>
 	/// <param name="dir">Direction to try (0-7, or -1 for nodir)</param>
+	/// <param name="canOpenDoors">Whether this actor can open doors (false for dogs)</param>
 	/// <returns>True if direction is valid and navigable, false otherwise</returns>
-	public bool TryDirection(int dir)
+	public bool TryDirection(int dir, bool canOpenDoors = true)
 	{
 		if (dir < 0 || dir > 7)
 			return false;
 
 		actor.Facing = (Direction)dir;
 
-		// Calculate destination tile
-		ushort destX = actor.TileX;
-		ushort destY = actor.TileY;
+		// Save current position in case move is blocked
+		ushort oldTileX = actor.TileX;
+		ushort oldTileY = actor.TileY;
+		// WL_STATE.C:217-354 - Update tilex/tiley to DESTINATION tile
+		// For diagonal movements, also check adjacent tiles (WL_STATE.C:274-355)
+		bool isDiagonal = false;
+		ushort checkX1 = 0, checkY1 = 0, checkX2 = 0, checkY2 = 0;
 
 		switch ((Direction)dir)
 		{
-			case Direction.E:  destX++; break;
-			case Direction.NE: destX++; destY--; break;
-			case Direction.N:  destY--; break;
-			case Direction.NW: destX--; destY--; break;
-			case Direction.W:  destX--; break;
-			case Direction.SW: destX--; destY++; break;
-			case Direction.S:  destY++; break;
-			case Direction.SE: destX++; destY++; break;
+			case Direction.E:  actor.TileX++; break;
+			case Direction.NE:
+				actor.TileX++; actor.TileY--;
+				isDiagonal = true;
+				checkX1 = actor.TileX; checkY1 = oldTileY;  // East
+				checkX2 = oldTileX; checkY2 = actor.TileY;  // North
+				break;
+			case Direction.N:  actor.TileY--; break;
+			case Direction.NW:
+				actor.TileX--; actor.TileY--;
+				isDiagonal = true;
+				checkX1 = actor.TileX; checkY1 = oldTileY;  // West
+				checkX2 = oldTileX; checkY2 = actor.TileY;  // North
+				break;
+			case Direction.W:  actor.TileX--; break;
+			case Direction.SW:
+				actor.TileX--; actor.TileY++;
+				isDiagonal = true;
+				checkX1 = actor.TileX; checkY1 = oldTileY;  // West
+				checkX2 = oldTileX; checkY2 = actor.TileY;  // South
+				break;
+			case Direction.S:  actor.TileY++; break;
+			case Direction.SE:
+				actor.TileX++; actor.TileY++;
+				isDiagonal = true;
+				checkX1 = actor.TileX; checkY1 = oldTileY;  // East
+				checkX2 = oldTileX; checkY2 = actor.TileY;  // South
+				break;
 		}
 
-		return simulator.IsTileNavigable(destX, destY);
+		// WL_STATE.C:274-355 - CHECKDIAG for diagonal movements
+		// Check adjacent tiles to prevent corner-cutting
+		if (isDiagonal)
+		{
+			if (!simulator.IsTileNavigable(checkX1, checkY1) ||
+			    !simulator.IsTileNavigable(checkX2, checkY2))
+			{
+				// Blocked by adjacent tile
+				actor.TileX = oldTileX;
+				actor.TileY = oldTileY;
+				return false;
+			}
+		}
+		// WL_STATE.C:260-346 - Dogs use CHECKDIAG (no doors), others use CHECKSIDE (handles doors)
+		if (!isDiagonal && canOpenDoors)
+		{
+			// WL_STATE.C:364-369 - Check for doors (only for actors that can open them on cardinal movements)
+			int doorIndex = simulator.GetDoorIndexAtTile(actor.TileX, actor.TileY);
+			if (doorIndex >= 0)
+			{
+				// Found a door - request it to open
+				simulator.OpenDoor((ushort)doorIndex);
+				// WL_STATE.C:367 - Set distance to -(doornum+1) to indicate waiting for door
+				actor.Distance = -(doorIndex + 1);
+				return true;
+			}
+		}
+		// WL_STATE.C:372-375 - Check if navigable
+		if (simulator.IsTileNavigable(actor.TileX, actor.TileY))
+		{
+			// WL_STATE.C:375 - TryWalk sets ob->distance = TILEGLOBAL
+			actor.Distance = 0x10000; // TILEGLOBAL - one full tile
+			return true;
+		}
+		// Blocked - revert tile position
+		actor.TileX = oldTileX;
+		actor.TileY = oldTileY;
+		return false;
 	}
 
 	/// <summary>
@@ -804,8 +839,9 @@ public class ActorScriptContext(
 	/// WL_STATE.C:SelectChaseDir (lines 528-615) - Direct pursuit pathfinding.
 	/// Tries preferred cardinals, then current direction, then random fallback.
 	/// </summary>
+	/// <param name="canOpenDoors">Whether this actor can open doors</param>
 	/// <returns>True if a valid direction was found and set, false if blocked</returns>
-	public bool SelectChaseDir()
+	public bool SelectChaseDir(bool canOpenDoors = true)
 	{
 		// Calculate delta to player
 		int dx = simulator.PlayerTileX - actor.TileX;
@@ -820,20 +856,20 @@ public class ActorScriptContext(
 		if (d2 == opposite) d2 = -1;
 
 		// Try primary direction (WL_STATE.C:566)
-		if (TryDirection(d1))
+		if (TryDirection(d1, canOpenDoors))
 			return true;
 
 		// Try secondary direction (WL_STATE.C:573)
-		if (TryDirection(d2))
+		if (TryDirection(d2, canOpenDoors))
 			return true;
 
 		// Try keeping current direction - momentum (WL_STATE.C:582)
-		if (actor.Facing.HasValue && TryDirection((int)actor.Facing.Value))
+		if (actor.Facing.HasValue && TryDirection((int)actor.Facing.Value, canOpenDoors))
 			return true;
 
 		// Random search through all 8 directions (WL_STATE.C:589)
 		// Fixes original bug that only tried 3 directions
-		if (TryAllDirectionsRandom(avoidTurnaround: true))
+		if (TryAllDirectionsRandom(avoidTurnaround: true, canOpenDoors))
 			return true;
 
 		// All directions blocked
@@ -846,8 +882,9 @@ public class ActorScriptContext(
 	/// WL_STATE.C:SelectDodgeDir (lines 404-515) - Erratic pursuit pathfinding.
 	/// Tries diagonal + randomized cardinals, then turnaround as last resort.
 	/// </summary>
+	/// <param name="canOpenDoors">Whether this actor can open doors</param>
 	/// <returns>True if a valid direction was found and set, false if blocked</returns>
-	public bool SelectDodgeDir()
+	public bool SelectDodgeDir(bool canOpenDoors = true)
 	{
 		// Calculate delta to player
 		int dx = simulator.PlayerTileX - actor.TileX;
@@ -866,13 +903,13 @@ public class ActorScriptContext(
 			int dir = dodgeDirs[i];
 			if (dir >= 0 && dir != turnaround)
 			{
-				if (TryDirection(dir))
+				if (TryDirection(dir, canOpenDoors))
 					return true;
 			}
 		}
 
 		// Turn around only as last resort (WL_STATE.C:506)
-		if (turnaround >= 0 && TryDirection(turnaround))
+		if (turnaround >= 0 && TryDirection(turnaround, canOpenDoors))
 			return true;
 
 		// All directions blocked
