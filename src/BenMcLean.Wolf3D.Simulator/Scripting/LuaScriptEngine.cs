@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using BenMcLean.Wolf3D.Assets;
 using MoonSharp.Interpreter;
 using Microsoft.Extensions.Logging;
@@ -16,6 +18,8 @@ public class LuaScriptEngine
 	private readonly Dictionary<string, DynValue> cachedFunctions = [];
 	private readonly Dictionary<string, DynValue> compiledStateFunctions = [];
 	private readonly ILogger logger;
+	private Table baseEnvironment;
+	private Table proxyEnvironment;
 	/// <summary>
 	/// Current execution context (injected before each script call)
 	/// </summary>
@@ -51,45 +55,128 @@ public class LuaScriptEngine
 		osTable["time"] = DynValue.NewCallback(OsTime);
 		osTable["clock"] = DynValue.NewCallback(OsClock);
 		osTable["date"] = DynValue.NewCallback(OsDate);
-		// Note: Wolf3D API functions are exposed via reflection in ExposeContextMethodsAsGlobals
+
+		// Create read-only proxy environment
+		// Use standard Lua metatable approach: __index points to base table directly
+		proxyEnvironment = new Table(luaScript);
+		Table proxyMeta = new Table(luaScript);
+
+		// NOTE: We'll set __index after baseEnvironment is created
+		// For now, just set up __newindex to catch write attempts
+
+		// Forbid writes - environment is read-only
+		proxyMeta["__newindex"] = DynValue.NewCallback((ctx, args) =>
+		{
+			// If a script tries to set a global variable, throw a helpful error
+			if (args.Count >= 1 && args[0].Type == DataType.String)
+			{
+				string key = args[0].String;
+				if (!string.IsNullOrEmpty(key))
+				{
+					throw new ScriptRuntimeException(
+						$"Cannot set global variable '{key}'. " +
+						$"Use 'local {key} = ...' instead. " +
+						"Global variables are forbidden for determinism.");
+				}
+			}
+			return DynValue.Nil;
+		});
+
+		proxyEnvironment.MetaTable = proxyMeta;
+
+		// Initialize base environment early (before compilation)
+		// We'll add compiled functions to it later in CompileAllStateFunctions
+		baseEnvironment = new Table(luaScript);
+
+		// Add standard library references as READ-ONLY proxies
+		// This prevents scripts from modifying stdlib tables (e.g., overriding math.random)
+		baseEnvironment["math"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("math").Table);
+		baseEnvironment["string"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("string").Table);
+		baseEnvironment["table"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("table").Table);
+		baseEnvironment["print"] = luaScript.Globals["print"];
+		baseEnvironment["os"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("os").Table);
+
+		// Expose all ActorScriptContext methods using reflection
+		// These callbacks reference CurrentContext, which is set per-execution
+		ExposeContextMethodsInEnvironment(baseEnvironment);
+
+		// Now set proxy's __index to baseEnvironment (standard Lua inheritance)
+		proxyMeta["__index"] = baseEnvironment;
 	}
-	private readonly HashSet<string> exposedMethodNames = [];
 
 	/// <summary>
-	/// Cleanup ActorScriptContext globals after script execution.
+	/// Add compiled state functions to the base environment.
+	/// Called after CompileAllStateFunctions to make functions available to each other.
 	/// </summary>
-	private void CleanupActorScriptContextGlobals()
+	private void AddCompiledFunctionsToBaseEnvironment()
 	{
-		foreach (string name in exposedMethodNames)
-			luaScript.Globals[name] = DynValue.Nil;
-		exposedMethodNames.Clear();
+		// Add all compiled state functions so they can call each other
+		foreach (KeyValuePair<string, DynValue> kvp in compiledStateFunctions)
+			if (kvp.Value.Type != DataType.Nil)
+				baseEnvironment[kvp.Key] = kvp.Value;
 	}
 
 	/// <summary>
-	/// Expose ActorScriptContext methods as global Lua functions using reflection.
-	/// This allows Lua code to call CheckSight() instead of ctx:CheckSight().
+	/// Creates a read-only proxy for a standard library table.
+	/// Allows reads but prevents modifications that could break determinism.
 	/// </summary>
-	private void ExposeContextMethodsAsGlobals(ActorScriptContext ctx)
+	/// <param name="sourceTable">The stdlib table to wrap (e.g., math, string, os)</param>
+	/// <returns>A DynValue wrapping the read-only proxy table</returns>
+	private DynValue CreateReadOnlyTableProxy(Table sourceTable)
 	{
-		// Get all public instance methods from ActorScriptContext
-		System.Reflection.MethodInfo[] methods = typeof(ActorScriptContext).GetMethods(
-			System.Reflection.BindingFlags.Public |
-			System.Reflection.BindingFlags.Instance |
-			System.Reflection.BindingFlags.DeclaredOnly);
+		Table proxy = new Table(luaScript);
+		Table meta = new Table(luaScript);
 
-		foreach (System.Reflection.MethodInfo method in methods)
+		// Allow reads from source table (standard Lua pattern)
+		meta["__index"] = sourceTable;
+
+		// Forbid writes - prevent scripts from undoing deterministic overrides
+		meta["__newindex"] = DynValue.NewCallback((ctx, args) =>
+		{
+			if (args.Count >= 1 && args[0].Type == DataType.String)
+			{
+				string key = args[0].String;
+				if (!string.IsNullOrEmpty(key))
+				{
+					throw new ScriptRuntimeException(
+						$"Cannot modify standard library table. " +
+						$"Attempt to set '{key}' is forbidden for determinism. " +
+						"Standard library tables are read-only.");
+				}
+			}
+			return DynValue.Nil;
+		});
+
+		proxy.MetaTable = meta;
+		return DynValue.NewTable(proxy);
+	}
+
+	/// <summary>
+	/// Expose ActorScriptContext methods in the given environment using reflection.
+	/// Callbacks invoke methods on CurrentContext (set per-execution).
+	/// </summary>
+	private void ExposeContextMethodsInEnvironment(Table env)
+	{
+		MethodInfo[] methods = typeof(ActorScriptContext).GetMethods(
+			BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+		foreach (MethodInfo method in methods)
 		{
 			// Skip property getters/setters and special methods
 			if (method.IsSpecialName)
 				continue;
 
 			string methodName = method.Name;
-			System.Reflection.ParameterInfo[] parameters = method.GetParameters();
+			ParameterInfo[] parameters = method.GetParameters();
 			Type returnType = method.ReturnType;
 
-			// Create a callback that invokes the method via reflection
-			luaScript.Globals[methodName] = DynValue.NewCallback((c, args) =>
+			// Create a callback that invokes the method on CurrentContext
+			env[methodName] = DynValue.NewCallback((c, args) =>
 			{
+				// CurrentContext is set per-execution
+				if (CurrentContext is not ActorScriptContext actorCtx)
+					return DynValue.Nil;
+
 				// Convert Lua arguments to C# types
 				object[] invokeArgs = new object[parameters.Length];
 				for (int i = 0; i < parameters.Length; i++)
@@ -113,8 +200,8 @@ public class LuaScriptEngine
 					}
 				}
 
-				// Invoke the method
-				object result = method.Invoke(ctx, invokeArgs);
+				// Invoke the method on CurrentContext
+				object result = method.Invoke(actorCtx, invokeArgs);
 
 				// Convert return value to Lua type
 				if (returnType == typeof(void))
@@ -128,8 +215,6 @@ public class LuaScriptEngine
 				else
 					return DynValue.FromObject(luaScript, result);
 			});
-
-			exposedMethodNames.Add(methodName);
 		}
 	}
 
@@ -238,9 +323,14 @@ public class LuaScriptEngine
 		{
 			CompileStateFunction(function.Name, function.Code);
 		}
+
+		// Add compiled functions to base environment so they can call each other
+		AddCompiledFunctionsToBaseEnvironment();
 	}
 	/// <summary>
 	/// Compiles a single state function to bytecode without executing it.
+	/// Validates that the function has no upvalues (captured local variables),
+	/// which would create persistent state across executions.
 	/// </summary>
 	/// <param name="functionName">Unique name for this function (e.g., "T_Stand", "A_DeathScream")</param>
 	/// <param name="luaCode">The Lua code to compile</param>
@@ -254,8 +344,26 @@ public class LuaScriptEngine
 		}
 		try
 		{
-			// Load (compile) the code without executing it
-			DynValue compiled = luaScript.LoadString(luaCode, null, functionName);
+			// Compile with read-only proxy environment
+			// Proxy allows reads from baseEnvironment but forbids writes (throws error)
+			DynValue compiled = luaScript.LoadString(luaCode, proxyEnvironment, functionName);
+
+			// Validate that the function has no upvalues (persistent state)
+			if (compiled.Type == DataType.Function)
+			{
+				Closure closure = compiled.Function;
+				Closure.UpvaluesType upvaluesType = closure.GetUpvaluesType();
+
+				if (upvaluesType == Closure.UpvaluesType.Closure)
+				{
+					int upvalueCount = closure.GetUpvaluesCount();
+					throw new InvalidOperationException(
+						$"State function '{functionName}' captures {upvalueCount} local variable(s) as upvalues. " +
+						"This creates persistent state across executions, breaking determinism. " +
+						"Remove top-level 'local' variables - all state must come from C# via the context API.");
+				}
+			}
+
 			compiledStateFunctions[functionName] = compiled;
 		}
 		catch (Exception ex)
@@ -265,6 +373,10 @@ public class LuaScriptEngine
 	}
 	/// <summary>
 	/// Executes a pre-compiled state function with the given context.
+	/// Functions are compiled with a read-only proxy environment that:
+	/// - Allows reads from baseEnvironment (stdlib + compiled functions + context methods)
+	/// - Forbids writes (throws error if script tries to set global variables)
+	/// This provides perfect determinism with zero per-execution overhead.
 	/// </summary>
 	/// <param name="functionName">Name of the function to execute</param>
 	/// <param name="context">Execution context providing game state access</param>
@@ -288,31 +400,17 @@ public class LuaScriptEngine
 		}
 		try
 		{
-			// Set context for this execution
+			// Set context for this execution (context methods read from CurrentContext)
 			IScriptContext previousContext = CurrentContext;
 			CurrentContext = context;
 
-			// Expose context methods as global functions in Lua
-			// This makes ActorScriptContext methods directly callable (e.g., CheckSight(), GetSpeed())
-			if (context is ActorScriptContext actorCtx)
-			{
-				luaScript.Globals["ctx"] = UserData.Create(actorCtx);
-				// Expose all methods as globals for direct calling
-				ExposeContextMethodsAsGlobals(actorCtx);
-			}
-
-			// Execute the compiled function
+			// Execute the function (compiled with read-only proxy environment)
+			// Zero allocations - just pointer swap + function call
 			DynValue result = luaScript.Call(compiled);
-
-			// Clean up globals
-			if (context is ActorScriptContext)
-			{
-				luaScript.Globals["ctx"] = DynValue.Nil;
-				CleanupActorScriptContextGlobals();
-			}
 
 			// Restore previous context
 			CurrentContext = previousContext;
+
 			return result;
 		}
 		catch (Exception ex)

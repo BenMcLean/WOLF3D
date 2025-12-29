@@ -1336,84 +1336,84 @@
 			</Actor>
 			<!-- State Functions (Lua implementations of Think/Action) -->
 			<Function Name="T_Stand" Description="Actor standing idle, watching for player (generic for all actor types)">
--- WL_ACT2.C:T_Stand - calls SightPlayer
--- WL_STATE.C:SightPlayer (lines 1802-1919) - check for player and transition to chase if spotted
+				-- WL_ACT2.C:T_Stand - calls SightPlayer
+				-- WL_STATE.C:SightPlayer (lines 1802-1919) - check for player and transition to chase if spotted
 
--- WL_STATE.C:1807 - Check if reaction timer is counting down
-local reactionTimer = GetReactionTimer()
-if reactionTimer > 0 then
-	-- WL_STATE.C:1812 - Count down reaction time
-	SetReactionTimer(reactionTimer - 1)
-	if GetReactionTimer() > 0 then
-		return  -- Still counting down, not ready to react
-	end
-	-- Timer just reached 0, fall through to FirstSighting below
-end
+				-- WL_STATE.C:1807 - Check if reaction timer is counting down
+				local reactionTimer = GetReactionTimer()
+				if reactionTimer > 0 then
+				-- WL_STATE.C:1812 - Count down reaction time
+				SetReactionTimer(reactionTimer - 1)
+				if GetReactionTimer() > 0 then
+				return  -- Still counting down, not ready to react
+				end
+				-- Timer just reached 0, fall through to FirstSighting below
+				end
 
--- Timer is 0 (never set or just expired)
--- WL_STATE.C:1817-1832 - Check visibility conditions
+				-- Timer is 0 (never set or just expired)
+				-- WL_STATE.C:1817-1832 - Check visibility conditions
 
--- FL_AMBUSH (0x40) - check if in ambush mode
-if HasFlag(0x40) then
-	-- Ambush actors only activate with line of sight
-	if not CheckSight() then
-		return
-	end
-	ClearFlag(0x40)  -- Clear ambush flag
-end
+				-- FL_AMBUSH (0x40) - check if in ambush mode
+				if HasFlag(0x40) then
+				-- Ambush actors only activate with line of sight
+				if not CheckSight() then
+				return
+				end
+				ClearFlag(0x40)  -- Clear ambush flag
+				end
 
--- Check if player is visible
-if not CheckSight() then
-	return  -- Can't see player, nothing to do
-end
+				-- Check if player is visible
+				if not CheckSight() then
+				return  -- Can't see player, nothing to do
+				end
 
--- Player is visible!
-if reactionTimer == 0 and GetReactionTimer() == 0 then
-	-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type
-	local actorType = GetActorType()
-	local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
+				-- Player is visible!
+				if reactionTimer == 0 and GetReactionTimer() == 0 then
+				-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type
+				local actorType = GetActorType()
+				local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
 
-	if actorType == "Guard" then
-		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
-	elseif actorType == "Dog" then
-		SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8 (fastest!)
-	elseif actorType == "SS" then
-		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6 (approx)
-	elseif actorType == "Hans" then
-		SetReactionTimer(1)  -- Immediate reaction
-	else
-		-- Default for unknown types
-		SetReactionTimer(1)
-	end
+				if actorType == "Guard" then
+				SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
+				elseif actorType == "Dog" then
+				SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8 (fastest!)
+				elseif actorType == "SS" then
+				SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6 (approx)
+				elseif actorType == "Hans" then
+				SetReactionTimer(1)  -- Immediate reaction
+				else
+				-- Default for unknown types
+				SetReactionTimer(1)
+				end
 
-	-- WL_STATE.C:1913 - return false (don't transition yet, wait for timer)
-	return
-end
+				-- WL_STATE.C:1913 - return false (don't transition yet, wait for timer)
+				return
+				end
 
--- Timer has expired (was > 0, now == 0) - WL_STATE.C:1916 - call FirstSighting
--- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type
-local actorType = GetActorType()
+				-- Timer has expired (was > 0, now == 0) - WL_STATE.C:1916 - call FirstSighting
+				-- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type
+				local actorType = GetActorType()
 
-if actorType == "Guard" then
-	PlayDigiSound("HALTSND")
-	ChangeState("s_grdchase1")
-elseif actorType == "Dog" then
-	PlayDigiSound("DOGBARKSND")
-	ChangeState("s_dogchase1")
-elseif actorType == "SS" then
-	PlayDigiSound("SCHUTZADSND")
-	ChangeState("s_sschase1")
-elseif actorType == "Hans" then
-	PlayDigiSound("GUTENTAGSND")
-	ChangeState("s_bosschase1")
-else
-	-- Default fallback
-	ChangeState("s_grdchase1")
-end
+				if actorType == "Guard" then
+				PlayDigiSound("HALTSND")
+				ChangeState("s_grdchase1")
+				elseif actorType == "Dog" then
+				PlayDigiSound("DOGBARKSND")
+				ChangeState("s_dogchase1")
+				elseif actorType == "SS" then
+				PlayDigiSound("SCHUTZADSND")
+				ChangeState("s_sschase1")
+				elseif actorType == "Hans" then
+				PlayDigiSound("GUTENTAGSND")
+				ChangeState("s_bosschase1")
+				else
+				-- Default fallback
+				ChangeState("s_grdchase1")
+				end
 
--- Set attack mode flags (all actor types)
-SetFlag(0x10)  -- FL_ATTACKMODE
-SetFlag(0x20)  -- FL_FIRSTATTACK
+				-- Set attack mode flags (all actor types)
+				SetFlag(0x10)  -- FL_ATTACKMODE
+				SetFlag(0x20)  -- FL_FIRSTATTACK
 			</Function>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
@@ -1573,7 +1573,8 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			</Actor>
 			-->
 			<!-- WL_ACT2.C:T_Path -->
-			<Function Name="T_Path"><![CDATA[
+			<Function Name="T_Path">
+				<![CDATA[
 -- WL_ACT2.C:T_Path (lines 4073-4128)
 -- Patrol behavior - actor follows patrol path arrows on map (generic for all actor types)
 
@@ -1704,59 +1705,171 @@ while move > 0 do
 		return  -- All movement is blocked
 	end
 end
-			]]></Function>
-
+			]]>
+			</Function>
 			<!-- WL_ACT2.C:T_Chase -->
-			<Function Name="T_Chase"><![CDATA[
--- WL_ACT2.C:T_Chase (line 3744)
--- Chase behavior - actively pursue and attack the player
+			<Function Name="T_Chase" Description="Chase behavior - actively pursue and attack the player">
+				<![CDATA[
+-- WL_ACT2.C:T_Chase - Chase and attack player when in range
 
--- Calculate distance to player
-local playerTileX = GetPlayerTileX()
-local playerTileY = GetPlayerTileY()
-local actorTileX = GetTileX()
-local actorTileY = GetTileY()
+local dodge = false
 
-local dx = playerTileX - actorTileX
-local dy = playerTileY - actorTileY
-if dx < 0 then dx = -dx end
-if dy < 0 then dy = -dy end
-local dist = dx
-if dy > dx then dist = dy end
-
--- Check if we have line of sight to player
+-- Check line of sight to player
 if CheckSight() then
-	-- Calculate chance to attack based on distance
+	-- Calculate distance
+	local dx = GetPlayerTileX() - GetTileX()
+	local dy = GetPlayerTileY() - GetTileY()
+	if dx < 0 then dx = -dx end
+	if dy < 0 then dy = -dy end
+	local dist = dx
+	if dy > dx then dist = dy end
+
+	-- Calculate attack chance based on distance
 	local chance = 0
-	if dist == 0 or (dist == 1) then
-		chance = 300  -- Very close - high attack chance
+	if dist == 0 or (dist == 1 and GetDistance() < 0x4000) then
+		chance = 300  -- Very close - always attack
 	else
-		-- tics is typically 1, so chance ~= 16/dist
-		chance = 16 / dist
+		chance = BitShiftLeft(1, 4) / dist  -- tics<<4 / dist
 	end
 
 	-- Random chance to attack
-	if Random() < chance then
-		-- Transition to shooting state
-		-- The actual state transition happens via state machine
-		-- State machine will handle which shoot state to use based on actor type
-		-- For now, just indicate attack intent
-		-- TODO: Transition to appropriate shoot state (s_grdshoot1, s_ssshoot1, etc.)
+	if US_RndT() < chance then
+		local actorType = GetActorType()
+		if actorType == "Guard" then
+			ChangeState("s_grdshoot1")
+		elseif actorType == "SS" then
+			ChangeState("s_ssshoot1")
+		elseif actorType == "Hans" then
+			ChangeState("s_bossshoot1")
+		end
 		return
+	end
+
+	dodge = true  -- Saw player, use evasive movement
+end
+
+-- Select movement direction
+if not HasDirection() then
+	if dodge then
+		SelectDodgeDir()
+	else
+		SelectChaseDir()
+	end
+
+	if not HasDirection() then
+		return  -- Blocked in, can't move
 	end
 end
 
--- No attack - continue chasing
--- Turn to face player
-FacePlayer()
+-- Movement loop
+local move = GetSpeed()
 
--- Movement is handled by Speed and state machine tics
--- The C code has complex door-handling and SelectChaseDir/SelectDodgeDir logic
--- TODO: Implement SelectChaseDir for pathfinding toward player
--- TODO: Implement SelectDodgeDir for evasive movement
--- TODO: Implement MoveObj for actual movement with collision
--- TODO: Handle door-waiting logic
-			]]></Function>
+while move > 0 do
+	local dist = GetDistance()
+
+	-- Safety check: if no distance to move, exit early
+	if dist == 0 then
+		return
+	end
+
+	-- Check if waiting for door
+	if dist < 0 then
+		local doorIndex = -(dist + 1)
+		OpenDoor(doorIndex)
+		if not IsDoorOpen(doorIndex) then
+			return  -- Still waiting
+		end
+		SetDistance(0x10000)  -- Door open, continue
+		dist = 0x10000
+	end
+
+	-- Move partial distance
+	if move < dist then
+		MoveObj(move)
+		break
+	end
+
+	-- Reached goal tile, snap to center
+	local tileX = GetTileX()
+	local tileY = GetTileY()
+	local centerX = BitShiftLeft(tileX, 16) + 0x8000
+	local centerY = BitShiftLeft(tileY, 16) + 0x8000
+	SetPosition(centerX, centerY)
+
+	move = move - dist
+
+	-- Select new direction for next tile
+	if dodge then
+		SelectDodgeDir()
+	else
+		SelectChaseDir()
+	end
+
+	if not HasDirection() then
+		return  -- Blocked
+	end
+end
+]]>
+			</Function>
+			<!-- WL_ACT2.C:T_DogChase -->
+			<Function Name="T_DogChase" Description="Dog chase behavior - fast pursuit with bite attack when close">
+				<![CDATA[
+-- WL_ACT2.C:T_DogChase - Fast dodge movement, bite when very close
+
+-- Select direction (dogs always dodge)
+if not HasDirection() then
+	SelectDodgeDir()
+	if not HasDirection() then
+		return  -- Blocked
+	end
+end
+
+-- Movement loop
+local move = GetSpeed()
+
+while move > 0 do
+	-- Check if close enough to bite (fixed-point distance)
+	local dx = GetPlayerX() - GetX()
+	if dx < 0 then dx = -dx end
+	dx = dx - move
+
+	if dx <= 0x10000 then  -- MINACTORDIST
+		local dy = GetPlayerY() - GetY()
+		if dy < 0 then dy = -dy end
+		dy = dy - move
+
+		if dy <= 0x10000 then  -- MINACTORDIST
+			ChangeState("s_dogjump1")  -- Bite attack!
+			return
+		end
+	end
+
+	local dist = GetDistance()
+
+	-- Move partial distance
+	if move < dist then
+		MoveObj(move)
+		break
+	end
+
+	-- Reached goal tile, snap to center
+	local tileX = GetTileX()
+	local tileY = GetTileY()
+	local centerX = BitShiftLeft(tileX, 16) + 0x8000
+	local centerY = BitShiftLeft(tileY, 16) + 0x8000
+	SetPosition(centerX, centerY)
+
+	move = move - dist
+
+	-- Select new dodge direction
+	SelectDodgeDir()
+
+	if not HasDirection() then
+		return  -- Blocked
+	end
+end
+]]>
+			</Function>
 		</StatInfo>
 	</VSwap>
 	<Palette>

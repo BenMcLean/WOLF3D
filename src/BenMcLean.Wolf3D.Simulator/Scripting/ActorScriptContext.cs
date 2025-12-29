@@ -605,4 +605,347 @@ public class ActorScriptContext(
 		// TODO: Return actual key state
 		return false;
 	}
+
+	/// <summary>
+	/// Try all 8 directions in random order until one is navigable.
+	/// WL_STATE.C:589-612 - Fixes bug in original code that only tried 3 directions.
+	/// </summary>
+	/// <param name="avoidTurnaround">If true, skip the opposite of current facing direction</param>
+	/// <returns>True if a valid direction was found and set, false if all blocked</returns>
+	public bool TryAllDirectionsRandom(bool avoidTurnaround = true)
+	{
+		// Calculate opposite direction if we should avoid turnaround
+		Direction? opposite = null;
+		if (avoidTurnaround && actor.Facing.HasValue)
+		{
+			opposite = GetOppositeDirection(actor.Facing.Value);
+		}
+
+		// Create array of all 8 directions
+		Direction[] directions = new Direction[8]
+		{
+			Direction.E, Direction.NE, Direction.N, Direction.NW,
+			Direction.W, Direction.SW, Direction.S, Direction.SE
+		};
+
+		// Fisher-Yates shuffle using the actor's RNG
+		for (int i = 7; i > 0; i--)
+		{
+			int j = rng.Next(i + 1);
+			Direction temp = directions[i];
+			directions[i] = directions[j];
+			directions[j] = temp;
+		}
+
+		// Try each direction
+		foreach (Direction dir in directions)
+		{
+			if (avoidTurnaround && dir == opposite)
+				continue;
+
+			// Try this direction
+			actor.Facing = dir;
+
+			// Check if destination is navigable (inline TryWalk logic)
+			ushort destX = actor.TileX;
+			ushort destY = actor.TileY;
+
+			switch (dir)
+			{
+				case Direction.E:  destX++; break;
+				case Direction.NE: destX++; destY--; break;
+				case Direction.N:  destY--; break;
+				case Direction.NW: destX--; destY--; break;
+				case Direction.W:  destX--; break;
+				case Direction.SW: destX--; destY++; break;
+				case Direction.S:  destY++; break;
+				case Direction.SE: destX++; destY++; break;
+			}
+
+			if (simulator.IsTileNavigable(destX, destY))
+			{
+				// Found valid direction - it's already set in actor.Facing
+				return true;
+			}
+		}
+
+		// All directions blocked
+		actor.Facing = null;
+		return false;
+	}
+
+	/// <summary>
+	/// Get the opposite direction (for turnaround avoidance).
+	/// WL_STATE.C:opposite[] array
+	/// </summary>
+	public int GetOppositeDirection(int dir)
+	{
+		if (dir < 0 || dir > 7) return -1;
+
+		Direction direction = (Direction)dir;
+		Direction opposite = direction switch
+		{
+			Direction.E  => Direction.W,
+			Direction.NE => Direction.SW,
+			Direction.N  => Direction.S,
+			Direction.NW => Direction.SE,
+			Direction.W  => Direction.E,
+			Direction.SW => Direction.NE,
+			Direction.S  => Direction.N,
+			Direction.SE => Direction.NW,
+			_ => Direction.E
+		};
+		return (int)opposite;
+	}
+
+	private Direction GetOppositeDirection(Direction dir)
+	{
+		return (Direction)GetOppositeDirection((int)dir);
+	}
+
+	/// <summary>
+	/// Get diagonal direction from two cardinal directions.
+	/// WL_STATE.C:diagonal[][] lookup table
+	/// </summary>
+	/// <param name="dir1">First cardinal direction (E/N/W/S only)</param>
+	/// <param name="dir2">Second cardinal direction (E/N/W/S only)</param>
+	/// <returns>Diagonal direction, or -1 if invalid combination</returns>
+	public int GetDiagonalDirection(int dir1, int dir2)
+	{
+		// WL_STATE.C:27-38 diagonal[9][9] lookup table
+		// Only cardinal directions produce valid diagonals
+		if (dir1 == 0 && dir2 == 2) return 1;  // E + N = NE
+		if (dir1 == 2 && dir2 == 0) return 1;  // N + E = NE
+		if (dir1 == 2 && dir2 == 4) return 3;  // N + W = NW
+		if (dir1 == 4 && dir2 == 2) return 3;  // W + N = NW
+		if (dir1 == 4 && dir2 == 6) return 5;  // W + S = SW
+		if (dir1 == 6 && dir2 == 4) return 5;  // S + W = SW
+		if (dir1 == 6 && dir2 == 0) return 7;  // S + E = SE
+		if (dir1 == 0 && dir2 == 6) return 7;  // E + S = SE
+		return -1; // Invalid combination
+	}
+
+	/// <summary>
+	/// Try to set facing to a specific direction and check if it's navigable.
+	/// </summary>
+	/// <param name="dir">Direction to try (0-7, or -1 for nodir)</param>
+	/// <returns>True if direction is valid and navigable, false otherwise</returns>
+	public bool TryDirection(int dir)
+	{
+		if (dir < 0 || dir > 7)
+			return false;
+
+		actor.Facing = (Direction)dir;
+
+		// Calculate destination tile
+		ushort destX = actor.TileX;
+		ushort destY = actor.TileY;
+
+		switch ((Direction)dir)
+		{
+			case Direction.E:  destX++; break;
+			case Direction.NE: destX++; destY--; break;
+			case Direction.N:  destY--; break;
+			case Direction.NW: destX--; destY--; break;
+			case Direction.W:  destX--; break;
+			case Direction.SW: destX--; destY++; break;
+			case Direction.S:  destY++; break;
+			case Direction.SE: destX++; destY++; break;
+		}
+
+		return simulator.IsTileNavigable(destX, destY);
+	}
+
+	/// <summary>
+	/// Get primary and secondary cardinal directions toward a target.
+	/// WL_STATE.C:SelectChaseDir - direction selection logic
+	/// </summary>
+	/// <param name="deltaX">X distance to target (target.x - actor.x)</param>
+	/// <param name="deltaY">Y distance to target (target.y - actor.y)</param>
+	/// <param name="prioritizeLarger">If true, swap d1/d2 if Y distance > X distance</param>
+	/// <returns>Tuple of (primary direction, secondary direction). Either can be -1 if delta is 0.</returns>
+	public (int d1, int d2) GetCardinalDirections(int deltaX, int deltaY, bool prioritizeLarger = true)
+	{
+		int d1 = -1;
+		int d2 = -1;
+
+		// Select cardinal direction based on X delta
+		if (deltaX > 0)
+			d1 = 0;  // east
+		else if (deltaX < 0)
+			d1 = 4;  // west
+
+		// Select cardinal direction based on Y delta
+		if (deltaY > 0)
+			d2 = 6;  // south
+		else if (deltaY < 0)
+			d2 = 2;  // north
+
+		// Prioritize direction with larger delta (WL_STATE.C:553)
+		if (prioritizeLarger)
+		{
+			int absDx = deltaX < 0 ? -deltaX : deltaX;
+			int absDy = deltaY < 0 ? -deltaY : deltaY;
+
+			if (absDy > absDx)
+			{
+				// Swap so primary direction is the one with larger delta
+				int temp = d1;
+				d1 = d2;
+				d2 = temp;
+			}
+		}
+
+		return (d1, d2);
+	}
+
+	/// <summary>
+	/// Select direction to chase player using cardinal directions only.
+	/// WL_STATE.C:SelectChaseDir (lines 528-615) - Direct pursuit pathfinding.
+	/// Tries preferred cardinals, then current direction, then random fallback.
+	/// </summary>
+	/// <returns>True if a valid direction was found and set, false if blocked</returns>
+	public bool SelectChaseDir()
+	{
+		// Calculate delta to player
+		int dx = simulator.PlayerTileX - actor.TileX;
+		int dy = simulator.PlayerTileY - actor.TileY;
+
+		// Get preferred cardinal directions
+		var (d1, d2) = GetCardinalDirections(dx, dy, prioritizeLarger: true);
+
+		// Skip turnaround direction
+		int opposite = actor.Facing.HasValue ? GetOppositeDirection((int)actor.Facing.Value) : -1;
+		if (d1 == opposite) d1 = -1;
+		if (d2 == opposite) d2 = -1;
+
+		// Try primary direction (WL_STATE.C:566)
+		if (TryDirection(d1))
+			return true;
+
+		// Try secondary direction (WL_STATE.C:573)
+		if (TryDirection(d2))
+			return true;
+
+		// Try keeping current direction - momentum (WL_STATE.C:582)
+		if (actor.Facing.HasValue && TryDirection((int)actor.Facing.Value))
+			return true;
+
+		// Random search through all 8 directions (WL_STATE.C:589)
+		// Fixes original bug that only tried 3 directions
+		if (TryAllDirectionsRandom(avoidTurnaround: true))
+			return true;
+
+		// All directions blocked
+		actor.Facing = null;
+		return false;
+	}
+
+	/// <summary>
+	/// Select direction to dodge - evasive movement toward player with diagonal preference.
+	/// WL_STATE.C:SelectDodgeDir (lines 404-515) - Erratic pursuit pathfinding.
+	/// Tries diagonal + randomized cardinals, then turnaround as last resort.
+	/// </summary>
+	/// <returns>True if a valid direction was found and set, false if blocked</returns>
+	public bool SelectDodgeDir()
+	{
+		// Calculate delta to player
+		int dx = simulator.PlayerTileX - actor.TileX;
+		int dy = simulator.PlayerTileY - actor.TileY;
+
+		// Get 5 dodge directions: diagonal + 4 randomized cardinals
+		int[] dodgeDirs = GetDodgeDirections(dx, dy);
+
+		// Get turnaround direction to avoid (WL_STATE.C:411)
+		// Note: Original has FL_FIRSTATTACK logic here, simplified for now
+		int turnaround = actor.Facing.HasValue ? GetOppositeDirection((int)actor.Facing.Value) : -1;
+
+		// Try each direction in priority order (WL_STATE.C:493)
+		for (int i = 0; i < 5; i++)
+		{
+			int dir = dodgeDirs[i];
+			if (dir >= 0 && dir != turnaround)
+			{
+				if (TryDirection(dir))
+					return true;
+			}
+		}
+
+		// Turn around only as last resort (WL_STATE.C:506)
+		if (turnaround >= 0 && TryDirection(turnaround))
+			return true;
+
+		// All directions blocked
+		actor.Facing = null;
+		return false;
+	}
+
+	/// <summary>
+	/// Get 5 dodge directions (diagonal + 4 randomized cardinals) toward target.
+	/// WL_STATE.C:SelectDodgeDir - direction array setup.
+	/// Useful for modders who want the dodge direction logic but custom behavior.
+	/// </summary>
+	/// <param name="deltaX">X distance to target</param>
+	/// <param name="deltaY">Y distance to target</param>
+	/// <returns>Array of 5 directions: [0]=diagonal, [1-4]=randomized cardinals</returns>
+	public int[] GetDodgeDirections(int deltaX, int deltaY)
+	{
+		int[] dirtry = new int[5] { -1, -1, -1, -1, -1 };
+
+		// WL_STATE.C:432 - Select cardinals based on delta to player
+		if (deltaX > 0)
+		{
+			dirtry[1] = 0;  // east
+			dirtry[3] = 4;  // west
+		}
+		else
+		{
+			dirtry[1] = 4;  // west
+			dirtry[3] = 0;  // east
+		}
+
+		if (deltaY > 0)
+		{
+			dirtry[2] = 6;  // south
+			dirtry[4] = 2;  // north
+		}
+		else
+		{
+			dirtry[2] = 2;  // north
+			dirtry[4] = 6;  // south
+		}
+
+		// WL_STATE.C:465 - Randomize based on which delta is larger
+		int absDx = deltaX < 0 ? -deltaX : deltaX;
+		int absDy = deltaY < 0 ? -deltaY : deltaY;
+
+		if (absDx > absDy)
+		{
+			// Swap priorities
+			int temp = dirtry[1];
+			dirtry[1] = dirtry[2];
+			dirtry[2] = temp;
+			temp = dirtry[3];
+			dirtry[3] = dirtry[4];
+			dirtry[4] = temp;
+		}
+
+		// WL_STATE.C:478 - Additional randomization
+		if (rng.Next(256) < 128)
+		{
+			int temp = dirtry[1];
+			dirtry[1] = dirtry[2];
+			dirtry[2] = temp;
+			temp = dirtry[3];
+			dirtry[3] = dirtry[4];
+			dirtry[4] = temp;
+		}
+
+		// WL_STATE.C:488 - Compute diagonal from first two cardinals
+		dirtry[0] = GetDiagonalDirection(dirtry[1], dirtry[2]);
+		if (dirtry[0] == -1)
+			dirtry[0] = dirtry[1]; // Fallback to first cardinal
+
+		return dirtry;
+	}
 }
