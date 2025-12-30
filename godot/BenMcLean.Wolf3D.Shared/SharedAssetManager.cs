@@ -140,12 +140,13 @@ public static class SharedAssetManager
 		// Generate and pack rectangles
 		PackingRectangle[] rectangles = GenerateRectangles();
 		RectanglePacker.Pack(rectangles, out PackingRectangle bounds, PackingHints.TryByBiggerSide);
+		rectangles = [.. rectangles.OrderBy(r => r.Id)];
 		// Calculate atlas size as next power of 2
 		uint atlasSize = Math.Max(bounds.Width, bounds.Height).NextPowerOf2();
 		// Create atlas canvas
 		byte[] atlas = new byte[(atlasSize * atlasSize) << 2];
 		// Insert textures into atlas
-		uint rectIndex = 0;
+		int rectIndex = 0;
 		// Insert VSwap pages
 		for (int page = 0; page < CurrentGame.VSwap.Pages.Length; page++)
 			if (CurrentGame.VSwap.Pages[page] is not null)
@@ -233,17 +234,17 @@ public static class SharedAssetManager
 					height: height);
 			}
 		}
-			PackingRectangle crosshair = rectangles[rectIndex++];
-			atlas.DrawCrosshair(
-				x: (int)(crosshair.X + 1),
-				y: (int)(crosshair.Y + 1),
-				color: Constants.White,
-				width: (ushort)atlasSize);
-			crosshairRegion = new Godot.Rect2I(
-				x: (int)(crosshair.X + 1),
-				y: (int)(crosshair.Y + 1),
-				width: 13,
-				height: 11);
+		PackingRectangle crosshair = rectangles[rectIndex];
+		atlas.DrawCrosshair(
+			x: (int)(crosshair.X + 1),
+			y: (int)(crosshair.Y + 1),
+			color: Constants.White,
+			width: (ushort)atlasSize);
+		crosshairRegion = new Godot.Rect2I(
+			x: (int)(crosshair.X + 1),
+			y: (int)(crosshair.Y + 1),
+			width: 13,
+			height: 11);
 		// Create Godot texture from atlas
 		AtlasImage = Godot.Image.CreateFromData(
 			width: (int)atlasSize,

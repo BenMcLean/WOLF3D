@@ -247,11 +247,11 @@ public sealed class VgaGraph
 	public static byte[] Deplanify(byte[] input, ushort width, ushort height)
 	{
 		byte[] bytes = new byte[input.Length];
-		int linewidth = width << 2;
+		int linewidth = width >> 2;
 		for (int i = 0; i < bytes.Length; i++)
 		{
-			int plane = i / ((width * height) << 2),
-				sx = ((i % linewidth) >> 2) + plane,
+			int plane = i / ((width * height) >> 2),
+				sx = ((i % linewidth) << 2) + plane,
 				sy = (i / linewidth % height);
 			bytes[sy * width + sx] = input[i];
 		}
