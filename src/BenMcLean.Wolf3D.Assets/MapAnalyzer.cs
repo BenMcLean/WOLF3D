@@ -314,6 +314,7 @@ public class MapAnalyzer
 		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 		public ReadOnlyCollection<uint> Elevators { get; private set; }
+		public ReadOnlyCollection<uint> AltElevators { get; private set; }
 		public ReadOnlyCollection<uint> Ambushes { get; private set; }
 
 		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
@@ -473,6 +474,7 @@ public class MapAnalyzer
 
 			List<WallSpawn> walls = [];
 			List<uint> elevators = [];
+			List<uint> altElevators = [];
 			List<uint> ambushes = [];
 			List<DoorSpawn> doors = [];
 
@@ -544,10 +546,15 @@ public class MapAnalyzer
 				}
 				else if (!mapAnalyzer.IsWall(tile))
 				{
+					// Track alternate elevator tiles (these are floor tiles that modify adjacent elevator behavior)
+					// Use original map data, not realWalls (which replaces pushwalls with FloorCodeFirst)
+					if (mapAnalyzer.AltElevatorTiles.Contains(gameMap.GetMapData(x, y)))
+						altElevators.Add((uint)x | ((uint)y << 16));
 					// Track ambush tiles (these are floor tiles, not walls)
-					if (mapAnalyzer.AmbushTiles.Contains(tile))
+					// Use original map data, not realWalls (which replaces pushwalls with FloorCodeFirst)
+					if (mapAnalyzer.AmbushTiles.Contains(gameMap.GetMapData(x, y)))
 						ambushes.Add((uint)x | ((uint)y << 16));
-					// For empty spaces (including ambush tiles), check adjacent cells for walls
+					// For empty spaces (including ambush/alternate elevator tiles), check adjacent cells for walls
 					EastWest(x, y);
 					NorthSouth(x, y);
 				}
@@ -556,6 +563,7 @@ public class MapAnalyzer
 			Walls = Array.AsReadOnly([.. walls]);
 			PushWalls = Array.AsReadOnly([.. pushWalls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
+			AltElevators = Array.AsReadOnly([.. altElevators]);
 			Ambushes = Array.AsReadOnly([.. ambushes]);
 			Doors = Array.AsReadOnly([.. doors]);
 			#endregion Wall/Door/PushWall Parsing

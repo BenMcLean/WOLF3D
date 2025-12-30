@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets;
 using BenMcLean.Wolf3D.Simulator;
@@ -40,8 +41,10 @@ void sky() {
 
 	public override void _Ready()
 	{
-		// Get current level analysis
-		MapAnalyzer.MapAnalysis currentLevel = Shared.SharedAssetManager.CurrentGame.MapAnalyses[LevelIndex];
+		try
+		{
+			// Get current level analysis
+			MapAnalyzer.MapAnalysis currentLevel = Shared.SharedAssetManager.CurrentGame.MapAnalyses[LevelIndex];
 
 		// Setup sky with floor/ceiling colors from map
 		SetupSky(currentLevel);
@@ -135,6 +138,11 @@ void sky() {
 			_actors,
 			Shared.SharedAssetManager.CurrentGame.StateCollection,
 			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
+		}
+		catch (Exception ex)
+		{
+			ExceptionHandler.HandleException(ex);
+		}
 	}
 
 	public override void _Input(InputEvent @event)
@@ -244,7 +252,7 @@ void sky() {
 				{
 					SkyMaterial = _skyMaterial,
 				},
-				BackgroundMode = Environment.BGMode.Sky,
+				BackgroundMode = Godot.Environment.BGMode.Sky,
 			}
 		};
 		AddChild(worldEnvironment);

@@ -169,6 +169,27 @@ public static class ExtensionMethods
 		return texture;
 	}
 	/// <summary>
+	/// Draws a crosshair with four arms extending from the center.
+	/// The center pixel (relative: 6, 5) and 1-pixel gap around it remain transparent.
+	/// Draws a 13x11 pixel crosshair at the specified coordinates.
+	/// </summary>
+	/// <param name="texture">The RGBA8888 texture byte array to draw on</param>
+	/// <param name="x">X coordinate where to draw the crosshair (top-left corner)</param>
+	/// <param name="y">Y coordinate where to draw the crosshair (top-left corner)</param>
+	/// <param name="color">RGBA8888 color value for the crosshair</param>
+	/// <param name="width">Width of the atlas texture</param>
+	/// <returns>The atlas byte array with the crosshair drawn</returns>
+	public static byte[] DrawCrosshair(this byte[] texture, int x = 0, int y = 0, ushort width = 0, uint color = Constants.White) => texture
+		// Draw the four arms of the crosshair
+		// West arm: 5 pixels wide, 1 pixel tall, at relative position (0, 5)
+		.DrawRectangle(x: x + 0, y: y + 5, color: color, rectWidth: 5, rectHeight: 1, width: width)
+		// North arm: 1 pixel wide, 4 pixels tall, at relative position (6, 0)
+		.DrawRectangle(x: x + 6, y: y + 0, color: color, rectWidth: 1, rectHeight: 4, width: width)
+		// East arm: 5 pixels wide, 1 pixel tall, at relative position (8, 5)
+		.DrawRectangle(x: x + 8, y: y + 5, color: color, rectWidth: 5, rectHeight: 1, width: width)
+		// South arm: 1 pixel wide, 4 pixels tall, at relative position (6, 7)
+		.DrawRectangle(x: x + 6, y: y + 7, color: color, rectWidth: 1, rectHeight: 4, width: width);
+	/// <summary>
 	/// Converts an RGBA8888 uint to a Godot Color.
 	/// Format: 0xRRGGBBAA (big-endian, matching BinaryPrimitives.WriteUInt32BigEndian)
 	/// </summary>

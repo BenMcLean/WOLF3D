@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Godot;
 
@@ -13,39 +14,51 @@ public partial class Root : Node3D
 	public int CurrentLevelIndex { get; set; } = 0;
 
 	private Node _currentScene;
+	private Shared.DosScreen _errorScreen;
+	private bool _errorMode = false;
 
 	public override void _Ready()
 	{
-		// Load game assets
-		// TODO: Eventually this will be done from menu selection, not hardcoded
-		Shared.SharedAssetManager.LoadGame(@"..\..\games\WL1.xml");
+		// Register error display callback
+		ExceptionHandler.DisplayCallback = ShowErrorScreen;
 
-		// Create VR-specific 3D materials
-		// Try scaleFactor: 4 for better performance, or 8 for maximum quality
-		VRAssetManager.Initialize(scaleFactor: 8);
+		try
+		{
+			// Load game assets
+			// TODO: Eventually this will be done from menu selection, not hardcoded
+			Shared.SharedAssetManager.LoadGame(@"..\..\games\WL1.xml");
 
-		// Add OplPlayer to scene tree for music
-		AddChild(Shared.OPL.SoundBlaster.OplPlayer);
+			// Create VR-specific 3D materials
+			// Try scaleFactor: 4 for better performance, or 8 for maximum quality
+			VRAssetManager.Initialize(scaleFactor: 8);
 
-		// Play the first level's music
-		string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Song;
-		if (!string.IsNullOrWhiteSpace(songName)
-			&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out Assets.AudioT.Song song))
-			Shared.OPL.SoundBlaster.Song = song;
+			// Add OplPlayer to scene tree for music
+			AddChild(Shared.OPL.SoundBlaster.OplPlayer);
 
-		// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
-		//System.Xml.Linq.XDocument n3dXml = System.Xml.Linq.XDocument.Load(@"..\..\games\N3D.xml");
-		//Assets.AudioT n3dAudioT = Assets.AudioT.Load(n3dXml.Root, @"..\..\games\N3D");
-		//if (n3dAudioT.Songs.Count > 0)
-		//{
-		//	Assets.AudioT.Song firstSong = n3dAudioT.Songs.Values.First();
-		//	Shared.OPL.SoundBlaster.Song = firstSong;
-		//}
+			// Play the first level's music
+			string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Song;
+			if (!string.IsNullOrWhiteSpace(songName)
+				&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out Assets.AudioT.Song song))
+				Shared.OPL.SoundBlaster.Song = song;
 
-		// For now, boot directly into ActionStage
-		// TODO: Boot to DOSScreen → MenuStage → ActionStage
-		ActionStage actionStage = new() { LevelIndex = CurrentLevelIndex };
-		TransitionTo(actionStage);
+			// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
+			//System.Xml.Linq.XDocument n3dXml = System.Xml.Linq.XDocument.Load(@"..\..\games\N3D.xml");
+			//Assets.AudioT n3dAudioT = Assets.AudioT.Load(n3dXml.Root, @"..\..\games\N3D");
+			//if (n3dAudioT.Songs.Count > 0)
+			//{
+			//	Assets.AudioT.Song firstSong = n3dAudioT.Songs.Values.First();
+			//	Shared.OPL.SoundBlaster.Song = firstSong;
+			//}
+
+			// For now, boot directly into ActionStage
+			// TODO: Boot to DOSScreen → MenuStage → ActionStage
+			ActionStage actionStage = new() { LevelIndex = CurrentLevelIndex };
+			TransitionTo(actionStage);
+		}
+		catch (Exception ex)
+		{
+			ExceptionHandler.HandleException(ex);
+		}
 	}
 
 	/// <summary>
@@ -54,6 +67,10 @@ public partial class Root : Node3D
 	/// <param name="newScene">The scene node to transition to</param>
 	public void TransitionTo(Node newScene)
 	{
+		// Don't allow transitions in error mode
+		if (_errorMode)
+			return;
+
 		// Remove and free the current scene
 		if (_currentScene != null)
 		{
@@ -64,5 +81,57 @@ public partial class Root : Node3D
 		// Add the new scene
 		_currentScene = newScene;
 		AddChild(_currentScene);
+	}
+
+	/// <summary>
+	/// Displays an exception to the user via DOS screen.
+	/// Called by ExceptionHandler when an unhandled exception occurs.
+	/// </summary>
+	/// <param name="ex">The exception to display</param>
+	private void ShowErrorScreen(Exception ex)
+	{
+		// Enter error mode - prevent further scene transitions
+		_errorMode = true;
+
+		// Remove current scene if it exists
+		if (_currentScene != null)
+		{
+			RemoveChild(_currentScene);
+			_currentScene.QueueFree();
+			_currentScene = null;
+		}
+
+		// Create error screen if not already created
+		if (_errorScreen == null)
+		{
+			_errorScreen = new Shared.DosScreen();
+			AddChild(_errorScreen);
+		}
+
+		// Display exception information
+		_errorScreen.WriteLine("=".PadRight(80, '='));
+		_errorScreen.WriteLine("UNHANDLED EXCEPTION");
+		_errorScreen.WriteLine("=".PadRight(80, '='));
+		_errorScreen.WriteLine("");
+		_errorScreen.WriteLine($"Type: {ex.GetType().FullName}");
+		_errorScreen.WriteLine("");
+		_errorScreen.WriteLine($"Message: {ex.Message}");
+		_errorScreen.WriteLine("");
+		_errorScreen.WriteLine("Stack Trace:");
+		_errorScreen.WriteLine(ex.StackTrace ?? "(no stack trace available)");
+
+		// Include inner exceptions if present
+		Exception innerEx = ex.InnerException;
+		int innerCount = 1;
+		while (innerEx != null)
+		{
+			_errorScreen.WriteLine("");
+			_errorScreen.WriteLine($"--- Inner Exception #{innerCount} ---");
+			_errorScreen.WriteLine($"Type: {innerEx.GetType().FullName}");
+			_errorScreen.WriteLine($"Message: {innerEx.Message}");
+			_errorScreen.WriteLine(innerEx.StackTrace ?? "(no stack trace available)");
+			innerEx = innerEx.InnerException;
+			innerCount++;
+		}
 	}
 }

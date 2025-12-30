@@ -16,7 +16,8 @@ public partial class DebugMarkers : Node3D
 {
 	private readonly List<MeshInstance3D> markerNodes = [];
 	private static readonly Color ArrowColor = Shared.Constants.Yellow.ToColor(),
-		AmbushColor = Shared.Constants.Yellow.ToColor();
+		AmbushColor = Shared.Constants.Yellow.ToColor(),
+		AltElevatorColor = Shared.Constants.Yellow.ToColor();
 	/// <summary>
 	/// Creates wireframe arrows for patrol points and X markers for deaf/ambush actors.
 	/// </summary>
@@ -54,6 +55,16 @@ public partial class DebugMarkers : Node3D
 					label: actor.ActorType);
 				AddChild(xMarkerNode);
 				markerNodes.Add(xMarkerNode);
+			}
+		// Create diamond markers for alternate elevators
+		if (mapAnalysis.AltElevators is not null)
+			foreach (uint encoded in mapAnalysis.AltElevators)
+			{
+				MeshInstance3D diamondNode = CreateDiamondMesh(
+					x: (ushort)(encoded & 0xFFFF),
+					y: (ushort)(encoded >> 16));
+				AddChild(diamondNode);
+				markerNodes.Add(diamondNode);
 			}
 	}
 	/// <summary>
@@ -150,5 +161,51 @@ public partial class DebugMarkers : Node3D
 			Name = $"AmbushMarker_{x}_{y}_{label}"
 		};
 		return xMarkerNode;
+	}
+	/// <summary>
+	/// Creates a horizontal wireframe diamond (◊) marker for an alternate elevator tile.
+	/// The diamond is positioned at Constants.PixelHeight above the floor.
+	/// </summary>
+	private static MeshInstance3D CreateDiamondMesh(ushort x, ushort y)
+	{
+		ImmediateMesh mesh = new();
+		StandardMaterial3D material = new()
+		{
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			AlbedoColor = AltElevatorColor,
+			Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
+		};
+		// Calculate diamond position (centered on tile, at PixelHeight)
+		Vector3 position = new(
+			x: x.ToMetersCentered(),
+			y: Constants.PixelHeight,
+			z: y.ToMetersCentered());
+		// Build diamond geometry using ImmediateMesh
+		mesh.SurfaceBegin(Mesh.PrimitiveType.Lines, material);
+		// Diamond dimensions (in meters) - horizontal in XZ plane
+		const float size = Constants.HalfTileWidth / 2f;
+		// Diamond vertices (4 points: North, East, South, West)
+		Vector3 north = new(0f, 0f, -size),
+			east = new(size, 0f, 0f),
+			south = new(0f, 0f, size),
+			west = new(-size, 0f, 0f);
+		// Draw diamond edges
+		mesh.SurfaceAddVertex(north);
+		mesh.SurfaceAddVertex(east);
+		mesh.SurfaceAddVertex(east);
+		mesh.SurfaceAddVertex(south);
+		mesh.SurfaceAddVertex(south);
+		mesh.SurfaceAddVertex(west);
+		mesh.SurfaceAddVertex(west);
+		mesh.SurfaceAddVertex(north);
+		mesh.SurfaceEnd();
+		// Create MeshInstance3D with the diamond marker
+		MeshInstance3D diamondNode = new()
+		{
+			Mesh = mesh,
+			Position = position,
+			Name = $"AltElevatorMarker_{x}_{y}"
+		};
+		return diamondNode;
 	}
 }

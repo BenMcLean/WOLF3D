@@ -46,6 +46,10 @@ public static class SharedAssetManager
 	public static IReadOnlyDictionary<string, Godot.AudioStreamWav> DigiSounds => _digiSounds;
 	private static Dictionary<string, Godot.AudioStreamWav> _digiSounds;
 	/// <summary>
+	/// Crosshair AtlasTexture ready for display in VR and other modes.
+	/// </summary>
+	public static Godot.AtlasTexture Crosshair { get; private set; }
+	/// <summary>
 	/// Logger factory configured to route logs to Godot.
 	/// </summary>
 	private static ILoggerFactory _loggerFactory;
@@ -107,6 +111,13 @@ public static class SharedAssetManager
 					id: rectangles.Count));
 			}
 		}
+		// Add rectangle for crosshair
+		rectangles.Add(new PackingRectangle(
+			x: 0,
+			y: 0,
+			width: 15,
+			height: 13,
+			id: rectangles.Count));
 		return [.. rectangles];
 	}
 	/// <summary>
@@ -125,6 +136,7 @@ public static class SharedAssetManager
 		// uint prevents sign-extension issues with bit-shift operations
 		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions = [];
 		Dictionary<string, Godot.Rect2I> picFontSpaceRegions = [];
+		Godot.Rect2I crosshairRegion = new();
 		// Generate and pack rectangles
 		PackingRectangle[] rectangles = GenerateRectangles();
 		RectanglePacker.Pack(rectangles, out PackingRectangle bounds, PackingHints.TryByBiggerSide);
@@ -221,6 +233,17 @@ public static class SharedAssetManager
 					height: height);
 			}
 		}
+			PackingRectangle crosshair = rectangles[rectIndex++];
+			atlas.DrawCrosshair(
+				x: (int)(crosshair.X + 1),
+				y: (int)(crosshair.Y + 1),
+				color: Constants.White,
+				width: (ushort)atlasSize);
+			crosshairRegion = new Godot.Rect2I(
+				x: (int)(crosshair.X + 1),
+				y: (int)(crosshair.Y + 1),
+				width: 13,
+				height: 11);
 		// Create Godot texture from atlas
 		AtlasImage = Godot.Image.CreateFromData(
 			width: (int)atlasSize,
@@ -230,7 +253,7 @@ public static class SharedAssetManager
 			data: atlas);
 		AtlasTexture = Godot.ImageTexture.CreateFromImage(AtlasImage);
 		// Build AtlasTextures for 2D display
-		BuildAtlasTextures(vswapRegions, vgaGraphRegions);
+		BuildAtlasTextures(vswapRegions, vgaGraphRegions, crosshairRegion);
 		// Build all fonts (both regular and prefix-based)
 		BuildFonts(vgaGraphRegions, vgaGraphFontRegions, picFontSpaceRegions);
 	}
@@ -239,7 +262,8 @@ public static class SharedAssetManager
 	/// </summary>
 	private static void BuildAtlasTextures(
 		Dictionary<int, Godot.Rect2I> vswapRegions,
-		Dictionary<int, Godot.Rect2I> vgaGraphRegions)
+		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
+		Godot.Rect2I crosshairRegion)
 	{
 		// Build VSwap AtlasTextures (indexed by page number)
 		foreach (KeyValuePair<int, Godot.Rect2I> kvp in vswapRegions)
@@ -264,6 +288,12 @@ public static class SharedAssetManager
 				};
 				_vgaGraph[name] = atlasTexture;
 			}
+		// Build Crosshair AtlasTexture
+		Crosshair = new()
+		{
+			Atlas = AtlasTexture,
+			Region = new Godot.Rect2(crosshairRegion.Position, crosshairRegion.Size),
+		};
 	}
 	#endregion Textures
 	#region Fonts
@@ -514,6 +544,8 @@ public static class SharedAssetManager
 			foreach (AtlasTexture atlasTexture in _vgaGraph.Values)
 				atlasTexture.Dispose();
 		_vgaGraph?.Clear();
+		Crosshair?.Dispose();
+		Crosshair = null;
 		AtlasTexture?.Dispose();
 		AtlasTexture = null;
 		AtlasImage?.Dispose();

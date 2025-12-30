@@ -854,10 +854,11 @@ public class Simulator
 				(byte)spawn.Type);  // itemnumber (ObClass enum -> byte)
 
 			// Emit spawn event for VR layer to display the bonus
+			// Shape values: -2 = invisible trigger (Noah's Ark), >= 0 = visible
 			BonusSpawned?.Invoke(new BonusSpawnedEvent
 			{
 				StatObjIndex = lastStatObj,
-				Shape = spawn.Shape,
+				Shape = (short)spawn.Shape,
 				TileX = spawn.X,
 				TileY = spawn.Y,
 				ItemNumber = (byte)spawn.Type
@@ -1067,19 +1068,24 @@ public class Simulator
 		}
 
 		// Emit bonus SPAWN events for all active bonuses
+		// WL_DEF.H: shapenum = -1 means despawned (entire object removed - skip event)
+		// Noah's Ark: shapenum = -2 means invisible trigger (emit event, no visual)
+		// shapenum >= 0 means visible bonus (emit event, render sprite)
 		for (int i = 0; i < StatObjList.Length; i++)
 		{
-			if (StatObjList[i] is not null && !StatObjList[i].IsFree)
+			// Skip despawned bonuses: null, IsFree, or ShapeNum == -1
+			if (StatObjList[i] is null || StatObjList[i].IsFree || StatObjList[i].ShapeNum == -1)
+				continue;
+
+			// Emit event for both invisible triggers (-2) and visible bonuses (>= 0)
+			BonusSpawned?.Invoke(new BonusSpawnedEvent
 			{
-				BonusSpawned?.Invoke(new BonusSpawnedEvent
-				{
-					StatObjIndex = i,
-					Shape = (ushort)StatObjList[i].ShapeNum,
-					TileX = StatObjList[i].TileX,
-					TileY = StatObjList[i].TileY,
-					ItemNumber = StatObjList[i].ItemNumber
-				});
-			}
+				StatObjIndex = i,
+				Shape = StatObjList[i].ShapeNum,
+				TileX = StatObjList[i].TileX,
+				TileY = StatObjList[i].TileY,
+				ItemNumber = StatObjList[i].ItemNumber
+			});
 		}
 
 		// Emit actor SPAWN events for all active actors

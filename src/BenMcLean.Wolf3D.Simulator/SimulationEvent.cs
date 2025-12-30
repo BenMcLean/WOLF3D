@@ -93,7 +93,8 @@ public struct BonusSpawnedEvent
 	public required int StatObjIndex { get; init; }
 
 	// VSwap sprite page number (WL_DEF.H:statstruct:shapenum)
-	public required ushort Shape { get; init; }
+	// -1 = despawned/removed (Wolf3D), -2 = invisible trigger (Noah's Ark), >= 0 = visible
+	public required short Shape { get; init; }
 
 	// WL_DEF.H:statstruct:tilex (original: byte)
 	public required ushort TileX { get; init; }

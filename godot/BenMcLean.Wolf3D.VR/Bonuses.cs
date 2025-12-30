@@ -15,6 +15,11 @@ namespace BenMcLean.Wolf3D.VR;
 /// Only handles bonus items with game logic (not fixtures/scenery).
 /// Sprites rotate each frame to face opposite of the player's Y-axis orientation (billboard effect).
 /// This node contains all bonus multimeshes as children - just add it to the scene tree.
+///
+/// Shape number convention (WL_DEF.H:statstruct:shapenum):
+/// -1 = despawned/removed (Wolf3D standard - no event emitted)
+/// -2 = invisible trigger (Super 3-D Noah's Ark - used for stairs/Lua triggers, no visual)
+/// >= 0 = visible bonus sprite (normal bonus items)
 /// </summary>
 public partial class Bonuses : Node3D
 {
@@ -92,17 +97,30 @@ public partial class Bonuses : Node3D
 	/// All bonuses now spawn via events - this is the unified display path.
 	/// </summary>
 	/// <param name="statObjIndex">Index in simulator's StatObjList</param>
-	/// <param name="shape">VSwap sprite page number</param>
+	/// <param name="shape">VSwap sprite page number (-2 = invisible trigger, >= 0 = visible)</param>
 	/// <param name="tileX">Tile X coordinate</param>
 	/// <param name="tileY">Tile Y coordinate (Wolf3D Y, becomes Godot Z)</param>
-	public void ShowBonus(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
+	public void ShowBonus(int statObjIndex, short shape, ushort tileX, ushort tileY)
 	{
-		ShowBonusInternal(statObjIndex, shape, tileX, tileY);
+		// Shape -2 means invisible trigger (Noah's Ark stairs/triggers - no visual sprite)
+		// Used in Super 3-D Noah's Ark for stairs and Lua-scripted triggers
+		if (shape == -2)
+			return;
+
+		// Shape must be >= 0 for visible bonuses
+		if (shape < 0)
+		{
+			GD.PrintErr($"ERROR: Invalid shape {shape} for bonus at ({tileX}, {tileY})");
+			return;
+		}
+
+		ShowBonusInternal(statObjIndex, (ushort)shape, tileX, tileY);
 	}
 
 	/// <summary>
 	/// Internal implementation for showing a bonus.
 	/// Handles dynamic MultiMesh creation and growth.
+	/// PRECONDITION: shape must be >= 0 (caller must check for invisible/invalid shapes).
 	/// </summary>
 	private void ShowBonusInternal(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
 	{
@@ -356,6 +374,7 @@ public partial class Bonuses : Node3D
 
 	/// <summary>
 	/// Handles BonusSpawnedEvent - shows a dynamically spawned bonus.
+	/// Shape -2 indicates an invisible trigger (no visual sprite) - used in Super 3-D Noah's Ark stairs.
 	/// </summary>
 	private void OnBonusSpawned(BenMcLean.Wolf3D.Simulator.BonusSpawnedEvent evt)
 	{
