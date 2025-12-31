@@ -17,23 +17,32 @@ public class Font
 	{
 		using BinaryReader binaryReader = new(stream);
 		Height = binaryReader.ReadUInt16();
-		ushort[] location = new ushort[256];
-		for (int i = 0; i < location.Length; i++)
-			location[i] = binaryReader.ReadUInt16();
-		Widths = new byte[location.Length];
-		for (int i = 0; i < Widths.Length; i++)
-			Widths[i] = binaryReader.ReadByte();
-		Glyphs = new byte[Widths.Length][];
+		ushort[] offsets = new ushort[256];
+		Buffer.BlockCopy(
+			src: binaryReader.ReadBytes(512),
+			srcOffset: 0,
+			dst: offsets,
+			dstOffset: 0,
+			count: 512);
+		Widths = binaryReader.ReadBytes(256);
+		Glyphs = new byte[256][];
 		int height4 = Height << 2;
-		for (int i = 0; i < Glyphs.Length; i++)
+		for (int glyph = 0; glyph < 256; glyph++)
 		{
-			Glyphs[i] = new byte[Widths[i] * height4];
-			stream.Seek(location[i], 0);
-			for (int j = 0; j < Glyphs[i].Length; j += 4)
-				if (binaryReader.ReadByte() != 0)
+			if (Widths[glyph] == 0)
+				continue;
+			Glyphs[glyph] = new byte[Widths[glyph] * height4];
+			stream.Seek(
+				offset: offsets[glyph],
+				origin: SeekOrigin.Begin);
+			byte[] glyphData = binaryReader.ReadBytes(Widths[glyph] * Height);
+			for (int byteIndex = 0, rgbaIndex = 0;
+				byteIndex < glyphData.Length;
+				byteIndex++, rgbaIndex += 4)
+				if (glyphData[byteIndex] != 0)
 					BinaryPrimitives.WriteUInt32BigEndian(
-						destination: Glyphs[i].AsSpan(
-							start: j,
+						destination: Glyphs[glyph].AsSpan(
+							start: rgbaIndex,
 							length: 4),
 						value: 0xFFFFFFFFu);
 		}
