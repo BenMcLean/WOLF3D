@@ -87,12 +87,12 @@ public static class SharedAssetManager
 			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
 			{
 				Assets.Graphics.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
-				for (uint charCode = 0; charCode < font.Character.Length; charCode++)
-					if (font.Width[charCode] > 0)
+				for (uint charCode = 0; charCode < font.Glyphs.Length; charCode++)
+					if (font.Widths[charCode] > 0)
 						rectangles.Add(new PackingRectangle(
 							x: 0,
 							y: 0,
-							width: (uint)(font.Width[charCode] + 2),
+							width: (uint)(font.Widths[charCode] + 2),
 							height: (uint)(font.Height + 2),
 							id: rectangles.Count));
 			}
@@ -189,16 +189,16 @@ public static class SharedAssetManager
 			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
 			{
 				Assets.Graphics.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
-				for (uint charCode = 0; charCode < font.Character.Length; charCode++)
-					if (font.Width[charCode] > 0)
+				for (uint charCode = 0; charCode < font.Glyphs.Length; charCode++)
+					if (font.Widths[charCode] > 0)
 					{
 						PackingRectangle rect = rectangles[rectIndex++];
-						byte width = font.Width[charCode];
+						byte width = font.Widths[charCode];
 						ushort height = font.Height;
 						atlas.DrawInsert(
 							x: (ushort)(rect.X + 1),
 							y: (ushort)(rect.Y + 1),
-							insert: font.Character[charCode],
+							insert: font.Glyphs[charCode],
 							insertWidth: width,
 							width: (ushort)atlasSize);
 						// Composite key: fontIndex in upper 16 bits, charCode in lower 16 bits
@@ -361,9 +361,9 @@ public static class SharedAssetManager
 			size: new Godot.Vector2I(sourceFont.Height, 0),
 			textureIndex: 0,
 			image: AtlasImage);
-		for (int charCode = 0; charCode < sourceFont.Character.Length; charCode++)
+		for (int charCode = 0; charCode < sourceFont.Glyphs.Length; charCode++)
 		{
-			if (sourceFont.Width[charCode] == 0)
+			if (sourceFont.Widths[charCode] == 0)
 				continue;
 			// Composite key: fontIndex in upper 16 bits, charCode in lower 16 bits
 			uint key = ((uint)fontIndex << 16) | (char)charCode;
@@ -383,7 +383,7 @@ public static class SharedAssetManager
 				cacheIndex: 0,
 				size: sourceFont.Height,
 				glyph: charCode,
-				advance: new Godot.Vector2(sourceFont.Width[charCode], 0));
+				advance: new Godot.Vector2(sourceFont.Widths[charCode], 0));
 			font.SetGlyphSize(
 				cacheIndex: 0,
 				size: new Godot.Vector2I(sourceFont.Height, 0),
