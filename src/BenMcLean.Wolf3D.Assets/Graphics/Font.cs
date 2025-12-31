@@ -1,8 +1,13 @@
 using System;
+using System.Buffers.Binary;
 using System.IO;
 
 namespace BenMcLean.Wolf3D.Assets.Graphics;
 
+/// <summary>
+/// Parses Wolfenstein 3-D VGAGRAPH chunk fonts
+/// Stores glyphs as RGBA8888 textures, colored white
+/// </summary>
 public sealed class Font
 {
 	public ushort Height { get; private init; }
@@ -13,25 +18,24 @@ public sealed class Font
 		using BinaryReader binaryReader = new(stream);
 		Height = binaryReader.ReadUInt16();
 		ushort[] location = new ushort[256];
-		for (uint i = 0; i < location.Length; i++)
+		for (int i = 0; i < location.Length; i++)
 			location[i] = binaryReader.ReadUInt16();
 		Width = new byte[location.Length];
-		for (uint i = 0; i < Width.Length; i++)
+		for (int i = 0; i < Width.Length; i++)
 			Width[i] = binaryReader.ReadByte();
 		Character = new byte[Width.Length][];
-		byte[] whitePixel = [255, 255, 255, 255];
-		for (uint i = 0; i < Character.Length; i++)
+		int height4 = Height << 2;
+		for (int i = 0; i < Character.Length; i++)
 		{
-			Character[i] = new byte[Width[i] * Height * 4];
+			Character[i] = new byte[Width[i] * height4];
 			stream.Seek(location[i], 0);
-			for (uint j = 0; j < Character[i].Length / 4; j++)
+			for (int j = 0; j < Character[i].Length; j += 4)
 				if (binaryReader.ReadByte() != 0)
-					Array.Copy(
-						sourceArray: whitePixel,
-						sourceIndex: 0,
-						destinationArray: Character[i],
-						destinationIndex: j << 2,
-						length: 4);
+					BinaryPrimitives.WriteUInt32BigEndian(
+						destination: Character[i].AsSpan(
+							start: j,
+							length: 4),
+						value: 0xFFFFFFFFu);
 		}
 	}
 	public byte[] Text(string input, ushort padding = 0)
@@ -71,8 +75,7 @@ public sealed class Font
 					sourceIndex: y * Width[c] << 2,
 					destinationArray: bytes,
 					destinationIndex: y * width + rowStart,
-					length: Width[c] << 2
-					);
+					length: Width[c] << 2);
 			rowStart += Width[c] << 2;
 		}
 		return bytes;
