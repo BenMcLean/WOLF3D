@@ -278,6 +278,7 @@
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element name="EndString" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element ref="MenuFunction" minOccurs="0" maxOccurs="unbounded"/>
 				<xs:element ref="Menu" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
 			<xs:attribute name="Start" type="xs:string"/>
@@ -365,6 +366,38 @@
 			<xs:attribute name="Action" type="xs:string"/>
 			<xs:attribute name="Argument" type="xs:string"/>
 			<xs:attribute name="InGame" type="xs:boolean"/>
+			<xs:attribute name="Condition" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="MenuFunction">
+		<xs:annotation>
+			<xs:documentation>
+				Defines a menu function (Lua script) for menu behavior.
+				Similar to Actor Function but for menu actions instead of AI.
+				The element's text content contains the Lua script code.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="Name" type="xs:string" use="required">
+						<xs:annotation>
+							<xs:documentation>
+								Unique identifier for this function (e.g., "OnNewGame", "OnSelectEpisode1").
+								Referenced by MenuItem Action attributes.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Description" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>
+								Optional description of what this function does.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:extension>
+			</xs:simpleContent>
 		</xs:complexType>
 	</xs:element>
 

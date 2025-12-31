@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BenMcLean.Wolf3D.Assets;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;

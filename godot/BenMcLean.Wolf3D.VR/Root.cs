@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using BenMcLean.Wolf3D.Assets.Sound;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -38,7 +39,7 @@ public partial class Root : Node3D
 			// Play the first level's music
 			string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Song;
 			if (!string.IsNullOrWhiteSpace(songName)
-				&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out Assets.AudioT.Song song))
+				&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out AudioT.Song song))
 				Shared.OPL.SoundBlaster.Song = song;
 
 			// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
@@ -50,10 +51,9 @@ public partial class Root : Node3D
 			//	Shared.OPL.SoundBlaster.Song = firstSong;
 			//}
 
-			// For now, boot directly into ActionStage
-			// TODO: Boot to DOSScreen → MenuStage → ActionStage
-			ActionStage actionStage = new() { LevelIndex = CurrentLevelIndex };
-			TransitionTo(actionStage);
+			// Boot to MenuStage
+			Shared.Menu.MenuStage menuStage = new();
+			TransitionTo(menuStage);
 		}
 		catch (Exception ex)
 		{
@@ -61,6 +61,22 @@ public partial class Root : Node3D
 		}
 	}
 
+	public override void _Process(double delta)
+	{
+		// Poll MenuStage for game start signal
+		if (_currentScene is Shared.Menu.MenuStage menuStage)
+		{
+			if (menuStage.SessionState?.StartGame ?? false)
+			{
+				// Get selected episode and difficulty from menu
+				int episode = menuStage.SessionState.SelectedEpisode;
+				int difficulty = menuStage.SessionState.SelectedDifficulty;
+				// TODO: Use episode and difficulty when creating ActionStage
+				ActionStage actionStage = new() { LevelIndex = CurrentLevelIndex };
+				TransitionTo(actionStage);
+			}
+		}
+	}
 	/// <summary>
 	/// Transitions to a new scene, replacing the current one.
 	/// </summary>

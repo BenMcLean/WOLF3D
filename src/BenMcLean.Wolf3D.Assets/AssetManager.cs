@@ -1,6 +1,9 @@
 using System;
 using System.IO;
 using System.Xml.Linq;
+using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Graphics;
+using BenMcLean.Wolf3D.Assets.Sound;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -16,6 +19,7 @@ public class AssetManager
 	public readonly MapAnalyzer MapAnalyzer;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
 	public readonly StateCollection StateCollection;
+	public readonly MenuCollection MenuCollection;
 	public static AssetManager Load(string xmlPath, ILoggerFactory loggerFactory = null)
 	{
 		XElement xml = XDocument.Load(xmlPath).Root;
@@ -37,6 +41,8 @@ public class AssetManager
 		MapAnalyses = [.. MapAnalyzer.Analyze(Maps)];
 		// Load StateCollection from XML
 		StateCollection = LoadStateCollection(xml);
+		// Load MenuCollection from XML
+		MenuCollection = LoadMenuCollection(xml);
 	}
 	private StateCollection LoadStateCollection(XElement xml)
 	{
@@ -66,5 +72,15 @@ public class AssetManager
 		// Phase 3: Validate function references
 		stateCollection.ValidateFunctionReferences();
 		return stateCollection;
+	}
+	private MenuCollection LoadMenuCollection(XElement xml)
+	{
+		// Find the Menus element inside VgaGraph
+		XElement vgaGraphElement = xml.Element("VgaGraph");
+		XElement menusElement = vgaGraphElement?.Element("Menus");
+		if (menusElement == null)
+			return new MenuCollection(); // No menus defined
+		// Use MenuCollection.Load static method to parse entire structure
+		return MenuCollection.Load(menusElement);
 	}
 }

@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Assets.Graphics;
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -61,7 +62,7 @@ void fragment() {
 	/// <summary>
 	/// Reference to the VSwap being used (from SharedAssetManager).
 	/// </summary>
-	private static Assets.VSwap _vswap;
+	private static VSwap _vswap;
 
 	/// <summary>
 	/// Initializes VR assets from the currently loaded game.

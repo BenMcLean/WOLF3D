@@ -1,4 +1,4 @@
-using BenMcLean.Wolf3D.Assets;
+using BenMcLean.Wolf3D.Assets.Sound;
 using NScumm.Core.Audio.OPL;
 using System;
 

@@ -5,6 +5,7 @@ using Godot;
 using RectpackSharp;
 using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Shared.GodotLogger;
+using BenMcLean.Wolf3D.Assets.Graphics;
 
 namespace BenMcLean.Wolf3D.Shared;
 
@@ -85,7 +86,7 @@ public static class SharedAssetManager
 			// Add rectangles for VgaGraph Font characters
 			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
 			{
-				Assets.VgaGraph.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
+				Assets.Graphics.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
 				for (uint charCode = 0; charCode < font.Character.Length; charCode++)
 					if (font.Width[charCode] > 0)
 						rectangles.Add(new PackingRectangle(
@@ -96,7 +97,7 @@ public static class SharedAssetManager
 							id: rectangles.Count));
 			}
 			// Add rectangles for PicFont space characters
-			foreach ((string fontName, Assets.VgaGraph.PicFont picFont) in
+			foreach ((string fontName, VgaGraph.PicFont picFont) in
 				CurrentGame.VgaGraph.PicFonts
 				.Where(kvp => kvp.Value.SpaceWidth > 0))
 			{
@@ -187,7 +188,7 @@ public static class SharedAssetManager
 			// Insert VgaGraph Chunk Font characters
 			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
 			{
-				Assets.VgaGraph.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
+				Assets.Graphics.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
 				for (uint charCode = 0; charCode < font.Character.Length; charCode++)
 					if (font.Width[charCode] > 0)
 					{
@@ -209,7 +210,7 @@ public static class SharedAssetManager
 					}
 			}
 			// Insert PicFont space characters
-			foreach ((string fontName, Assets.VgaGraph.PicFont picFont) in
+			foreach ((string fontName, VgaGraph.PicFont picFont) in
 				CurrentGame.VgaGraph.PicFonts
 				.Where(kvp => kvp.Value.SpaceWidth > 0))
 			{
@@ -325,7 +326,7 @@ public static class SharedAssetManager
 			}
 		}
 		// Build pic fonts
-		foreach ((string name, Assets.VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
+		foreach ((string name, VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
 		{
 			Godot.FontFile font = BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions);
 			if (font is not null)
@@ -349,7 +350,7 @@ public static class SharedAssetManager
 		if (CurrentGame?.VgaGraph?.Fonts is null
 			|| fontIndex >= CurrentGame.VgaGraph.Fonts.Length)
 			return null;
-		Assets.VgaGraph.Font sourceFont = CurrentGame.VgaGraph.Fonts[fontIndex];
+		Assets.Graphics.Font sourceFont = CurrentGame.VgaGraph.Fonts[fontIndex];
 		Godot.FontFile font = new()
 		{
 			FixedSize = sourceFont.Height,
@@ -401,7 +402,7 @@ public static class SharedAssetManager
 	/// </summary>
 	private static Godot.FontFile BuildPicFont(
 		string fontName,
-		Assets.VgaGraph.PicFont picFont,
+		VgaGraph.PicFont picFont,
 		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
 		Dictionary<string, Godot.Rect2I> picFontSpaceRegions)
 	{

@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BenMcLean.Wolf3D.Assets;
+using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.Entities;
 using Microsoft.Extensions.Logging;
-using static BenMcLean.Wolf3D.Assets.MapAnalyzer;
+using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.Simulator;
 
@@ -36,7 +37,7 @@ public class Simulator
 	// State machine data for actors
 	private readonly StateCollection stateCollection;
 	// Lua script engine for state functions
-	private readonly Scripting.LuaScriptEngine luaScriptEngine;
+	private readonly Lua.LuaScriptEngine luaScriptEngine;
 	// RNG and GameClock for deterministic simulation
 	private readonly RNG rng;
 	private readonly GameClock gameClock;
@@ -48,7 +49,7 @@ public class Simulator
 	private MapAnalysis mapAnalysis;
 	// Patrol direction lookup (WL_ACT2.C:SelectPathDir reads from map layer 1)
 	// Key encoding: (Y << 16) | X
-	private Dictionary<uint, Assets.Direction> patrolDirectionAtTile;
+	private Dictionary<uint, Direction> patrolDirectionAtTile;
 	// Map dimensions
 	private ushort mapWidth, mapHeight;
 	// WL_ACT1.C:areaconnect[NUMAREAS][NUMAREAS]
@@ -182,7 +183,7 @@ public class Simulator
 		this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
 		this.logger = logger;
 		// Initialize Lua script engine and compile all state functions
-		luaScriptEngine = new Scripting.LuaScriptEngine(logger);
+		luaScriptEngine = new Lua.LuaScriptEngine(logger);
 		luaScriptEngine.CompileAllStateFunctions(stateCollection);
 	}
 	/// <summary>
@@ -639,7 +640,7 @@ public class Simulator
 			// Execute Think function if present
 			if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 			{
-				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
 					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
@@ -686,7 +687,7 @@ public class Simulator
 		// WL_PLAY.C:1763-1770 - Execute Think function
 		if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 		{
-			Scripting.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+			Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 			try
 			{
 				luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
@@ -726,7 +727,7 @@ public class Simulator
 		// Execute Action function if present
 		if (!string.IsNullOrEmpty(nextState.Action))
 		{
-			Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+			Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 			try
 			{
 				luaScriptEngine.ExecuteStateFunction(nextState.Action, context);
@@ -957,7 +958,7 @@ public class Simulator
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
 			{
-				Scripting.ActorScriptContext context = new Scripting.ActorScriptContext(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
 					luaScriptEngine.ExecuteStateFunction(initialState.Action, context);
@@ -999,7 +1000,7 @@ public class Simulator
 	/// <summary>
 	/// Helper for ActorScriptContext.SelectPathDir() - looks up patrol direction at a tile.
 	/// </summary>
-	public bool TryGetPatrolDirection(ushort tileX, ushort tileY, out Assets.Direction direction)
+	public bool TryGetPatrolDirection(ushort tileX, ushort tileY, out Direction direction)
 	{
 		if (patrolDirectionAtTile is not null)
 		{
