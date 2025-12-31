@@ -35,11 +35,11 @@ public static class SharedAssetManager
 	public static IReadOnlyDictionary<string, Godot.AtlasTexture> VgaGraph => _vgaGraph;
 	private static Dictionary<string, Godot.AtlasTexture> _vgaGraph;
 	/// <summary>
-	/// Dictionary of Godot FontFile objects, keyed by font name.
+	/// Dictionary of Godot Theme objects with fonts configured, keyed by font name.
 	/// Includes both chunk fonts (from VGAGRAPH) and pic fonts (prefix-based).
 	/// </summary>
-	public static IReadOnlyDictionary<string, Godot.FontFile> Fonts => _fonts;
-	private static Dictionary<string, Godot.FontFile> _fonts;
+	public static IReadOnlyDictionary<string, Godot.Theme> Themes => _themes;
+	private static Dictionary<string, Godot.Theme> _themes;
 	/// <summary>
 	/// Maps DigiSound names to AudioStreamWAV resources ready for playback.
 	/// </summary>
@@ -309,20 +309,34 @@ public static class SharedAssetManager
 	{
 		if (CurrentGame?.VgaGraph is null)
 			return;
-		_fonts = [];
+		_themes = [];
 		// Build chunk fonts
 		foreach ((string name, int index) in CurrentGame.VgaGraph.ChunkFontsByName)
 		{
 			Godot.FontFile font = BuildChunkFont(index, vgaGraphFontRegions);
 			if (font is not null)
-				_fonts[name] = font;
+			{
+				Godot.Theme theme = new()
+				{
+					DefaultFont = font,
+					DefaultFontSize = font.FixedSize,
+				};
+				_themes[name] = theme;
+			}
 		}
 		// Build pic fonts
 		foreach ((string name, Assets.VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
 		{
 			Godot.FontFile font = BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions);
 			if (font is not null)
-				_fonts[name] = font;
+			{
+				Godot.Theme theme = new()
+				{
+					DefaultFont = font,
+					DefaultFontSize = font.FixedSize,
+				};
+				_themes[name] = theme;
+			}
 		}
 	}
 	/// <summary>
@@ -339,6 +353,7 @@ public static class SharedAssetManager
 		Godot.FontFile font = new()
 		{
 			FixedSize = sourceFont.Height,
+			Antialiasing = Godot.TextServer.FontAntialiasing.None,
 		};
 		font.SetTextureImage(
 			cacheIndex: 0,
@@ -362,13 +377,7 @@ public static class SharedAssetManager
 				cacheIndex: 0,
 				size: new Godot.Vector2I(sourceFont.Height, 0),
 				glyph: charCode,
-				uVRect: new Godot.Rect2(
-					position: new Godot.Vector2(
-						x: region.Position.X / (float)AtlasTexture.GetWidth(),
-						y: region.Position.Y / (float)AtlasTexture.GetHeight()),
-					size: new Godot.Vector2(
-						x: region.Size.X / (float)AtlasTexture.GetWidth(),
-						y: region.Size.Y / (float)AtlasTexture.GetHeight())));
+				uVRect: new Godot.Rect2(region.Position.X, region.Position.Y, region.Size.X, region.Size.Y));
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: sourceFont.Height,
@@ -383,7 +392,7 @@ public static class SharedAssetManager
 				cacheIndex: 0,
 				size: new Godot.Vector2I(sourceFont.Height, 0),
 				glyph: charCode,
-				offset: new Godot.Vector2I(0, 0));
+				offset: Godot.Vector2.Zero);
 		}
 		return font;
 	}
@@ -399,6 +408,7 @@ public static class SharedAssetManager
 		Godot.FontFile font = new()
 		{
 			FixedSize = CurrentGame.VgaGraph.Sizes[picFont.Characters.Values.First()][1],
+			Antialiasing = Godot.TextServer.FontAntialiasing.None,
 		};
 		font.SetTextureImage(
 			cacheIndex: 0,
@@ -533,10 +543,13 @@ public static class SharedAssetManager
 			foreach (Godot.AudioStreamWav sound in _digiSounds.Values)
 				sound?.Dispose();
 		_digiSounds?.Clear();
-		if (_fonts is not null)
-			foreach (Godot.FontFile font in _fonts.Values)
-				font?.Dispose();
-		_fonts?.Clear();
+		if (_themes is not null)
+			foreach (Godot.Theme theme in _themes.Values)
+			{
+				theme?.DefaultFont?.Dispose();
+				theme?.Dispose();
+			}
+		_themes?.Clear();
 		if (_vswap is not null)
 			foreach (AtlasTexture atlasTexture in _vswap.Values)
 				atlasTexture.Dispose();

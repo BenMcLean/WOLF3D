@@ -10,13 +10,15 @@ namespace BenMcLean.Wolf3D.Shared;
 /// </summary>
 public static class BiosFont
 {
-	public const int CharacterWidth = 9,
+	public const byte CharacterWidth = 9,
 		CharacterHeight = 16,
 		CharactersPerRow = 16;
 	public const string ResourceName = "BenMcLean.Wolf3D.Shared.Resources.Bm437_IBM_VGA_9x16.png";
 	private static ImageTexture _cachedTexture = null;
 	private static Image _cachedImage = null;
 	private static FontFile _cachedFontFile = null;
+	private static Theme _cachedTheme = null;
+	#region Getters
 	/// <summary>
 	/// Loads the embedded VGA 9x16 BIOS font as an ImageTexture.
 	/// Returns a cached instance on subsequent calls.
@@ -71,7 +73,8 @@ public static class BiosFont
 		Image image = GetFontImage();
 		FontFile font = new()
 		{
-			FixedSize = 16,
+			FixedSize = CharacterHeight,
+			Antialiasing = TextServer.FontAntialiasing.None,
 		};
 		Vector2I size = new(CharactersPerRow, 0),
 			glSize = new(CharacterWidth, CharactersPerRow),
@@ -79,8 +82,8 @@ public static class BiosFont
 		font.SetTextureImage(0, size, 0, image);
 		for (char glyph = (char)0; glyph < 256; glyph++)
 		{
-			int column = glyph / CharactersPerRow,
-				row = glyph % CharactersPerRow;
+			int column = glyph % CharactersPerRow,
+				row = glyph / CharactersPerRow;
 			font.SetGlyphTextureIdx(
 				cacheIndex: 0,
 				size: size,
@@ -110,6 +113,20 @@ public static class BiosFont
 		return _cachedFontFile = font;
 	}
 	/// <summary>
+	/// Creates a Theme with the BIOS font configured.
+	/// Returns a cached instance on subsequent calls.
+	/// </summary>
+	public static Theme GetTheme() =>
+		_cachedTheme is not null ?
+			_cachedTheme
+			: _cachedTheme = new()
+			{
+				DefaultFont = GetFont(),
+				DefaultFontSize = CharacterHeight,
+			};
+	#endregion Getters
+	#region Drawing
+	/// <summary>
 	/// Helper to draw a character at a specific position using a CanvasItem.
 	/// </summary>
 	/// <param name="canvas">The CanvasItem to draw on (e.g., a TextureRect, Sprite2D, or custom node)</param>
@@ -124,8 +141,7 @@ public static class BiosFont
 			texture: texture,
 			rect: new Rect2(position, new Vector2(CharacterWidth, CharacterHeight)),
 			srcRect: srcRect,
-			modulate: modulate ?? Colors.White
-		);
+			modulate: modulate ?? Colors.White);
 	}
 	/// <summary>
 	/// Helper to draw a string at a specific position using a CanvasItem.
@@ -136,8 +152,8 @@ public static class BiosFont
 	/// <param name="modulate">Optional color modulation (default: white)</param>
 	public static void DrawString(CanvasItem canvas, string text, Vector2 position, Color? modulate = null)
 	{
-		float x = position.X;
-		float y = position.Y;
+		float x = position.X,
+			y = position.Y;
 		foreach (char c in text)
 		{
 			if (c == '\n')
@@ -150,4 +166,5 @@ public static class BiosFont
 			x += CharacterWidth;
 		}
 	}
+	#endregion Drawing
 }

@@ -15,9 +15,9 @@ namespace BenMcLean.Wolf3D.VR;
 public partial class DebugMarkers : Node3D
 {
 	private readonly List<MeshInstance3D> markerNodes = [];
-	private static readonly Color ArrowColor = Shared.Constants.Yellow.ToColor(),
-		AmbushColor = Shared.Constants.Yellow.ToColor(),
-		AltElevatorColor = Shared.Constants.Yellow.ToColor();
+	private static readonly Color ArrowColor = Colors.Yellow,
+		AmbushColor = Colors.Yellow,
+		AltElevatorColor = Colors.Yellow;
 	/// <summary>
 	/// Creates wireframe arrows for patrol points and X markers for deaf/ambush actors.
 	/// </summary>
