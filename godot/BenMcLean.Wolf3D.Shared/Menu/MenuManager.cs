@@ -118,9 +118,15 @@ public class MenuManager
 		// Set new current menu
 		_currentMenuName = menuName;
 		_selectedItemIndex = 0; // Reset to first item
-		// Play menu music if defined
-		if (!string.IsNullOrEmpty(menuDef.Music))
-			_scriptContext.PlayMusic(menuDef.Music);
+		// Handle menu music
+		// null = no music attribute (do nothing), "" = explicit stop, otherwise play
+		if (menuDef.Music != null)
+		{
+			if (menuDef.Music == "")
+				_scriptContext.StopMusic();
+			else
+				_scriptContext.PlayMusic(menuDef.Music);
+		}
 		// Render the menu
 		RefreshMenu();
 		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);

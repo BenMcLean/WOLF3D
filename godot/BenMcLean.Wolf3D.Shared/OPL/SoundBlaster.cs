@@ -24,11 +24,16 @@ public static class SoundBlaster
 	};
 	public static AudioT.Music Music
 	{
-		get => song;
+		get => music;
 		set
 		{
+			// System-wide rule: Don't restart music if same song is already playing
+			// To restart a song, caller must first call StopMusic (set to null) then PlayMusic
+			if (value is not null && value.Equals(music))
+				return;
+			music = value;
 			if (//Settings.MusicMuted ||
-				(song = value) is not AudioT.Music s)
+				music is not AudioT.Music s)
 			{
 				ImfSignaller.ImfQueue.Enqueue(null);
 				MidiSignaller.Midi = null;
@@ -46,7 +51,7 @@ public static class SoundBlaster
 			}
 		}
 	}
-	private static AudioT.Music song = null;
+	private static AudioT.Music music = null;
 	public static Adl Adl
 	{
 		get => throw new NotImplementedException();
