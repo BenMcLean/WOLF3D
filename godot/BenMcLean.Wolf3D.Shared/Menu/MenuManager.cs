@@ -66,6 +66,9 @@ public class MenuManager
 			ShowConfirmFunc = ShowConfirm,
 			ShowMessageAction = ShowMessage,
 			RefreshMenuAction = RefreshMenu,
+			// Wire up menu item selection and dynamic content
+			GetSelectedIndexFunc = () => _selectedItemIndex,
+			SetPictureAction = SetPicture,
 			// Wire up sound playback
 			PlayAdLibSoundAction = PlayAdLibSoundImpl,
 			PlayMusicAction = PlayMusicImpl,
@@ -160,6 +163,7 @@ public class MenuManager
 	/// <summary>
 	/// Refresh the current menu display.
 	/// Renders the menu with current state.
+	/// Also executes OnSelectionChanged script if defined.
 	/// </summary>
 	public void RefreshMenu()
 	{
@@ -171,6 +175,50 @@ public class MenuManager
 		// Update input with menu item positions for hover detection
 		Vector2[] itemPositions = _renderer.GetMenuItemPositions();
 		_input.SetMenuItemPositions(itemPositions);
+		// Execute OnSelectionChanged script if defined (WL_MENU.C:1518 - HandleMenu callback)
+		ExecuteOnSelectionChanged(menuDef);
+	}
+	/// <summary>
+	/// Execute the OnSelectionChanged Lua script for a menu.
+	/// Matches original Wolf3D's DrawNewGameDiff callback in HandleMenu.
+	/// WL_MENU.C:1518: which=HandleMenu(&NewItems,&NewMenu[0],DrawNewGameDiff);
+	/// </summary>
+	/// <param name="menuDef">Menu definition containing OnSelectionChanged script</param>
+	private void ExecuteOnSelectionChanged(MenuDefinition menuDef)
+	{
+		if (string.IsNullOrEmpty(menuDef.OnSelectionChanged))
+			return;
+		try
+		{
+			_luaEngine.DoString(menuDef.OnSelectionChanged, _scriptContext);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to execute OnSelectionChanged for menu '{menuDef.Name}': {ex.Message}");
+			_logger?.LogError(ex, "Failed to execute OnSelectionChanged for menu '{name}'", menuDef.Name);
+		}
+	}
+	/// <summary>
+	/// Update a picture in the current menu's Pictures list.
+	/// Used by OnSelectionChanged scripts to change pictures dynamically (e.g., difficulty faces).
+	/// </summary>
+	/// <param name="pictureName">Name of the VgaGraph picture</param>
+	/// <param name="pictureIndex">Index of the picture to update in the Pictures list</param>
+	private void SetPicture(string pictureName, int pictureIndex)
+	{
+		if (string.IsNullOrEmpty(_currentMenuName))
+			return;
+		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+			return;
+		if (pictureIndex < 0 || pictureIndex >= menuDef.Pictures.Count)
+		{
+			_logger?.LogWarning("SetPicture: Picture index {index} out of range for menu '{menu}'", pictureIndex, _currentMenuName);
+			return;
+		}
+		// Update the picture definition
+		menuDef.Pictures[pictureIndex].Name = pictureName;
+		// Re-render the menu to show the updated picture
+		_renderer.RenderMenu(menuDef, _selectedItemIndex);
 	}
 	/// <summary>
 	/// Update menu system (called each frame).

@@ -130,19 +130,77 @@ public class MenuPictureDefinition
 	/// </summary>
 	public bool Stripes { get; set; }
 	/// <summary>
+	/// Z-index for controlling draw order.
+	/// Default is 5 (below boxes at 7). Use 9 for pictures that should appear above boxes (e.g., difficulty face).
+	/// </summary>
+	public int? ZIndex { get; set; }
+	/// <summary>
 	/// Creates a MenuPictureDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing picture data (&lt;Picture&gt;)</param>
 	/// <returns>A new MenuPictureDefinition instance</returns>
 	public static MenuPictureDefinition FromXElement(XElement element)
 	{
-		return new MenuPictureDefinition
+		MenuPictureDefinition picture = new()
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Picture element must have a Name attribute"),
 			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
 			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
 			Stripes = bool.TryParse(element.Attribute("Stripes")?.Value, out bool stripes) && stripes
 		};
+		if (int.TryParse(element.Attribute("ZIndex")?.Value, out int zIndex))
+			picture.ZIndex = zIndex;
+		return picture;
+	}
+}
+/// <summary>
+/// Represents a text label in a menu.
+/// Maps to a &lt;Text&gt; element in XML.
+/// Used for non-interactive text like "How tough are you?" in the NewGame menu.
+/// WL_MENU.C:1639-1649: US_Print("How tough are you?") with READHCOLOR
+/// </summary>
+public class MenuTextDefinition
+{
+	/// <summary>
+	/// Text content to display
+	/// </summary>
+	public string Content { get; set; }
+	/// <summary>
+	/// X coordinate for text placement
+	/// </summary>
+	public int X { get; set; }
+	/// <summary>
+	/// Y coordinate for text placement
+	/// </summary>
+	public int Y { get; set; }
+	/// <summary>
+	/// Font name (e.g., "BIG", "SMALL").
+	/// If not specified, uses menu Font, then default Font.
+	/// </summary>
+	public string Font { get; set; }
+	/// <summary>
+	/// Text color index (VGA palette 0-255).
+	/// If not specified, uses menu TextColor, then default TextColor.
+	/// Example: READHCOLOR = 0x47 (71) for yellow "How tough are you?" text
+	/// </summary>
+	public byte? Color { get; set; }
+	/// <summary>
+	/// Creates a MenuTextDefinition instance from an XElement.
+	/// </summary>
+	/// <param name="element">The XElement containing text data (&lt;Text&gt;)</param>
+	/// <returns>A new MenuTextDefinition instance</returns>
+	public static MenuTextDefinition FromXElement(XElement element)
+	{
+		MenuTextDefinition text = new()
+		{
+			Content = element.Value?.Trim() ?? string.Empty,
+			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
+			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
+			Font = element.Attribute("Font")?.Value
+		};
+		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
+			text.Color = color;
+		return text;
 	}
 }
 
@@ -271,6 +329,14 @@ public class MenuDefinition
 	/// </summary>
 	public string CursorPic { get; set; }
 	/// <summary>
+	/// Lua script to execute when menu selection changes (including initial menu construction).
+	/// Similar to original Wolf3D's DrawNewGameDiff callback in HandleMenu.
+	/// WL_MENU.C:1518: which=HandleMenu(&NewItems,&NewMenu[0],DrawNewGameDiff);
+	/// WL_MENU.C:1669: void DrawNewGameDiff(int w) { VWB_DrawPic(...,w+C_BABYMODEPIC); }
+	/// The script can call GetSelectedIndex() to query current selection and SetPicture() to update pictures.
+	/// </summary>
+	public string OnSelectionChanged { get; set; }
+	/// <summary>
 	/// 3D beveled boxes to display (WL_MENU.C:DrawWindow)
 	/// </summary>
 	public List<MenuBoxDefinition> Boxes { get; set; } = [];
@@ -278,6 +344,11 @@ public class MenuDefinition
 	/// Decorative pictures to display (e.g., logos, title graphics)
 	/// </summary>
 	public List<MenuPictureDefinition> Pictures { get; set; } = [];
+	/// <summary>
+	/// Text labels to display (e.g., "How tough are you?" in NewGame menu)
+	/// WL_MENU.C:1639-1649: US_Print() for non-interactive text
+	/// </summary>
+	public List<MenuTextDefinition> Texts { get; set; } = [];
 	/// <summary>
 	/// List of menu items in display order
 	/// </summary>
@@ -301,7 +372,8 @@ public class MenuDefinition
 			Font = element.Attribute("Font")?.Value,
 			Music = element.Attribute("Music")?.Value ?? element.Attribute("Song")?.Value,
 			CursorPic = element.Attribute("CursorPic")?.Value,
-			CursorMoveSound = element.Attribute("CursorMoveSound")?.Value
+			CursorMoveSound = element.Attribute("CursorMoveSound")?.Value,
+			OnSelectionChanged = element.Element("OnSelectionChanged")?.Value?.Trim()
 		};
 
 		// Parse color attributes using semantic names from WL_MENU.H
@@ -338,6 +410,10 @@ public class MenuDefinition
 		if (pictureElements != null)
 			menu.Pictures = [.. pictureElements.Select(MenuPictureDefinition.FromXElement)];
 
+		// Parse text labels
+		IEnumerable<XElement> textElements = element.Elements("Text");
+		if (textElements != null)
+			menu.Texts = [.. textElements.Select(MenuTextDefinition.FromXElement)];
 		// Parse menu items
 		IEnumerable<XElement> menuItemElements = element.Elements("MenuItem");
 		if (menuItemElements != null)

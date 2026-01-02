@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using Godot;
@@ -14,6 +15,17 @@ public class MenuRenderer
 	private readonly SubViewport _viewport;
 	private readonly Control _canvas;
 	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
+	private Color _currentBorderColor = Colors.Black;
+	/// <summary>
+	/// Event fired when the border color changes.
+	/// Allows presentation layer to update margins to match border color.
+	/// </summary>
+	public event Action<Color> BorderColorChanged;
+	/// <summary>
+	/// Gets the current border color.
+	/// This is the color used for the menu background/border (SVGA mode 13h border color).
+	/// </summary>
+	public Color CurrentBorderColor => _currentBorderColor;
 	/// <summary>
 	/// Creates a new MenuRenderer with a 320x200 virtual canvas.
 	/// </summary>
@@ -67,13 +79,25 @@ public class MenuRenderer
 	{
 		// Clear previous frame
 		Clear();
-		// Render background color if specified
+		// Render background color if specified, otherwise use black
 		if (menuDef.BorderColor.HasValue)
 			RenderBackgroundColor(menuDef.BorderColor.Value);
+		else
+		{
+			// No border color specified - use black and fire event if changed
+			Color black = Colors.Black;
+			if (_currentBorderColor != black)
+			{
+				_currentBorderColor = black;
+				BorderColorChanged?.Invoke(black);
+			}
+		}
 		// Render pictures (backgrounds and decorative images - WL_MENU.C:DrawMainMenu)
 		RenderPictures(menuDef);
 		// Render menu boxes (WL_MENU.C:DrawWindow)
 		RenderMenuBoxes(menuDef);
+		// Render text labels (WL_MENU.C:US_Print - "How tough are you?")
+		RenderTexts(menuDef);
 		// Render menu items
 		RenderMenuItems(menuDef, selectedIndex);
 		// Render cursor (WL_MENU.C:DrawMenuGun)
@@ -94,6 +118,12 @@ public class MenuRenderer
 			Size = new Vector2(320, 200),
 		};
 		_canvas.AddChild(background);
+		// Update current border color and fire event if changed
+		if (_currentBorderColor != color)
+		{
+			_currentBorderColor = color;
+			BorderColorChanged?.Invoke(color);
+		}
 	}
 	/// <summary>
 	/// Render decorative pictures from VgaGraph.
@@ -122,7 +152,7 @@ public class MenuRenderer
 				Position = new Vector2(pictureDef.X, pictureDef.Y),
 				Size = texture.Region.Size,
 				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				ZIndex = 5, // Draw pictures below menu box but above background
+				ZIndex = pictureDef.ZIndex ?? 5, // Default 5 (below boxes), or custom value (e.g., 9 for difficulty pic)
 			};
 			_canvas.AddChild(picture);
 		}
@@ -229,6 +259,41 @@ public class MenuRenderer
 				ZIndex = 7,
 			};
 			_canvas.AddChild(rightLine);
+		}
+	}
+	/// <summary>
+	/// Render text labels (non-interactive text).
+	/// WL_MENU.C:US_Print - Used for static text like "How tough are you?"
+	/// </summary>
+	/// <param name="menuDef">Menu definition containing text list</param>
+	private void RenderTexts(MenuDefinition menuDef)
+	{
+		if (menuDef.Texts is null || menuDef.Texts.Count == 0)
+			return;
+		foreach (MenuTextDefinition textDef in menuDef.Texts)
+		{
+			// Determine font: textDef.Font > menuDef.Font > "BIG" (default)
+			string fontName = textDef.Font ?? menuDef.Font ?? "BIG";
+			// Get theme from SharedAssetManager
+			if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
+			{
+				GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager");
+				continue;
+			}
+			// Create label with text
+			Label label = new()
+			{
+				Text = textDef.Content,
+				Position = new Vector2(textDef.X, textDef.Y),
+				PivotOffset = Vector2.Zero,
+				Theme = theme,
+				ZIndex = 8, // Draw text labels below menu items but above boxes
+			};
+			// Determine color: textDef.Color > menuDef.TextColor > 0x17 (TEXTCOLOR default)
+			byte colorIndex = textDef.Color ?? menuDef.TextColor ?? 0x17;
+			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
+			label.AddThemeColorOverride("font_color", textColor);
+			_canvas.AddChild(label);
 		}
 	}
 	/// <summary>

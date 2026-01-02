@@ -218,50 +218,82 @@
 			</Menu>
 
 			<!-- New Game / Difficulty Menu (WL_MENU.H: NM_X=50, NM_Y=100) -->
+			<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H,BKGDCOLOR) where NM_W=225, NM_H=13*4+15=67 -->
+			<!-- WL_MENU.C:1518: which=HandleMenu(&NewItems,&NewMenu[0],DrawNewGameDiff) -->
+			<!-- WL_MENU.C:1669: void DrawNewGameDiff(int w) { VWB_DrawPic(NM_X+185,NM_Y+7,w+C_BABYMODEPIC); } -->
 			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CursorPic="">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
-				<MenuItem Text="Can I play, Daddy?" Action="NavigateToMenu" Argument="Main" />
-				<MenuItem Text="Don't hurt me." Action="NavigateToMenu" Argument="Main" />
-				<MenuItem Text="Bring 'em on!" Action="NavigateToMenu" Argument="Main" />
-				<MenuItem Text="I am Death incarnate!" Action="NavigateToMenu" Argument="Main" />
+				<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H) = (45,90,225,67) -->
+				<Box X="45" Y="90" W="225" H="67" />
+				<!-- WL_MENU.C:1639-1649: US_Print("How tough are you?") at (NM_X+20, NM_Y-32) = (70,68) with READHCOLOR = 0x47 = 71 -->
+				<Text X="70" Y="68" Color="71">How tough are you?</Text>
+				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged (WL_MENU.C:1675) -->
+				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
+				<Picture Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
+				<OnSelectionChanged>
+					<![CDATA[
+-- Update the difficulty face picture (index 1) based on current selection
+local index = GetSelectedIndex()
+if index == 0 then
+	SetPicture('C_BABYMODEPIC', 0)
+elseif index == 1 then
+	SetPicture('C_EASYPIC', 0)
+elseif index == 2 then
+	SetPicture('C_NORMALPIC', 0)
+elseif index == 3 then
+	SetPicture('C_HARDPIC', 0)
+end
+					]]>
+				</OnSelectionChanged>
+				<MenuItem Text="Can I play, Daddy?">
+					SetDifficulty(0)
+					NavigateToMenu("Main")
+				</MenuItem>
+				<MenuItem Text="Don't hurt me.">
+					SetDifficulty(1)
+					NavigateToMenu("Main")
+				</MenuItem>
+				<MenuItem Text="Bring 'em on!">
+					SetDifficulty(2)
+					NavigateToMenu("Main")
+				</MenuItem>
+				<MenuItem Text="I am Death incarnate!">
+					SetDifficulty(3)
+					NavigateToMenu("Main")
+				</MenuItem>
 			</Menu>
 
 			<!-- Placeholder menus for testing navigation -->
 			<Menu Name="Sound" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="PC Speaker" Action="BackToPreviousMenu" />
 				<MenuItem Text="AdLib/Sound Blaster" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 
 			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="Mouse Enabled" Action="BackToPreviousMenu" />
 				<MenuItem Text="Joystick Enabled" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="[Empty Slot]" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="[Empty Slot]" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 
 			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="Size 1" Action="BackToPreviousMenu" />
 				<MenuItem Text="Size 2" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 
 			<Menu Name="ViewScores" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="No scores yet" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
@@ -724,84 +756,86 @@
 			</Actor>
 			<!-- State Functions (Lua implementations of Think/Action) -->
 			<Function Name="T_Stand" Description="Actor standing idle, watching for player (generic for all actor types)">
-				-- WL_ACT2.C:T_Stand - calls SightPlayer
-				-- WL_STATE.C:SightPlayer (lines 1802-1919) - check for player and transition to chase if spotted
+				<![CDATA[
+-- WL_ACT2.C:T_Stand - calls SightPlayer
+-- WL_STATE.C:SightPlayer (lines 1802-1919) - check for player and transition to chase if spotted
 
-				-- WL_STATE.C:1807 - Check if reaction timer is counting down
-				local reactionTimer = GetReactionTimer()
-				if reactionTimer > 0 then
-				-- WL_STATE.C:1812 - Count down reaction time
-				SetReactionTimer(reactionTimer - 1)
-				if GetReactionTimer() > 0 then
-				return  -- Still counting down, not ready to react
-				end
-				-- Timer just reached 0, fall through to FirstSighting below
-				end
+-- WL_STATE.C:1807 - Check if reaction timer is counting down
+local reactionTimer = GetReactionTimer()
+if reactionTimer > 0 then
+	-- WL_STATE.C:1812 - Count down reaction time
+	SetReactionTimer(reactionTimer - 1)
+	if GetReactionTimer() > 0 then
+		return  -- Still counting down, not ready to react
+	end
+	-- Timer just reached 0, fall through to FirstSighting below
+end
 
-				-- Timer is 0 (never set or just expired)
-				-- WL_STATE.C:1817-1832 - Check visibility conditions
+-- Timer is 0 (never set or just expired)
+-- WL_STATE.C:1817-1832 - Check visibility conditions
 
-				-- FL_AMBUSH (0x40) - check if in ambush mode
-				if HasFlag(0x40) then
-				-- Ambush actors only activate with line of sight
-				if not CheckSight() then
-				return
-				end
-				ClearFlag(0x40)  -- Clear ambush flag
-				end
+-- FL_AMBUSH (0x40) - check if in ambush mode
+if HasFlag(0x40) then
+	-- Ambush actors only activate with line of sight
+	if not CheckSight() then
+		return
+	end
+	ClearFlag(0x40)  -- Clear ambush flag
+end
 
-				-- Check if player is visible
-				if not CheckSight() then
-				return  -- Can't see player, nothing to do
-				end
+-- Check if player is visible
+if not CheckSight() then
+	return  -- Can't see player, nothing to do
+end
 
-				-- Player is visible!
-				if reactionTimer == 0 and GetReactionTimer() == 0 then
-				-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type
-				local actorType = GetActorType()
-				local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
+-- Player is visible!
+if reactionTimer == 0 and GetReactionTimer() == 0 then
+	-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type
+	local actorType = GetActorType()
+	local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
 
-				if actorType == "Guard" then
-				SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
-				elseif actorType == "Dog" then
-				SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8 (fastest!)
-				elseif actorType == "SS" then
-				SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6 (approx)
-				elseif actorType == "Hans" then
-				SetReactionTimer(1)  -- Immediate reaction
-				else
-				-- Default for unknown types
-				SetReactionTimer(1)
-				end
+	if actorType == "Guard" then
+		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
+	elseif actorType == "Dog" then
+		SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8 (fastest!)
+	elseif actorType == "SS" then
+		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6 (approx)
+	elseif actorType == "Hans" then
+		SetReactionTimer(1)  -- Immediate reaction
+	else
+		-- Default for unknown types
+		SetReactionTimer(1)
+	end
 
-				-- WL_STATE.C:1913 - return false (don't transition yet, wait for timer)
-				return
-				end
+	-- WL_STATE.C:1913 - return false (don't transition yet, wait for timer)
+	return
+end
 
-				-- Timer has expired (was > 0, now == 0) - WL_STATE.C:1916 - call FirstSighting
-				-- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type
-				local actorType = GetActorType()
+-- Timer has expired (was > 0, now == 0) - WL_STATE.C:1916 - call FirstSighting
+-- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type
+local actorType = GetActorType()
 
-				if actorType == "Guard" then
-				PlayLocalDigiSound("HALTSND")
-				ChangeState("s_grdchase1")
-				elseif actorType == "Dog" then
-				PlayLocalDigiSound("DOGBARKSND")
-				ChangeState("s_dogchase1")
-				elseif actorType == "SS" then
-				PlayLocalDigiSound("SCHUTZADSND")
-				ChangeState("s_sschase1")
-				elseif actorType == "Hans" then
-				PlayLocalDigiSound("GUTENTAGSND")
-				ChangeState("s_bosschase1")
-				else
-				-- Default fallback
-				ChangeState("s_grdchase1")
-				end
+if actorType == "Guard" then
+	PlayLocalDigiSound("HALTSND")
+	ChangeState("s_grdchase1")
+elseif actorType == "Dog" then
+	PlayLocalDigiSound("DOGBARKSND")
+	ChangeState("s_dogchase1")
+elseif actorType == "SS" then
+	PlayLocalDigiSound("SCHUTZADSND")
+	ChangeState("s_sschase1")
+elseif actorType == "Hans" then
+	PlayLocalDigiSound("GUTENTAGSND")
+	ChangeState("s_bosschase1")
+else
+	-- Default fallback
+	ChangeState("s_grdchase1")
+end
 
-				-- Set attack mode flags (all actor types)
-				SetFlag(0x10)  -- FL_ATTACKMODE
-				SetFlag(0x20)  -- FL_FIRSTATTACK
+-- Set attack mode flags (all actor types)
+SetFlag(0x10)  -- FL_ATTACKMODE
+SetFlag(0x20)  -- FL_FIRSTATTACK
+				]]>
 			</Function>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />

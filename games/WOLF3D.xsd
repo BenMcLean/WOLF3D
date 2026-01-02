@@ -336,7 +336,17 @@
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
 				<xs:element ref="Box"/>
 				<xs:element ref="Picture"/>
+				<xs:element ref="Text"/>
 				<xs:element ref="MenuItem"/>
+				<xs:element name="OnSelectionChanged" type="xs:string">
+					<xs:annotation>
+						<xs:documentation>
+							Lua script to execute when menu selection changes (including initial menu construction).
+							Similar to original Wolf3D's DrawNewGameDiff callback in HandleMenu (WL_MENU.C:1518).
+							The script can call GetSelectedIndex() to query current selection and SetPicture() to update pictures dynamically.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
 			</xs:choice>
 			<xs:attribute name="Name" type="xs:string" use="required">
 				<xs:annotation>
@@ -562,6 +572,47 @@
 					<xs:documentation>If true, renders the leftmost column of pixels stretched horizontally across the screen before rendering the normal picture. Used for decorative stripe backgrounds.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="ZIndex" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>Z-index for controlling draw order. Default is 5 (below boxes at 7). Use 9 for pictures that should appear above boxes like the difficulty face (WL_MENU.C:1658 - DrawNewGameDiff called AFTER DrawWindow).</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Text">
+		<xs:annotation>
+			<xs:documentation>
+				Non-interactive text label in a menu (e.g., "How tough are you?" in NewGame menu).
+				Used for static text that is not selectable. WL_MENU.C:US_Print().
+				Element content is the text to display.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="X" type="xs:integer" use="required">
+						<xs:annotation>
+							<xs:documentation>X coordinate for text placement</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Y" type="xs:integer" use="required">
+						<xs:annotation>
+							<xs:documentation>Y coordinate for text placement</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Font" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>Font name (e.g., "BIG", "SMALL"). If not specified, uses menu Font, then default Font.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Color" type="xs:nonNegativeInteger">
+						<xs:annotation>
+							<xs:documentation>Text color index (VGA palette 0-255). If not specified, uses menu TextColor, then default TextColor. Example: READHCOLOR = 0x47 (71) for yellow text.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:extension>
+			</xs:simpleContent>
 		</xs:complexType>
 	</xs:element>
 

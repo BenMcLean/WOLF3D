@@ -12,6 +12,7 @@ namespace BenMcLean.Wolf3D.Shared.Menu;
 public partial class MenuStage : Node
 {
 	private MenuManager _menuManager;
+	private ColorRect _marginBackground;
 	/// <summary>
 	/// Gets the menu manager instance.
 	/// </summary>
@@ -51,19 +52,60 @@ public partial class MenuStage : Node
 			Layer = 1, // Render above 3D scene
 		};
 		AddChild(canvasLayer);
-		// Get window size for fullscreen display
+		// Get window size
 		Vector2I windowSize = DisplayServer.WindowGetSize();
-		// Create TextureRect to display the viewport texture, scaled to window size
+		// Create margin background ColorRect that fills the entire window
+		// This will be colored with the menu's border color
+		_marginBackground = new ColorRect
+		{
+			Color = Colors.Black, // Default to black, will be updated by border color events
+			Size = windowSize,
+		};
+		canvasLayer.AddChild(_marginBackground);
+		// Calculate size for 4:3 aspect ratio display
+		// SVGA Mode 13h is 320x200, which is 4:3 aspect ratio (with square pixels)
+		const float menuAspectRatio = 4.0f / 3.0f;
+		float windowAspectRatio = (float)windowSize.X / windowSize.Y;
+		Vector2 menuSize;
+		Vector2 menuPosition;
+		if (windowAspectRatio > menuAspectRatio)
+		{
+			// Window is wider than 4:3 (widescreen) - fit to height with pillarbox margins
+			menuSize = new Vector2(windowSize.Y * menuAspectRatio, windowSize.Y);
+			menuPosition = new Vector2((windowSize.X - menuSize.X) / 2, 0);
+		}
+		else
+		{
+			// Window is narrower than 4:3 (or exactly 4:3) - fit to width with letterbox margins
+			menuSize = new Vector2(windowSize.X, windowSize.X / menuAspectRatio);
+			menuPosition = new Vector2(0, (windowSize.Y - menuSize.Y) / 2);
+		}
+		// Create TextureRect to display the viewport texture with manual sizing
 		TextureRect textureRect = new()
 		{
 			Texture = _menuManager.Renderer.ViewportTexture,
-			Size = windowSize,
-			ExpandMode = TextureRect.ExpandModeEnum.FitWidth, // Scale to fit window
-			StretchMode = TextureRect.StretchModeEnum.Scale, // Scale without keeping aspect ratio (will fill)
-			TextureFilter = Control.TextureFilterEnum.Nearest // Sharp pixel-perfect rendering
+			Size = menuSize,
+			Position = menuPosition,
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.Scale, // Scale to fill the rect
+			TextureFilter = Control.TextureFilterEnum.Nearest, // Sharp pixel-perfect rendering
 		};
 		canvasLayer.AddChild(textureRect);
+		// Subscribe to border color change events
+		_menuManager.Renderer.BorderColorChanged += OnBorderColorChanged;
+		// Set initial margin color
+		OnBorderColorChanged(_menuManager.Renderer.CurrentBorderColor);
 		// Note: MenuManager constructor already calls RefreshMenu via NavigateToMenu
+	}
+	/// <summary>
+	/// Called when the menu border color changes.
+	/// Updates the margin background to match the new border color.
+	/// </summary>
+	/// <param name="color">New border color from the menu</param>
+	private void OnBorderColorChanged(Color color)
+	{
+		if (_marginBackground != null)
+			_marginBackground.Color = color;
 	}
 	/// <summary>
 	/// Called each frame.
