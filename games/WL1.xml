@@ -172,29 +172,112 @@
 				<Weapon Number="3" Pic="GATLINGGUNPIC" Init="0" />
 			</Weapons>
 		</StatusBar>
-		<Menus Start="Intro">
-			<MenuFunction Name="OnEnterMain">
-				-- Start game at Episode 1, Difficulty 1 (Can I Play Daddy?)
-				SetEpisode(1)
-				SetDifficulty(1)
-				SetStartGame(true)
-			</MenuFunction>
-			<Menu Name="Intro" Background="TITLEPIC">
-				<MenuItem Text="Press Enter to Continue" Action="OnEnterMain" />
+		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
+		<Menus Start="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS">
+			<!-- Main Menu (WL_MENU.H: MENU_X=76, MENU_Y=55, MainItems indent=24)
+			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(84,0,C_OPTIONSPIC)
+			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,184,C_MOUSELBACKPIC)
+			     WL_MENU.C:DrawWindow(MENU_X-8,MENU_Y-3,MENU_W,MENU_H,BKGDCOLOR) = DrawWindow(68,52,178,136,45) -->
+			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Box X="68" Y="52" W="178" H="136" />
+				<MenuItem Text="New Game">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("NewGame")
+				</MenuItem>
+				<MenuItem Text="Sound">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("Sound")
+				</MenuItem>
+				<MenuItem Text="Control">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("Control")
+				</MenuItem>
+				<MenuItem Text="Load Game">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("LoadGame")
+				</MenuItem>
+				<MenuItem Text="Save Game">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("SaveGame")
+				</MenuItem>
+				<MenuItem Text="Change View">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("ChangeView")
+				</MenuItem>
+				<MenuItem Text="View Scores">
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("ViewScores")
+				</MenuItem>
+				<MenuItem Text="Back to Demo" />
+				<MenuItem Text="Quit">
+					PlayAdLibSound('SHOOTSND')
+					Quit()
+				</MenuItem>
+			</Menu>
+
+			<!-- New Game / Difficulty Menu (WL_MENU.H: NM_X=50, NM_Y=100) -->
+			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="Can I play, Daddy?" Action="NavigateToMenu" Argument="Main" />
+				<MenuItem Text="Don't hurt me." Action="NavigateToMenu" Argument="Main" />
+				<MenuItem Text="Bring 'em on!" Action="NavigateToMenu" Argument="Main" />
+				<MenuItem Text="I am Death incarnate!" Action="NavigateToMenu" Argument="Main" />
+			</Menu>
+
+			<!-- Placeholder menus for testing navigation -->
+			<Menu Name="Sound" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="PC Speaker" Action="BackToPreviousMenu" />
+				<MenuItem Text="AdLib/Sound Blaster" Action="BackToPreviousMenu" />
+				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			</Menu>
+
+			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="Mouse Enabled" Action="BackToPreviousMenu" />
+				<MenuItem Text="Joystick Enabled" Action="BackToPreviousMenu" />
+				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			</Menu>
+
+			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="[Empty Slot]" Action="BackToPreviousMenu" />
+				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			</Menu>
+
+			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="[Empty Slot]" Action="BackToPreviousMenu" />
+				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			</Menu>
+
+			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="Size 1" Action="BackToPreviousMenu" />
+				<MenuItem Text="Size 2" Action="BackToPreviousMenu" />
+				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			</Menu>
+
+			<Menu Name="ViewScores" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
+				<MenuItem Text="No scores yet" Action="BackToPreviousMenu" />
+				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 		</Menus>
 	</VgaGraph>
 	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1">
-		<Map Number="0" Episode="1" Level="1" Floor="25" Ceiling="29" Border="127" Par="00:01:30" Song="GETTHEM_MUS" />
-		<Map Number="1" Episode="1" Level="2" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Song="SEARCHN_MUS" />
-		<Map Number="2" Episode="1" Level="3" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Song="POW_MUS" />
-		<Map Number="3" Episode="1" Level="4" Floor="25" Ceiling="29" Border="127" Par="00:03:30" Song="SUSPENSE_MUS" />
-		<Map Number="4" Episode="1" Level="5" Floor="25" Ceiling="29" Border="127" Par="00:03:00" Song="GETTHEM_MUS" />
-		<Map Number="5" Episode="1" Level="6" Floor="25" Ceiling="29" Border="127" Par="00:03:00" Song="SEARCHN_MUS" />
-		<Map Number="6" Episode="1" Level="7" Floor="25" Ceiling="29" Border="127" Par="00:02:30" Song="POW_MUS" />
-		<Map Number="7" Episode="1" Level="8" Floor="25" Ceiling="29" Border="127" Par="00:02:30" Song="SUSPENSE_MUS" />
-		<Map Number="8" Episode="1" Level="9" Floor="25" Ceiling="29" Border="127" Song="WARMARCH_MUS" />
-		<Map Number="9" Episode="1" Level="10" Floor="25" Ceiling="191" Border="127" Song="CORNER_MUS" ElevatorTo="2" />
+		<Map Number="0" Episode="1" Level="1" Floor="25" Ceiling="29" Border="127" Par="00:01:30" Music="GETTHEM_MUS" />
+		<Map Number="1" Episode="1" Level="2" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Music="SEARCHN_MUS" />
+		<Map Number="2" Episode="1" Level="3" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Music="POW_MUS" />
+		<Map Number="3" Episode="1" Level="4" Floor="25" Ceiling="29" Border="127" Par="00:03:30" Music="SUSPENSE_MUS" />
+		<Map Number="4" Episode="1" Level="5" Floor="25" Ceiling="29" Border="127" Par="00:03:00" Music="GETTHEM_MUS" />
+		<Map Number="5" Episode="1" Level="6" Floor="25" Ceiling="29" Border="127" Par="00:03:00" Music="SEARCHN_MUS" />
+		<Map Number="6" Episode="1" Level="7" Floor="25" Ceiling="29" Border="127" Par="00:02:30" Music="POW_MUS" />
+		<Map Number="7" Episode="1" Level="8" Floor="25" Ceiling="29" Border="127" Par="00:02:30" Music="SUSPENSE_MUS" />
+		<Map Number="8" Episode="1" Level="9" Floor="25" Ceiling="29" Border="127" Music="WARMARCH_MUS" />
+		<Map Number="9" Episode="1" Level="10" Floor="25" Ceiling="191" Border="127" Music="CORNER_MUS" ElevatorTo="2" />
 	</Maps>
 	<Audio AudioHead="AUDIOHED.WL1" AudioT="AUDIOT.WL1" StartPCSounds="0" StartAdlibSounds="87" StartMusic="261" >
 		<Sound Number="0" Name="HITWALLSND" />

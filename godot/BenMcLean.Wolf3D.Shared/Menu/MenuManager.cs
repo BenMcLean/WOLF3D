@@ -5,6 +5,7 @@ using BenMcLean.Wolf3D.Simulator.Lua;
 using Godot;
 using Microsoft.Extensions.Logging;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Sound;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
@@ -65,6 +66,10 @@ public class MenuManager
 			ShowConfirmFunc = ShowConfirm,
 			ShowMessageAction = ShowMessage,
 			RefreshMenuAction = RefreshMenu,
+			// Wire up sound playback
+			PlayAdLibSoundAction = PlayAdLibSoundImpl,
+			PlayMusicAction = PlayMusicImpl,
+			StopMusicAction = StopMusicImpl,
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();
@@ -97,6 +102,7 @@ public class MenuManager
 	/// <summary>
 	/// Navigate to a menu by name.
 	/// Pushes the current menu onto the stack and displays the new menu.
+	/// Automatically plays the menu's music if defined.
 	/// </summary>
 	/// <param name="menuName">Name of menu to navigate to</param>
 	public void NavigateToMenu(string menuName)
@@ -112,6 +118,9 @@ public class MenuManager
 		// Set new current menu
 		_currentMenuName = menuName;
 		_selectedItemIndex = 0; // Reset to first item
+		// Play menu music if defined
+		if (!string.IsNullOrEmpty(menuDef.Music))
+			_scriptContext.PlayMusic(menuDef.Music);
 		// Render the menu
 		RefreshMenu();
 		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);
@@ -182,12 +191,14 @@ public class MenuManager
 		{
 			GD.Print($"DEBUG: Up pressed, changing selection from {_selectedItemIndex} to {_selectedItemIndex - 1}");
 			_selectedItemIndex--;
+			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
 		else if (inputState.DownPressed && _selectedItemIndex < menuDef.Items.Count - 1)
 		{
 			GD.Print($"DEBUG: Down pressed, changing selection from {_selectedItemIndex} to {_selectedItemIndex + 1}");
 			_selectedItemIndex++;
+			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
 		// Handle selection
@@ -204,55 +215,91 @@ public class MenuManager
 		}
 	}
 	/// <summary>
-	/// Execute a menu item's action.
-	/// Runs the Lua function referenced by the menu item.
+	/// Execute a menu item's inline Lua script.
+	/// Uses DoString to execute script directly (not pre-cached as bytecode).
 	/// </summary>
 	/// <param name="item">Menu item to execute</param>
 	private void ExecuteMenuItemAction(MenuItemDefinition item)
 	{
-		GD.Print($"DEBUG: ExecuteMenuItemAction - Item='{item.Text}', Action='{item.Action}', Argument='{item.Argument}'");
-		if (string.IsNullOrEmpty(item.Action))
-		{
-			GD.Print("DEBUG: ExecuteMenuItemAction - Action is null or empty, returning");
+		if (string.IsNullOrEmpty(item.Script))
 			return;
-		}
-		// Handle built-in actions
-		switch (item.Action)
-		{
-			case "NavigateToMenu":
-				GD.Print($"DEBUG: ExecuteMenuItemAction - Built-in NavigateToMenu, Argument='{item.Argument}'");
-				if (!string.IsNullOrEmpty(item.Argument))
-					NavigateToMenu(item.Argument);
-				return;
-			case "BackToPreviousMenu":
-				GD.Print("DEBUG: ExecuteMenuItemAction - Built-in BackToPreviousMenu");
-				BackToPreviousMenu();
-				return;
-			case "CloseAllMenus":
-			case "Resume":
-				GD.Print("DEBUG: ExecuteMenuItemAction - Built-in CloseAllMenus");
-				CloseAllMenus();
-				return;
-			case "Quit":
-				GD.Print("DEBUG: ExecuteMenuItemAction - Built-in Quit (not implemented)");
-				// TODO: Implement quit confirmation
-				_logger?.LogDebug("Quit action (TODO: implement)");
-				return;
-		}
-		// Execute Lua function
-		GD.Print($"DEBUG: ExecuteMenuItemAction - Executing Lua function '{item.Action}'");
+
 		try
 		{
-			_luaEngine.ExecuteStateFunction(item.Action, _scriptContext);
-			GD.Print($"DEBUG: ExecuteMenuItemAction - Lua function '{item.Action}' completed");
+			_luaEngine.DoString(item.Script, _scriptContext);
 		}
 		catch (Exception ex)
 		{
-			GD.PrintErr($"ERROR: Failed to execute menu function '{item.Action}': {ex.Message}");
-			GD.PrintErr($"ERROR: Stack trace: {ex.StackTrace}");
-			_logger?.LogError(ex, "Failed to execute menu function '{action}'", item.Action);
+			GD.PrintErr($"ERROR: Failed to execute menu script for '{item.Text}': {ex.Message}");
+			_logger?.LogError(ex, "Failed to execute menu script for '{text}'", item.Text);
 		}
 	}
+	/// <summary>
+	/// Play the cursor move sound for the given menu.
+	/// Uses the menu's CursorMoveSound if defined, otherwise silent.
+	/// </summary>
+	/// <param name="menuDef">Menu definition containing sound name</param>
+	private void PlayCursorMoveSound(MenuDefinition menuDef)
+	{
+		if (!string.IsNullOrEmpty(menuDef.CursorMoveSound))
+			_scriptContext.PlayAdLibSound(menuDef.CursorMoveSound);
+	}
+
+	#region Sound Playback Implementation
+	/// <summary>
+	/// Play an AdLib sound effect by name.
+	/// Looks up the sound in the current game's AudioT and plays it via SoundBlaster.
+	/// </summary>
+	/// <param name="soundName">Name of the AdLib sound (e.g., "MOVEGUN2SND")</param>
+	private void PlayAdLibSoundImpl(string soundName)
+	{
+		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds == null)
+		{
+			_logger?.LogWarning("Cannot play AdLib sound '{soundName}' - no AudioT loaded", soundName);
+			return;
+		}
+
+		if (SharedAssetManager.CurrentGame.AudioT.Sounds.TryGetValue(soundName, out Adl adl))
+		{
+			OPL.SoundBlaster.Adl = adl;
+		}
+		else
+		{
+			_logger?.LogWarning("AdLib sound '{soundName}' not found in AudioT", soundName);
+		}
+	}
+
+	/// <summary>
+	/// Play background music by name.
+	/// </summary>
+	/// <param name="musicName">Name of the music track</param>
+	private void PlayMusicImpl(string musicName)
+	{
+		if (SharedAssetManager.CurrentGame?.AudioT?.Songs == null)
+		{
+			_logger?.LogWarning("Cannot play music '{musicName}' - no AudioT loaded", musicName);
+			return;
+		}
+
+		if (SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(musicName, out AudioT.Music song))
+		{
+			OPL.SoundBlaster.Music = song;
+		}
+		else
+		{
+			_logger?.LogWarning("Music '{musicName}' not found in AudioT", musicName);
+		}
+	}
+
+	/// <summary>
+	/// Stop currently playing music.
+	/// </summary>
+	private void StopMusicImpl()
+	{
+		OPL.SoundBlaster.Music = null;
+	}
+	#endregion Sound Playback Implementation
+
 	#region UI Dialog Helpers
 	/// <summary>
 	/// Show a confirmation dialog (Yes/No).

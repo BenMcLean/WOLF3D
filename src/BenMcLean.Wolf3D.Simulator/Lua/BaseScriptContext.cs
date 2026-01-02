@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Simulator.Lua;
@@ -11,6 +12,30 @@ public class BaseScriptContext : IScriptContext
 {
 	protected readonly ILogger _logger;
 
+	/// <summary>
+	/// Action to invoke when PlayDigiSound is called.
+	/// Set by the host (e.g., MenuManager, ActionStage) to wire up sound playback.
+	/// </summary>
+	public Action<string> PlayDigiSoundAction { get; set; }
+
+	/// <summary>
+	/// Action to invoke when PlayAdLibSound is called.
+	/// Set by the host (e.g., MenuManager, ActionStage) to wire up AdLib sound playback.
+	/// </summary>
+	public Action<string> PlayAdLibSoundAction { get; set; }
+
+	/// <summary>
+	/// Action to invoke when PlayMusic is called.
+	/// Set by the host (e.g., MenuManager, ActionStage) to wire up music playback.
+	/// </summary>
+	public Action<string> PlayMusicAction { get; set; }
+
+	/// <summary>
+	/// Action to invoke when StopMusic is called.
+	/// Set by the host (e.g., MenuManager, ActionStage) to wire up music stopping.
+	/// </summary>
+	public Action StopMusicAction { get; set; }
+
 	public BaseScriptContext(ILogger logger = null)
 	{
 		_logger = logger;
@@ -22,8 +47,10 @@ public class BaseScriptContext : IScriptContext
 	/// </summary>
 	public virtual void PlayDigiSound(string soundName)
 	{
-		// TODO: Implement sound playback
-		_logger?.LogDebug("BaseScriptContext: PlayDigiSound({soundName})", soundName);
+		if (PlayDigiSoundAction != null)
+			PlayDigiSoundAction(soundName);
+		else
+			_logger?.LogDebug("BaseScriptContext: PlayDigiSound({soundName}) - no handler wired", soundName);
 	}
 
 	/// <summary>
@@ -32,8 +59,10 @@ public class BaseScriptContext : IScriptContext
 	/// </summary>
 	public virtual void PlayAdLibSound(string soundName)
 	{
-		// TODO: Implement AdLib sound playback
-		_logger?.LogDebug("BaseScriptContext: PlayAdLibSound({soundName})", soundName);
+		if (PlayAdLibSoundAction != null)
+			PlayAdLibSoundAction(soundName);
+		else
+			_logger?.LogDebug("BaseScriptContext: PlayAdLibSound({soundName}) - no handler wired", soundName);
 	}
 
 	/// <summary>
@@ -41,8 +70,10 @@ public class BaseScriptContext : IScriptContext
 	/// </summary>
 	public virtual void PlayMusic(string musicName)
 	{
-		// TODO: Implement music playback
-		_logger?.LogDebug("BaseScriptContext: PlayMusic({musicName})", musicName);
+		if (PlayMusicAction != null)
+			PlayMusicAction(musicName);
+		else
+			_logger?.LogDebug("BaseScriptContext: PlayMusic({musicName}) - no handler wired", musicName);
 	}
 
 	/// <summary>
@@ -50,7 +81,9 @@ public class BaseScriptContext : IScriptContext
 	/// </summary>
 	public virtual void StopMusic()
 	{
-		// TODO: Implement music stop
-		_logger?.LogDebug("BaseScriptContext: StopMusic()");
+		if (StopMusicAction != null)
+			StopMusicAction();
+		else
+			_logger?.LogDebug("BaseScriptContext: StopMusic() - no handler wired");
 	}
 }

@@ -415,6 +415,41 @@ public class LuaScriptEngine
 		}
 	}
 	/// <summary>
+	/// Execute Lua code directly without pre-compiling (for menu scripts).
+	/// Uses the same sandboxed environment as pre-compiled functions.
+	/// Performance: Slower than ExecuteStateFunction due to parsing overhead.
+	/// Use case: Menu actions where code is simple and executed infrequently.
+	/// </summary>
+	/// <param name="luaCode">Lua code to execute</param>
+	/// <param name="context">Execution context providing state access</param>
+	/// <returns>The result of the Lua script execution</returns>
+	public DynValue DoString(string luaCode, IScriptContext context)
+	{
+		if (string.IsNullOrWhiteSpace(luaCode))
+			return DynValue.Nil;
+
+		try
+		{
+			// Set context for this execution
+			IScriptContext previousContext = CurrentContext;
+			CurrentContext = context;
+
+			// Load and execute with read-only proxy environment (same sandboxing as compiled functions)
+			DynValue compiled = luaScript.LoadString(luaCode, proxyEnvironment);
+			DynValue result = luaScript.Call(compiled);
+
+			// Restore previous context
+			CurrentContext = previousContext;
+
+			return result;
+		}
+		catch (Exception ex)
+		{
+			throw new InvalidOperationException($"Error executing Lua code: {ex.Message}", ex);
+		}
+	}
+
+	/// <summary>
 	/// Executes a pre-compiled state function with the given context.
 	/// Functions are compiled with a read-only proxy environment that:
 	/// - Allows reads from baseEnvironment (stdlib + compiled functions + context methods)

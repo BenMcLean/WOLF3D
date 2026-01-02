@@ -128,8 +128,7 @@ public class MapAnalyzer
 
 			// Parse sprite page number
 			// Try explicit Page attribute first, then fall back to State->Shape->Page lookup
-			ushort page = 0;
-			if (!ushort.TryParse(obj.Attribute("Page")?.Value, out page))
+			if (!ushort.TryParse(obj.Attribute("Page")?.Value, out ushort page))
 			{
 				// No explicit Page - try looking up from State attribute
 				string stateName = obj.Attribute("State")?.Value;
@@ -141,11 +140,9 @@ public class MapAnalyzer
 				}
 			}
 			// Parse actor type (for ObClass.actor - guard, ss, dog, etc.)
-			string actorType = obj.Attribute("Actor")?.Value;
-
+			string actorType = obj.Attribute("Actor")?.Value,
 			// Parse initial state (for actors - s_grdstand, s_grdpath1, etc.)
-			string initialState = obj.Attribute("State")?.Value;
-
+				initialState = obj.Attribute("State")?.Value;
 			ObjectInfo info = new()
 			{
 				Number = number,
@@ -159,7 +156,6 @@ public class MapAnalyzer
 				IsActive = objectClass == ObClass.actor,  // Actors are active objects
 				State = initialState
 			};
-
 			Objects[number] = info;
 		}
 
@@ -235,7 +231,7 @@ public class MapAnalyzer
 		public ushort? CeilingTile { get; private init; }
 		public byte Border { get; private init; }
 		public TimeSpan Par { get; private init; }
-		public string Song { get; private init; }
+		public string Music { get; private init; }
 		#endregion XML Attributes
 		#region Data
 		// Assets layer - faithful to Wolf3D coordinate system (X, Y)
@@ -346,7 +342,7 @@ public class MapAnalyzer
 			CeilingTile = byte.TryParse(xml?.Attribute("CeilingTile")?.Value, out byte ceilingTile) ? ceilingTile : null;
 			Border = byte.TryParse(xml?.Attribute("Border")?.Value, out byte border) ? border : (byte)0;
 			Par = TimeSpan.TryParse(xml?.Attribute("Par")?.Value, out TimeSpan par) ? par : TimeSpan.Zero;
-			Song = xml.Attribute("Song")?.Value;
+			Music = xml.Attribute("Music")?.Value;
 			#endregion XML Attributes
 			#region Masks
 			Width = gameMap.Width;

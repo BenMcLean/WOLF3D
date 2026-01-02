@@ -281,8 +281,26 @@
 				<xs:element ref="MenuFunction" minOccurs="0" maxOccurs="unbounded"/>
 				<xs:element ref="Menu" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
-			<xs:attribute name="Start" type="xs:string"/>
-			<xs:attribute name="Song" type="xs:string"/>
+			<xs:attribute name="Start" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Name of the initial/starting menu</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Music" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Default background music for all menus (e.g., "WONDERIN_MUS")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CursorMoveSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Default sound when cursor moves to different menu item (e.g., "MOVEGUN2SND")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CursorPic" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Default cursor picture for all menus (e.g., "C_CURSOR1PIC")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Deactive" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Stripe" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="SelectSound" type="xs:string"/>
@@ -299,22 +317,93 @@
 	</xs:element>
 
 	<xs:element name="Menu">
+		<xs:annotation>
+			<xs:documentation>
+				Menu definition for a single menu screen.
+				Contains display layout, styling, and menu items.
+			</xs:documentation>
+		</xs:annotation>
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<xs:element ref="Image"/>
-				<xs:element ref="Text"/>
-				<xs:element ref="PixelRect"/>
-				<xs:element ref="MenuItems"/>
-				<xs:element ref="Cancel"/>
-				<xs:element ref="Cursor"/>
+				<xs:element ref="Box"/>
+				<xs:element ref="Picture"/>
+				<xs:element ref="MenuItem"/>
 			</xs:choice>
-			<xs:attribute name="Name" type="xs:string" use="required"/>
-			<xs:attribute name="BkgdColor" type="xs:string"/>
-			<xs:attribute name="Font" type="xs:string"/>
-			<xs:attribute name="Song" type="xs:string"/>
-			<xs:attribute name="SelectedColor" type="xs:string"/>
-			<xs:attribute name="TextColor" type="xs:string"/>
-			<xs:attribute name="DisabledColor" type="xs:string"/>
+			<xs:attribute name="Name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>Unique identifier for this menu (e.g., "Main", "Episodes")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Background" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Background image name from VgaGraph (e.g., "C_OPTIONSPIC", "TITLEPIC")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BackgroundX" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>X coordinate for background image (default: 0)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BackgroundY" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>Y coordinate for background image (default: 0)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BorderColor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Background color index (VGA palette 0-255). WL_MENU.H:BORDCOLOR = 0x29</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="TextColor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Normal (unselected) menu item text color. WL_MENU.H:TEXTCOLOR = 0x17</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Highlight" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Selected menu item text color. WL_MENU.H:HIGHLIGHT = 0x13</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Font" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Font name to use for this menu (e.g., "BIG", "SMALL")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Music" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Music track name to play while in this menu</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CursorMoveSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Sound to play when cursor moves to different menu item (overrides default from Menus element)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="X" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>X coordinate for menu items (matches original CP_iteminfo.x)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Y" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>Y coordinate for first menu item (matches original CP_iteminfo.y)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Indent" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>Horizontal indent for menu text (matches original CP_iteminfo.indent)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Spacing" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>Vertical spacing between menu items in pixels (original uses 13)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CursorPic" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Name of the cursor picture from VgaGraph (e.g., "C_CURSOR1PIC"). If not specified, no cursor will be rendered.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -361,12 +450,109 @@
 	</xs:element>
 
 	<xs:element name="MenuItem">
+		<xs:annotation>
+			<xs:documentation>
+				Menu item with inline Lua script.
+				The element content contains the Lua code to execute when selected.
+				Executed via DoString (not pre-cached as bytecode).
+			</xs:documentation>
+		</xs:annotation>
 		<xs:complexType>
-			<xs:attribute name="Text" type="xs:string"/>
-			<xs:attribute name="Action" type="xs:string"/>
-			<xs:attribute name="Argument" type="xs:string"/>
-			<xs:attribute name="InGame" type="xs:boolean"/>
-			<xs:attribute name="Condition" type="xs:string"/>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="Text" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>Display text for this menu item</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="InGame" type="xs:boolean">
+						<xs:annotation>
+							<xs:documentation>Legacy condition attribute (use Condition instead)</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Condition" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>Optional Lua expression for visibility/enabled state</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:extension>
+			</xs:simpleContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Box">
+		<xs:annotation>
+			<xs:documentation>
+				3D beveled box in a menu (WL_MENU.C:DrawWindow).
+				Draws a filled box with a 3D outline effect.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="X" type="xs:integer" use="required">
+				<xs:annotation>
+					<xs:documentation>X coordinate for box</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Y" type="xs:integer" use="required">
+				<xs:annotation>
+					<xs:documentation>Y coordinate for box</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="W" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>Width of box</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="H" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>Height of box</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BackgroundColor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Background color index for box fill. WL_MENU.H:BKGDCOLOR = 0x2d</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Deactive" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Top/left border color. WL_MENU.H:DEACTIVE = 0x2b</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Border2Color" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Bottom/right border color. WL_MENU.H:BORD2COLOR = 0x23</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Picture">
+		<xs:annotation>
+			<xs:documentation>
+				Decorative picture in a menu (e.g., logos, title graphics).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>Name of the VgaGraph image (e.g., "C_MOUSELBACKPIC")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="X" type="xs:integer" use="required">
+				<xs:annotation>
+					<xs:documentation>X coordinate for picture placement</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Y" type="xs:integer" use="required">
+				<xs:annotation>
+					<xs:documentation>Y coordinate for picture placement</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Stripes" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>If true, renders the leftmost column of pixels stretched horizontally across the screen before rendering the normal picture. Used for decorative stripe backgrounds.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -385,7 +571,7 @@
 						<xs:annotation>
 							<xs:documentation>
 								Unique identifier for this function (e.g., "OnNewGame", "OnSelectEpisode1").
-								Referenced by MenuItem Action attributes.
+								Can be called from MenuItem inline scripts or other menu functions for code reuse.
 							</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>

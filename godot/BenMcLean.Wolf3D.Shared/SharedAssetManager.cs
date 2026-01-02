@@ -535,6 +535,13 @@ public static class SharedAssetManager
 		BuildDigiSounds();
 	}
 	/// <summary>
+	/// Get a Godot Color from a VGA palette index.
+	/// Uses palette 0 (the default game palette).
+	/// </summary>
+	/// <param name="colorIndex">VGA palette color index (0-255)</param>
+	/// <returns>Godot Color corresponding to the palette entry</returns>
+	public static Godot.Color GetPaletteColor(byte colorIndex) => CurrentGame.VgaGraph.Palettes[0][colorIndex].ToColor();
+	/// <summary>
 	/// Disposes all loaded resources to free memory.
 	/// Called before loading a new game or on program exit.
 	/// </summary>

@@ -19,7 +19,7 @@ public sealed class AudioT
 		return new AudioT(audioHead, audioTStream, xml.Element("Audio"));
 	}
 	public Dictionary<string, Adl> Sounds { get; private init; }
-	public Dictionary<string, Song> Songs { get; private init; }
+	public Dictionary<string, Music> Songs { get; private init; }
 	public static uint[] ParseHead(Stream stream)
 	{
 		List<uint> list = [];
@@ -46,13 +46,13 @@ public sealed class AudioT
 		return split;
 	}
 	public AudioT(Stream audioHedStream, Stream audioTStream, XElement xml) : this(SplitFile(audioHedStream, audioTStream), xml) { }
-	public class Song
+	public class Music
 	{
 		public string Name { get; set; }
 		public Midi Midi { get; set; }
 		public Imf[] Imf { get; set; }
 		public bool IsImf => Imf is not null;
-		public override bool Equals(object obj) => obj is Song song && (Name?.Equals(song.Name) ?? false);
+		public override bool Equals(object obj) => obj is Music song && (Name?.Equals(song.Name) ?? false);
 		public override int GetHashCode() => base.GetHashCode();
 		public override string ToString() => Name;
 	}
@@ -89,7 +89,7 @@ public sealed class AudioT
 							length: midiData.Length
 							);
 
-						Song newSong = new()
+						Music newSong = new()
 						{
 							Name = xml.Elements("MIDI").Where(
 									e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == i
@@ -105,7 +105,7 @@ public sealed class AudioT
 					else
 					{
 						Imf[] imf = Imf.ReadImf(song);
-						Song newSong = new()
+						Music newSong = new()
 						{
 							Name = xml.Elements("Imf")?.Where(
 									e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == i

@@ -37,10 +37,10 @@ public partial class Root : Node3D
 			AddChild(Shared.OPL.SoundBlaster.OplPlayer);
 
 			// Play the first level's music
-			string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Song;
+			string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
 			if (!string.IsNullOrWhiteSpace(songName)
-				&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out AudioT.Song song))
-				Shared.OPL.SoundBlaster.Song = song;
+				&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out AudioT.Music song))
+				Shared.OPL.SoundBlaster.Music = song;
 
 			// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
 			//System.Xml.Linq.XDocument n3dXml = System.Xml.Linq.XDocument.Load(@"..\..\games\N3D.xml");

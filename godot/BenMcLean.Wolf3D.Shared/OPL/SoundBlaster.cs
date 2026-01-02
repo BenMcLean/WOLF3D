@@ -22,13 +22,13 @@ public static class SoundBlaster
 		AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller),
 		Bus = "OPL",
 	};
-	public static AudioT.Song Song
+	public static AudioT.Music Music
 	{
 		get => song;
 		set
 		{
 			if (//Settings.MusicMuted ||
-				(song = value) is not AudioT.Song s)
+				(song = value) is not AudioT.Music s)
 			{
 				ImfSignaller.ImfQueue.Enqueue(null);
 				MidiSignaller.Midi = null;
@@ -46,7 +46,7 @@ public static class SoundBlaster
 			}
 		}
 	}
-	private static AudioT.Song song = null;
+	private static AudioT.Music song = null;
 	public static Adl Adl
 	{
 		get => throw new NotImplementedException();
