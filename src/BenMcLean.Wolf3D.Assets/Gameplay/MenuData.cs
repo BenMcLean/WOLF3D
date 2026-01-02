@@ -416,6 +416,16 @@ public class MenuCollection
 	/// </summary>
 	public string DefaultCursorPic { get; set; }
 	/// <summary>
+	/// Default font for menus (e.g., "BIG", "SMALL")
+	/// Individual menus can override this with their Font attribute
+	/// </summary>
+	public string DefaultFont { get; set; }
+	/// <summary>
+	/// Default vertical spacing between menu items in pixels (original uses 13)
+	/// Individual menus can override this with their Spacing attribute
+	/// </summary>
+	public int? DefaultSpacing { get; set; }
+	/// <summary>
 	/// Adds a menu function to the collection.
 	/// </summary>
 	/// <param name="function">The MenuFunction to add</param>
@@ -486,11 +496,14 @@ public class MenuCollection
 			menu.TextColor ??= DefaultTextColor;
 			menu.Highlight ??= DefaultHighlight;
 
-			// Apply default sound, music, and cursor
-			// Note: Empty string ("") won't be replaced - allows explicit "no cursor/sound/music"
+			// Apply default sound, music, cursor, and font
+			// Note: Empty string ("") won't be replaced - allows explicit "no cursor/sound/music/font"
 			menu.CursorMoveSound ??= DefaultCursorMoveSound;
 			menu.Music ??= DefaultMusic;
 			menu.CursorPic ??= DefaultCursorPic;
+			menu.Font ??= DefaultFont;
+			// Apply default spacing
+			menu.Spacing ??= DefaultSpacing;
 
 			// Apply default colors to boxes
 			foreach (MenuBoxDefinition box in menu.Boxes)
@@ -527,7 +540,8 @@ public class MenuCollection
 			StartMenu = menusElement.Attribute("Start")?.Value,
 			DefaultCursorMoveSound = menusElement.Attribute("CursorMoveSound")?.Value,
 			DefaultMusic = menusElement.Attribute("Music")?.Value,
-			DefaultCursorPic = menusElement.Attribute("CursorPic")?.Value
+			DefaultCursorPic = menusElement.Attribute("CursorPic")?.Value,
+			DefaultFont = menusElement.Attribute("Font")?.Value
 		};
 
 		// Parse default colors from <Menus> element (WL_MENU.H values)
@@ -544,6 +558,9 @@ public class MenuCollection
 		if (byte.TryParse(menusElement.Attribute("Border2Color")?.Value, out byte border2))
 			collection.DefaultBorder2Color = border2;
 
+		// Parse default spacing
+		if (int.TryParse(menusElement.Attribute("Spacing")?.Value, out int spacing))
+			collection.DefaultSpacing = spacing;
 		// Load menu functions first
 		IEnumerable<XElement> functionElements = menusElement.Elements("MenuFunction");
 		collection.LoadFunctionsFromXml(functionElements);

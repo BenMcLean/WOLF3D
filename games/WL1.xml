@@ -173,12 +173,12 @@
 			</Weapons>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Start="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS">
+		<Menus Start="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS">
 			<!-- Main Menu (WL_MENU.H: MENU_X=76, MENU_Y=55, MainItems indent=24)
 			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(84,0,C_OPTIONSPIC)
 			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,184,C_MOUSELBACKPIC)
 			     WL_MENU.C:DrawWindow(MENU_X-8,MENU_Y-3,MENU_W,MENU_H,BKGDCOLOR) = DrawWindow(68,52,178,136,45) -->
-			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
+			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13">
 				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" />
 				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
 				<Box X="68" Y="52" W="178" H="136" />
@@ -218,7 +218,7 @@
 			</Menu>
 
 			<!-- New Game / Difficulty Menu (WL_MENU.H: NM_X=50, NM_Y=100) -->
-			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" Font="BIG">
+			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CursorPic="">
 				<Picture Name="C_OPTIONSPIC" X="84" Y="0" />
 				<MenuItem Text="Can I play, Daddy?" Action="NavigateToMenu" Argument="Main" />
 				<MenuItem Text="Don't hurt me." Action="NavigateToMenu" Argument="Main" />

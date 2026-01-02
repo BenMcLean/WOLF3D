@@ -309,7 +309,16 @@
 			<xs:attribute name="Bord2Color" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Color" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="TextColor" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Font" type="xs:string"/>
+			<xs:attribute name="Font" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Default font for all menus (e.g., "BIG", "SMALL"). Individual menus can override this.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Spacing" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>Default vertical spacing between menu items in pixels (original uses 13). Individual menus can override this.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="ModalFont" type="xs:string"/>
 			<xs:attribute name="Selected" type="xs:string"/>
 			<xs:attribute name="NotSelected" type="xs:string"/>
