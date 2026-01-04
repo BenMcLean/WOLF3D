@@ -27,6 +27,7 @@ public class MenuManager
 	private readonly Stack<string> _menuStack = new();
 	private string _currentMenuName;
 	private int _selectedItemIndex = 0;
+	private string _currentMenuMusic = null;
 	/// <summary>
 	/// Gets the current menu state.
 	/// </summary>
@@ -78,11 +79,22 @@ public class MenuManager
 		_renderer = new MenuRenderer();
 		// Create input handler (keyboard-only for Phase 1)
 		_input = new KeyboardMenuInput();
+		// Subscribe to music enabled changes to restart menu music when re-enabled
+		_config.MusicEnabledChanged += OnMusicEnabledChanged;
 		// Navigate to start menu
 		if (!string.IsNullOrEmpty(_menuCollection.StartMenu))
 			NavigateToMenu(_menuCollection.StartMenu);
 		else
 			_logger?.LogWarning("No StartMenu defined in MenuCollection");
+	}
+	/// <summary>
+	/// Handles MusicEnabledChanged event to restart menu music when re-enabled.
+	/// </summary>
+	private void OnMusicEnabledChanged(object sender, EventArgs e)
+	{
+		// If music is now enabled and we have a current menu music, play it
+		if (_config.MusicEnabled && !string.IsNullOrEmpty(_currentMenuMusic))
+			PlayMusicImpl(_currentMenuMusic);
 	}
 	/// <summary>
 	/// Compiles all menu functions from the MenuCollection.
@@ -126,9 +138,15 @@ public class MenuManager
 		if (menuDef.Music != null)
 		{
 			if (menuDef.Music == "")
+			{
+				_currentMenuMusic = null;
 				_scriptContext.StopMusic();
+			}
 			else
+			{
+				_currentMenuMusic = menuDef.Music;
 				_scriptContext.PlayMusic(menuDef.Music);
+			}
 		}
 		// Render the menu
 		RefreshMenu();
@@ -313,14 +331,7 @@ public class MenuManager
 			return;
 		}
 
-		if (SharedAssetManager.CurrentGame.AudioT.Sounds.TryGetValue(soundName, out Adl adl))
-		{
-			OPL.SoundBlaster.Adl = adl;
-		}
-		else
-		{
-			_logger?.LogWarning("AdLib sound '{soundName}' not found in AudioT", soundName);
-		}
+		EventBus.Emit(GameEvent.PlaySound, soundName);
 	}
 
 	/// <summary>
@@ -335,14 +346,7 @@ public class MenuManager
 			return;
 		}
 
-		if (SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(musicName, out AudioT.Music song))
-		{
-			OPL.SoundBlaster.Music = song;
-		}
-		else
-		{
-			_logger?.LogWarning("Music '{musicName}' not found in AudioT", musicName);
-		}
+		EventBus.Emit(GameEvent.PlayMusic, musicName);
 	}
 
 	/// <summary>
@@ -350,7 +354,8 @@ public class MenuManager
 	/// </summary>
 	private void StopMusicImpl()
 	{
-		OPL.SoundBlaster.Music = null;
+		_currentMenuMusic = null;
+		EventBus.Emit(GameEvent.StopMusic);
 	}
 	#endregion Sound Playback Implementation
 

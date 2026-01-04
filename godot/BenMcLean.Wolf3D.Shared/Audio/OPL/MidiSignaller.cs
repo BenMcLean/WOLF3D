@@ -2,7 +2,7 @@ using BenMcLean.Wolf3D.Assets.Sound;
 using NScumm.Core.Audio.OPL;
 using System;
 
-namespace BenMcLean.Wolf3D.Shared.OPL;
+namespace BenMcLean.Wolf3D.Shared.Audio.OPL;
 
 /// <summary>
 /// MIDI playback engine for Super 3-D Noah's Ark.
@@ -152,7 +152,7 @@ public class MidiSignaller : IAdlibSignaller
 		// midiTimeScale = (tempo / 274176.0) * 1.1
 		// The constant 274176.0 = 700Hz * 60s * 1000000μs / (some scaling factor)
 		// delay_in_700Hz_ticks = deltaTime * midiTimeScale
-		double timeScale = (currentTempo / 274176.0) * 1.1,
+		double timeScale = currentTempo / 274176.0 * 1.1,
 			ticks = deltaTime * timeScale;
 		return (uint)Math.Max(1, Math.Round(ticks));
 	}
@@ -193,7 +193,7 @@ public class MidiSignaller : IAdlibSignaller
 		if (channel >= 9)
 			return;
 		// Extract octave and semitone from MIDI note number
-		int octave = (note / 12) - 1,
+		int octave = note / 12 - 1,
 			semitone = note % 12;
 		if (octave < 0 || octave > 7 || semitone >= NoteTable.Length)
 			return;
@@ -202,7 +202,7 @@ public class MidiSignaller : IAdlibSignaller
 		// Write frequency low byte (ID_SD.C:2166)
 		opl?.WriteReg((byte)(0xA0 + channel), (byte)(frequency & 0xFF));
 		// Write octave and frequency high bits, with key-on bit (ID_SD.C:2167-2168)
-		byte blockFreq = (byte)(((octave & 0x07) << 2) | ((frequency >> 8) & 0x03) | 0x20);
+		byte blockFreq = (byte)((octave & 0x07) << 2 | frequency >> 8 & 0x03 | 0x20);
 		opl?.WriteReg((byte)(0xB0 + channel), blockFreq);
 	}
 	/// <summary>
@@ -270,13 +270,13 @@ public class MidiSignaller : IAdlibSignaller
 			// ID_SD.C:2192-2206 - Set frequencies for channels 6, 7, 8 to note 24
 			byte note = 24;
 			ushort fnumber = NoteTable[note % 12];
-			byte octave = (byte)(((note / 12) & 7) << 2);
+			byte octave = (byte)((note / 12 & 7) << 2);
 			opl?.WriteReg(0xA6, (byte)(fnumber & 0xFF));
-			opl?.WriteReg(0xB6, (byte)(octave + ((fnumber >> 8) & 3)));
+			opl?.WriteReg(0xB6, (byte)(octave + (fnumber >> 8 & 3)));
 			opl?.WriteReg(0xA7, (byte)(fnumber & 0xFF));
-			opl?.WriteReg(0xB7, (byte)(octave + ((fnumber >> 8) & 3)));
+			opl?.WriteReg(0xB7, (byte)(octave + (fnumber >> 8 & 3)));
 			opl?.WriteReg(0xA8, (byte)(fnumber & 0xFF));
-			opl?.WriteReg(0xB8, (byte)(octave + ((fnumber >> 8) & 3)));
+			opl?.WriteReg(0xB8, (byte)(octave + (fnumber >> 8 & 3)));
 			// ID_SD.C:2208-2215 - Configure using instrument[10] (hi-hat modulator)
 			byte[] inst10 = Instruments[10];
 			opl?.WriteReg(0x31, inst10[0]); // Read interleaved: mChar

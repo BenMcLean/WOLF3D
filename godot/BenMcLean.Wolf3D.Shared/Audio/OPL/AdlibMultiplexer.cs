@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace BenMcLean.Wolf3D.Shared.OPL;
+namespace BenMcLean.Wolf3D.Shared.Audio.OPL;
 
 public class AdlibMultiplexer : IAdlibSignaller
 {

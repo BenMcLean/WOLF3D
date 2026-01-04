@@ -39,7 +39,7 @@ public sealed class VgaGraph
 	/// Dictionary mapping pic font names to their PicFont definitions.
 	/// Pic fonts are constructed from Pics using prefix matching.
 	/// </summary>
-	public record PicFont(Dictionary<char, int> Characters, ushort SpaceWidth, byte SpaceColor);
+	public record PicFont(Dictionary<char, int> Glyphs, ushort SpaceWidth, byte SpaceColor);
 	public Dictionary<string, PicFont> PicFonts { get; private init; }
 	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitFile(ParseHead(vgaHead), vgaGraph, Load16BitPairs(dictionary)), xml)
 	{ }

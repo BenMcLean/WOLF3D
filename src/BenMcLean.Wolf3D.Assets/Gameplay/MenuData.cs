@@ -166,13 +166,13 @@ public class MenuTextDefinition
 	/// </summary>
 	public string Content { get; set; }
 	/// <summary>
-	/// X coordinate for text placement
+	/// X coordinate for text placement, or "Center" for horizontal centering
 	/// </summary>
-	public int X { get; set; }
+	public string X { get; set; }
 	/// <summary>
-	/// Y coordinate for text placement
+	/// Y coordinate for text placement, or "Center" for vertical centering
 	/// </summary>
-	public int Y { get; set; }
+	public string Y { get; set; }
 	/// <summary>
 	/// Font name (e.g., "BIG", "SMALL").
 	/// If not specified, uses menu Font, then default Font.
@@ -185,6 +185,22 @@ public class MenuTextDefinition
 	/// </summary>
 	public byte? Color { get; set; }
 	/// <summary>
+	/// Returns true if X coordinate should be centered horizontally
+	/// </summary>
+	public bool CenterX => X?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Returns true if Y coordinate should be centered vertically
+	/// </summary>
+	public bool CenterY => Y?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Gets the X coordinate as an integer, or 0 if set to "Center"
+	/// </summary>
+	public int XValue => CenterX ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	/// <summary>
+	/// Gets the Y coordinate as an integer, or 0 if set to "Center"
+	/// </summary>
+	public int YValue => CenterY ? 0 : (int.TryParse(Y, out int y) ? y : 0);
+	/// <summary>
 	/// Creates a MenuTextDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing text data (&lt;Text&gt;)</param>
@@ -194,8 +210,8 @@ public class MenuTextDefinition
 		MenuTextDefinition text = new()
 		{
 			Content = element.Value?.Trim() ?? string.Empty,
-			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
-			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
+			X = element.Attribute("X")?.Value ?? "0",
+			Y = element.Attribute("Y")?.Value ?? "0",
 			Font = element.Attribute("Font")?.Value
 		};
 		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))

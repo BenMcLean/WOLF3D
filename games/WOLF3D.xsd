@@ -591,14 +591,14 @@
 		<xs:complexType>
 			<xs:simpleContent>
 				<xs:extension base="xs:string">
-					<xs:attribute name="X" type="xs:integer" use="required">
+					<xs:attribute name="X" type="CoordinateOrCenter" use="required">
 						<xs:annotation>
-							<xs:documentation>X coordinate for text placement</xs:documentation>
+							<xs:documentation>X coordinate for text placement, or "Center" to horizontally center the text on screen</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="Y" type="xs:integer" use="required">
+					<xs:attribute name="Y" type="CoordinateOrCenter" use="required">
 						<xs:annotation>
-							<xs:documentation>Y coordinate for text placement</xs:documentation>
+							<xs:documentation>Y coordinate for text placement, or "Center" to vertically center the text on screen</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Font" type="xs:string">
@@ -1207,6 +1207,23 @@
 			<xs:enumeration value="W"/>
 			<xs:enumeration value="S"/>
 		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="CoordinateOrCenter">
+		<xs:annotation>
+			<xs:documentation>
+				Union type allowing either an integer coordinate or the literal string "Center".
+				Use "Center" for X to horizontally center text, or for Y to vertically center text.
+				Numeric values specify absolute screen coordinates.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:union memberTypes="xs:integer">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="Center"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
 	</xs:simpleType>
 
 </xs:schema>

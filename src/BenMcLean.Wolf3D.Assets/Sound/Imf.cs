@@ -11,7 +11,7 @@ public struct Imf(BinaryReader binaryReader)
 	/// <summary>
 	/// These songs play back at 700 Hz.
 	/// </summary>
-	public const float Hz = 1f / 700f;
+	public const double Hz = 1.0 / 700.0;
 	#region Data
 	/// <summary>
 	/// Sent to register port.
@@ -25,7 +25,7 @@ public struct Imf(BinaryReader binaryReader)
 	/// How much to wait.
 	/// </summary>
 	public readonly ushort Delay = binaryReader.ReadUInt16();
-	public readonly float DelayFloat => Delay * Hz;
+	public readonly double DelayDouble => Delay * Hz;
 	#endregion Data
 	/// <summary>
 	/// Parsing IMF files based on http://www.shikadi.net/moddingwiki/IMF_Format

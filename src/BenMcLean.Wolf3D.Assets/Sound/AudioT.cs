@@ -18,6 +18,7 @@ public sealed class AudioT
 		using FileStream audioTStream = new(Path.Combine(folder, xml.Element("Audio").Attribute("AudioT").Value), FileMode.Open);
 		return new AudioT(audioHead, audioTStream, xml.Element("Audio"));
 	}
+	public Dictionary<string, PcSpeaker> PcSounds { get; private init; }
 	public Dictionary<string, Adl> Sounds { get; private init; }
 	public Dictionary<string, Music> Songs { get; private init; }
 	public static uint[] ParseHead(Stream stream)
@@ -58,6 +59,25 @@ public sealed class AudioT
 	}
 	public AudioT(byte[][] file, XElement xml)
 	{
+		// Load PC Speaker sounds (if StartPCSounds attribute exists)
+		// From AUDIOWL1.H: #define STARTPCSOUNDS 0
+		// PC Speaker sounds are stored first in AUDIOT, before AdLib sounds
+		PcSounds = [];
+		if (xml.Attribute("StartPCSounds") is XAttribute startPcAttr)
+		{
+			uint startPcSounds = (uint)startPcAttr;
+			foreach (XElement soundElement in xml.Elements("Sound"))
+			{
+				uint number = (uint)soundElement.Attribute("Number");
+				string name = soundElement.Attribute("Name")?.Value;
+				if (!string.IsNullOrWhiteSpace(name)
+					&& file[startPcSounds + number] is byte[] bytes)
+					using (MemoryStream sound = new(bytes))
+						PcSounds.Add(name, new PcSpeaker(sound));
+			}
+		}
+		// Load AdLib sounds
+		// From AUDIOWL1.H: #define STARTADLIBSOUNDS 69
 		uint startAdlibSounds = (uint)xml.Attribute("StartAdlibSounds");
 		Sounds = [];
 		foreach (XElement soundElement in xml.Elements("Sound"))

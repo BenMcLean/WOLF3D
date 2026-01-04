@@ -21,6 +21,15 @@ public static class SharedAssetManager
 	/// </summary>
 	public static Assets.AssetManager CurrentGame { get; private set; }
 	/// <summary>
+	/// Game configuration (sound/music/input settings).
+	/// Persisted to CONFIG file and used by menus and gameplay.
+	/// </summary>
+	public static Assets.Gameplay.Config Config { get; set; }
+	/// <summary>
+	/// Path to the CONFIG file for saving changes.
+	/// </summary>
+	private static string _configPath;
+	/// <summary>
 	/// The master texture atlas containing all VSwap pages, VgaGraph Pics, and Font characters.
 	/// </summary>
 	public static Godot.ImageTexture AtlasTexture { get; private set; }
@@ -102,7 +111,7 @@ public static class SharedAssetManager
 				.Where(kvp => kvp.Value.SpaceWidth > 0))
 			{
 				// Get height from first character in the pic font
-				int firstPicIndex = picFont.Characters.Values.First();
+				int firstPicIndex = picFont.Glyphs.Values.First();
 				ushort height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
 				rectangles.Add(new PackingRectangle(
 					x: 0,
@@ -216,7 +225,7 @@ public static class SharedAssetManager
 			{
 				PackingRectangle rect = rectangles[rectIndex++];
 				// Get height from first character in the pic font
-				int firstPicIndex = picFont.Characters.Values.First();
+				int firstPicIndex = picFont.Glyphs.Values.First();
 				ushort width = picFont.SpaceWidth,
 					height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
 				// Draw solid color rectangle directly onto atlas
@@ -313,9 +322,7 @@ public static class SharedAssetManager
 		_themes = [];
 		// Build chunk fonts
 		foreach ((string name, int index) in CurrentGame.VgaGraph.ChunkFontsByName)
-		{
-			Godot.FontFile font = BuildChunkFont(index, vgaGraphFontRegions);
-			if (font is not null)
+			if (BuildChunkFont(index, vgaGraphFontRegions) is Godot.FontFile font)
 			{
 				Godot.Theme theme = new()
 				{
@@ -324,12 +331,9 @@ public static class SharedAssetManager
 				};
 				_themes[name] = theme;
 			}
-		}
 		// Build pic fonts
 		foreach ((string name, VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
-		{
-			Godot.FontFile font = BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions);
-			if (font is not null)
+			if (BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions) is Godot.FontFile font)
 			{
 				Godot.Theme theme = new()
 				{
@@ -338,7 +342,6 @@ public static class SharedAssetManager
 				};
 				_themes[name] = theme;
 			}
-		}
 	}
 	/// <summary>
 	/// Builds a regular Godot Font from a VgaGraph font chunk.
@@ -353,8 +356,9 @@ public static class SharedAssetManager
 		Assets.Graphics.Font sourceFont = CurrentGame.VgaGraph.Fonts[fontIndex];
 		Godot.FontFile font = new()
 		{
-			FixedSize = sourceFont.Height,
 			Antialiasing = Godot.TextServer.FontAntialiasing.None,
+			FixedSize = sourceFont.Height,
+			FixedSizeScaleMode = Godot.TextServer.FixedSizeScaleMode.IntegerOnly,
 		};
 		font.SetTextureImage(
 			cacheIndex: 0,
@@ -408,15 +412,16 @@ public static class SharedAssetManager
 	{
 		Godot.FontFile font = new()
 		{
-			FixedSize = CurrentGame.VgaGraph.Sizes[picFont.Characters.Values.First()][1],
 			Antialiasing = Godot.TextServer.FontAntialiasing.None,
+			FixedSize = CurrentGame.VgaGraph.Sizes[picFont.Glyphs.Values.First()][1],
+			FixedSizeScaleMode = Godot.TextServer.FixedSizeScaleMode.IntegerOnly,
 		};
 		font.SetTextureImage(
 			cacheIndex: 0,
 			size: new Godot.Vector2I(font.FixedSize, 0),
 			textureIndex: 0,
 			image: AtlasImage);
-		foreach ((char character, int picNumber) in picFont.Characters)
+		foreach ((char character, int picNumber) in picFont.Glyphs)
 		{
 			if (!vgaGraphRegions.TryGetValue(picNumber, out Godot.Rect2I region))
 				continue;
@@ -517,6 +522,63 @@ public static class SharedAssetManager
 		}
 	}
 	#endregion DigiSounds
+	#region Config
+	/// <summary>
+	/// Loads the CONFIG file for the current game.
+	/// If the file doesn't exist, creates a new Config with default values.
+	/// </summary>
+	/// <param name="xmlPath">Path to the game's XML definition file</param>
+	private static void LoadConfig(string xmlPath)
+	{
+		// Get the CONFIG file path from XML attribute HighScores
+		string configFileName = CurrentGame.XML.Attribute("HighScores")?.Value;
+		if (string.IsNullOrWhiteSpace(configFileName))
+		{
+			// No config file specified, create default
+			Config = new Assets.Gameplay.Config(Assets.Gameplay.Config.ConfigFormat.Wolf3D);
+			return;
+		}
+		// Determine ConfigFormat based on game name
+		string gameName = CurrentGame.XML.Attribute("Name")?.Value ?? "";
+		Assets.Gameplay.Config.ConfigFormat format = gameName.Contains("Noah", StringComparison.OrdinalIgnoreCase)
+			? Assets.Gameplay.Config.ConfigFormat.NoahsArk
+			: Assets.Gameplay.Config.ConfigFormat.Wolf3D;
+		// Get the full path to the CONFIG file
+		string gameFolder = System.IO.Path.Combine(
+			System.IO.Path.GetDirectoryName(xmlPath),
+			CurrentGame.XML.Attribute("Path")?.Value ?? "");
+		_configPath = System.IO.Path.Combine(gameFolder, configFileName);
+		// Load or create config
+		if (System.IO.File.Exists(_configPath))
+		{
+			using System.IO.FileStream stream = System.IO.File.OpenRead(_configPath);
+			Config = Assets.Gameplay.Config.Load(stream, format);
+		}
+		else
+		{
+			// Create default config if file doesn't exist
+			Config = new Assets.Gameplay.Config(format);
+		}
+	}
+	/// <summary>
+	/// Saves the current Config to disk.
+	/// Should be called when exiting the game or when important settings change.
+	/// </summary>
+	public static void SaveConfig()
+	{
+		if (Config is null || string.IsNullOrWhiteSpace(_configPath))
+			return;
+		try
+		{
+			using System.IO.FileStream stream = System.IO.File.Create(_configPath);
+			Config.Save(stream);
+		}
+		catch (System.Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to save config to {_configPath}: {ex.Message}");
+		}
+	}
+	#endregion Config
 	/// <summary>
 	/// Loads a game from the user's games folder.
 	/// </summary>
@@ -533,6 +595,7 @@ public static class SharedAssetManager
 		CurrentGame = Assets.AssetManager.Load(xmlPath, _loggerFactory);
 		BuildAtlas();
 		BuildDigiSounds();
+		LoadConfig(xmlPath);
 	}
 	/// <summary>
 	/// Get a Godot Color from a VGA palette index.
@@ -547,6 +610,10 @@ public static class SharedAssetManager
 	/// </summary>
 	public static void Cleanup()
 	{
+		// Save config before cleanup
+		SaveConfig();
+		Config = null;
+		_configPath = null;
 		if (_digiSounds is not null)
 			foreach (Godot.AudioStreamWav sound in _digiSounds.Values)
 				sound?.Dispose();

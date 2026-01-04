@@ -280,20 +280,34 @@ public class MenuRenderer
 				GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager");
 				continue;
 			}
+			// Determine color: textDef.Color > menuDef.TextColor > 0x17 (TEXTCOLOR default)
+			byte colorIndex = textDef.Color ?? menuDef.TextColor ?? 0x17;
+			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
 			// Create label with text
 			Label label = new()
 			{
 				Text = textDef.Content,
-				Position = new Vector2(textDef.X, textDef.Y),
-				PivotOffset = Vector2.Zero,
 				Theme = theme,
 				ZIndex = 8, // Draw text labels below menu items but above boxes
+				// LabelSettings takes priority over theme, so set both LineSpacing and FontColor here
+				// LineSpacing is the total line height - set to font size for tight spacing
+				LabelSettings = new LabelSettings
+				{
+					LineSpacing = theme.DefaultFontSize,
+					FontColor = textColor
+				}
 			};
-			// Determine color: textDef.Color > menuDef.TextColor > 0x17 (TEXTCOLOR default)
-			byte colorIndex = textDef.Color ?? menuDef.TextColor ?? 0x17;
-			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
-			label.AddThemeColorOverride("font_color", textColor);
+			// Calculate position (with centering if specified)
+			// Add to canvas first so we can get the text size
 			_canvas.AddChild(label);
+			Vector2 textSize = label.Size;
+			// Calculate X position
+			float x = textDef.CenterX ? (320 - textSize.X) / 2 : textDef.XValue;
+			// Calculate Y position
+			float y = textDef.CenterY ? (200 - textSize.Y) / 2 : textDef.YValue;
+			// Set final position
+			label.Position = new Vector2(x, y);
+			label.PivotOffset = Vector2.Zero;
 		}
 	}
 	/// <summary>
@@ -315,32 +329,44 @@ public class MenuRenderer
 		// Layout coordinates (WL_MENU.H: CP_iteminfo)
 		// Defaults match original MainItems if not specified
 		float x = menuDef.X ?? 76, // MENU_X from WL_MENU.H
-			y = menuDef.Y ?? 55, // MENU_Y from WL_MENU.H
 			indent = menuDef.Indent ?? 24, // MainItems.indent
 			spacing = menuDef.Spacing ?? 13; // Original uses 13 (DrawMenu: PrintY=item_i->y+i*13)
+		// Use accumulated Y position to support per-item spacing via ExtraSpacing custom property
+		float currentY = menuDef.Y ?? 55; // MENU_Y from WL_MENU.H
 		for (int i = 0; i < items.Count; i++)
 		{
 			MenuItemDefinition item = items[i];
 			bool isSelected = i == selectedIndex;
+			// Check for ExtraSpacing custom property (for gaps between menu sections)
+			if (item.CustomProperties.TryGetValue("ExtraSpacing", out string extraSpacingStr) &&
+				int.TryParse(extraSpacingStr, out int extraSpacing))
+				currentY += extraSpacing;
 			// WL_MENU.C:DrawMenu - WindowX=PrintX=item_i->x+item_i->indent
-			float itemX = x + indent,
-				itemY = y + i * spacing;
-			Label label = new()
-			{
-				Text = item.Text,
-				Position = new Vector2(itemX, itemY),
-				PivotOffset = Vector2.Zero,
-				Theme = theme,
-				ZIndex = 10,
-			};
-			// Set color based on selection using theme override
+			float itemX = x + indent;
+			// Determine color based on selection
 			// WL_MENU.C:SetTextColor - HIGHLIGHT vs TEXTCOLOR
 			// Use menu-specific colors if defined, otherwise use defaults from WL_MENU.H
 			Color textColor = isSelected
 				? SharedAssetManager.GetPaletteColor(menuDef.Highlight ?? 0x13)
 				: SharedAssetManager.GetPaletteColor(menuDef.TextColor ?? 0x17);
-			label.AddThemeColorOverride("font_color", textColor);
+			Label label = new()
+			{
+				Text = item.Text,
+				Position = new Vector2(itemX, currentY),
+				PivotOffset = Vector2.Zero,
+				Theme = theme,
+				ZIndex = 10,
+				// LabelSettings takes priority over theme, so set both LineSpacing and FontColor here
+				// LineSpacing is the total line height - set to font size for tight spacing
+				LabelSettings = new LabelSettings
+				{
+					LineSpacing = theme.DefaultFontSize,
+					FontColor = textColor
+				}
+			};
 			_canvas.AddChild(label);
+			// Move to next item position
+			currentY += spacing;
 		}
 	}
 	/// <summary>
@@ -368,14 +394,28 @@ public class MenuRenderer
 		}
 		GD.Print($"DEBUG RenderCursor: Found texture, region={cursorTexture.Region}");
 		// Layout coordinates (matching original DrawMenuGun)
+		// Calculate cursor Y position using accumulated spacing (same logic as RenderMenuItems)
 		float x = menuDef.X ?? 76, // MENU_X from WL_MENU.H
-			y = menuDef.Y ?? 55, // MENU_Y from WL_MENU.H
-			spacing = menuDef.Spacing ?? 13, // Original uses 13
-		// WL_MENU.C:DrawMenuGun
-		// x=iteminfo->x;
-		// y=iteminfo->y+iteminfo->curpos*13-2;
-			cursorX = x,
-			cursorY = y + selectedIndex * spacing - 2;
+			spacing = menuDef.Spacing ?? 13; // Original uses 13
+		float currentY = menuDef.Y ?? 55; // Start Y position
+		// Accumulate Y position up to selectedIndex (same as RenderMenuItems)
+		for (int i = 0; i < selectedIndex && i < menuDef.Items.Count; i++)
+		{
+			MenuItemDefinition item = menuDef.Items[i];
+			// Check for ExtraSpacing custom property
+			if (item.CustomProperties.TryGetValue("ExtraSpacing", out string extraSpacingStr) &&
+				int.TryParse(extraSpacingStr, out int extraSpacing))
+				currentY += extraSpacing;
+			currentY += spacing;
+		}
+		// Add ExtraSpacing for the selected item itself
+		if (selectedIndex < menuDef.Items.Count &&
+			menuDef.Items[selectedIndex].CustomProperties.TryGetValue("ExtraSpacing", out string selectedExtraSpacing) &&
+			int.TryParse(selectedExtraSpacing, out int selectedExtra))
+			currentY += selectedExtra;
+		// WL_MENU.C:DrawMenuGun - cursor is at y-2 (2 pixels above the item)
+		float cursorX = x,
+			cursorY = currentY - 2;
 		GD.Print($"DEBUG RenderCursor: Rendering at ({cursorX}, {cursorY}), selectedIndex={selectedIndex}");
 		TextureRect cursor = new()
 		{

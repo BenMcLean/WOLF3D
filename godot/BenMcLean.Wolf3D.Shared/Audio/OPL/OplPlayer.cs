@@ -1,12 +1,13 @@
+using BenMcLean.Wolf3D.Shared.Audio.OPL;
 using Godot;
 using NScumm.Core.Audio.OPL;
 
-namespace BenMcLean.Wolf3D.Shared.OPL;
+namespace BenMcLean.Wolf3D.Shared.Audio.OPL;
 
 public partial class OplPlayer : AudioStreamPlayer
 {
-	public const int MixRate = 44100,
-		FramesPerUpdate = 63; // 700 Hz interval
+	public const ushort MixRate = 44100;
+	public const byte FramesPerUpdate = 63; // 700 Hz interval
 	public OplPlayer()
 	{
 		Name = "OplPlayer";
@@ -21,7 +22,7 @@ public partial class OplPlayer : AudioStreamPlayer
 		get => adlibSignaller;
 		set
 		{
-			if ((adlibSignaller = value) != null && Opl != null)
+			if ((adlibSignaller = value) is not null && Opl is not null)
 				AdlibSignaller.Init(Opl);
 		}
 	}
@@ -31,7 +32,7 @@ public partial class OplPlayer : AudioStreamPlayer
 		get => opl;
 		set
 		{
-			if ((opl = value) != null)
+			if ((opl = value) is not null)
 			{
 				Opl?.Init(MixRate);
 				AdlibSignaller?.Init(Opl);
@@ -42,7 +43,7 @@ public partial class OplPlayer : AudioStreamPlayer
 	public override void _Ready() => Play();
 	public override void _Process(double delta)
 	{
-		if (Playing && AdlibSignaller != null)
+		if (Playing && AdlibSignaller is not null)
 			if (Opl is null)
 				Stop();
 			else

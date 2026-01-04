@@ -22,9 +22,69 @@ public sealed class Config
 	public ConfigFormat Format { get; set; }
 	public HighScoreEntry[] Scores { get; set; }
 	#region Sound Settings
-	public SDMode SoundMode { get; set; }
-	public bool MusicEnabled { get; set; }
-	public SDSMode DigiMode { get; set; }
+	private SDMode _soundMode;
+	/// <summary>
+	/// Sound mode setting (Off, PC, AdLib).
+	/// Fires SoundModeChanged event when modified.
+	/// </summary>
+	public SDMode SoundMode
+	{
+		get => _soundMode;
+		set
+		{
+			if (_soundMode != value)
+			{
+				_soundMode = value;
+				SoundModeChanged?.Invoke(this, EventArgs.Empty);
+			}
+		}
+	}
+	private bool _musicEnabled;
+	/// <summary>
+	/// Music enabled setting.
+	/// Fires MusicEnabledChanged event when modified.
+	/// </summary>
+	public bool MusicEnabled
+	{
+		get => _musicEnabled;
+		set
+		{
+			if (_musicEnabled != value)
+			{
+				_musicEnabled = value;
+				MusicEnabledChanged?.Invoke(this, EventArgs.Empty);
+			}
+		}
+	}
+	private SDSMode _digiMode;
+	/// <summary>
+	/// Digital sound mode setting (Off, PC, SoundSource, SoundBlaster).
+	/// Fires DigiModeChanged event when modified.
+	/// </summary>
+	public SDSMode DigiMode
+	{
+		get => _digiMode;
+		set
+		{
+			if (_digiMode != value)
+			{
+				_digiMode = value;
+				DigiModeChanged?.Invoke(this, EventArgs.Empty);
+			}
+		}
+	}
+	/// <summary>
+	/// Fired when SoundMode property changes.
+	/// </summary>
+	public event EventHandler SoundModeChanged;
+	/// <summary>
+	/// Fired when MusicEnabled property changes.
+	/// </summary>
+	public event EventHandler MusicEnabledChanged;
+	/// <summary>
+	/// Fired when DigiMode property changes.
+	/// </summary>
+	public event EventHandler DigiModeChanged;
 	#endregion Sound Settings
 	#region Input Device Settings
 	public bool MouseEnabled { get; set; }

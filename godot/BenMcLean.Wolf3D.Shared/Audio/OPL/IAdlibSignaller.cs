@@ -1,6 +1,6 @@
 using NScumm.Core.Audio.OPL;
 
-namespace BenMcLean.Wolf3D.Shared.OPL;
+namespace BenMcLean.Wolf3D.Shared.Audio.OPL;
 
 public interface IAdlibSignaller
 {

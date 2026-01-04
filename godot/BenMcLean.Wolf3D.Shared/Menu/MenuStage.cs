@@ -35,14 +35,14 @@ public partial class MenuStage : Node
 			return;
 		}
 		// Get config from SharedAssetManager (or create default)
-		// TODO: Wire up to actual config loading
-		Config config = new();
+		// Initialize SharedAssetManager.Config if not already set
+		SharedAssetManager.Config ??= new Config();
 		// Create logger (TODO: Wire up to actual logger factory)
 		ILogger logger = null; // Use null logger for now
 		// Create MenuManager (menus don't need RNG/GameClock - not deterministic)
 		_menuManager = new MenuManager(
 			menuCollection,
-			config,
+			SharedAssetManager.Config,
 			logger);
 		// Add the SubViewport to scene tree (required for rendering, but not as child of container)
 		AddChild(_menuManager.Renderer.Viewport);

@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using BenMcLean.Wolf3D.Assets.Sound;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -33,14 +31,13 @@ public partial class Root : Node3D
 			// Try scaleFactor: 4 for better performance, or 8 for maximum quality
 			VRAssetManager.Initialize(scaleFactor: 8);
 
-			// Add OplPlayer to scene tree for music
-			AddChild(Shared.OPL.SoundBlaster.OplPlayer);
+			// Add SoundBlaster to scene tree (manages both AdLib and PC Speaker audio)
+			AddChild(new Shared.Audio.SoundBlaster());
 
 			// Play the first level's music
 			string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
-			if (!string.IsNullOrWhiteSpace(songName)
-				&& Shared.SharedAssetManager.CurrentGame.AudioT.Songs.TryGetValue(songName, out AudioT.Music song))
-				Shared.OPL.SoundBlaster.Music = song;
+			if (!string.IsNullOrWhiteSpace(songName))
+				Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
 
 			// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
 			//System.Xml.Linq.XDocument n3dXml = System.Xml.Linq.XDocument.Load(@"..\..\games\N3D.xml");

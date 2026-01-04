@@ -184,7 +184,7 @@
 				<Box X="68" Y="52" W="178" H="136" />
 				<MenuItem Text="New Game">
 					PlayAdLibSound('SHOOTSND')
-					NavigateToMenu("NewGame")
+					NavigateToMenu("Episodes")
 				</MenuItem>
 				<MenuItem Text="Sound">
 					PlayAdLibSound('SHOOTSND')
@@ -214,6 +214,61 @@
 				<MenuItem Text="Quit">
 					PlayAdLibSound('SHOOTSND')
 					Quit()
+				</MenuItem>
+			</Menu>
+
+			<!-- Episode Selection Menu (WL_MENU.H: NE_X=10, NE_Y=23) -->
+			<!-- WL_MENU.C:1587: DrawNewEpisode() function -->
+			<!-- WL_MENU.C:1597: DrawWindow(NE_X-4,NE_Y-4,NE_W+8,NE_H+8) = DrawWindow(6,19,308,162) -->
+			<!-- WL_MENU.C:1612: Episode pictures at (NE_X+32,NE_Y+i*26) for i=0 to 5 -->
+			<!-- WL_MENU.C:95: NewEitems={NE_X,NE_Y,11,0,88} - X=10, Y=23, indent=88 -->
+			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<!-- WL_MENU.C:1597: DrawWindow(6,19,308,162) -->
+				<Box X="6" Y="19" W="308" H="162" />
+				<!-- WL_MENU.C:1599-1604: PrintY=2 (2 pixels from screen top), WindowX=0, US_CPrint centers horizontally -->
+				<Text X="Center" Y="2" Color="71">Which episode to play?</Text>
+
+				<!-- WL_MENU.C:1612: Episode pictures drawn at (NE_X+32,NE_Y+i*26) = (42, 23+i*26) -->
+				<!-- Pictures must be above box (ZIndex > 7) to be visible -->
+				<Picture Name="C_EPISODE1PIC" X="42" Y="23" ZIndex="9" />
+				<Picture Name="C_EPISODE2PIC" X="42" Y="49" ZIndex="9" />
+				<Picture Name="C_EPISODE3PIC" X="42" Y="75" ZIndex="9" />
+				<Picture Name="C_EPISODE4PIC" X="42" Y="101" ZIndex="9" />
+				<Picture Name="C_EPISODE5PIC" X="42" Y="127" ZIndex="9" />
+				<Picture Name="C_EPISODE6PIC" X="42" Y="153" ZIndex="9" />
+
+				<!-- WL_MENU.C:225-327: NewEmenu[] array with text AND pictures -->
+				<!-- Pictures at X=42 (NE_X+32), menu text at X=98 (NE_X+indent = 10+88) -->
+				<!-- Text has two lines per episode, changes color when selected -->
+				<!-- Spacing=26 positions episodes at Y: 23, 49, 75, 101, 127, 153 (matching pictures) -->
+				<!-- WL_MENU.C:295-296: Episode 1 active=1 for shareware -->
+				<MenuItem Text="Episode 1&#10;Escape from Wolfenstein">
+					PlayAdLibSound('SHOOTSND')
+					SetEpisode(0)
+					NavigateToMenu("NewGame")
+				</MenuItem>
+				<!-- WL_MENU.C:314-327: Episodes 2-6 with active=0 for WL1 shareware -->
+				<!-- WL_MENU.C:1434-1441: When !EpisodeSelect[which/2], show ordering message -->
+				<MenuItem Text="Episode 2&#10;Operation: Eisenfaust">
+					PlayAdLibSound('NOWAYSND')
+					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
+				</MenuItem>
+				<MenuItem Text="Episode 3&#10;Die, Fuhrer, Die!">
+					PlayAdLibSound('NOWAYSND')
+					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
+				</MenuItem>
+				<MenuItem Text="Episode 4&#10;A Dark Secret">
+					PlayAdLibSound('NOWAYSND')
+					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
+				</MenuItem>
+				<MenuItem Text="Episode 5&#10;Trail of the Madman">
+					PlayAdLibSound('NOWAYSND')
+					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
+				</MenuItem>
+				<MenuItem Text="Episode 6&#10;Confrontation">
+					PlayAdLibSound('NOWAYSND')
+					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
 				</MenuItem>
 			</Menu>
 
@@ -265,10 +320,116 @@ end
 			</Menu>
 
 			<!-- Placeholder menus for testing navigation -->
-			<Menu Name="Sound" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="PC Speaker" Action="BackToPreviousMenu" />
-				<MenuItem Text="AdLib/Sound Blaster" Action="BackToPreviousMenu" />
-				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+<!-- Sound Menu (WL_MENU.H: SM_X=48, SM_Y1=20) -->
+			<!-- WL_MENU.C:1820-1822: Three DrawWindow boxes for Sound FX, Digitized, Music sections -->
+			<!-- WL_MENU.C:1852-1854: Title pictures at (100, SM_Yn-20) -->
+			<!-- WL_MENU.C:1857-1898: Toggle switches drawn at (SM_X+24, SM_Y1+i*13+2) based on current settings -->
+			<Menu Name="Sound" X="48" Y="20" Indent="52" Spacing="13">
+				<!-- Three boxes for the three sections (WL_MENU.C:1820-1822) -->
+				<!-- Box 1: Sound Effects at (SM_X-8, SM_Y1-3, SM_W, SM_H1) = (40, 17, 250, 45) -->
+				<Box X="40" Y="17" W="250" H="45" />
+				<!-- Box 2: Digitized Sound at (SM_X-8, SM_Y2-3, SM_W, SM_H2) = (40, 82, 250, 45) -->
+				<Box X="40" Y="82" W="250" H="45" />
+				<!-- Box 3: Music at (SM_X-8, SM_Y3-3, SM_W, SM_H3) = (40, 147, 250, 32) -->
+				<Box X="40" Y="147" W="250" H="32" />
+
+				<!-- Title pictures (WL_MENU.C:1852-1854) -->
+				<Picture Name="C_FXTITLEPIC" X="100" Y="0" />
+				<Picture Name="C_DIGITITLEPIC" X="100" Y="65" />
+				<Picture Name="C_MUSICTITLEPIC" X="100" Y="130" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+
+				<!-- Toggle switch pictures - 7 total (WL_MENU.C:1895-1897) -->
+				<!-- Position: (SM_X+24, SM_Y1+i*13+2) = (72, 20+i*13+2) -->
+				<!-- ZIndex=9 to draw above boxes (boxes are ZIndex=7) -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9" />   <!-- Item 0: Sound FX None -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9" />   <!-- Item 1: Sound FX PC -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9" />   <!-- Item 2: Sound FX AdLib -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9" />   <!-- Item 3: Digitized None -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9" />  <!-- Item 4: Digitized SB -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9" />  <!-- Item 5: Music None -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9" />  <!-- Item 6: Music AdLib -->
+
+				<!-- OnSelectionChanged: Update all toggle graphics based on current settings (WL_MENU.C:1868-1892) -->
+				<OnSelectionChanged>
+					<![CDATA[
+-- Update all toggle switches to reflect current sound settings
+-- Picture indices: 4-11 correspond to the 8 toggle switches (excluding spacers)
+local soundMode = GetSoundMode()
+local digiMode = GetDigiMode()
+local musicEnabled = GetMusicEnabled()
+
+-- Sound Effects toggles (items 0-2, picture indices 4-6)
+if soundMode == "Off" then
+	SetPicture('C_SELECTEDPIC', 4)
+	SetPicture('C_NOTSELECTEDPIC', 5)
+	SetPicture('C_NOTSELECTEDPIC', 6)
+elseif soundMode == "PC" then
+	SetPicture('C_NOTSELECTEDPIC', 4)
+	SetPicture('C_SELECTEDPIC', 5)
+	SetPicture('C_NOTSELECTEDPIC', 6)
+elseif soundMode == "AdLib" then
+	SetPicture('C_NOTSELECTEDPIC', 4)
+	SetPicture('C_NOTSELECTEDPIC', 5)
+	SetPicture('C_SELECTEDPIC', 6)
+end
+
+-- Digitized Sound toggles (items 3-4, picture indices 7-8)
+if digiMode == "Off" then
+	SetPicture('C_SELECTEDPIC', 7)
+	SetPicture('C_NOTSELECTEDPIC', 8)
+elseif digiMode == "SoundBlaster" then
+	SetPicture('C_NOTSELECTEDPIC', 7)
+	SetPicture('C_SELECTEDPIC', 8)
+end
+
+-- Music toggles (items 5-6, picture indices 9-10)
+if not musicEnabled then
+	SetPicture('C_SELECTEDPIC', 9)
+	SetPicture('C_NOTSELECTEDPIC', 10)
+else
+	SetPicture('C_NOTSELECTEDPIC', 9)
+	SetPicture('C_SELECTEDPIC', 10)
+end
+					]]>
+				</OnSelectionChanged>
+
+				<!-- Menu Items (WL_MENU.C:164-195) -->
+				<!-- Sound Effects section (items 0-2) -->
+				<MenuItem Text="None">
+					SetSoundMode('Off')
+					RefreshMenu()
+				</MenuItem>
+				<MenuItem Text="PC Speaker">
+					SetSoundMode('PC')
+					RefreshMenu()
+				</MenuItem>
+				<MenuItem Text="AdLib/Sound Blaster">
+					SetSoundMode('AdLib')
+					RefreshMenu()
+				</MenuItem>
+
+				<!-- Digitized Sound section (items 3-4) -->
+				<!-- ExtraSpacing=26 creates gap of 2 items (original items 3-4 were empty spacers) -->
+				<MenuItem Text="None" ExtraSpacing="26">
+					SetDigiMode('Off')
+					RefreshMenu()
+				</MenuItem>
+				<MenuItem Text="Sound Blaster">
+					SetDigiMode('SoundBlaster')
+					RefreshMenu()
+				</MenuItem>
+
+				<!-- Music section (items 5-6) -->
+				<!-- ExtraSpacing=39 creates gap of 3 items (original items 3-4 spacers + Disney item) -->
+				<MenuItem Text="None" ExtraSpacing="39">
+					SetMusicEnabled(false)
+					RefreshMenu()
+				</MenuItem>
+				<MenuItem Text="AdLib">
+					SetMusicEnabled(true)
+					RefreshMenu()
+				</MenuItem>
 			</Menu>
 
 			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">

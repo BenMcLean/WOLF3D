@@ -2,7 +2,7 @@ using BenMcLean.Wolf3D.Assets.Sound;
 using NScumm.Core.Audio.OPL;
 using System.Collections.Concurrent;
 
-namespace BenMcLean.Wolf3D.Shared.OPL;
+namespace BenMcLean.Wolf3D.Shared.Audio.OPL;
 
 /// <summary>
 /// id Software Adlib Sound Effect Player by Ben McLean mclean.ben@gmail.com
