@@ -7,10 +7,11 @@ public partial class PcSpeakerPlayer : AudioStreamPlayer
 {
 	public const ushort MixRate = 44100,
 		PcFramesPerUpdate = 315; // 44100 / 140 Hz = ~315 frames
+	public const double TwoPi = Math.PI * 2.0;
 	private Assets.Sound.PcSpeaker currentPcSound = null;
-	private int pcSampleIndex = 0;
+	private int pcSampleIndex = 0,
+		pcFramesInCurrentSample = 0;
 	private double pcPhase = 0.0;
-	private int pcFramesInCurrentSample = 0;
 	public PcSpeakerPlayer()
 	{
 		Stream = new AudioStreamGenerator()
@@ -34,16 +35,16 @@ public partial class PcSpeakerPlayer : AudioStreamPlayer
 	{
 		currentPcSound = null;
 		pcSampleIndex = 0;
-		pcPhase = 0f;
 		pcFramesInCurrentSample = 0;
+		pcPhase = 0.0;
 	}
 	public override void _Process(double delta)
 	{
 		// Early exit if PC Speaker is not active - avoid unnecessary processing
 		if (SharedAssetManager.Config?.SoundMode is not Assets.Gameplay.Config.SDMode.PC ||
-			currentPcSound is null)
-			return;
-		if (!Playing || GetStreamPlayback() is not AudioStreamGeneratorPlayback playback)
+			currentPcSound is null ||
+			!Playing ||
+			GetStreamPlayback() is not AudioStreamGeneratorPlayback playback)
 			return;
 		int framesToFill = playback.GetFramesAvailable();
 		if (framesToFill <= 0)
@@ -53,8 +54,7 @@ public partial class PcSpeakerPlayer : AudioStreamPlayer
 		while (bufferPos < framesToFill && pcSampleIndex < currentPcSound.FrequencyData.Length)
 		{
 			// Get current frequency for this 1/140th second slice
-			byte frequencyByte = currentPcSound.FrequencyData[pcSampleIndex];
-			float frequencyHz = Assets.Sound.PcSpeaker.GetFrequencyHz(frequencyByte);
+			float frequencyHz = Assets.Sound.PcSpeaker.GetFrequencyHz(currentPcSound.FrequencyData[pcSampleIndex]);
 			// Calculate how many frames to generate for this frequency
 			int framesToGenerate = Math.Min(
 				PcFramesPerUpdate - pcFramesInCurrentSample,
@@ -72,17 +72,16 @@ public partial class PcSpeakerPlayer : AudioStreamPlayer
 				else
 				{
 					// Generate square wave (alternates between -1 and +1)
-					sample = pcPhase < MathF.PI ? 1f : -1f;
+					sample = pcPhase < Math.PI ? 1f : -1f;
 					// Advance phase
-					float phaseIncrement = 2f * MathF.PI * frequencyHz / MixRate;
-					pcPhase += phaseIncrement;
+					pcPhase += TwoPi * frequencyHz / MixRate;
 					// Wrap phase to [0, 2*PI]
-					if (pcPhase >= 2f * MathF.PI)
-						pcPhase -= 2f * MathF.PI;
+					if (pcPhase >= TwoPi)
+						pcPhase -= TwoPi;
 				}
 				// Scale down the volume (PC Speaker was quieter)
 				// and convert mono to stereo
-				sample *= 0.3f;
+				sample *= 0.1f;
 				buffer[bufferPos++] = new Vector2(sample, sample);
 				pcFramesInCurrentSample++;
 			}
