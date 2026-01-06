@@ -203,18 +203,17 @@ public static class ExtensionMethods
 	#endregion Drawing
 	#region Utilities
 	/// <summary>
-	/// Compute power of two greater than or equal to `n`
+	/// Compute power of two greater than or equal to n.
 	/// </summary>
-	public static uint NextPowerOf2(this uint n)
+	public static ushort NextPowerOf2(this ushort n)
 	{
-		n--; // decrement `n` (to handle the case when `n` itself is a power of 2)
-			 // set all bits after the last set bit
-		n |= n >> 1;
-		n |= n >> 2;
-		n |= n >> 4;
-		n |= n >> 8;
-		n |= n >> 16;
-		return ++n; // increment `n` and return
+		if (n == 0) return 1;
+		n--;
+		n |= (ushort)(n >> 1);
+		n |= (ushort)(n >> 2);
+		n |= (ushort)(n >> 4);
+		n |= (ushort)(n >> 8);
+		return (ushort)(n + 1);
 	}
 	#endregion Utilities
 }

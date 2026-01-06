@@ -138,18 +138,13 @@ public static class SharedAssetManager
 		// Initialize texture dictionaries
 		_vswap = [];
 		_vgaGraph = [];
-		// Font regions use uint keys with composite format: (fontIndex << 16) | charCode
-		// This packs font index in upper 16 bits and character code in lower 16 bits
-		// uint prevents sign-extension issues with bit-shift operations
-		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions = [];
-		Dictionary<string, Godot.Rect2I> picFontSpaceRegions = [];
 		Godot.Rect2I crosshairRegion = new();
 		// Generate and pack rectangles
 		PackingRectangle[] rectangles = GenerateRectangles();
 		RectanglePacker.Pack(rectangles, out PackingRectangle bounds, PackingHints.TryByBiggerSide);
 		rectangles = [.. rectangles.OrderBy(r => r.Id)];
 		// Calculate atlas size as next power of 2
-		uint atlasSize = Math.Max(bounds.Width, bounds.Height).NextPowerOf2();
+		ushort atlasSize = ((ushort)Math.Max(bounds.Width, bounds.Height)).NextPowerOf2();
 		// Create atlas canvas
 		byte[] atlas = new byte[atlasSize * atlasSize << 2];
 		// Insert textures into atlas
@@ -166,7 +161,7 @@ public static class SharedAssetManager
 					y: (ushort)(work.rect.Y + 1),
 					insert: work.page,
 					insertWidth: CurrentGame.VSwap.TileSqrt,
-					width: (ushort)atlasSize);
+					width: atlasSize);
 				return new KeyValuePair<int, Godot.Rect2I>(
 					key: work.rect.Id,
 					value: new Godot.Rect2I(
@@ -189,7 +184,7 @@ public static class SharedAssetManager
 					y: (ushort)(work.rect.Y + 1),
 					insert: work.pic,
 					insertWidth: (ushort)(work.rect.Width - 2),
-					width: (ushort)atlasSize);
+					width: atlasSize);
 				return new KeyValuePair<int, Godot.Rect2I>(
 					key: work.picIndex,
 					value: new Godot.Rect2I(
@@ -199,32 +194,41 @@ public static class SharedAssetManager
 						height: (int)work.rect.Height - 2));
 			})
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-		int rectIndex = vswapRegions.Count + vgaGraphRegions.Count;
 		// Insert VgaGraph Chunk Font characters
-		for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
-		{
-			Assets.Graphics.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
-			for (uint charCode = 0; charCode < font.Glyphs.Length; charCode++)
-				if (font.Widths[charCode] > 0)
-				{
-					PackingRectangle rect = rectangles[rectIndex++];
-					byte width = font.Widths[charCode];
-					ushort height = font.Height;
-					atlas.DrawInsert(
-						x: (ushort)(rect.X + 1),
-						y: (ushort)(rect.Y + 1),
-						insert: font.Glyphs[charCode],
-						insertWidth: width,
-						width: (ushort)atlasSize);
-					// Composite key: fontIndex in upper 16 bits, charCode in lower 16 bits
-					vgaGraphFontRegions[(fontIndex << 16) | charCode] = new Godot.Rect2I(
+		// Font regions use uint keys with composite format: (fontIndex << 16) | charCode
+		// This packs font index in upper 16 bits and character code in lower 16 bits
+		// uint prevents sign-extension issues with bit-shift operations
+		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions = CurrentGame.VgaGraph.Fonts
+			.SelectMany((font, fontIdx) => font.Glyphs.Select((glyph, charIdx) => new { font, fontIdx, glyph, charIdx }))
+			.Where(x => x.font.Widths[x.charIdx] > 0)
+			.Select((x, i) => new { x.font, x.fontIdx, x.glyph, x.charIdx, index = i })
+			.AsParallel()
+			.Select(work =>
+			{
+				// Calculate the absolute rectangle index based on previous sections
+				int absoluteRectIdx = vswapRegions.Count + vgaGraphRegions.Count + work.index;
+				PackingRectangle rect = rectangles[absoluteRectIdx];
+				byte width = work.font.Widths[work.charIdx];
+				ushort height = work.font.Height;
+				atlas.DrawInsert(
+					x: (ushort)(rect.X + 1),
+					y: (ushort)(rect.Y + 1),
+					insert: work.glyph,
+					insertWidth: width,
+					width: atlasSize);
+				return new KeyValuePair<uint, Godot.Rect2I>(
+					((uint)work.fontIdx << 16) | (uint)work.charIdx,
+					new Godot.Rect2I(
 						x: (int)(rect.X + 1),
 						y: (int)(rect.Y + 1),
 						width: width,
-						height: height);
-				}
-		}
+						height: height));
+			})
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		// Update rectIndex for subsequent single-threaded operations
+		int rectIndex = vswapRegions.Count + vgaGraphRegions.Count + vgaGraphFontRegions.Count;
 		// Insert PicFont space characters
+		Dictionary<string, Godot.Rect2I> picFontSpaceRegions = [];
 		foreach ((string fontName, VgaGraph.PicFont picFont) in
 			CurrentGame.VgaGraph.PicFonts
 			.Where(kvp => kvp.Value.SpaceWidth > 0))
@@ -242,7 +246,7 @@ public static class SharedAssetManager
 				color: color,
 				rectWidth: width,
 				rectHeight: height,
-				width: (ushort)atlasSize);
+				width: atlasSize);
 			picFontSpaceRegions[fontName] = new Godot.Rect2I(
 				x: (int)(rect.X + 1),
 				y: (int)(rect.Y + 1),
@@ -254,7 +258,7 @@ public static class SharedAssetManager
 			x: (int)(crosshair.X + 1),
 			y: (int)(crosshair.Y + 1),
 			color: Constants.White,
-			width: (ushort)atlasSize);
+			width: atlasSize);
 		crosshairRegion = new Godot.Rect2I(
 			x: (int)(crosshair.X + 1),
 			y: (int)(crosshair.Y + 1),
@@ -262,8 +266,8 @@ public static class SharedAssetManager
 			height: 11);
 		// Create Godot texture from atlas
 		AtlasImage = Godot.Image.CreateFromData(
-			width: (int)atlasSize,
-			height: (int)atlasSize,
+			width: atlasSize,
+			height: atlasSize,
 			useMipmaps: false,
 			format: Godot.Image.Format.Rgba8,
 			data: atlas);
