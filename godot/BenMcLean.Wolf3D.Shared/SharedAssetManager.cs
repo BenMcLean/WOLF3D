@@ -198,31 +198,26 @@ public static class SharedAssetManager
 		// Font regions use uint keys with composite format: (fontIndex << 16) | charCode
 		// This packs font index in upper 16 bits and character code in lower 16 bits
 		// uint prevents sign-extension issues with bit-shift operations
-		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions = CurrentGame.VgaGraph.Fonts
-			.SelectMany((font, fontIdx) => font.Glyphs.Select((glyph, charIdx) => new { font, fontIdx, glyph, charIdx }))
-			.Where(x => x.font.Widths[x.charIdx] > 0)
-			.Select((x, i) => new { x.font, x.fontIdx, x.glyph, x.charIdx, index = i })
+		Dictionary<uint, Rect2I> vgaGraphFontRegions = CurrentGame.VgaGraph.Fonts
+			.SelectMany((font, fontIndex) => font.Glyphs.Select((glyph, glyphIndex) => new { font, fontIndex, glyph, glyphIndex }))
+			.Where(x => x.font.Widths[x.glyphIndex] > 0)
+			.Select((x, rectIndex) => new { x.font, x.fontIndex, x.glyphIndex, rect = rectangles[vswapRegions.Count + vgaGraphRegions.Count + rectIndex] })
 			.AsParallel()
 			.Select(work =>
 			{
-				// Calculate the absolute rectangle index based on previous sections
-				int absoluteRectIdx = vswapRegions.Count + vgaGraphRegions.Count + work.index;
-				PackingRectangle rect = rectangles[absoluteRectIdx];
-				byte width = work.font.Widths[work.charIdx];
-				ushort height = work.font.Height;
 				atlas.DrawInsert(
-					x: (ushort)(rect.X + 1),
-					y: (ushort)(rect.Y + 1),
-					insert: work.glyph,
-					insertWidth: width,
+					x: (ushort)(work.rect.X + 1),
+					y: (ushort)(work.rect.Y + 1),
+					insert: work.font.Glyphs[work.glyphIndex],
+					insertWidth: work.font.Widths[work.glyphIndex],
 					width: atlasSize);
-				return new KeyValuePair<uint, Godot.Rect2I>(
-					((uint)work.fontIdx << 16) | (uint)work.charIdx,
-					new Godot.Rect2I(
-						x: (int)(rect.X + 1),
-						y: (int)(rect.Y + 1),
-						width: width,
-						height: height));
+				return new KeyValuePair<uint, Rect2I>(
+					key: ((uint)work.fontIndex << 16) | (uint)work.glyphIndex,
+					value: new Godot.Rect2I(
+						x: (int)(work.rect.X + 1),
+						y: (int)(work.rect.Y + 1),
+						width: work.font.Widths[work.glyphIndex],
+						height: work.font.Height));
 			})
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		// Update rectIndex for subsequent single-threaded operations
