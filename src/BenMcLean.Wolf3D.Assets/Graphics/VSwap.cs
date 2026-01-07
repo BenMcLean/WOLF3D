@@ -162,6 +162,9 @@ public sealed class VSwap
 			}
 		#endregion read in digisounds
 	}
+	/// <summary>
+	/// Converts from Wolfenstein 3-D's column-major palette indexed format to modern row-major RGBA8888.
+	/// </summary>
 	private static byte[] ProcessWall(byte[] rawData, uint[] palette, ushort tileSqrt = 64)
 	{
 		byte[] rgbaData = new byte[tileSqrt * tileSqrt << 2];
@@ -196,10 +199,10 @@ public sealed class VSwap
 				ushort endY = BinaryPrimitives.ReadUInt16LittleEndian(raw[commandsOffset..(commandsOffset + 2)]);
 				if (endY == 0) break;
 				// Wolf3D format: endY and startY are stored as 2 * pixel_coordinate
-				int actualEndY = endY >> 1;
-				// The 2 bytes at commandsOffset + 2 are the offset to the next column/command 
-				// (Standard Wolf3D doesn't really use this for much, we ignore it)
-				int actualStartY = BinaryPrimitives.ReadUInt16LittleEndian(raw[(commandsOffset + 4)..(commandsOffset + 6)]) >> 1;
+				int actualEndY = endY >> 1,
+					// The 2 bytes at commandsOffset + 2 are the offset to the next column/command 
+					// (Standard Wolf3D doesn't really use this for much, we ignore it)
+					actualStartY = BinaryPrimitives.ReadUInt16LittleEndian(raw[(commandsOffset + 4)..(commandsOffset + 6)]) >> 1;
 				commandsOffset += 6;
 				for (int row = actualStartY; row < actualEndY; row++)
 				{

@@ -217,7 +217,7 @@ public class MapAnalyzer
 	};
 
 	public MapAnalysis Analyze(GameMap map) => new(this, map, _logger);
-	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Select(Analyze);
+	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Parallelize(Analyze);
 	#region Inner classes
 	public sealed class MapAnalysis
 	{

@@ -136,6 +136,7 @@ public sealed class VgaGraph
 	public static byte[][] SplitFile(uint[] head, Stream file, ushort[][] dictionary)
 	{
 		byte[][] split = new byte[head.Length - 1][];
+		uint[] lengths = new uint[split.Length];
 		using (BinaryReader binaryReader = new(file))
 			for (uint i = 0; i < split.Length; i++)
 			{
@@ -143,12 +144,20 @@ public sealed class VgaGraph
 				if (size > 0)
 				{
 					file.Seek(head[i], 0);
-					uint length = binaryReader.ReadUInt32();
-					binaryReader.Read(split[i] = new byte[size - 2], 0, split[i].Length);
-					split[i] = CAL_HuffExpand(split[i], dictionary, length);
+					lengths[i] = binaryReader.ReadUInt32();
+					binaryReader.Read(
+						buffer: split[i] = new byte[size - 2],
+						index: 0,
+						count: split[i].Length);
 				}
 			}
-		return split;
+		return [.. split
+			.Select((slice, index) => (slice, index))
+			.AsParallel()
+			.Select(work => (result: CAL_HuffExpand(work.slice, dictionary, lengths[work.index]), work.index))
+			.OrderBy(resultTuple => resultTuple.index)
+			.AsEnumerable()
+			.Select(resultTuple => resultTuple.result)];
 	}
 	public static byte[] Deplanify(byte[] input, ushort width) =>
 		Deplanify(input, width, (ushort)(input.Length / width));
