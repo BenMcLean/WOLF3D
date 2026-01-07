@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -8,6 +9,18 @@ namespace BenMcLean.Wolf3D.Assets;
 
 public static class ExtensionMethods
 {
+	/// <summary>
+	/// Parallelizes the execution of a Select query while preserving the order of the source sequence.
+	/// </summary>
+	public static List<TResult> Parallelize<TSource, TResult>(
+		this IEnumerable<TSource> source,
+		Func<TSource, TResult> selector) => [.. source
+			.Select((element, index) => (element, index))
+			.AsParallel()
+			.Select(sourceTuple => (result: selector(sourceTuple.element), sourceTuple.index))
+			.OrderBy(resultTuple => resultTuple.index)
+			.AsEnumerable()
+			.Select(resultTuple => resultTuple.result)];
 	public static bool IsTrue(this XElement xElement, string attribute) =>
 		bool.TryParse(xElement?.Attribute(attribute)?.Value, out bool @bool) && @bool;
 	public static bool IsFalse(this XElement xElement, string attribute) =>
@@ -42,20 +55,6 @@ public static class ExtensionMethods
 		string[] inputs = input.Split(',');
 		for (int i = 0; i < inputs.Length; i += 2)
 			yield return new Tuple<float, float>(float.Parse(inputs[i]), float.Parse(inputs[i + 1]));
-	}
-	/// <summary>
-	/// Compute power of two greater than or equal to `n`
-	/// </summary>
-	public static uint NextPowerOf2(this uint n)
-	{
-		n--; // decrement `n` (to handle the case when `n` itself is a power of 2)
-			 // set all bits after the last set bit
-		n |= n >> 1;
-		n |= n >> 2;
-		n |= n >> 4;
-		n |= n >> 8;
-		n |= n >> 16;
-		return ++n; // increment `n` and return
 	}
 	#region Colors
 	public static byte R(this uint color) => (byte)(color >> 24);

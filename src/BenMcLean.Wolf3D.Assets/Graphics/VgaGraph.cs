@@ -51,14 +51,16 @@ public sealed class VgaGraph
 			Sizes = Load16BitPairs(sizes);
 		uint startFont = (uint)vgaGraph.Element("Sizes").Attribute("StartFont"),
 			startPic = (uint)vgaGraph.Element("Sizes").Attribute("StartPic");
-		Fonts = new Font[startPic - startFont];
-		for (int i = 0; i < Fonts.Length; i++)
-			using (MemoryStream font = new(file[startFont + i]))
-				Fonts[i] = new Font(font);
-		Pics = new byte[vgaGraph.Elements("Pic")?.Count() ?? 0][];
-		for (int i = 0; i < Pics.Length; i++)
-			Pics[i] = Deplanify(file[startPic + i], Sizes[i][0])
-				.Indices2ByteArray(Palettes[PaletteNumber(i, xml)]);
+		Fonts = [.. Enumerable.Range(0, (int)(startPic - startFont))
+			.Parallelize(i =>
+			{
+				using MemoryStream fontStream = new(file[startFont + i]);
+				return new Font(fontStream);
+			})];
+		Pics = [.. Enumerable.Range(0, vgaGraph.Elements("Pic")?.Count() ?? 0)
+			.Parallelize(i =>
+				Deplanify(file[startPic + i], Sizes[i][0])
+					.Indices2ByteArray(Palettes[PaletteNumber(i, xml)]))];
 		// Build PicsByName dictionary from XML
 		PicsByName = [];
 		foreach (XElement picElement in vgaGraph.Elements("Pic"))

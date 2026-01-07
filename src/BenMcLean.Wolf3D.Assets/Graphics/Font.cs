@@ -1,6 +1,6 @@
 using System;
-using System.Buffers.Binary;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace BenMcLean.Wolf3D.Assets.Graphics;
 
@@ -36,15 +36,10 @@ public class Font
 				offset: offsets[glyph],
 				origin: SeekOrigin.Begin);
 			byte[] glyphData = binaryReader.ReadBytes(Widths[glyph] * Height);
-			for (int byteIndex = 0, rgbaIndex = 0;
-				byteIndex < glyphData.Length;
-				byteIndex++, rgbaIndex += 4)
-				if (glyphData[byteIndex] != 0)
-					BinaryPrimitives.WriteUInt32BigEndian(
-						destination: Glyphs[glyph].AsSpan(
-							start: rgbaIndex,
-							length: 4),
-						value: 0xFFFFFFFFu);
+			Span<uint> rgbaSpan = MemoryMarshal.Cast<byte, uint>(Glyphs[glyph].AsSpan());
+			for (int i = 0; i < glyphData.Length; i++)
+				if (glyphData[i] != 0)
+					rgbaSpan[i] = 0xFFFFFFFFu;
 		}
 	}
 }

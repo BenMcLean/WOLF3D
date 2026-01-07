@@ -138,18 +138,6 @@ public static class ExtensionMethods
 	#endregion Angles
 	#region Utilities
 	/// <summary>
-	/// Parallelizes the execution of a Select query while preserving the order of the source sequence.
-	/// </summary>
-	public static List<TResult> Parallelize<TSource, TResult>(
-		this IEnumerable<TSource> source,
-		Func<TSource, TResult> selector) => [.. source
-			.Select((element, index) => (element, index))
-			.AsParallel()
-			.Select(sourceTuple => (result: selector(sourceTuple.element), sourceTuple.index))
-			.OrderBy(resultTuple => resultTuple.index)
-			.AsEnumerable()
-			.Select(resultTuple => resultTuple.result)];
-	/// <summary>
 	/// Simple nearest-neighbor upscaling by integer multipliers
 	/// </summary>
 	/// <param name="texture">raw rgba8888 pixel data of source image</param>
