@@ -215,6 +215,7 @@ public sealed class VSwap
 		ApplyTransparentBorder(rgbaData, tileSqrt);
 		return (rgbaData, mask);
 	}
+	#region ApplyTransparentBorder
 	public static void ApplyTransparentBorder(byte[] rgbaData, ushort width)
 	{
 		Span<uint> dest = MemoryMarshal.Cast<byte, uint>(rgbaData.AsSpan());
@@ -281,33 +282,26 @@ public sealed class VSwap
 			if (IsOpaque(p)) neighbors[count++] = p;
 		}
 	}
+	#endregion ApplyTransparentBorder
+	#region Palettes
 	public static uint PaletteNumber(int pageNumber, XElement xml) =>
 		xml?.Element("VSwap")?.Descendants()?.Where(
 			e => ushort.TryParse(e.Attribute("Page")?.Value, out ushort page) && page == pageNumber
 			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
 		?.FirstOrDefault() ?? 0;
-	public static IEnumerable<uint[]> LoadPalettes(XElement xml) => xml.Elements("Palette").Select(LoadPalette);
-	public static uint Color(byte r, byte g, byte b, byte a) => (uint)r << 24 | (uint)g << 16 | (uint)b << 8 | a;
-	#region Palette
-	public static uint[] LoadPalette(XElement paletteElement)
-	{
-		XElement[] colorElements = [.. paletteElement.Elements("Color")];
-		if (colorElements.Length != 256)
-			throw new InvalidDataException($"Palette must contain exactly 256 colors, found {colorElements.Length}");
-		uint[] result = new uint[256];
-		for (int i = 0; i < 256; i++)
+	public static IEnumerable<uint[]> LoadPalettes(XElement xml) =>
+		xml.Elements("Palette").Select(paletteElement =>
 		{
-			string hexValue = colorElements[i].Attribute("Hex")?.Value;
-			if (string.IsNullOrEmpty(hexValue) || hexValue[0] != '#' || hexValue.Length != 7)
-				throw new InvalidDataException($"Color {i} has invalid Hex attribute: '{hexValue}'. Expected format: #RRGGBB");
-			// Parse hex color (remove # and parse as hex)
-			if (!uint.TryParse(hexValue[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb24))
-				throw new InvalidDataException($"Color {i} has invalid hex value: '{hexValue}'");
-			// Convert 24-bit RGB to 32-bit RGBA: left-shift by 8 bits and OR with opaque alpha
-			// (except index 255 which is transparent)
-			result[i] = rgb24 << 8 | (i == 255 ? 0u : 0xFFu);
-		}
-		return result;
-	}
-	#endregion Palette
+			uint[] result = new uint[256];
+			List<XElement> colorElements = paletteElement.Elements("Color").ToList();
+			for (int i = 0; i < 256 && i < colorElements.Count; i++)
+			{
+				string hexAttr = colorElements[i].Attribute("Hex")?.Value;
+				if (hexAttr != null && hexAttr.Length == 7 && hexAttr[0] == '#' &&
+					uint.TryParse(hexAttr[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb))
+					result[i] = (rgb << 8) | (i == 255 ? 0u : 0xFFu);
+			}
+			return result;
+		});
+	#endregion Palettes
 }
