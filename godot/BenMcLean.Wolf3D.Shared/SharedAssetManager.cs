@@ -72,15 +72,16 @@ public static class SharedAssetManager
 	{
 		List<PackingRectangle> rectangles = [];
 		// Add rectangles for VSwap pages (walls and sprites)
-		uint tileSqrt = CurrentGame.VSwap.TileSqrt;
-		for (int page = 0; page < CurrentGame.VSwap.Pages.Length; page++)
-			if (CurrentGame.VSwap.Pages[page] is not null)
-				rectangles.Add(new PackingRectangle(
-					x: 0,
-					y: 0,
-					width: tileSqrt + 2,
-					height: tileSqrt + 2,
-					id: rectangles.Count));
+		uint vSwapSize = (uint)CurrentGame?.VSwap?.TileSqrt + 2;
+		if (CurrentGame?.VSwap?.Pages is not null)
+			foreach (byte[] page in CurrentGame.VSwap.Pages
+				.Where(page => page is not null))
+					rectangles.Add(new PackingRectangle(
+						x: 0,
+						y: 0,
+						width: vSwapSize,
+						height: vSwapSize,
+						id: rectangles.Count));
 		// Add rectangles for VgaGraph Pics
 		if (CurrentGame.VgaGraph is not null)
 		{
@@ -93,9 +94,7 @@ public static class SharedAssetManager
 					height: (uint)(CurrentGame.VgaGraph.Sizes[i][1] + 2),
 					id: rectangles.Count)));
 			// Add rectangles for VgaGraph Font characters
-			for (uint fontIndex = 0; fontIndex < CurrentGame.VgaGraph.Fonts.Length; fontIndex++)
-			{
-				Assets.Graphics.Font font = CurrentGame.VgaGraph.Fonts[fontIndex];
+			foreach (Assets.Graphics.Font font in CurrentGame.VgaGraph.Fonts)
 				for (uint charCode = 0; charCode < font.Glyphs.Length; charCode++)
 					if (font.Widths[charCode] > 0)
 						rectangles.Add(new PackingRectangle(
@@ -104,22 +103,16 @@ public static class SharedAssetManager
 							width: (uint)(font.Widths[charCode] + 2),
 							height: (uint)(font.Height + 2),
 							id: rectangles.Count));
-			}
 			// Add rectangles for PicFont space characters
 			foreach ((string fontName, VgaGraph.PicFont picFont) in
 				CurrentGame.VgaGraph.PicFonts
 				.Where(kvp => kvp.Value.SpaceWidth > 0))
-			{
-				// Get height from first character in the pic font
-				int firstPicIndex = picFont.Glyphs.Values.First();
-				ushort height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
 				rectangles.Add(new PackingRectangle(
 					x: 0,
 					y: 0,
 					width: (uint)(picFont.SpaceWidth + 2),
-					height: (uint)(height + 2),
+					height: (uint)(CurrentGame.VgaGraph.Sizes[picFont.Glyphs.Values.First()][1] + 2),
 					id: rectangles.Count));
-			}
 		}
 		// Add rectangle for crosshair
 		rectangles.Add(new PackingRectangle(
@@ -136,9 +129,6 @@ public static class SharedAssetManager
 	private static void BuildAtlas()
 	{
 		// Initialize texture dictionaries
-		_vswap = [];
-		_vgaGraph = [];
-		Godot.Rect2I crosshairRegion = new();
 		// Generate and pack rectangles
 		PackingRectangle[] rectangles = GenerateRectangles();
 		RectanglePacker.Pack(rectangles, out PackingRectangle bounds, PackingHints.TryByBiggerSide);
@@ -163,7 +153,7 @@ public static class SharedAssetManager
 					insertWidth: CurrentGame.VSwap.TileSqrt,
 					width: atlasSize);
 				return new KeyValuePair<int, Godot.Rect2I>(
-					key: work.rect.Id,
+					key: work.pageIndex,
 					value: new Godot.Rect2I(
 						x: (int)(work.rect.X + 1),
 						y: (int)(work.rect.Y + 1),
@@ -252,13 +242,7 @@ public static class SharedAssetManager
 		atlas.DrawCrosshair(
 			x: (int)(crosshair.X + 1),
 			y: (int)(crosshair.Y + 1),
-			color: Constants.White,
 			width: atlasSize);
-		crosshairRegion = new Godot.Rect2I(
-			x: (int)(crosshair.X + 1),
-			y: (int)(crosshair.Y + 1),
-			width: 13,
-			height: 11);
 		// Create Godot texture from atlas
 		AtlasImage = Godot.Image.CreateFromData(
 			width: atlasSize,
@@ -268,85 +252,52 @@ public static class SharedAssetManager
 			data: atlas);
 		AtlasTexture = Godot.ImageTexture.CreateFromImage(AtlasImage);
 		// Build AtlasTextures for 2D display
-		BuildAtlasTextures(vswapRegions, vgaGraphRegions, crosshairRegion);
-		// Build all fonts (both regular and prefix-based)
-		BuildFonts(vgaGraphRegions, vgaGraphFontRegions, picFontSpaceRegions);
-	}
-	/// <summary>
-	/// Builds AtlasTextures for 2D display from VSwap and VgaGraph regions.
-	/// </summary>
-	private static void BuildAtlasTextures(
-		Dictionary<int, Godot.Rect2I> vswapRegions,
-		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
-		Godot.Rect2I crosshairRegion)
-	{
 		// Build VSwap AtlasTextures (indexed by page number)
-		foreach (KeyValuePair<int, Godot.Rect2I> kvp in vswapRegions)
+		_vswap = vswapRegions.ToDictionary(kvp => kvp.Key, kvp => new Godot.AtlasTexture()
 		{
-			Godot.AtlasTexture atlasTexture = new()
-			{
-				Atlas = AtlasTexture,
-				Region = new Godot.Rect2(kvp.Value.Position, kvp.Value.Size),
-			};
-			_vswap[kvp.Key] = atlasTexture;
-		}
+			Atlas = AtlasTexture,
+			Region = new Godot.Rect2(kvp.Value.Position, kvp.Value.Size),
+		});
 		// Build VgaGraph AtlasTextures by name
+		_vgaGraph = [];
 		if (CurrentGame?.VgaGraph?.PicsByName is not null)
 			foreach ((string name, int picIndex) in CurrentGame.VgaGraph.PicsByName)
-			{
-				if (!vgaGraphRegions.TryGetValue(picIndex, out Godot.Rect2I region))
-					continue;
-				Godot.AtlasTexture atlasTexture = new()
+				if (vgaGraphRegions.TryGetValue(picIndex, out Godot.Rect2I region))
+					_vgaGraph[name] = new()
+					{
+						Atlas = AtlasTexture,
+						Region = new Godot.Rect2(region.Position, region.Size),
+					};
+		// Build chunk fonts
+		_themes = [];
+		foreach ((string name, int index) in CurrentGame.VgaGraph.ChunkFontsByName)
+			if (BuildChunkFont(index, vgaGraphFontRegions) is Godot.FontFile font)
+				_themes[name] = new()
 				{
-					Atlas = AtlasTexture,
-					Region = new Godot.Rect2(region.Position, region.Size),
+					DefaultFont = font,
+					DefaultFontSize = font.FixedSize,
 				};
-				_vgaGraph[name] = atlasTexture;
-			}
+		// Build pic fonts
+		foreach ((string name, VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
+			if (BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions) is Godot.FontFile font)
+				_themes[name] = new()
+				{
+					DefaultFont = font,
+					DefaultFontSize = font.FixedSize,
+				};
 		// Build Crosshair AtlasTexture
 		Crosshair = new()
 		{
 			Atlas = AtlasTexture,
-			Region = new Godot.Rect2(crosshairRegion.Position, crosshairRegion.Size),
+			Region = new Godot.Rect2(
+				position: new Vector2(
+					x: (int)(crosshair.X + 1),
+					y: (int)(crosshair.Y + 1)),
+				size: new Vector2(11, 13)),
 		};
 	}
 	#endregion Textures
 	#region Fonts
-	/// <summary>
-	/// Builds Godot FontFile objects for all fonts defined in XML.
-	/// Handles both chunk fonts (from VGAGRAPH) and pic fonts (prefix-based).
-	/// </summary>
-	private static void BuildFonts(
-		Dictionary<int, Godot.Rect2I> vgaGraphRegions,
-		Dictionary<uint, Godot.Rect2I> vgaGraphFontRegions,
-		Dictionary<string, Godot.Rect2I> picFontSpaceRegions)
-	{
-		if (CurrentGame?.VgaGraph is null)
-			return;
-		_themes = [];
-		// Build chunk fonts
-		foreach ((string name, int index) in CurrentGame.VgaGraph.ChunkFontsByName)
-			if (BuildChunkFont(index, vgaGraphFontRegions) is Godot.FontFile font)
-			{
-				Godot.Theme theme = new()
-				{
-					DefaultFont = font,
-					DefaultFontSize = font.FixedSize,
-				};
-				_themes[name] = theme;
-			}
-		// Build pic fonts
-		foreach ((string name, VgaGraph.PicFont picFont) in CurrentGame.VgaGraph.PicFonts)
-			if (BuildPicFont(name, picFont, vgaGraphRegions, picFontSpaceRegions) is Godot.FontFile font)
-			{
-				Godot.Theme theme = new()
-				{
-					DefaultFont = font,
-					DefaultFontSize = font.FixedSize,
-				};
-				_themes[name] = theme;
-			}
-	}
 	/// <summary>
 	/// Builds a regular Godot Font from a VgaGraph font chunk.
 	/// </summary>
@@ -465,16 +416,16 @@ public static class SharedAssetManager
 		// Add space character if it has a textured region
 		if (picFontSpaceRegions.TryGetValue(fontName, out Godot.Rect2I spaceRegion))
 		{
-			int spaceCode = ' ';
+			const char space = ' ';
 			font.SetGlyphTextureIdx(
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
-				glyph: spaceCode,
+				glyph: space,
 				textureIdx: 0);
 			font.SetGlyphUVRect(
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
-				glyph: spaceCode,
+				glyph: space,
 				uVRect: new Godot.Rect2(
 					position: new Godot.Vector2(
 						x: spaceRegion.Position.X / (float)AtlasTexture.GetWidth(),
@@ -485,17 +436,17 @@ public static class SharedAssetManager
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: font.FixedSize,
-				glyph: spaceCode,
+				glyph: space,
 				advance: new Godot.Vector2(spaceRegion.Size.X, 0));
 			font.SetGlyphSize(
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
-				glyph: spaceCode,
+				glyph: space,
 				glSize: spaceRegion.Size);
 			font.SetGlyphOffset(
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
-				glyph: spaceCode,
+				glyph: space,
 				offset: new Godot.Vector2I(0, 0));
 		}
 		return font;
