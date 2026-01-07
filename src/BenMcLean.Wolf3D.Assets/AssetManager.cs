@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Graphics;
@@ -30,15 +32,26 @@ public class AssetManager
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
-		AudioT = AudioT.Load(xml, folder);
-		VgaGraph = VgaGraph.Load(xml, folder);
-		VSwap = VSwap.Load(xml, folder);
-		Maps = GameMap.Load(xml, folder);
-		// Create logger for MapAnalyzer
+		AudioT audioT = null;
+		VgaGraph vgaGraph = null;
+		VSwap vSwap = null;
+		GameMap[] maps = null;
+		Parallel.ForEach(
+			source: new Action[] {
+					() => audioT = AudioT.Load(xml, folder),
+					() => vgaGraph = VgaGraph.Load(xml, folder),
+					() => vSwap = VSwap.Load(xml, folder),
+					() => maps = GameMap.Load(xml, folder),
+				},
+			body: action => action());
+		AudioT = audioT;
+		VgaGraph = vgaGraph;
+		VSwap = vSwap;
+		Maps = maps;
 		ILogger<MapAnalyzer> mapAnalyzerLogger = loggerFactory?.CreateLogger<MapAnalyzer>()
 			?? NullLogger<MapAnalyzer>.Instance;
 		MapAnalyzer = new MapAnalyzer(xml, VSwap.SpritesByName, mapAnalyzerLogger);
-		MapAnalyses = [.. MapAnalyzer.Analyze(Maps)];
+		MapAnalyses = [.. MapAnalyzer.Analyze(maps)];
 		// Load StateCollection from XML
 		StateCollection = LoadStateCollection(xml);
 		// Load MenuCollection from XML
@@ -46,7 +59,7 @@ public class AssetManager
 	}
 	private StateCollection LoadStateCollection(XElement xml)
 	{
-		StateCollection stateCollection = new StateCollection();
+		StateCollection stateCollection = new();
 		// Sprite name resolver - uses VSwap.SpritesByName dictionary
 		short ResolveSpriteNameToNumber(string spriteName)
 		{
@@ -59,12 +72,12 @@ public class AssetManager
 		XElement statInfoElement = vswapElement?.Element("StatInfo");
 		if (statInfoElement == null)
 			return stateCollection; // No states defined
-		// Load state functions first
-		var functionElements = statInfoElement.Elements("Function");
+									// Load state functions first
+		IEnumerable<XElement> functionElements = statInfoElement.Elements("Function");
 		if (functionElements != null)
 			stateCollection.LoadFunctionsFromXml(functionElements);
 		// Load states (Phase 1: Create all state objects)
-		var stateElements = statInfoElement.Elements("State");
+		IEnumerable<XElement> stateElements = statInfoElement.Elements("State");
 		if (stateElements != null)
 			stateCollection.LoadStatesFromXml(stateElements, ResolveSpriteNameToNumber);
 		// Phase 2: Link state references
@@ -78,9 +91,9 @@ public class AssetManager
 		// Find the Menus element inside VgaGraph
 		XElement vgaGraphElement = xml.Element("VgaGraph");
 		XElement menusElement = vgaGraphElement?.Element("Menus");
-		if (menusElement == null)
+		if (menusElement is null)
 			return new MenuCollection(); // No menus defined
-		// Use MenuCollection.Load static method to parse entire structure
+										 // Use MenuCollection.Load static method to parse entire structure
 		return MenuCollection.Load(menusElement);
 	}
 }
