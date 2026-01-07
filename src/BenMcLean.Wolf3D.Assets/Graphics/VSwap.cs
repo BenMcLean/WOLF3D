@@ -1,8 +1,11 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets.Graphics;
@@ -14,7 +17,7 @@ namespace BenMcLean.Wolf3D.Assets.Graphics;
 /// </summary>
 public sealed class VSwap
 {
-	public static VSwap Load(XElement xml, string folder="")
+	public static VSwap Load(XElement xml, string folder = "")
 	{
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
@@ -74,62 +77,31 @@ public sealed class VSwap
 				throw new InvalidDataException("VSWAP contains invalid page offsets.");
 		}
 		ushort[] pageLengths = new ushort[NumPages];
-		for (ushort i = 0; i < pageLengths.Length; i++)
-			pageLengths[i] = binaryReader.ReadUInt16();
-		ushort page;
+		for (int page = 0; page < pageLengths.Length; page++)
+			pageLengths[page] = binaryReader.ReadUInt16();
 		#endregion parse header info
-		#region read in walls
-		for (page = 0; page < SpritePage; page++)
+		byte[][] rawPages = new byte[SoundPage][];
+		for (int page = 0; page < SoundPage; page++)
 			if (pageOffsets[page] > 0)
 			{
-				stream.Seek(pageOffsets[page], 0);
-				byte[] wall = new byte[TileSqrt * TileSqrt];
-				for (ushort col = 0; col < TileSqrt; col++)
-					for (ushort row = 0; row < TileSqrt; row++)
-						wall[TileSqrt * row + col] = (byte)stream.ReadByte();
-				Pages[page] = wall.Indices2ByteArray(palettes[PaletteNumber(page, xml)]);
+				stream.Seek(pageOffsets[page], SeekOrigin.Begin);
+				rawPages[page] = binaryReader.ReadBytes(pageLengths[page]);
 			}
-		#endregion read in walls
-		#region read in sprites
-		for (; page < SoundPage; page++)
-			if (pageOffsets[page] > 0)
+		Enumerable.Range(0, SoundPage)
+			.AsParallel()
+			.ForAll(page =>
 			{
-				stream.Seek(pageOffsets[page], 0);
-				ushort leftExtent = binaryReader.ReadUInt16(),
-					rightExtent = binaryReader.ReadUInt16(),
-					startY, endY;
-				byte[] sprite = new byte[TileSqrt * TileSqrt];
-				for (ushort i = 0; i < sprite.Length; i++)
-					sprite[i] = 255; // set transparent
-				long[] columnDataOffsets = new long[rightExtent - leftExtent + 1];
-				for (ushort i = 0; i < columnDataOffsets.Length; i++)
-					columnDataOffsets[i] = pageOffsets[page] + binaryReader.ReadUInt16();
-				long trexels = stream.Position;
-				for (ushort column = 0; column <= rightExtent - leftExtent; column++)
+				if (rawPages[page] is null) return;
+				uint[] palette = palettes[PaletteNumber(page, xml)];
+				if (page < SpritePage)
+					Pages[page] = ProcessWall(rawPages[page], palette, TileSqrt);
+				else
 				{
-					long commands = columnDataOffsets[column];
-					stream.Seek(commands, 0);
-					while ((endY = binaryReader.ReadUInt16()) != 0)
-					{
-						endY >>= 1;
-						binaryReader.ReadUInt16(); // Not using this value for anything. Don't know why it's here!
-						startY = binaryReader.ReadUInt16();
-						startY >>= 1;
-						commands = stream.Position;
-						stream.Seek(trexels, 0);
-						for (ushort row = startY; row < endY; row++)
-							sprite[row * TileSqrt - 1 + column + leftExtent - 1] = binaryReader.ReadByte();
-						trexels = stream.Position;
-						stream.Seek(commands, 0);
-					}
+					(byte[] rgba, BitArray mask) = ProcessSprite(rawPages[page], palette, TileSqrt);
+					Pages[page] = rgba;
+					Masks[page - SpritePage] = mask;
 				}
-				Pages[page] = TransparentBorder(sprite.Indices2UIntArray(palettes[PaletteNumber(page, xml)])).UInt2ByteArray();
-				BitArray mask = new(sprite.Length);
-				for (int i = 0; i < sprite.Length; i++)
-					mask[i] = sprite[i] != 0;
-				Masks[page - SpritePage] = mask;
-			}
-		#endregion read in sprites
+			});
 		#region read in digisounds
 		byte[] soundData = new byte[stream.Length - pageOffsets[Pages.Length]];
 		stream.Seek(pageOffsets[Pages.Length], 0);
@@ -172,79 +144,143 @@ public sealed class VSwap
 		}
 		#endregion read in digisounds
 	}
+	private static byte[] ProcessWall(byte[] rawData, uint[] palette, ushort tileSqrt = 64)
+	{
+		byte[] rgbaData = new byte[tileSqrt * tileSqrt << 2];
+		Span<uint> destination = MemoryMarshal.Cast<byte, uint>(rgbaData.AsSpan());
+		int sourceIndex = 0;
+		for (int col = 0; col < tileSqrt; col++)
+			for (int row = 0, destinationIndex = col; row < tileSqrt; row++, destinationIndex += tileSqrt)
+				destination[destinationIndex] = BinaryPrimitives.ReverseEndianness(palette[rawData[sourceIndex++]]);
+		return rgbaData;
+	}
+	private static (byte[] rgba, BitArray mask) ProcessSprite(byte[] rawData, uint[] palette, ushort tileSqrt = 64)
+	{
+		byte[] rgbaData = new byte[tileSqrt * tileSqrt << 2];
+		BitArray mask = new(tileSqrt * tileSqrt);
+		Span<uint> dest = MemoryMarshal.Cast<byte, uint>(rgbaData.AsSpan());
+		dest.Fill(BinaryPrimitives.ReverseEndianness(palette[255]));
+		ReadOnlySpan<byte> raw = rawData;
+		ushort left = BinaryPrimitives.ReadUInt16LittleEndian(raw[0..2]),
+			right = BinaryPrimitives.ReadUInt16LittleEndian(raw[2..4]);
+		int columnCount = right - left + 1;
+		if (columnCount <= 0) return (rgbaData, mask);
+		// The pixel data pool starts immediately after the column offset table.
+		// Each column has a 2-byte offset.
+		int pixelPoolPtr = 4 + (columnCount << 1);
+		for (int col = 0; col < columnCount; col++)
+		{
+			int offsetIdx = 4 + (col << 1),
+				commandsOffset = BinaryPrimitives.ReadUInt16LittleEndian(raw[offsetIdx..(offsetIdx + 2)]);
+			while (true)
+			{
+				if (commandsOffset + 6 > raw.Length) break;
+				ushort endY = BinaryPrimitives.ReadUInt16LittleEndian(raw[commandsOffset..(commandsOffset + 2)]);
+				if (endY == 0) break;
+				// Wolf3D format: endY and startY are stored as 2 * pixel_coordinate
+				int actualEndY = endY >> 1;
+				// The 2 bytes at commandsOffset + 2 are the offset to the next column/command 
+				// (Standard Wolf3D doesn't really use this for much, we ignore it)
+				int actualStartY = BinaryPrimitives.ReadUInt16LittleEndian(raw[(commandsOffset + 4)..(commandsOffset + 6)]) >> 1;
+				commandsOffset += 6;
+				for (int row = actualStartY; row < actualEndY; row++)
+				{
+					int pixelIdx = row * tileSqrt + col + left;
+					if (pixelIdx < dest.Length && pixelPoolPtr < raw.Length)
+					{
+						dest[pixelIdx] = BinaryPrimitives.ReverseEndianness(palette[raw[pixelPoolPtr++]]);
+						mask[pixelIdx] = true;
+					}
+				}
+			}
+		}
+		ApplyTransparentBorder(rgbaData, tileSqrt);
+		return (rgbaData, mask);
+	}
+	public static void ApplyTransparentBorder(byte[] rgbaData, ushort width)
+	{
+		Span<uint> dest = MemoryMarshal.Cast<byte, uint>(rgbaData.AsSpan());
+		int length = dest.Length,
+			height = length / width;
+		Span<uint> src = stackalloc uint[length];
+		dest.CopyTo(src);
+		Span<uint> neighbors = stackalloc uint[8];
+		for (int x = 0; x < width; x++)
+		{
+			int columnOffset = x * width;
+			for (int y = 0; y < height; y++)
+			{
+				int idx = columnOffset + y;
+				if (!IsOpaque(src[idx]))
+				{
+					int count = 0;
+					TryAdd(src, x - 1, y, width, height, neighbors, ref count);
+					TryAdd(src, x + 1, y, width, height, neighbors, ref count);
+					TryAdd(src, x, y - 1, width, height, neighbors, ref count);
+					TryAdd(src, x, y + 1, width, height, neighbors, ref count);
+					if (count == 0)
+					{
+						TryAdd(src, x - 1, y - 1, width, height, neighbors, ref count);
+						TryAdd(src, x + 1, y - 1, width, height, neighbors, ref count);
+						TryAdd(src, x - 1, y + 1, width, height, neighbors, ref count);
+						TryAdd(src, x + 1, y + 1, width, height, neighbors, ref count);
+					}
+					if (count > 0)
+					{
+						// We must average channels without letting them "bleed" into each other
+						// We'll use masks to keep R, G, and B separate during the sum.
+						uint r = 0, g = 0, b = 0;
+						for (int i = 0; i < count; i++)
+						{
+							uint p = neighbors[i];
+							// Extract channels based on your palette's byte order
+							// This assumes your reversed palette results in [R, G, B, A] in memory
+							r += (p >> 0) & 0xFF;
+							g += (p >> 8) & 0xFF;
+							b += (p >> 16) & 0xFF;
+						}
+						// Reconstruct the transparent pixel with the average color
+						// Alpha is set to 0.
+						dest[idx] = ((r / (uint)count) << 0) |
+									((g / (uint)count) << 8) |
+									((b / (uint)count) << 16) |
+									(0x00u << 24);
+					}
+					else dest[idx] = 0u; // Total transparent black
+				}
+			}
+		}
+	}
+	// Helper to determine opacity based on your reversed palette structure
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool IsOpaque(uint color) => (color >> 24) > 128;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void TryAdd(ReadOnlySpan<uint> src, int x, int y, int w, int h, Span<uint> neighbors, ref int count)
+	{
+		if (x >= 0 && x < w && y >= 0 && y < h)
+		{
+			uint p = src[x * w + y];
+			if (IsOpaque(p)) neighbors[count++] = p;
+		}
+	}
 	public static uint PaletteNumber(int pageNumber, XElement xml) =>
 		xml?.Element("VSwap")?.Descendants()?.Where(
 			e => ushort.TryParse(e.Attribute("Page")?.Value, out ushort page) && page == pageNumber
 			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
 		?.FirstOrDefault() ?? 0;
 	public static IEnumerable<uint[]> LoadPalettes(XElement xml) => xml.Elements("Palette").Select(LoadPalette);
-	public static uint[] TransparentBorder(uint[] texture, ushort width = 0)
-	{
-		if (width == 0)
-			width = (ushort)Math.Sqrt(texture.Length);
-		uint[] result = new uint[texture.Length];
-		Array.Copy(texture, result, result.Length);
-		int height = texture.Length / width;
-		int Index(int x, int y) => x * width + y;
-		List<uint> neighbors = new(9);
-		void Add(int x, int y)
-		{
-			if (x >= 0 && y >= 0 && x < width && y < height
-				&& texture[Index(x, y)] is uint pixel
-				&& pixel.A() > 128)
-				neighbors.Add(pixel);
-		}
-		uint Average()
-		{
-			int count = neighbors.Count;
-			if (count == 1)
-				return neighbors.First() & 0xFFFFFF00u;
-			uint r = 0, g = 0, b = 0;
-			foreach (uint color in neighbors)
-			{
-				r += color.R();
-				g += color.G();
-				b += color.B();
-			}
-			return Color((byte)(r / count), (byte)(g / count), (byte)(b / count), 0);
-		}
-		for (int x = 0; x < width; x++)
-			for (int y = 0; y < height; y++)
-				if (texture[Index(x, y)].A() < 128)
-				{
-					neighbors.Clear();
-					Add(x - 1, y);
-					Add(x + 1, y);
-					Add(x, y - 1);
-					Add(x, y + 1);
-					if (neighbors.Count > 0)
-						result[Index(x, y)] = Average();
-					else
-					{
-						Add(x - 1, y - 1);
-						Add(x + 1, y - 1);
-						Add(x - 1, y + 1);
-						Add(x + 1, y + 1);
-						if (neighbors.Count > 0)
-							result[Index(x, y)] = Average();
-						else // Make non-border transparent pixels transparent black
-							result[Index(x, y)] = 0;
-					}
-				}
-		return result;
-	}
 	public static uint Color(byte r, byte g, byte b, byte a) => (uint)r << 24 | (uint)g << 16 | (uint)b << 8 | a;
 	#region Palette
 	public static uint[] LoadPalette(XElement paletteElement)
 	{
-		XElement[] colorElements = paletteElement.Elements("Color").ToArray();
+		XElement[] colorElements = [.. paletteElement.Elements("Color")];
 		if (colorElements.Length != 256)
 			throw new InvalidDataException($"Palette must contain exactly 256 colors, found {colorElements.Length}");
 		uint[] result = new uint[256];
 		for (int i = 0; i < 256; i++)
 		{
 			string hexValue = colorElements[i].Attribute("Hex")?.Value;
-			if (string.IsNullOrEmpty(hexValue) || !hexValue.StartsWith("#") || hexValue.Length != 7)
+			if (string.IsNullOrEmpty(hexValue) || hexValue[0] != '#' || hexValue.Length != 7)
 				throw new InvalidDataException($"Color {i} has invalid Hex attribute: '{hexValue}'. Expected format: #RRGGBB");
 			// Parse hex color (remove # and parse as hex)
 			if (!uint.TryParse(hexValue[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb24))
