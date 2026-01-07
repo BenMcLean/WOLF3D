@@ -102,26 +102,6 @@ public sealed class VSwap
 					Masks[page - SpritePage] = mask;
 				}
 			});
-		#region read in digisounds
-		byte[] soundData = new byte[stream.Length - pageOffsets[Pages.Length]];
-		stream.Seek(pageOffsets[Pages.Length], 0);
-		stream.Read(soundData, 0, soundData.Length);
-		uint start = pageOffsets[NumPages - 1] - pageOffsets[Pages.Length];
-		ushort[][] soundTable;
-		using (MemoryStream memoryStream = new(soundData, (int)start, soundData.Length - (int)start))
-			soundTable = VgaGraph.Load16BitPairs(memoryStream);
-		uint numDigiSounds = 0;
-		while (numDigiSounds < soundTable.Length && soundTable[numDigiSounds][1] > 0)
-			numDigiSounds++;
-		DigiSounds = new byte[numDigiSounds][];
-		for (uint sound = 0; sound < DigiSounds.Length; sound++)
-			if (soundTable[sound][1] > 0 && pageOffsets[Pages.Length + soundTable[sound][0]] > 0)
-			{
-				DigiSounds[sound] = new byte[soundTable[sound][1]];
-				start = pageOffsets[Pages.Length + soundTable[sound][0]] - pageOffsets[Pages.Length];
-				for (uint bite = 0; bite < DigiSounds[sound].Length; bite++)
-					DigiSounds[sound][bite] = (byte)(soundData[start + bite] - 128); // Godot makes some kind of oddball conversion from the unsigned byte to a signed byte
-			}
 		// Parse sprite name->page mappings
 		// Note: XML Page attributes are absolute VSWAP page numbers
 		SpritesByName = [];
@@ -132,16 +112,54 @@ public sealed class VSwap
 				&& ushort.TryParse(spriteElement.Attribute("Page")?.Value, out ushort spritePage))
 				SpritesByName.Add(name, spritePage);
 		}
+		#region read in digisounds
+		uint soundDataStart = pageOffsets[Pages.Length];
+		int soundDataLength = (int)(stream.Length - soundDataStart);
+		byte[] soundData = new byte[soundDataLength];
+		stream.Seek(soundDataStart, SeekOrigin.Begin);
+		stream.Read(soundData, 0, soundDataLength);
+		uint tableOffsetInBlob = pageOffsets[NumPages - 1] - soundDataStart;
+		List<(int Index, ushort Page, ushort Length)> soundJobs = [];
+		{
+			// Ensure we don't cast outside the bounds of the actual data
+			int tableByteCount = soundDataLength - (int)tableOffsetInBlob;
+			if (tableByteCount > 0)
+			{
+				ReadOnlySpan<ushort> soundTable = MemoryMarshal.Cast<byte, ushort>(soundData.AsSpan((int)tableOffsetInBlob, tableByteCount));
+				for (int i = 0; i < soundTable.Length / 2; i++)
+				{
+					ushort len = soundTable[i * 2 + 1];
+					if (len > 0)
+						soundJobs.Add((i, Page: soundTable[i * 2], len));
+				}
+			}
+		}
+		DigiSounds = new byte[soundJobs.Count > 0 ? soundJobs.Max(s => s.Index) + 1 : 0][];
+		soundJobs.AsParallel().ForAll(job =>
+		{
+			// Calculate start relative to the start of the sound blob
+			long absoluteStart = (long)pageOffsets[Pages.Length + job.Page] - soundDataStart;
+			// SAFETY CHECK: Ensure the chunk is actually inside our soundData buffer
+			if (absoluteStart >= 0 && absoluteStart + job.Length <= soundData.Length)
+			{
+				byte[] buffer = new byte[job.Length];
+				ReadOnlySpan<byte> source = soundData.AsSpan((int)absoluteStart, job.Length);
+				Span<byte> dest = buffer;
+				for (int j = 0; j < source.Length; j++)
+					dest[j] = (byte)(source[j] - 128);
+				DigiSounds[job.Index] = buffer;
+			}
+		});
 		DigiSoundsByName = [];
 		foreach (XElement digiSoundElement in xml.Element("VSwap")?.Element("SoundPlane")?.Elements("DigiSound") ?? [])
-		{
-			uint number = (uint)digiSoundElement.Attribute("Number");
-			string name = digiSoundElement.Attribute("Name")?.Value;
-			if (!string.IsNullOrWhiteSpace(name)
+			if (ushort.TryParse(digiSoundElement.Attribute("Number")?.Value, out ushort number)
 				&& number < DigiSounds.Length
 				&& DigiSounds[number] is byte[] bytes)
-				DigiSoundsByName.Add(name, bytes);
-		}
+			{
+				string name = digiSoundElement.Attribute("Name")?.Value;
+				if (!string.IsNullOrWhiteSpace(name))
+					DigiSoundsByName[name] = bytes;
+			}
 		#endregion read in digisounds
 	}
 	private static byte[] ProcessWall(byte[] rawData, uint[] palette, ushort tileSqrt = 64)
