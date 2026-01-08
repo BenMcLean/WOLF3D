@@ -19,9 +19,8 @@ public class Midi
 	/// <summary>
 	/// Parses a MIDI file from raw bytes (after skipping the 2-byte MusicGroup.length header).
 	/// </summary>
-	public static Midi Parse(byte[] data)
+	public static Midi Parse(Stream stream)
 	{
-		using MemoryStream stream = new(data);
 		using BinaryReader reader = new(stream);
 		return Parse(reader);
 	}

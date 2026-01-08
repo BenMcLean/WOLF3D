@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,83 +61,86 @@ public sealed class AudioT
 		// Load PC Speaker sounds (if StartPCSounds attribute exists)
 		// From AUDIOWL1.H: #define STARTPCSOUNDS 0
 		// PC Speaker sounds are stored first in AUDIOT, before AdLib sounds
-		PcSounds = [];
-		if (xml.Attribute("StartPCSounds") is XAttribute startPcAttr)
-		{
-			uint startPcSounds = (uint)startPcAttr;
-			foreach (XElement soundElement in xml.Elements("Sound"))
-			{
-				uint number = (uint)soundElement.Attribute("Number");
-				string name = soundElement.Attribute("Name")?.Value;
-				if (!string.IsNullOrWhiteSpace(name)
-					&& file[startPcSounds + number] is byte[] bytes)
-					using (MemoryStream sound = new(bytes))
-						PcSounds.Add(name, new PcSpeaker(sound));
-			}
-		}
+		PcSounds = uint.TryParse(xml.Attribute("StartPCSounds")?.Value, out uint startPcSounds)
+			? xml.Elements("Sound")
+				.AsParallel()
+				.Select(soundElement =>
+				{
+					uint number = (uint)soundElement.Attribute("Number");
+					string name = soundElement.Attribute("Name")?.Value;
+					if (string.IsNullOrWhiteSpace(name))
+						return null;
+					byte[] bytes = file[startPcSounds + number];
+					if (bytes is null)
+						return null;
+					using MemoryStream sound = new(bytes);
+					return new
+					{
+						Name = name,
+						Sound = new PcSpeaker(sound)
+					};
+				})
+				.Where(x => x is not null)
+				.ToDictionary(x => x.Name, x => x.Sound)
+			: [];
 		// Load AdLib sounds
 		// From AUDIOWL1.H: #define STARTADLIBSOUNDS 69
-		uint startAdlibSounds = (uint)xml.Attribute("StartAdlibSounds");
-		Sounds = [];
-		foreach (XElement soundElement in xml.Elements("Sound"))
-		{
-			uint number = (uint)soundElement.Attribute("Number");
-			string name = soundElement.Attribute("Name")?.Value;
-			if (!string.IsNullOrWhiteSpace(name)
-				&& file[startAdlibSounds + number] is byte[] bytes)
-				using (MemoryStream sound = new(bytes))
-					Sounds.Add(name, new Adl(sound));
-		}
+		Sounds = uint.TryParse(xml.Attribute("StartAdlibSounds")?.Value, out uint startAdlibSounds)
+			? xml.Elements("Sound")
+				.AsParallel()
+				.Select(soundElement =>
+				{
+					uint number = (uint)soundElement.Attribute("Number");
+					string name = soundElement.Attribute("Name")?.Value;
+					if (string.IsNullOrWhiteSpace(name))
+						return null;
+					byte[] bytes = file[startAdlibSounds + number];
+					if (bytes is null)
+						return null;
+					using MemoryStream sound = new(bytes);
+					return new
+					{
+						Name = name,
+						Sound = new Adl(sound)
+					};
+				})
+				.Where(x => x is not null)
+				.ToDictionary(x => x.Name, x => x.Sound)
+			: [];
 		uint startMusic = (uint)xml.Attribute("StartMusic"),
 			endMusic = (uint)file.Length - startMusic;
-		Songs = [];
-		bool midi = xml?.Elements("MIDI")?.Any() ?? false;
-		for (uint i = 0; i < endMusic; i++)
-			if (file[startMusic + i] is not null)
-				using (MemoryStream song = new(file[startMusic + i]))
+		bool midi = xml.Elements("MIDI").Any();
+		Songs = Enumerable.Range(0, (int)endMusic)
+			.AsParallel()
+			.Where(i => file[startMusic + i] is not null)
+			.Select(i =>
+			{
+				byte[] data = file[startMusic + i];
+				using MemoryStream song = new(data);
+				if (midi)
 				{
-					if (midi)
+					song.Position = 2;
+					return new Music
 					{
-						// Skip first 2 bytes (MusicGroup.length header from original C struct)
-						byte[] midiData = new byte[file[startMusic + i].Length - 2];
-						Array.Copy(
-							sourceArray: file[startMusic + i],
-							sourceIndex: 2,
-							destinationArray: midiData,
-							destinationIndex: 0,
-							length: midiData.Length
-							);
-
-						Music newSong = new()
-						{
-							Name = xml.Elements("MIDI").Where(
-									e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == i
-								)?.Select(e => e.Attribute("Name")?.Value)
-								?.FirstOrDefault() is string name
-								&& !string.IsNullOrWhiteSpace(name) ?
-									name
-									: i.ToString(),
-							Midi = Midi.Parse(midiData),
-						};
-						Songs.Add(newSong.Name, newSong);
-					}
-					else
-					{
-						Imf[] imf = Imf.ReadImf(song);
-						Music newSong = new()
-						{
-							Name = xml.Elements("Imf")?.Where(
-									e => uint.TryParse(e.Attribute("Number")?.Value, out uint number) && number == i
-								)?.Select(e => e.Attribute("Name")?.Value)
-								?.FirstOrDefault() is string name
-								&& !string.IsNullOrWhiteSpace(name) ?
-									name
-									: i.ToString(),
-							//Bytes = file[startMusic + i],
-							Imf = imf,
-						};
-						Songs.Add(newSong.Name, newSong);
-					}
+						Name = xml.Elements("MIDI")
+							.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint n) && n == i)
+							.Select(e => e.Attribute("Name")?.Value)
+							.FirstOrDefault()
+							?? i.ToString(),
+						Midi = Midi.Parse(song),
+					};
 				}
+				else
+					return new Music
+					{
+						Name = xml.Elements("Imf")
+							.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint n) && n == i)
+							.Select(e => e.Attribute("Name")?.Value)
+							.FirstOrDefault()
+							?? i.ToString(),
+						Imf = Imf.ReadImf(song),
+					};
+			})
+			.ToDictionary(song => song.Name, song => song);
 	}
 }
