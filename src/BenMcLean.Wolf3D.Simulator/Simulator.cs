@@ -34,7 +34,16 @@ public class Simulator
 	// Using List instead of fixed array for modern flexibility
 	public IReadOnlyList<Actor> Actors => actors;
 	private readonly List<Actor> actors = [];
-	// State machine data for actors
+	// Weapon slots (configurable count - VR uses 2, traditional uses 1)
+	// Based on WL_DEF.H:gametype:weapon/attackframe/attackcount
+	public IReadOnlyList<WeaponSlot> WeaponSlots => weaponSlots;
+	private readonly List<WeaponSlot> weaponSlots = [];
+	// Weapon definitions (loaded from XML)
+	private WeaponCollection weaponCollection;
+	// Player ammo inventory (global, not per-slot)
+	// WL_DEF.H:gametype:ammo
+	private readonly Dictionary<string, int> ammoInventory = new();
+	// State machine data for actors and weapons
 	private readonly StateCollection stateCollection;
 	// Lua script engine for state functions
 	private readonly Lua.LuaScriptEngine luaScriptEngine;
@@ -168,6 +177,21 @@ public class Simulator
 	/// Presentation layer attaches sound to pushwall - sound moves with pushwall.
 	/// </summary>
 	public event Action<PushWallPlaySoundEvent> PushWallPlaySound;
+	/// <summary>
+	/// Fired when a weapon slot's sprite changes (animation frame).
+	/// WL_AGENT.C:T_Attack animation progression
+	/// </summary>
+	public event Action<WeaponSpriteChangedEvent> WeaponSpriteChanged;
+	/// <summary>
+	/// Fired when a weapon is fired from a slot.
+	/// WL_AGENT.C:Cmd_Fire
+	/// </summary>
+	public event Action<WeaponFiredEvent> WeaponFired;
+	/// <summary>
+	/// Fired when a weapon is equipped to a slot.
+	/// WL_AGENT.C weapon selection logic
+	/// </summary>
+	public event Action<WeaponEquippedEvent> WeaponEquipped;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -231,6 +255,9 @@ public class Simulator
 		// WL_ACT1.C:MovePWalls - update all pushwalls
 		for (int i = 0; i < pushWalls.Count; i++)
 			UpdatePushWall(i);
+		// WL_AGENT.C:T_Attack - update all weapon slots
+		for (int i = 0; i < weaponSlots.Count; i++)
+			UpdateWeaponSlot(i);
 		// WL_ACT2.C:DoActor - update all actors
 		for (int i = 0; i < actors.Count; i++)
 			UpdateActor(i);
@@ -241,6 +268,12 @@ public class Simulator
 			OperateDoor(operateDoor.DoorIndex);
 		else if (action is ActivatePushWallAction activatePushWall)
 			ActivatePushWall(activatePushWall.TileX, activatePushWall.TileY, activatePushWall.Direction);
+		else if (action is FireWeaponAction fireWeapon)
+			ProcessFireWeapon(fireWeapon);
+		else if (action is ReleaseWeaponTriggerAction releaseTrigger)
+			ProcessReleaseTrigger(releaseTrigger);
+		else if (action is EquipWeaponAction equipWeapon)
+			EquipWeapon(equipWeapon.SlotIndex, equipWeapon.WeaponType);
 	}
 	/// <summary>
 	/// WL_ACT1.C:OperateDoor (line 644)
@@ -1010,6 +1043,277 @@ public class Simulator
 		direction = default;
 		return false;
 	}
+
+	#region Weapon Slot Management
+	/// <summary>
+	/// Initialize weapon slots (call during game setup).
+	/// Based on WL_DEF.H:gametype initialization.
+	/// </summary>
+	/// <param name="slotCount">Number of weapon slots (1 for traditional, 2 for VR dual-wield)</param>
+	/// <param name="weapons">Weapon definitions loaded from XML</param>
+	public void InitializeWeaponSlots(int slotCount, WeaponCollection weapons)
+	{
+		weaponCollection = weapons ?? throw new ArgumentNullException(nameof(weapons));
+		weaponSlots.Clear();
+		for (int i = 0; i < slotCount; i++)
+			weaponSlots.Add(new WeaponSlot(i));
+	}
+
+	/// <summary>
+	/// Equip a weapon to a specific slot.
+	/// Based on WL_AGENT.C weapon selection logic (bt_readyknife, bt_readypistol, etc.).
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot to equip to</param>
+	/// <param name="weaponType">Weapon type identifier (e.g., "knife", "pistol")</param>
+	public void EquipWeapon(int slotIndex, string weaponType)
+	{
+		if (slotIndex < 0 || slotIndex >= weaponSlots.Count)
+		{
+			logger?.LogError("Invalid weapon slot index: {SlotIndex}", slotIndex);
+			return;
+		}
+
+		if (!weaponCollection.Weapons.TryGetValue(weaponType, out WeaponInfo weaponInfo))
+		{
+			logger?.LogError("Unknown weapon type: {WeaponType}", weaponType);
+			return;
+		}
+
+		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out State idleState))
+		{
+			logger?.LogError("Weapon {WeaponType} idle state {IdleState} not found", weaponType, weaponInfo.IdleState);
+			return;
+		}
+
+		WeaponSlot slot = weaponSlots[slotIndex];
+		slot.WeaponType = weaponType;
+		slot.CurrentState = idleState;
+		slot.TicCount = idleState.Tics;
+		slot.ShapeNum = idleState.Shape;
+		slot.AttackFrame = 0;
+		slot.Flags = WeaponSlotFlags.Ready;
+
+		WeaponEquipped?.Invoke(new WeaponEquippedEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = weaponType,
+			Shape = (ushort)slot.ShapeNum
+		});
+	}
+
+	/// <summary>
+	/// Set ammo count for a specific ammo type.
+	/// Based on WL_DEF.H:gametype:ammo[4].
+	/// </summary>
+	/// <param name="ammoType">Ammo type identifier (e.g., "bullets")</param>
+	/// <param name="amount">Amount of ammo</param>
+	public void SetAmmo(string ammoType, int amount)
+	{
+		ammoInventory[ammoType] = amount;
+	}
+
+	/// <summary>
+	/// Get ammo count for a specific ammo type.
+	/// </summary>
+	/// <param name="ammoType">Ammo type identifier</param>
+	/// <returns>Current ammo count (0 if type not found)</returns>
+	public int GetAmmo(string ammoType)
+	{
+		return ammoInventory.TryGetValue(ammoType, out int amount) ? amount : 0;
+	}
+
+	/// <summary>
+	/// Update a single weapon slot's state machine.
+	/// Based on WL_AGENT.C:T_Attack (line 2101) and Actor update pattern.
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot to update</param>
+	private void UpdateWeaponSlot(int slotIndex)
+	{
+		WeaponSlot slot = weaponSlots[slotIndex];
+
+		// Empty slot or no state - nothing to update
+		if (slot.CurrentState == null || slot.WeaponType == null)
+			return;
+
+		// Non-transitional state (tics == 0) - stays in state, no auto-transition
+		// These are idle/ready states (WL_AGENT.C:T_Attack early return for tictime==0)
+		if (slot.TicCount == 0)
+			return;
+
+		// Transitional state - decrement and check for transition
+		slot.TicCount--;
+
+		while (slot.TicCount <= 0)
+		{
+			if (slot.CurrentState.Next == null)
+				break;
+
+			TransitionWeaponState(slotIndex, slot.CurrentState.Next);
+
+			// If new state is non-transitional, stop
+			if (slot.CurrentState.Tics == 0)
+			{
+				slot.TicCount = 0;
+				// Clear attacking flag when returning to idle
+				slot.Flags &= ~WeaponSlotFlags.Attacking;
+				break;
+			}
+
+			break;  // Simplified - full timing accuracy can be added later
+		}
+	}
+
+	/// <summary>
+	/// Transition weapon slot to a new state.
+	/// Updates sprite, executes Action function if present, fires events.
+	/// Based on actor state transition pattern.
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot index</param>
+	/// <param name="nextState">New state to transition to</param>
+	private void TransitionWeaponState(int slotIndex, State nextState)
+	{
+		WeaponSlot slot = weaponSlots[slotIndex];
+		short oldShape = slot.ShapeNum;
+
+		slot.CurrentState = nextState;
+		slot.TicCount = nextState.Tics;
+		slot.ShapeNum = nextState.Shape;
+		slot.AttackFrame++;  // Increment attack frame counter
+
+		// Execute Action function if present (optional Lua support)
+		// For now, we'll skip Lua execution - weapon damage is applied in ProcessFireWeapon
+		// This is just for animation coordination
+
+		// Update flags based on state
+		if (nextState.Tics == 0)
+		{
+			// Returning to idle state
+			slot.Flags |= WeaponSlotFlags.Ready;
+			slot.Flags &= ~WeaponSlotFlags.Attacking;
+			slot.AttackFrame = 0;  // Reset attack frame when idle
+		}
+		else
+		{
+			// In animation
+			slot.Flags &= ~WeaponSlotFlags.Ready;
+		}
+
+		// Fire sprite changed event
+		if (oldShape != slot.ShapeNum)
+		{
+			WeaponSpriteChanged?.Invoke(new WeaponSpriteChangedEvent
+			{
+				SlotIndex = slotIndex,
+				Shape = (ushort)slot.ShapeNum
+			});
+		}
+	}
+
+	/// <summary>
+	/// Process weapon fire action from presentation layer.
+	/// Based on WL_AGENT.C:Cmd_Fire (line 1629) and T_Attack.
+	/// </summary>
+	/// <param name="action">Fire weapon action containing hit detection results</param>
+	private void ProcessFireWeapon(FireWeaponAction action)
+	{
+		if (action.SlotIndex < 0 || action.SlotIndex >= weaponSlots.Count)
+			return;
+
+		WeaponSlot slot = weaponSlots[action.SlotIndex];
+
+		// Validate: slot must have a weapon and be ready
+		if (slot.WeaponType == null || !slot.Flags.HasFlag(WeaponSlotFlags.Ready))
+			return;
+
+		if (!weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
+			return;
+
+		// Check fire mode: semi-auto requires trigger release first
+		// Based on WL_AGENT.C:buttonheld[] tracking (line 2266-2268)
+		if (weaponInfo.FireMode == "semi" && slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
+			return;
+
+		// Check ammo (if weapon requires it)
+		if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
+		{
+			if (!ammoInventory.TryGetValue(weaponInfo.AmmoType, out int currentAmmo) || currentAmmo < weaponInfo.AmmoPerShot)
+			{
+				// Out of ammo - play dry fire sound, don't shoot
+				EmitGlobalSound("NOITEMSND");
+				return;
+			}
+
+			// Consume ammo
+			ammoInventory[weaponInfo.AmmoType] = currentAmmo - weaponInfo.AmmoPerShot;
+		}
+
+		// Start fire animation
+		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out State fireState))
+			return;
+
+		TransitionWeaponState(action.SlotIndex, fireState);
+
+		// Set flags
+		slot.Flags |= WeaponSlotFlags.TriggerHeld | WeaponSlotFlags.Attacking;
+		slot.Flags &= ~WeaponSlotFlags.Ready;
+		slot.AttackFrame = 0;
+
+		// Apply damage if presentation reported a hit
+		// Based on WL_AGENT.C:GunAttack/KnifeAttack damage application
+		if (action.HitActorIndex.HasValue)
+		{
+			ApplyWeaponDamage(action.HitActorIndex.Value, weaponInfo.BaseDamage);
+		}
+
+		// Emit weapon fired event (for sound, muzzle flash)
+		WeaponFired?.Invoke(new WeaponFiredEvent
+		{
+			SlotIndex = action.SlotIndex,
+			WeaponType = slot.WeaponType,
+			SoundName = weaponInfo.FireSound ?? string.Empty,
+			DidHit = action.HitActorIndex.HasValue,
+			HitActorIndex = action.HitActorIndex
+		});
+	}
+
+	/// <summary>
+	/// Process release weapon trigger action.
+	/// Clears TriggerHeld flag for semi-auto fire mode.
+	/// Based on WL_AGENT.C:buttonheld[] tracking.
+	/// </summary>
+	/// <param name="action">Release trigger action</param>
+	private void ProcessReleaseTrigger(ReleaseWeaponTriggerAction action)
+	{
+		if (action.SlotIndex < 0 || action.SlotIndex >= weaponSlots.Count)
+			return;
+
+		WeaponSlot slot = weaponSlots[action.SlotIndex];
+		slot.Flags &= ~WeaponSlotFlags.TriggerHeld;
+	}
+
+	/// <summary>
+	/// Apply damage to an actor from a weapon hit.
+	/// Based on WL_AGENT.C:DamageActor.
+	/// </summary>
+	/// <param name="actorIndex">Index of actor to damage</param>
+	/// <param name="damage">Amount of damage to apply</param>
+	private void ApplyWeaponDamage(int actorIndex, short damage)
+	{
+		if (actorIndex < 0 || actorIndex >= actors.Count)
+			return;
+
+		Actor actor = actors[actorIndex];
+		actor.HitPoints -= damage;
+
+		if (actor.HitPoints <= 0)
+		{
+			// Actor died - trigger death state transition
+			// TODO: Transition to death state (requires death state definitions)
+			// For now, just ensure HP doesn't go negative
+			actor.HitPoints = 0;
+		}
+	}
+	#endregion
 	/// <summary>
 	/// Helper for ActorScriptContext.MoveObj() - fires ActorMovedEvent.
 	/// </summary>

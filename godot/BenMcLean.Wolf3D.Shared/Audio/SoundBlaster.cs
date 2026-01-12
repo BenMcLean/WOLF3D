@@ -1,9 +1,10 @@
+using System;
+using System.IO;
 using BenMcLean.Wolf3D.Assets.Sound;
 using BenMcLean.Wolf3D.Shared.Audio.OPL;
 using Godot;
 using NScumm.Audio.OPL.Woody;
 using NScumm.Core.Audio.OPL;
-using System;
 
 namespace BenMcLean.Wolf3D.Shared.Audio;
 
@@ -29,6 +30,11 @@ public partial class SoundBlaster : Node
 		Name = "PcSpeakerPlayer",
 		Bus = "PcSpeaker",
 	};
+	public readonly AudioStreamPlayer DirectionlessBusSpeaker = new()
+	{
+		Name = "DirectionlessBusSpeaker",
+		Bus = "Directionless",
+	};
 	#endregion Audio Players
 	private string currentMusicName = null;
 	public SoundBlaster()
@@ -41,6 +47,7 @@ public partial class SoundBlaster : Node
 		// Add audio players as children
 		AddChild(OplPlayer);
 		AddChild(PcSpeakerPlayer);
+		AddChild(DirectionlessBusSpeaker);
 		// Subscribe to config events
 		if (SharedAssetManager.Config is not null)
 		{
@@ -147,35 +154,46 @@ public partial class SoundBlaster : Node
 	#endregion Music API
 	#region Sound Effects API
 	/// <summary>
-	/// Plays a sound effect by name. Automatically routes to PC Speaker or AdLib based on SoundMode.
+	/// Plays a sound effect by name. Automatically routes based on SoundMode.
+	/// Priority: DigiSound (Sound Blaster) > PC Speaker > AdLib
 	/// </summary>
-	/// <param name="soundName">Name of the sound effect (e.g., "HITWALLSND")</param>
+	/// <param name="soundName">Name of the sound effect (e.g., "HITWALLSND", "ATKPISTOLSND")</param>
 	/// <remarks>
-	/// When SoundMode is PC, plays the PC Speaker version.
-	/// When SoundMode is AdLib, plays the AdLib version.
-	/// When SoundMode is Off, no sound plays.
+	/// Sound playback priority (authentic Wolf3D behavior):
+	/// 1. DigiSound (digitized Sound Blaster audio) - if available and SoundMode != Off
+	/// 2. PC Speaker - if SoundMode == PC and DigiSound not available
+	/// 3. AdLib (FM synthesis) - fallback if neither DigiSound nor PC Speaker available
 	/// </remarks>
 	public void PlaySound(string soundName)
 	{
 		if (SharedAssetManager.Config?.SoundMode == Assets.Gameplay.Config.SDMode.Off ||
 			string.IsNullOrWhiteSpace(soundName))
 			return;
-		// Route to PC Speaker if in PC mode
-		if (SharedAssetManager.Config.SoundMode == Assets.Gameplay.Config.SDMode.PC)
+
+		// Try DigiSound first (highest priority - digitized Sound Blaster audio)
+		if (SharedAssetManager.Config.DigiMode is Assets.Gameplay.Config.SDSMode.SoundBlaster or Assets.Gameplay.Config.SDSMode.SoundSource &&
+			SharedAssetManager.DigiSounds.TryGetValue(soundName, out AudioStreamWav stream))
 		{
-			if (SharedAssetManager.CurrentGame?.AudioT?.PcSounds is not null &&
-				SharedAssetManager.CurrentGame.AudioT.PcSounds.TryGetValue(soundName, out PcSpeaker pcSound))
-				PcSpeakerPlayer.PlaySound(pcSound);
-			else
-				// If PC sound not found, warn and fall through to AdLib (degraded mode)
-				GD.PrintErr($"Warning: PC Speaker sound '{soundName}' not found, falling back to AdLib");
+			DirectionlessBusSpeaker.Stream = stream;
+			DirectionlessBusSpeaker.Play();
+			return;
 		}
-		// Route to AdLib
+
+		// Route to PC Speaker if in PC mode and DigiSound not available
+		if (SharedAssetManager.Config.SoundMode == Assets.Gameplay.Config.SDMode.PC &&
+			SharedAssetManager.CurrentGame?.AudioT?.PcSounds is not null &&
+			SharedAssetManager.CurrentGame.AudioT.PcSounds.TryGetValue(soundName, out PcSpeaker pcSound))
+		{
+			PcSpeakerPlayer.PlaySound(pcSound);
+			return;
+		}
+
+		// Fallback to AdLib (FM synthesis beeps)
 		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds is not null &&
 			SharedAssetManager.CurrentGame.AudioT.Sounds.TryGetValue(soundName, out Adl adlSound))
 			IdAdlSignaller.IdAdlQueue.Enqueue(adlSound);
 		else
-			GD.PrintErr($"ERROR: Sound '{soundName}' not found in AudioT");
+			GD.PrintErr($"ERROR: Sound '{soundName}' not found");
 	}
 	#endregion Sound Effects API
 }

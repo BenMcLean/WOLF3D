@@ -860,6 +860,7 @@
 				<xs:element ref="WallPlane" minOccurs="0"/>
 				<xs:element ref="StatInfo" minOccurs="0"/>
 				<xs:element ref="Actors" minOccurs="0"/>
+				<xs:element ref="GameplayWeapons" minOccurs="0"/>
 				<xs:element ref="Sprites" minOccurs="0"/>
 				<xs:element ref="DigiSounds" minOccurs="0"/>
 			</xs:sequence>
@@ -1107,6 +1108,96 @@
 				<xs:element ref="Actor"/>
 				<xs:element ref="State"/>
 			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- GameplayWeapons (weapon definitions for simulation) -->
+
+	<xs:element name="GameplayWeapons">
+		<xs:annotation>
+			<xs:documentation>
+				Weapon definitions for gameplay (simulation layer).
+				Defines weapon properties, states, damage, ammo consumption, and fire modes.
+				Distinct from VgaGraph Weapons element (which defines UI/menu graphics).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="GameplayWeapon" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="GameplayWeapon">
+		<xs:annotation>
+			<xs:documentation>
+				Individual weapon definition for gameplay simulation.
+				Based on WL_AGENT.C attackinfo[] structure and weapon logic.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Unique weapon identifier (e.g., "knife", "pistol", "machinegun", "chaingun").
+						Used for inventory, equip actions, and weapon selection.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="IdleState" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						State name for weapon idle/ready animation (e.g., "s_knife_idle", "s_pistol_ready").
+						Weapon stays in this state when not attacking.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FireState" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						State name for weapon fire/attack animation (e.g., "s_knife_attack1", "s_pistol_fire1").
+						Weapon transitions to this state when fired.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BaseDamage" type="xs:short" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Base damage per hit (can be modified by scripts or difficulty).
+						Examples: Knife=10, Pistol=5, Machinegun=5, Chaingun=5.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="AmmoPerShot" type="xs:short" default="0">
+				<xs:annotation>
+					<xs:documentation>
+						Ammo consumed per shot. 0 for melee weapons (unlimited), 1 for standard guns.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="AmmoType" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Ammo type required (e.g., "bullets", "shells"). Null/empty for melee weapons.
+						Maps to ammo inventory keys.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FireMode" type="xs:string" default="semi">
+				<xs:annotation>
+					<xs:documentation>
+						Fire mode: "semi" = one shot per trigger pull (pistol), "auto" = continuous while held (chaingun).
+						Based on WL_AGENT.C chaingun hold logic.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FireSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound name to play when firing (e.g., "ATKKNIFESND", "ATKPISTOLSND", "ATKGATGUNSND").
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Assets;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using Godot;
 using System;

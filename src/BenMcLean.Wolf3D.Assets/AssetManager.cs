@@ -21,6 +21,7 @@ public class AssetManager
 	public readonly MapAnalyzer MapAnalyzer;
 	public readonly MapAnalyzer.MapAnalysis[] MapAnalyses;
 	public readonly StateCollection StateCollection;
+	public readonly WeaponCollection WeaponCollection;
 	public readonly MenuCollection MenuCollection;
 	public static AssetManager Load(string xmlPath, ILoggerFactory loggerFactory = null)
 	{
@@ -54,6 +55,8 @@ public class AssetManager
 		MapAnalyses = [.. MapAnalyzer.Analyze(maps)];
 		// Load StateCollection from XML
 		StateCollection = LoadStateCollection(xml);
+		// Load WeaponCollection from XML
+		WeaponCollection = LoadWeaponCollection(xml);
 		// Load MenuCollection from XML
 		MenuCollection = LoadMenuCollection(xml);
 	}
@@ -85,6 +88,20 @@ public class AssetManager
 		// Phase 3: Validate function references
 		stateCollection.ValidateFunctionReferences();
 		return stateCollection;
+	}
+	private WeaponCollection LoadWeaponCollection(XElement xml)
+	{
+		WeaponCollection weaponCollection = new WeaponCollection();
+		// Find the GameplayWeapons element inside VSwap
+		XElement vswapElement = xml.Element("VSwap");
+		XElement weaponsElement = vswapElement?.Element("GameplayWeapons");
+		if (weaponsElement is null)
+			return weaponCollection; // No weapons defined
+									 // Load weapon definitions
+		IEnumerable<XElement> weaponElements = weaponsElement.Elements("GameplayWeapon");
+		if (weaponElements is not null)
+			weaponCollection.LoadFromXml(weaponElements);
+		return weaponCollection;
 	}
 	private MenuCollection LoadMenuCollection(XElement xml)
 	{

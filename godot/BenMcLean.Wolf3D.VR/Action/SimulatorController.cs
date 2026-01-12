@@ -20,6 +20,7 @@ public partial class SimulatorController : Node3D
 	private Walls walls;
 	private Bonuses bonuses;
 	private Actors actors;
+	private Weapons weapons;
 	private Func<(int X, int Y)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
 	/// <summary>
@@ -32,7 +33,9 @@ public partial class SimulatorController : Node3D
 	/// <param name="wallsNode">The Walls node that will render the walls and pushwalls</param>
 	/// <param name="bonusesNode">The Bonuses node that will render bonus items</param>
 	/// <param name="actorsNode">The Actors node that will render actors</param>
+	/// <param name="weaponsNode">The Weapons node that will render player weapons</param>
 	/// <param name="stateCollection">State collection loaded from game XML (e.g., WL1.xml)</param>
+	/// <param name="weaponCollection">Weapon collection loaded from game XML (e.g., WL1.xml)</param>
 	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y)</param>
 	public void Initialize(
 		MapAnalyzer mapAnalyzer,
@@ -41,7 +44,9 @@ public partial class SimulatorController : Node3D
 		Walls wallsNode,
 		Bonuses bonusesNode,
 		Actors actorsNode,
+		Weapons weaponsNode,
 		StateCollection stateCollection,
+		WeaponCollection weaponCollection,
 		Func<(int X, int Y)> getPlayerPosition)
 	{
 		// TODO: Load stateCollection from WL1.xml or game data file
@@ -63,6 +68,7 @@ public partial class SimulatorController : Node3D
 		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
 		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
+		weapons = weaponsNode ?? throw new ArgumentNullException(nameof(weaponsNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
 
 		// CRITICAL: Subscribe presentation layers to simulator events BEFORE loading data
@@ -71,6 +77,7 @@ public partial class SimulatorController : Node3D
 		walls.Subscribe(simulator);
 		bonuses.Subscribe(simulator);
 		actors.Subscribe(simulator);
+		weapons.Subscribe(simulator);
 
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
@@ -104,6 +111,27 @@ public partial class SimulatorController : Node3D
 			{ "mutant", 55 }
 		};
 		simulator.LoadActorsFromMapAnalysis(mapAnalysis, actorInitialStates, actorHitPoints);
+
+		// Initialize weapon slots - 1 for traditional FPS view (bottom of screen)
+		// Later: use 2 for VR dual-wielding
+		GD.Print($"WeaponCollection: {weaponCollection?.Weapons.Count ?? 0} weapons");
+		if (weaponCollection != null && weaponCollection.Weapons.Count > 0)
+		{
+			GD.Print($"Initializing 1 weapon slot");
+			simulator.InitializeWeaponSlots(1, weaponCollection);
+
+			// Equip pistol to primary slot
+			GD.Print("Equipping pistol to slot 0");
+			simulator.EquipWeapon(0, "pistol");
+
+			// Set initial ammo
+			simulator.SetAmmo("bullets", 99);  // Plenty for testing (original Wolf3D starts with 8)
+			GD.Print("Weapon initialization complete");
+		}
+		else
+		{
+			GD.PrintErr("WARNING: No WeaponCollection provided - weapons will not function");
+		}
 	}
 
 	/// <summary>
@@ -160,6 +188,46 @@ public partial class SimulatorController : Node3D
 			Direction = direction
 		});
 	}
+
+	/// <summary>
+	/// Player fires weapon in specified slot.
+	/// Call this from player input handling (e.g., trigger press or X key).
+	/// Based on WL_AGENT.C:Cmd_Fire and GunAttack.
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>
+	/// <param name="hitActorIndex">Index of actor hit (null if miss)</param>
+	/// <param name="hitPoint">World coordinates where shot hit (null if miss)</param>
+	public void FireWeapon(int slotIndex, int? hitActorIndex, (int x, int y)? hitPoint)
+	{
+		if (simulator == null)
+			return;
+
+		simulator.QueueAction(new FireWeaponAction
+		{
+			SlotIndex = slotIndex,
+			HitActorIndex = hitActorIndex,
+			HitPoint = hitPoint
+		});
+	}
+
+	/// <summary>
+	/// Player releases weapon trigger in specified slot.
+	/// Call this from player input handling when trigger/button is released.
+	/// Required for semi-auto weapons to fire again.
+	/// Based on WL_AGENT.C button held tracking.
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>
+	public void ReleaseWeaponTrigger(int slotIndex)
+	{
+		if (simulator == null)
+			return;
+
+		simulator.QueueAction(new ReleaseWeaponTriggerAction
+		{
+			SlotIndex = slotIndex
+		});
+	}
+
 	/// <summary>
 	/// Gets the current simulation time in tics.
 	/// Useful for debugging or time-based game mechanics.

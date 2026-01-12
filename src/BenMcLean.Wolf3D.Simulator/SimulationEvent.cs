@@ -257,3 +257,51 @@ public struct PushWallPlaySoundEvent
 	// Sound ID for presentation layer lookup if needed
 	public int SoundId { get; init; }
 }
+
+/// <summary>
+/// A weapon slot's sprite changed (animation frame update).
+/// Triggered when weapon state changes (WL_AGENT.C:T_Attack animation progression).
+/// Fires frequently during weapon animations.
+/// </summary>
+public struct WeaponSpriteChangedEvent
+{
+	// Weapon slot index (0 = left/primary, 1 = right/secondary)
+	public required int SlotIndex { get; init; }
+	// New sprite page number (WL_AGENT.C:weaponframe)
+	// -1 indicates no sprite (weapon holstered or slot empty)
+	public required ushort Shape { get; init; }
+}
+
+/// <summary>
+/// A weapon was fired from a slot.
+/// Triggered in WL_AGENT.C:Cmd_Fire when player presses attack button.
+/// Used for muzzle flash, weapon sound, and hit effects.
+/// </summary>
+public struct WeaponFiredEvent
+{
+	// Weapon slot index that fired
+	public required int SlotIndex { get; init; }
+	// Weapon type that fired (e.g., "knife", "pistol", "chaingun")
+	public required string WeaponType { get; init; }
+	// Sound to play (e.g., "ATKKNIFESND", "ATKPISTOLSND", "ATKGATGUNSND")
+	public required string SoundName { get; init; }
+	// True if weapon hit an actor, false if missed
+	public required bool DidHit { get; init; }
+	// Actor index that was hit (null if DidHit is false)
+	public int? HitActorIndex { get; init; }
+}
+
+/// <summary>
+/// A weapon was equipped to a slot.
+/// Triggered when player selects a weapon or game initializes player weapons.
+/// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.).
+/// </summary>
+public struct WeaponEquippedEvent
+{
+	// Weapon slot index
+	public required int SlotIndex { get; init; }
+	// Weapon type equipped (e.g., "knife", "pistol")
+	public required string WeaponType { get; init; }
+	// Initial sprite for equipped weapon (idle state)
+	public required ushort Shape { get; init; }
+}

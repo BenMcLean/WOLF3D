@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using Godot;
 
@@ -37,6 +38,7 @@ void sky() {
 	private Bonuses _bonuses;
 	private Actors _actors;
 	private Doors _doors;
+	private Weapons _weapons;
 	private SimulatorController _simulatorController;
 
 	public override void _Ready()
@@ -115,6 +117,13 @@ void sky() {
 			() => _freeLookCamera.GlobalPosition,      // Viewer position for directional sprites (player pos, or future MR camera)
 			() => _freeLookCamera.GlobalRotation.Y);   // Camera Y rotation for billboard effect
 		AddChild(_actors);
+
+		// Create weapons display (shows player weapons at bottom of screen like original Wolf3D)
+		_weapons = new Weapons(
+			VRAssetManager.SpriteMaterials,            // Sprite materials for weapon sprites
+			_freeLookCamera);                          // Attach to FreeLookCamera so weapon moves with player
+		AddChild(_weapons);
+
 		// Create doors for the current level and add to scene
 		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(currentLevel.Doors);
 		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = VRAssetManager.CreateFlippedMaterialsForDoors(doorTextureIndices);
@@ -128,7 +137,7 @@ void sky() {
 		// Create simulator controller and initialize with map data
 		_simulatorController = new SimulatorController();
 		AddChild(_simulatorController);
-		// Initialize with StateCollection from game assets
+		// Initialize with StateCollection and WeaponCollection from game assets
 		_simulatorController.Initialize(
 			Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
 			currentLevel,
@@ -136,7 +145,9 @@ void sky() {
 			_walls,
 			_bonuses,
 			_actors,
+			_weapons,
 			Shared.SharedAssetManager.CurrentGame.StateCollection,
+			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
 			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 		}
 		catch (Exception ex)
@@ -147,14 +158,46 @@ void sky() {
 
 	public override void _Input(InputEvent @event)
 	{
-		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
+		if (@event is InputEventKey keyEvent)
 		{
-			if (keyEvent.Keycode == Key.R)
+			if (keyEvent.Keycode == Key.R && keyEvent.Pressed)
 			{
 				// Use door or pushwall player is facing
 				OperateDoorOrPushWallPlayerIsFacing();
 			}
+			else if (keyEvent.Keycode == Key.X)
+			{
+				if (keyEvent.Pressed)
+				{
+					// Fire weapon (X key for now, VR trigger later)
+					FireWeapon();
+				}
+				else
+				{
+					// Release trigger - allows semi-auto weapons to fire again
+					ReleaseWeaponTrigger();
+				}
+			}
 		}
+	}
+
+	/// <summary>
+	/// Fires the weapon in the primary slot (slot 0).
+	/// For now, no hit detection - just triggers the animation and sound.
+	/// </summary>
+	private void FireWeapon()
+	{
+		// Fire weapon slot 0 with no hit (basic implementation)
+		_simulatorController.FireWeapon(0, null, null);
+	}
+
+	/// <summary>
+	/// Releases the trigger for the primary weapon slot.
+	/// Required for semi-auto weapons to allow firing again.
+	/// </summary>
+	private void ReleaseWeaponTrigger()
+	{
+		_simulatorController.ReleaseWeaponTrigger(0);
 	}
 
 	/// <summary>
@@ -169,16 +212,16 @@ void sky() {
 
 		// Project forward 1.5 tiles to reliably detect doors/pushwalls in front
 		// In Godot: Y rotation of 0 = facing -Z (North), rotating clockwise
-		float forwardX = Mathf.Sin(rotationY);
-		float forwardZ = -Mathf.Cos(rotationY);
+		float forwardX = Mathf.Sin(rotationY),
+			forwardZ = -Mathf.Cos(rotationY);
 		Vector3 forwardPoint = cameraPos + new Vector3(
 			forwardX * -Constants.TileWidth,
 			0f,
 			forwardZ * Constants.TileWidth);
 
 		// Convert world position to tile coordinates
-		ushort tileX = (ushort)(forwardPoint.X / Constants.TileWidth);
-		ushort tileY = (ushort)(forwardPoint.Z / Constants.TileWidth);
+		ushort tileX = (ushort)forwardPoint.X.ToTile(),
+			tileY = (ushort)forwardPoint.Z.ToTile();
 
 		// Try door first
 		ushort? doorIndex = FindDoorAtTile(tileX, tileY);
@@ -238,11 +281,9 @@ void sky() {
 	{
 		// Get VGA palette (usually palette 0)
 		uint[] palette = Shared.SharedAssetManager.CurrentGame.VSwap.Palettes[0];
-
 		// Get floor and ceiling colors from map, or use defaults
-		Color floorColor = GetColorFromPalette(palette, level.Floor, new Color(0.33f, 0.33f, 0.33f)); // Default: dark gray
-		Color ceilingColor = GetColorFromPalette(palette, level.Ceiling, new Color(0.2f, 0.2f, 0.2f)); // Default: darker gray
-
+		Color floorColor = level.Floor is byte floor ? palette[floor].ToColor() : new Color(0.33f, 0.33f, 0.33f), // Default: dark gray
+			ceilingColor = level.Ceiling is byte ceiling ? palette[ceiling].ToColor() : new Color(0.2f, 0.2f, 0.2f); // Default: darker gray
 		// Create world environment with divided skybox
 		WorldEnvironment worldEnvironment = new()
 		{
@@ -260,27 +301,6 @@ void sky() {
 		// Set shader parameters for floor and ceiling
 		_skyMaterial.SetShaderParameter("floor_color", floorColor);
 		_skyMaterial.SetShaderParameter("ceiling_color", ceilingColor);
-	}
-
-	/// <summary>
-	/// Converts a VGA palette index to a Godot Color.
-	/// Returns defaultColor if paletteIndex is null or invalid.
-	/// </summary>
-	private static Color GetColorFromPalette(uint[] palette, byte? paletteIndex, Color defaultColor)
-	{
-		if (paletteIndex == null || paletteIndex >= palette.Length)
-			return defaultColor;
-
-		// VGA palette entries are stored as uint (from VSwap.Indices2ByteArray)
-		uint colorValue = palette[paletteIndex.Value];
-
-		// Try ABGR byte order (common for VGA palettes)
-		byte a = (byte)(colorValue & 0xFF);
-		byte b = (byte)((colorValue >> 8) & 0xFF);
-		byte g = (byte)((colorValue >> 16) & 0xFF);
-		byte r = (byte)((colorValue >> 24) & 0xFF);
-
-		return new Color(r / 255f, g / 255f, b / 255f, a / 255f);
 	}
 
 	public override void _Process(double delta)

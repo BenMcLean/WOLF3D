@@ -303,19 +303,19 @@ end
 				</OnSelectionChanged>
 				<MenuItem Text="Can I play, Daddy?">
 					SetDifficulty(0)
-					NavigateToMenu("Main")
+					SetStartGame(true)
 				</MenuItem>
 				<MenuItem Text="Don't hurt me.">
 					SetDifficulty(1)
-					NavigateToMenu("Main")
+					SetStartGame(true)
 				</MenuItem>
 				<MenuItem Text="Bring 'em on!">
 					SetDifficulty(2)
-					NavigateToMenu("Main")
+					SetStartGame(true)
 				</MenuItem>
 				<MenuItem Text="I am Death incarnate!">
 					SetDifficulty(3)
-					NavigateToMenu("Main")
+					SetStartGame(true)
 				</MenuItem>
 			</Menu>
 
@@ -589,6 +589,20 @@ end
 		<Imf Number="26" Name="PACMAN_MUS" />
 	</Audio>
 	<VSwap Name="VSWAP.WL1" Sqrt="64" Scale="8" MipMaps="true">
+
+		<!-- GameplayWeapons Section (for simulation) -->
+		<!-- Starting with just pistol for initial implementation -->
+		<GameplayWeapons>
+			<GameplayWeapon
+				Name="pistol"
+				IdleState="s_pistol"
+				FireState="s_pistol_1"
+				BaseDamage="5"
+				AmmoPerShot="1"
+				AmmoType="bullets"
+				FireMode="semi"
+				FireSound="ATKPISTOLSND"/>
+		</GameplayWeapons>
 		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
@@ -758,6 +772,34 @@ end
 			<Sprite Page="410" Name="SPR_BOSS_DIE1" />
 			<Sprite Page="411" Name="SPR_BOSS_DIE2" />
 			<Sprite Page="412" Name="SPR_BOSS_DIE3" />
+			<Sprite Page="514" Name="SPR_BJ_W1" />
+			<Sprite Page="515" Name="SPR_BJ_W2" />
+			<Sprite Page="516" Name="SPR_BJ_W3" />
+			<Sprite Page="517" Name="SPR_BJ_W4" />
+			<Sprite Page="518" Name="SPR_BJ_JUMP1" />
+			<Sprite Page="519" Name="SPR_BJ_JUMP2" />
+			<Sprite Page="520" Name="SPR_BJ_JUMP3" />
+			<Sprite Page="521" Name="SPR_BJ_JUMP4" />
+			<Sprite Page="522" Name="SPR_KNIFEREADY" />
+			<Sprite Page="523" Name="SPR_KNIFEATK1" />
+			<Sprite Page="524" Name="SPR_KNIFEATK2" />
+			<Sprite Page="525" Name="SPR_KNIFEATK3" />
+			<Sprite Page="526" Name="SPR_KNIFEATK4" />
+			<Sprite Page="527" Name="SPR_PISTOLREADY" />
+			<Sprite Page="528" Name="SPR_PISTOLATK1" />
+			<Sprite Page="529" Name="SPR_PISTOLATK2" />
+			<Sprite Page="530" Name="SPR_PISTOLATK3" />
+			<Sprite Page="531" Name="SPR_PISTOLATK4" />
+			<Sprite Page="532" Name="SPR_MACHINEGUNREADY" />
+			<Sprite Page="533" Name="SPR_MACHINEGUNATK1" />
+			<Sprite Page="534" Name="SPR_MACHINEGUNATK2" />
+			<Sprite Page="535" Name="SPR_MACHINEGUNATK3" />
+			<Sprite Page="536" Name="SPR_MACHINEGUNATK4" />
+			<Sprite Page="537" Name="SPR_CHAINREADY" />
+			<Sprite Page="538" Name="SPR_CHAINATK1" />
+			<Sprite Page="539" Name="SPR_CHAINATK2" />
+			<Sprite Page="540" Name="SPR_CHAINATK3" />
+			<Sprite Page="541" Name="SPR_CHAINATK4" />
 		</SpritePlane>
 		<SoundPlane>
 			<DigiSound Number="0" Name="HALTSND" />
@@ -1108,53 +1150,13 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			<State Name="s_bossshoot6" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot7" />
 			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot8" />
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
-			<!--
-			<Actor Name="BJ" Human="true" AlertDigiSound="YEAHSND" >
-				<Animation Name="Standing" >
-					<Frame Number="0" Page="514" />
-				</Animation>
-				<Animation Name="Moving" Loop="true">
-					<Frame Number="0" Page="514" />
-					<Frame Number="1" Page="515" />
-					<Frame Number="2" Page="516" />
-					<Frame Number="3" Page="517" />
-				</Animation>
-				<Animation Name="Yeah" >
-					<Frame Number="0" Page="514" />
-					<Frame Number="1" Page="515" />
-					<Frame Number="2" Page="516" />
-					<Frame Number="3" Page="517" />
-					<Frame Number="4" Page="518" />
-					<Frame Number="5" Page="519" />
-					<Frame Number="6" Page="520" />
-					<Frame Number="7" Page="521" />
-				</Animation>
-				<Animation Name="Knife" >
-					<Frame Number="0" Page="522" />
-					<Frame Number="1" Page="523" />
-					<Frame Number="2" Page="524" />
-					<Frame Number="3" Page="525" />
-					<Frame Number="4" Page="526" />
-					<Frame Number="5" Page="522" />
-				</Animation>
-				<Animation Name="Pistol" >
-					<Frame Number="0" Page="527" />
-					<Frame Number="1" Page="528" />
-					<Frame Number="2" Page="529" />
-					<Frame Number="3" Page="530" />
-					<Frame Number="4" Page="531" />
-					<Frame Number="5" Page="527" />
-				</Animation>
-				<Animation Name="Machine Gun" >
-					<Frame Number="0" Page="537" />
-					<Frame Number="1" Page="538" />
-					<Frame Number="2" Page="539" />
-					<Frame Number="3" Page="540" />
-					<Frame Number="4" Page="541" />
-					<Frame Number="5" Page="537" />
-				</Animation>
-			</Actor>
-			-->
+			<!-- Weapon States -->
+			<!-- Pistol weapon states (from WL_AGENT.C attackinfo) -->
+			<State Name="s_pistol" Rotate="false" Shape="SPR_PISTOLREADY" Tics="0"/>
+			<State Name="s_pistol_1" Rotate="false" Shape="SPR_PISTOLATK1" Tics="6" Next="s_pistol_2"/>
+			<State Name="s_pistol_2" Rotate="false" Shape="SPR_PISTOLATK2" Tics="6" Next="s_pistol_3"/>
+			<State Name="s_pistol_3" Rotate="false" Shape="SPR_PISTOLATK3" Tics="6" Next="s_pistol_4"/>
+			<State Name="s_pistol_4" Rotate="false" Shape="SPR_PISTOLATK4" Tics="6" Next="s_pistol"/>
 			<!-- WL_ACT2.C:T_Path -->
 			<Function Name="T_Path">
 				<![CDATA[
