@@ -40,6 +40,7 @@ void sky() {
 	private Doors _doors;
 	private Weapons _weapons;
 	private SimulatorController _simulatorController;
+	private PixelPerfectAiming _pixelPerfectAiming;
 
 	public override void _Ready()
 	{
@@ -149,6 +150,19 @@ void sky() {
 			Shared.SharedAssetManager.CurrentGame.StateCollection,
 			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
 			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
+
+		// Create pixel-perfect aiming system
+		_pixelPerfectAiming = new PixelPerfectAiming(
+			_freeLookCamera,
+			currentLevel,
+			_walls,
+			_doors,
+			_simulatorController,
+			_actors,
+			_fixtures,
+			_bonuses,
+			VRAssetManager.SpriteMaterials);
+		AddChild(_pixelPerfectAiming);
 		}
 		catch (Exception ex)
 		{
