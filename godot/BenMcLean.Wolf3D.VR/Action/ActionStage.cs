@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using Godot;
@@ -15,6 +16,18 @@ public partial class ActionStage : Node3D
 {
 	[Export]
 	public int LevelIndex { get; set; } = 0;
+
+	// Public accessors for level components - used by systems like PixelPerfectAiming
+	public MapAnalyzer.MapAnalysis MapAnalysis { get; private set; }
+	public Walls Walls => _walls;
+	public Doors Doors => _doors;
+	public SimulatorController SimulatorController => _simulatorController;
+	public Actors Actors => _actors;
+	public Fixtures Fixtures => _fixtures;
+	public Bonuses Bonuses => _bonuses;
+	public IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials => VRAssetManager.SpriteMaterials;
+	public VSwap VSwap => Shared.SharedAssetManager.CurrentGame.VSwap;
+	public PixelPerfectAiming PixelPerfectAiming => _pixelPerfectAiming;
 
 	private readonly ShaderMaterial _skyMaterial = new()
 	{
@@ -41,23 +54,24 @@ void sky() {
 	private Weapons _weapons;
 	private SimulatorController _simulatorController;
 	private PixelPerfectAiming _pixelPerfectAiming;
+	private AimIndicator _aimIndicator;
 
 	public override void _Ready()
 	{
 		try
 		{
 			// Get current level analysis
-			MapAnalyzer.MapAnalysis currentLevel = Shared.SharedAssetManager.CurrentGame.MapAnalyses[LevelIndex];
+			MapAnalysis = Shared.SharedAssetManager.CurrentGame.MapAnalyses[LevelIndex];
 
 		// Setup sky with floor/ceiling colors from map
-		SetupSky(currentLevel);
+		SetupSky(MapAnalysis);
 
 		// Position camera at player start
 		Vector3 cameraPosition;
 		float cameraRotationY = 0f;
-		if (currentLevel.PlayerStart.HasValue)
+		if (MapAnalysis.PlayerStart.HasValue)
 		{
-			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = currentLevel.PlayerStart.Value;
+			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
 			// Center of the player's starting grid square
 			cameraPosition = new Vector3(
 				playerStart.X.ToMetersCentered(),
@@ -89,18 +103,18 @@ void sky() {
 		// Create walls for the current level and add to scene
 		_walls = new Walls(
 			VRAssetManager.OpaqueMaterials,
-			currentLevel,
+			MapAnalysis,
 			Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
 		AddChild(_walls);
 
 		// Create debug markers for patrol points and ambush actors
-		_debugMarkers = new DebugMarkers(currentLevel);
+		_debugMarkers = new DebugMarkers(MapAnalysis);
 		AddChild(_debugMarkers);
 
 		// Create fixtures (billboarded sprites) for the current level and add to scene
 		_fixtures = new Fixtures(
 			VRAssetManager.SpriteMaterials,
-			currentLevel.StaticSpawns,
+			MapAnalysis.StaticSpawns,
 			() => _freeLookCamera.GlobalRotation.Y,  // Delegate returns camera Y rotation for billboard effect
 			Shared.SharedAssetManager.CurrentGame.VSwap.SpritePage);
 		AddChild(_fixtures);
@@ -126,12 +140,12 @@ void sky() {
 		AddChild(_weapons);
 
 		// Create doors for the current level and add to scene
-		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(currentLevel.Doors);
+		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(MapAnalysis.Doors);
 		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = VRAssetManager.CreateFlippedMaterialsForDoors(doorTextureIndices);
 		_doors = new Doors(
 			VRAssetManager.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
 			flippedDoorMaterials,  // Flipped materials (only for door textures)
-			currentLevel.Doors,
+			MapAnalysis.Doors,
 			Shared.SharedAssetManager.DigiSounds);  // Sound library for door sounds
 		AddChild(_doors);
 
@@ -141,7 +155,7 @@ void sky() {
 		// Initialize with StateCollection and WeaponCollection from game assets
 		_simulatorController.Initialize(
 			Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
-			currentLevel,
+			MapAnalysis,
 			_doors,
 			_walls,
 			_bonuses,
@@ -152,17 +166,11 @@ void sky() {
 			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
 		// Create pixel-perfect aiming system
-		_pixelPerfectAiming = new PixelPerfectAiming(
-			_freeLookCamera,
-			currentLevel,
-			_walls,
-			_doors,
-			_simulatorController,
-			_actors,
-			_fixtures,
-			_bonuses,
-			VRAssetManager.SpriteMaterials);
-		AddChild(_pixelPerfectAiming);
+		_pixelPerfectAiming = new PixelPerfectAiming(this);
+
+		// Create debug aim indicator (temporary - won't be in final game)
+		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _freeLookCamera);
+		AddChild(_aimIndicator);
 		}
 		catch (Exception ex)
 		{
