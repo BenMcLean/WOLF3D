@@ -591,17 +591,57 @@ end
 	<VSwap Name="VSWAP.WL1" Sqrt="64" Scale="8" MipMaps="true">
 
 		<!-- GameplayWeapons Section (for simulation) -->
-		<!-- Starting with just pistol for initial implementation -->
+		<!-- All weapon behavior defined here via Lua scripts - no hardcoding in C# -->
+		<!-- Based on WL_AGENT.C attackinfo structure (line 75) -->
 		<GameplayWeapons>
+			<!-- Knife (wp_knife = 0) - WL_AGENT.C:attackinfo[0] -->
+			<GameplayWeapon
+				Name="knife"
+				WeaponNumber="0"
+				IdleState="s_knife"
+				FireState="s_knife_1"
+				RequiresAmmo="false"
+				AmmoType="none"
+				AmmoPerShot="0"
+				FireSound="ATKKNIFESND"/>
+			<!-- Pistol (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] -->
 			<GameplayWeapon
 				Name="pistol"
+				WeaponNumber="1"
 				IdleState="s_pistol"
 				FireState="s_pistol_1"
-				BaseDamage="5"
-				AmmoPerShot="1"
+				RequiresAmmo="true"
 				AmmoType="bullets"
-				FireMode="semi"
-				FireSound="ATKPISTOLSND"/>
+				AmmoPerShot="1"
+				FireSound="ATKPISTOLSND"
+				BaseDamage="5"
+				MaxRange="100"/>
+			<!-- Machine Gun (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] -->
+			<GameplayWeapon
+				Name="machinegun"
+				WeaponNumber="2"
+				IdleState="s_machinegun"
+				FireState="s_machinegun_1"
+				RequiresAmmo="true"
+				AmmoType="bullets"
+				AmmoPerShot="1"
+				FireSound="ATKMACHINEGUNSND"
+				BaseDamage="5"
+				MaxRange="100"
+				RapidFire="true"/>
+			<!-- Chain Gun (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] -->
+			<GameplayWeapon
+				Name="chaingun"
+				WeaponNumber="3"
+				IdleState="s_chaingun"
+				FireState="s_chaingun_1"
+				RequiresAmmo="true"
+				AmmoType="bullets"
+				AmmoPerShot="1"
+				FireSound="ATKGATLINGSND"
+				BaseDamage="5"
+				MaxRange="100"
+				RapidFire="true"/>
 		</GameplayWeapons>
 		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
@@ -1151,12 +1191,116 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot8" />
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
 			<!-- Weapon States -->
-			<!-- Pistol weapon states (from WL_AGENT.C attackinfo) -->
+			<!-- Weapon states based on WL_AGENT.C attackinfo structure -->
+			<!-- All weapon logic in Lua - fully moddable, no C# hardcoding -->
+
+			<!-- Knife weapon states (wp_knife = 0) - WL_AGENT.C:attackinfo[0] = {{6,0,1},{6,2,2},{6,0,3},{6,-1,4}} -->
+			<State Name="s_knife" Rotate="false" Shape="SPR_KNIFEREADY" Tics="0"/>
+			<State Name="s_knife_1" Rotate="false" Shape="SPR_KNIFEATK1" Tics="6" Next="s_knife_2"/>
+			<State Name="s_knife_2" Rotate="false" Shape="SPR_KNIFEATK2" Tics="6" Action="A_KnifeAttack" Next="s_knife_3"/>
+			<State Name="s_knife_3" Rotate="false" Shape="SPR_KNIFEATK3" Tics="6" Next="s_knife_4"/>
+			<State Name="s_knife_4" Rotate="false" Shape="SPR_KNIFEATK4" Tics="6" Next="s_knife"/>
+			<!-- Pistol weapon states (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] = {{6,0,1},{6,1,2},{6,0,3},{6,-1,4}} -->
 			<State Name="s_pistol" Rotate="false" Shape="SPR_PISTOLREADY" Tics="0"/>
 			<State Name="s_pistol_1" Rotate="false" Shape="SPR_PISTOLATK1" Tics="6" Next="s_pistol_2"/>
-			<State Name="s_pistol_2" Rotate="false" Shape="SPR_PISTOLATK2" Tics="6" Next="s_pistol_3"/>
+			<State Name="s_pistol_2" Rotate="false" Shape="SPR_PISTOLATK2" Tics="6" Action="A_PistolAttack" Next="s_pistol_3"/>
 			<State Name="s_pistol_3" Rotate="false" Shape="SPR_PISTOLATK3" Tics="6" Next="s_pistol_4"/>
-			<State Name="s_pistol_4" Rotate="false" Shape="SPR_PISTOLATK4" Tics="6" Next="s_pistol"/>
+			<State Name="s_pistol_4" Rotate="false" Shape="SPR_PISTOLATK4" Tics="6" Action="A_WeaponReady" Next="s_pistol"/>
+			<!-- Machine gun weapon states (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] = {{6,0,1},{6,1,2},{6,3,3},{6,-1,4}} -->
+			<State Name="s_machinegun" Rotate="false" Shape="SPR_MACHINEGUNREADY" Tics="0"/>
+			<State Name="s_machinegun_1" Rotate="false" Shape="SPR_MACHINEGUNATK1" Tics="6" Next="s_machinegun_2"/>
+			<State Name="s_machinegun_2" Rotate="false" Shape="SPR_MACHINEGUNATK2" Tics="6" Action="A_MachineGunAttack" Next="s_machinegun_3"/>
+			<State Name="s_machinegun_3" Rotate="false" Shape="SPR_MACHINEGUNATK3" Tics="6" Action="A_RapidFire" Next="s_machinegun_4"/>
+			<State Name="s_machinegun_4" Rotate="false" Shape="SPR_MACHINEGUNATK4" Tics="6" Action="A_WeaponReady" Next="s_machinegun"/>
+			<!-- Chain gun weapon states (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] = {{6,0,1},{6,1,2},{6,4,3},{6,-1,4}} -->
+			<State Name="s_chaingun" Rotate="false" Shape="SPR_CHAINREADY" Tics="0"/>
+			<State Name="s_chaingun_1" Rotate="false" Shape="SPR_CHAINATK1" Tics="6" Next="s_chaingun_2"/>
+			<State Name="s_chaingun_2" Rotate="false" Shape="SPR_CHAINATK2" Tics="6" Action="A_ChainGunAttack" Next="s_chaingun_3"/>
+			<State Name="s_chaingun_3" Rotate="false" Shape="SPR_CHAINATK3" Tics="6" Action="A_RapidFire" Next="s_chaingun_4"/>
+			<State Name="s_chaingun_4" Rotate="false" Shape="SPR_CHAINATK4" Tics="6" Action="A_WeaponReady" Next="s_chaingun"/>
+			<!-- Weapon Action Functions -->
+			<!-- All weapon behavior is defined in Lua - fully moddable -->
+			<Function Name="A_KnifeAttack" Description="Knife melee attack - WL_AGENT.C:KnifeAttack (line 1862)">
+				<![CDATA[
+-- Knife attack - melee range attack
+PlaySound("ATKKNIFESND")
+RequestMelee({
+	range = 1.5,
+	arc = 60,
+	damageBase = 0,
+	damageRandom = 16  -- US_RndT() >> 4
+})
+				]]>
+			</Function>
+			<Function Name="A_PistolAttack" Description="Pistol hitscan attack - WL_AGENT.C:GunAttack (line 1902)">
+				<![CDATA[
+-- Pistol attack - single hitscan shot
+if not HasAmmo(1) then return end
+PlaySound("ATKPISTOLSND")
+ConsumeAmmo(1)
+RequestHitScan({
+	maxRange = 100,
+	spread = 0,
+	damageBase = 5,
+	damageRandom = 10,
+	damageRangeModifier = true
+})
+				]]>
+			</Function>
+			<Function Name="A_MachineGunAttack" Description="Machine gun hitscan attack - WL_AGENT.C:GunAttack">
+				<![CDATA[
+-- Machine gun attack - single hitscan shot
+if not HasAmmo(1) then return end
+PlaySound("ATKMACHINEGUNSND")
+ConsumeAmmo(1)
+RequestHitScan({
+	maxRange = 100,
+	spread = 0,
+	damageBase = 5,
+	damageRandom = 10,
+	damageRangeModifier = true
+})
+				]]>
+			</Function>
+			<Function Name="A_ChainGunAttack" Description="Chain gun hitscan attack - WL_AGENT.C:GunAttack">
+				<![CDATA[
+-- Chain gun attack - single hitscan shot (can continue without ammo)
+if not HasAmmo(1) then return end
+PlaySound("ATKGATLINGSND")
+ConsumeAmmo(1)
+RequestHitScan({
+	maxRange = 100,
+	spread = 0,
+	damageBase = 5,
+	damageRandom = 10,
+	damageRangeModifier = true
+})
+				]]>
+			</Function>
+			<Function Name="A_RapidFire" Description="Rapid fire check - WL_AGENT.C:T_Attack cases 3 and 4 (lines 2203, 2223)">
+				<![CDATA[
+-- Rapid fire - loop back to firing frame if button held and have ammo
+-- WL_AGENT.C case 3 (machine gun) and case 4 (chain gun)
+if HasAmmo(1) and IsButtonHeld("attack") then
+	-- Get weapon name from current state
+	local stateName = GetCurrentStateName()
+	if string.find(stateName, "machinegun") then
+		SetNextState("s_machinegun_1")
+	elseif string.find(stateName, "chaingun") then
+		SetNextState("s_chaingun_1")
+	end
+end
+				]]>
+			</Function>
+			<Function Name="A_WeaponReady" Description="Return to ready state - check ammo and weapon switching - WL_AGENT.C:T_Attack case -1 (line 2146)">
+				<![CDATA[
+-- End of attack sequence - check if out of ammo
+-- WL_AGENT.C case -1: switch to knife if no ammo
+if not HasAmmo(1) then
+	SwitchToKnife()
+end
+				]]>
+			</Function>
 			<!-- WL_ACT2.C:T_Path -->
 			<Function Name="T_Path">
 				<![CDATA[

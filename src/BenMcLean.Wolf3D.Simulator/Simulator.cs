@@ -1181,8 +1181,73 @@ public class Simulator
 		slot.AttackFrame++;  // Increment attack frame counter
 
 		// Execute Action function if present (optional Lua support)
-		// For now, we'll skip Lua execution - weapon damage is applied in ProcessFireWeapon
-		// This is just for animation coordination
+		// TODO: Full Lua script execution for weapon actions
+		// For now, handle rapid fire check directly in C#
+		if (!string.IsNullOrEmpty(nextState.Action))
+		{
+			// Quick implementation of A_RapidFire for machine gun and chain gun
+			// WL_AGENT.C:T_Attack cases 3 & 4 (lines 2203, 2223)
+			if (nextState.Action == "A_RapidFire")
+			{
+				// Check if trigger still held and ammo available
+				if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
+				{
+					// Get weapon info to check ammo
+					if (weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
+					{
+						// Check ammo availability
+						bool hasAmmo = true;
+						if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
+						{
+							hasAmmo = ammoInventory.TryGetValue(weaponInfo.AmmoType, out int currentAmmo)
+							          && currentAmmo >= weaponInfo.AmmoPerShot;
+						}
+
+						// If trigger held and have ammo, loop back to fire frame
+						if (hasAmmo)
+						{
+							// Consume ammo for the next shot
+							if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
+							{
+								if (ammoInventory.TryGetValue(weaponInfo.AmmoType, out int currentAmmo))
+								{
+									ammoInventory[weaponInfo.AmmoType] = currentAmmo - weaponInfo.AmmoPerShot;
+								}
+							}
+
+							// Emit weapon fired event for sound
+							// WL_AGENT.C:GunAttack plays sound each time
+							WeaponFired?.Invoke(new WeaponFiredEvent
+							{
+								SlotIndex = slotIndex,
+								WeaponType = slot.WeaponType,
+								SoundName = weaponInfo.FireSound ?? string.Empty,
+								DidHit = false,  // Rapid fire hits handled separately by presentation
+								HitActorIndex = null
+							});
+
+							// Loop back to frame 1 (fire frame)
+							// Machine gun: s_machinegun_1, Chain gun: s_chaingun_1
+							string fireFrameState = slot.WeaponType switch
+							{
+								"machinegun" => "s_machinegun_1",
+								"chaingun" => "s_chaingun_1",
+								_ => null
+							};
+
+							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
+							{
+								slot.CurrentState = fireState;
+								slot.TicCount = fireState.Tics;
+								slot.ShapeNum = fireState.Shape;
+								slot.AttackFrame = 1;  // Reset to fire frame
+								// Don't increment further - we're looping back
+							}
+						}
+					}
+				}
+			}
+		}
 
 		// Update flags based on state
 		if (nextState.Tics == 0)

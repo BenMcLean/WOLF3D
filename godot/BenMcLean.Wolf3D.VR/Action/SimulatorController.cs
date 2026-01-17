@@ -229,6 +229,25 @@ public partial class SimulatorController : Node3D
 	}
 
 	/// <summary>
+	/// Player switches to a different weapon in specified slot.
+	/// Call this from player input handling (e.g., number keys 1-4).
+	/// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>
+	/// <param name="weaponType">Weapon type identifier (e.g., "knife", "pistol", "machinegun", "chaingun")</param>
+	public void SwitchWeapon(int slotIndex, string weaponType)
+	{
+		if (simulator == null)
+			return;
+
+		simulator.QueueAction(new EquipWeaponAction
+		{
+			SlotIndex = slotIndex,
+			WeaponType = weaponType
+		});
+	}
+
+	/// <summary>
 	/// Gets the current simulation time in tics.
 	/// Useful for debugging or time-based game mechanics.
 	/// </summary>

@@ -1,4 +1,5 @@
 using System;
+using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -16,6 +17,12 @@ public partial class Root : Node3D
 	private Shared.DosScreen _errorScreen;
 	private bool _errorMode = false;
 
+	/// <summary>
+	/// The active display mode (VR or flatscreen).
+	/// Initialized first before any other systems.
+	/// </summary>
+	public IDisplayMode DisplayMode { get; private set; }
+
 	public override void _Ready()
 	{
 		// Register error display callback
@@ -23,6 +30,10 @@ public partial class Root : Node3D
 
 		try
 		{
+			// Initialize display mode FIRST (VR or flatscreen)
+			// This must happen before anything else that needs the camera
+			DisplayMode = DisplayModeFactory.Create();
+
 			// Load game assets
 			// TODO: Eventually this will be done from menu selection, not hardcoded
 			Shared.SharedAssetManager.LoadGame(@"..\..\games\WL1.xml");
@@ -39,18 +50,9 @@ public partial class Root : Node3D
 			if (!string.IsNullOrWhiteSpace(songName))
 				Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
 
-			// TEMPORARY TEST: Load AudioT from N3D.xml and play the first MIDI song
-			//System.Xml.Linq.XDocument n3dXml = System.Xml.Linq.XDocument.Load(@"..\..\games\N3D.xml");
-			//Assets.AudioT n3dAudioT = Assets.AudioT.Load(n3dXml.Root, @"..\..\games\N3D");
-			//if (n3dAudioT.Songs.Count > 0)
-			//{
-			//	Assets.AudioT.Song firstSong = n3dAudioT.Songs.Values.First();
-			//	Shared.OPL.SoundBlaster.Song = firstSong;
-			//}
-
-			// Boot to MenuStage
-			Shared.Menu.MenuStage menuStage = new();
-			TransitionTo(menuStage);
+			// Boot to MenuRoom which wraps MenuStage with VR support
+			MenuRoom menuRoom = new(DisplayMode);
+			TransitionTo(menuRoom);
 		}
 		catch (Exception ex)
 		{
@@ -60,16 +62,19 @@ public partial class Root : Node3D
 
 	public override void _Process(double delta)
 	{
-		// Poll MenuStage for game start signal
-		if (_currentScene is Shared.Menu.MenuStage menuStage)
+		// Update display mode each frame
+		DisplayMode?.Update(delta);
+
+		// Poll MenuRoom for game start signal
+		if (_currentScene is MenuRoom menuRoom)
 		{
-			if (menuStage.SessionState?.StartGame ?? false)
+			if (menuRoom.ShouldStartGame)
 			{
 				// Get selected episode and difficulty from menu
-				int episode = menuStage.SessionState.SelectedEpisode;
-				int difficulty = menuStage.SessionState.SelectedDifficulty;
+				int episode = menuRoom.SelectedEpisode;
+				int difficulty = menuRoom.SelectedDifficulty;
 				// TODO: Use episode and difficulty when creating ActionStage
-				ActionStage actionStage = new() { LevelIndex = CurrentLevelIndex };
+				ActionStage actionStage = new(DisplayMode) { LevelIndex = CurrentLevelIndex };
 				TransitionTo(actionStage);
 			}
 		}

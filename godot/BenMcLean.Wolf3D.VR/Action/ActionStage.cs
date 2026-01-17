@@ -4,6 +4,7 @@ using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator.Entities;
+using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -11,6 +12,7 @@ namespace BenMcLean.Wolf3D.VR;
 /// <summary>
 /// The VR action stage - loads and displays a Wolfenstein 3D level in VR.
 /// Handles camera, walls, doors, sprites, and gameplay simulation.
+/// Supports both VR and flatscreen display modes.
 /// </summary>
 public partial class ActionStage : Node3D
 {
@@ -29,6 +31,12 @@ public partial class ActionStage : Node3D
 	public VSwap VSwap => Shared.SharedAssetManager.CurrentGame.VSwap;
 	public PixelPerfectAiming PixelPerfectAiming => _pixelPerfectAiming;
 
+	/// <summary>
+	/// The active display mode (VR or flatscreen).
+	/// Used for camera positioning, billboard rotation, and input handling.
+	/// </summary>
+	public IDisplayMode DisplayMode => _displayMode;
+
 	private readonly ShaderMaterial _skyMaterial = new()
 	{
 		Shader = new() { Code = """
@@ -43,8 +51,7 @@ void sky() {
 """, }
 	};
 
-	private Camera3D _camera;
-	private FreeLookCamera _freeLookCamera;
+	private readonly IDisplayMode _displayMode;
 	private Walls _walls;
 	private DebugMarkers _debugMarkers;
 	private Fixtures _fixtures;
@@ -56,6 +63,15 @@ void sky() {
 	private PixelPerfectAiming _pixelPerfectAiming;
 	private AimIndicator _aimIndicator;
 
+	/// <summary>
+	/// Creates a new ActionStage with the specified display mode.
+	/// </summary>
+	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
+	public ActionStage(IDisplayMode displayMode)
+	{
+		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
+	}
+
 	public override void _Ready()
 	{
 		try
@@ -65,6 +81,9 @@ void sky() {
 
 		// Setup sky with floor/ceiling colors from map
 		SetupSky(MapAnalysis);
+
+		// Initialize display mode camera rig
+		_displayMode.Initialize(this);
 
 		// Position camera at player start
 		Vector3 cameraPosition;
@@ -89,16 +108,12 @@ void sky() {
 			GD.PrintErr("Warning: No player start found in map!");
 		}
 
-		_camera = new()
+		// Position the display mode's origin (XROrigin or CameraHolder) at player start
+		if (_displayMode.Origin != null)
 		{
-			Position = cameraPosition,
-			RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0),
-			Current = true,
-		};
-		AddChild(_camera);
-		_freeLookCamera = new();
-		_camera.AddChild(_freeLookCamera);
-		_freeLookCamera.Enabled = true;
+			_displayMode.Origin.Position = cameraPosition;
+			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
+		}
 
 		// Create walls for the current level and add to scene
 		_walls = new Walls(
@@ -115,28 +130,29 @@ void sky() {
 		_fixtures = new Fixtures(
 			VRAssetManager.SpriteMaterials,
 			MapAnalysis.StaticSpawns,
-			() => _freeLookCamera.GlobalRotation.Y,  // Delegate returns camera Y rotation for billboard effect
+			() => _displayMode.ViewerYRotation,  // Delegate returns camera Y rotation for billboard effect
 			Shared.SharedAssetManager.CurrentGame.VSwap.SpritePage);
 		AddChild(_fixtures);
 
 		// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
 		_bonuses = new Bonuses(
 			VRAssetManager.SpriteMaterials,
-			() => _freeLookCamera.GlobalRotation.Y);  // Delegate returns camera Y rotation for billboard effect
+			() => _displayMode.ViewerYRotation);  // Delegate returns camera Y rotation for billboard effect
 		AddChild(_bonuses);
 
 		// Create actors (dynamic actor sprites with game logic) for the current level and add to scene
 		_actors = new Actors(
 			VRAssetManager.SpriteMaterials,
 			Shared.SharedAssetManager.DigiSounds,      // Digi sounds for actor alert sounds
-			() => _freeLookCamera.GlobalPosition,      // Viewer position for directional sprites (player pos, or future MR camera)
-			() => _freeLookCamera.GlobalRotation.Y);   // Camera Y rotation for billboard effect
+			() => _displayMode.ViewerPosition,         // Viewer position for directional sprites
+			() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
 		AddChild(_actors);
 
 		// Create weapons display (shows player weapons at bottom of screen like original Wolf3D)
+		// TODO: For VR, weapons should attach to controllers instead of camera
 		_weapons = new Weapons(
 			VRAssetManager.SpriteMaterials,            // Sprite materials for weapon sprites
-			_freeLookCamera);                          // Attach to FreeLookCamera so weapon moves with player
+			_displayMode.Camera);                      // Attach to camera so weapon moves with player
 		AddChild(_weapons);
 
 		// Create doors for the current level and add to scene
@@ -163,13 +179,13 @@ void sky() {
 			_weapons,
 			Shared.SharedAssetManager.CurrentGame.StateCollection,
 			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
-			() => (_freeLookCamera.GlobalPosition.X.ToFixedPoint(), _freeLookCamera.GlobalPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
+			() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
 		// Create pixel-perfect aiming system
 		_pixelPerfectAiming = new PixelPerfectAiming(this);
 
 		// Create debug aim indicator (temporary - won't be in final game)
-		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _freeLookCamera);
+		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode.Camera);
 		AddChild(_aimIndicator);
 		}
 		catch (Exception ex)
@@ -200,6 +216,26 @@ void sky() {
 					ReleaseWeaponTrigger();
 				}
 			}
+			else if (keyEvent.Pressed)
+			{
+				// Weapon switching - number keys 1-4
+				// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
+				switch (keyEvent.Keycode)
+				{
+					case Key.Key1:
+						SwitchWeapon("knife");
+						break;
+					case Key.Key2:
+						SwitchWeapon("pistol");
+						break;
+					case Key.Key3:
+						SwitchWeapon("machinegun");
+						break;
+					case Key.Key4:
+						SwitchWeapon("chaingun");
+						break;
+				}
+			}
 		}
 	}
 
@@ -223,14 +259,24 @@ void sky() {
 	}
 
 	/// <summary>
+	/// Switches to a different weapon in the primary slot (slot 0).
+	/// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
+	/// </summary>
+	/// <param name="weaponType">Weapon type identifier (e.g., "knife", "pistol", "machinegun", "chaingun")</param>
+	private void SwitchWeapon(string weaponType)
+	{
+		_simulatorController.SwitchWeapon(0, weaponType);
+	}
+
+	/// <summary>
 	/// Finds and operates the door or pushwall the player is facing.
 	/// Projects 1 WallWidth forward from camera position/rotation and checks that tile.
 	/// </summary>
 	private void OperateDoorOrPushWallPlayerIsFacing()
 	{
-		// Get camera's position and Y rotation
-		Vector3 cameraPos = _freeLookCamera.GlobalPosition;
-		float rotationY = _freeLookCamera.GlobalRotation.Y;
+		// Get camera's position and Y rotation from display mode
+		Vector3 cameraPos = _displayMode.ViewerPosition;
+		float rotationY = _displayMode.ViewerYRotation;
 
 		// Project forward 1.5 tiles to reliably detect doors/pushwalls in front
 		// In Godot: Y rotation of 0 = facing -Z (North), rotating clockwise
