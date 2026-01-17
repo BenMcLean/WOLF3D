@@ -461,7 +461,7 @@ end
 		</Menus>
 	</VgaGraph>
 	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1">
-		<Map Number="0" Episode="1" Level="1" Floor="25" Ceiling="29" Border="127" Par="00:01:30" Music="GETTHEM_MUS" />
+		<Map Number="0" Episode="1" Level="1" Floor="25" Ceiling="29" Border="127" Par="00:01:30" Music="GETTHEM_MUS" AltElevatorTo="9" />
 		<Map Number="1" Episode="1" Level="2" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Music="SEARCHN_MUS" />
 		<Map Number="2" Episode="1" Level="3" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Music="POW_MUS" />
 		<Map Number="3" Episode="1" Level="4" Floor="25" Ceiling="29" Border="127" Par="00:03:30" Music="SUSPENSE_MUS" />
@@ -647,7 +647,7 @@ end
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
 			<!-- Special floor tiles -->
-			<Elevator Tile="21" />
+			<Elevator Tile="21" Faces="EastWest" Sound="LEVELDONESND" />
 			<Pushable Tile="98" />
 			<Exit Tile="99" />
 			<Ambush Tile="106" />

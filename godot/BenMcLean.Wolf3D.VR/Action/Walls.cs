@@ -84,7 +84,7 @@ public partial class Walls : Node3D
 				AddPushWall(pw.Shape, pw.X, pw.Y);
 	}
 	/// <summary>
-	/// Subscribes to simulator events for pushwall movement and sounds.
+	/// Subscribes to simulator events for pushwall movement, sounds, and elevator switches.
 	/// Call this after the simulator is initialized.
 	/// </summary>
 	public void Subscribe(Simulator.Simulator simulator)
@@ -92,6 +92,7 @@ public partial class Walls : Node3D
 		this.simulator = simulator;
 		simulator.PushWallPositionChanged += OnPushWallPositionChanged;
 		simulator.PushWallPlaySound += OnPushWallPlaySound;
+		simulator.ElevatorSwitchFlipped += OnElevatorSwitchFlipped;
 	}
 	/// <summary>
 	/// Handles pushwall position changes from the simulator.
@@ -120,6 +121,13 @@ public partial class Walls : Node3D
 		else
 			GD.PrintErr($"Sound not found: {evt.SoundName}");
 	}
+	/// <summary>
+	/// Handles elevator switch texture flip from the simulator.
+	/// Swaps the wall texture from unpressed to pressed state.
+	/// WL_AGENT.C: tilemap[checkx][checky]++ flips the switch visually.
+	/// </summary>
+	private void OnElevatorSwitchFlipped(Simulator.ElevatorSwitchFlippedEvent evt) =>
+		SwapTexture(evt.OldTexture, evt.NewTexture);
 	/// <summary>
 	/// Adds a pushwall to the rendering system.
 	/// A pushwall is a 4-sided cube (north, south, east, west faces).

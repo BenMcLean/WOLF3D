@@ -72,6 +72,11 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 		// Enable the free look camera immediately
 		_camera.Enabled = true;
+
+		// Reset camera's local transform - Enabled copies GlobalTransform from previous camera
+		// which would carry over the old level's position
+		_camera.Position = Vector3.Zero;
+		_camera.Rotation = Vector3.Zero;
 	}
 
 	public void Update(double delta)

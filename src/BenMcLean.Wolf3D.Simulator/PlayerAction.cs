@@ -32,6 +32,20 @@ public class ActivatePushWallAction : PlayerAction
 }
 
 /// <summary>
+/// Player attempts to activate an elevator switch.
+/// Based on WL_AGENT.C:Cmd_Use elevator activation logic (line 1767).
+/// </summary>
+public class ActivateElevatorAction : PlayerAction
+{
+	/// <summary>Tile X coordinate of the elevator switch being activated</summary>
+	public required ushort TileX { get; init; }
+	/// <summary>Tile Y coordinate of the elevator switch being activated</summary>
+	public required ushort TileY { get; init; }
+	/// <summary>Direction the player is facing (determines which face is being activated)</summary>
+	public required Direction Direction { get; init; }
+}
+
+/// <summary>
 /// Player attempts to fire a weapon from a specific slot.
 /// Presentation layer performs hit detection and provides results.
 /// Based on WL_AGENT.C:Cmd_Fire (line 1629) and T_Attack (line 2101).

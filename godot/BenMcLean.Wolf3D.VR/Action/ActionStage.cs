@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
+using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
@@ -181,6 +182,9 @@ void sky() {
 			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
 			() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
+		// Subscribe to elevator activation for level transitions
+		_simulatorController.ElevatorActivated += OnElevatorActivated;
+
 		// Create pixel-perfect aiming system
 		_pixelPerfectAiming = new PixelPerfectAiming(this);
 
@@ -200,8 +204,8 @@ void sky() {
 		{
 			if (keyEvent.Keycode == Key.R && keyEvent.Pressed)
 			{
-				// Use door or pushwall player is facing
-				OperateDoorOrPushWallPlayerIsFacing();
+				// Use door, pushwall, or elevator player is facing
+				UseObjectPlayerIsFacing();
 			}
 			else if (keyEvent.Keycode == Key.X)
 			{
@@ -269,10 +273,11 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Finds and operates the door or pushwall the player is facing.
+	/// Finds and operates the door, pushwall, or elevator the player is facing.
 	/// Projects 1 WallWidth forward from camera position/rotation and checks that tile.
+	/// WL_AGENT.C:Cmd_Use - checks for doors, pushwalls, and elevators.
 	/// </summary>
-	private void OperateDoorOrPushWallPlayerIsFacing()
+	private void UseObjectPlayerIsFacing()
 	{
 		// Get camera's position and Y rotation from display mode
 		Vector3 cameraPos = _displayMode.ViewerPosition;
@@ -291,6 +296,9 @@ void sky() {
 		ushort tileX = (ushort)forwardPoint.X.ToTile(),
 			tileY = (ushort)forwardPoint.Z.ToTile();
 
+		// Determine facing direction from camera rotation
+		Direction dir = rotationY.ToCardinalDirection();
+
 		// Try door first
 		ushort? doorIndex = FindDoorAtTile(tileX, tileY);
 		if (doorIndex.HasValue)
@@ -303,10 +311,13 @@ void sky() {
 		ushort? pushWallIndex = FindPushWallAtTile(tileX, tileY);
 		if (pushWallIndex.HasValue)
 		{
-			// Determine push direction from camera rotation (extension method in ExtensionMethods.cs)
-			Direction dir = rotationY.ToCardinalDirection();
 			_simulatorController.ActivatePushWall(tileX, tileY, dir);
+			return;
 		}
+
+		// Try elevator third
+		if (IsElevatorAtTile(tileX, tileY))
+			_simulatorController.ActivateElevator(tileX, tileY, dir);
 	}
 
 	/// <summary>
@@ -341,6 +352,20 @@ void sky() {
 		}
 		return null;
 	}
+
+	/// <summary>
+	/// Checks if an elevator switch exists at the specified tile coordinates.
+	/// </summary>
+	private bool IsElevatorAtTile(ushort tileX, ushort tileY)
+	{
+		foreach (var elev in MapAnalysis.Elevators)
+		{
+			if (elev.X == tileX && elev.Y == tileY)
+				return true;
+		}
+		return false;
+	}
+
 	/// <summary>
 	/// Sets up the VR sky with floor and ceiling colors from the map properties.
 	/// Converts VGA palette indices to RGB colors.
@@ -377,5 +402,52 @@ void sky() {
 		// Bonuses updates billboard rotations automatically in its own _Process
 		// Doors use two-quad approach with back-face culling - no per-frame updates needed
 		// SimulatorController drives the simulator and updates door/bonus states automatically in its own _Process
+	}
+
+	/// <summary>
+	/// Handles elevator activation - triggers level transition.
+	/// WL_AGENT.C:Cmd_Use elevator completion triggers gamestate.victoryflag.
+	/// </summary>
+	private void OnElevatorActivated(ElevatorActivatedEvent e)
+	{
+		GD.Print($"Elevator activated! Destination level: {e.DestinationLevel}, IsAltElevator: {e.IsAltElevator}");
+
+		// Play elevator sound
+		if (!string.IsNullOrEmpty(e.SoundName))
+			EventBus.Emit(GameEvent.PlaySound, e.SoundName);
+
+		// TODO: Implement proper level transition with intermission screen
+		// For now, just reload with the new level index
+		LevelIndex = e.DestinationLevel;
+
+		// Queue a deferred call to reload the stage (can't change scene tree during event handling)
+		CallDeferred(nameof(ReloadLevel));
+	}
+
+	/// <summary>
+	/// Reloads the current ActionStage with the new LevelIndex.
+	/// Called deferred after elevator activation.
+	/// </summary>
+	private void ReloadLevel()
+	{
+		GD.Print($"Loading level {LevelIndex}...");
+
+		// Get the parent node and this node's position in the tree
+		Node parent = GetParent();
+		if (parent == null)
+		{
+			GD.PrintErr("ERROR: Cannot reload level - ActionStage has no parent");
+			return;
+		}
+
+		// Create a new ActionStage with the same display mode and updated level index
+		ActionStage newStage = new(_displayMode)
+		{
+			LevelIndex = LevelIndex
+		};
+
+		// Replace this stage with the new one
+		parent.AddChild(newStage);
+		QueueFree();
 	}
 }

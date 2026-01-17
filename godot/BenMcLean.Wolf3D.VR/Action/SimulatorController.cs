@@ -79,6 +79,9 @@ public partial class SimulatorController : Node3D
 		actors.Subscribe(simulator);
 		weapons.Subscribe(simulator);
 
+		// Subscribe to elevator activation for level transitions
+		simulator.ElevatorActivated += e => ElevatorActivated?.Invoke(e);
+
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
 		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis, mapAnalysis.Doors);
@@ -190,6 +193,27 @@ public partial class SimulatorController : Node3D
 	}
 
 	/// <summary>
+	/// Player attempts to activate an elevator switch.
+	/// Call this from player input handling (e.g., "use" button pressed near an elevator).
+	/// Based on WL_AGENT.C:Cmd_Use elevator activation logic.
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate of the elevator switch</param>
+	/// <param name="tileY">Tile Y coordinate of the elevator switch</param>
+	/// <param name="direction">Direction the player is facing (determines which face is activated)</param>
+	public void ActivateElevator(ushort tileX, ushort tileY, Direction direction)
+	{
+		if (simulator == null)
+			return;
+
+		simulator.QueueAction(new ActivateElevatorAction
+		{
+			TileX = tileX,
+			TileY = tileY,
+			Direction = direction
+		});
+	}
+
+	/// <summary>
 	/// Player fires weapon in specified slot.
 	/// Call this from player input handling (e.g., trigger press or X key).
 	/// Based on WL_AGENT.C:Cmd_Fire and GunAttack.
@@ -263,4 +287,10 @@ public partial class SimulatorController : Node3D
 	/// Read-only access to pushwall states.
 	/// </summary>
 	public IReadOnlyList<PushWall> PushWalls => simulator?.PushWalls;
+
+	/// <summary>
+	/// Event fired when an elevator is activated, triggering level transition.
+	/// WL_AGENT.C:Cmd_Use elevator activation logic (line 1767).
+	/// </summary>
+	public event Action<ElevatorActivatedEvent> ElevatorActivated;
 }

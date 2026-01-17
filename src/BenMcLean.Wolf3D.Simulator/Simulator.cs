@@ -192,6 +192,16 @@ public class Simulator
 	/// WL_AGENT.C weapon selection logic
 	/// </summary>
 	public event Action<WeaponEquippedEvent> WeaponEquipped;
+	/// <summary>
+	/// Fired when an elevator switch is activated, triggering level completion.
+	/// WL_AGENT.C:Cmd_Use elevator activation (line 1767)
+	/// </summary>
+	public event Action<ElevatorActivatedEvent> ElevatorActivated;
+	/// <summary>
+	/// Fired when an elevator switch texture should flip to pressed state.
+	/// WL_AGENT.C:Cmd_Use - tilemap[checkx][checky]++
+	/// </summary>
+	public event Action<ElevatorSwitchFlippedEvent> ElevatorSwitchFlipped;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -268,6 +278,8 @@ public class Simulator
 			OperateDoor(operateDoor.DoorIndex);
 		else if (action is ActivatePushWallAction activatePushWall)
 			ActivatePushWall(activatePushWall.TileX, activatePushWall.TileY, activatePushWall.Direction);
+		else if (action is ActivateElevatorAction activateElevator)
+			ActivateElevator(activateElevator.TileX, activateElevator.TileY, activateElevator.Direction);
 		else if (action is FireWeaponAction fireWeapon)
 			ProcessFireWeapon(fireWeapon);
 		else if (action is ReleaseWeaponTriggerAction releaseTrigger)
@@ -651,6 +663,98 @@ public class Simulator
 				Action = pushWall.Action
 			});
 		}
+	}
+	#endregion
+	#region Elevator Logic
+	/// <summary>
+	/// Player attempts to activate an elevator switch.
+	/// Based on WL_AGENT.C:Cmd_Use elevator activation logic (line 1767).
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate of elevator switch</param>
+	/// <param name="tileY">Tile Y coordinate of elevator switch</param>
+	/// <param name="direction">Direction player is facing (determines which face is being activated)</param>
+	private void ActivateElevator(ushort tileX, ushort tileY, Direction direction)
+	{
+		// Find elevator at this position and get its tile number for config lookup
+		MapAnalysis.ElevatorSpawn? elevatorSpawn = null;
+		foreach (var elev in mapAnalysis.Elevators)
+		{
+			if (elev.X == tileX && elev.Y == tileY)
+			{
+				elevatorSpawn = elev;
+				break;
+			}
+		}
+
+		if (!elevatorSpawn.HasValue)
+			return; // No elevator at this position
+
+		// Look up elevator configuration by tile number (supports multiple elevator types)
+		if (!mapAnalyzer.Elevators.TryGetValue(elevatorSpawn.Value.Tile, out ElevatorConfig elevatorConfig))
+			return; // No config for this elevator tile type
+
+		// Check if player is facing the correct direction for this elevator
+		// WL_AGENT.C:Cmd_Use - elevatorok is true for east/west, false for north/south
+		bool facingAllowed = elevatorConfig.Faces switch
+		{
+			ElevatorFaces.All => true,
+			ElevatorFaces.EastWest => direction == Direction.E || direction == Direction.W,
+			ElevatorFaces.NorthSouth => direction == Direction.N || direction == Direction.S,
+			_ => true
+		};
+
+		if (!facingAllowed)
+			return; // Can't activate from this direction
+
+		// Check if player is standing on an AltElevator tile (for secret/alternate level)
+		// AltElevators contains packed coordinates (x | y << 16) of alt elevator positions
+		uint playerPackedPos = PlayerTileX | ((uint)PlayerTileY << 16);
+		bool isAltElevator = mapAnalysis.AltElevators.Contains(playerPackedPos);
+
+		// Determine destination level
+		byte destinationLevel = isAltElevator && mapAnalysis.AltElevatorTo.HasValue
+			? mapAnalysis.AltElevatorTo.Value
+			: mapAnalysis.ElevatorTo;
+
+		// Emit switch flip events only if a pressed texture is configured
+		// WL_AGENT.C: tilemap[checkx][checky]++
+		if (elevatorConfig.PressedTile.HasValue)
+		{
+			// Calculate texture pages for the switch flip
+			// Wolf3D wall texture formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1
+			// Elevator switches are on E/W faces (vertical walls), so use vertwall formula
+			ushort oldTextureEW = (ushort)((elevatorConfig.Tile - 1) * 2 + 1);
+			ushort newTextureEW = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2 + 1);
+			// Also flip horizontal texture for N/S faces (for mods that allow N/S activation)
+			ushort oldTextureNS = (ushort)((elevatorConfig.Tile - 1) * 2);
+			ushort newTextureNS = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2);
+
+			// Flip both orientations so presentation layer can handle whichever is visible
+			ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
+			{
+				TileX = tileX,
+				TileY = tileY,
+				OldTexture = oldTextureEW,
+				NewTexture = newTextureEW
+			});
+			ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
+			{
+				TileX = tileX,
+				TileY = tileY,
+				OldTexture = oldTextureNS,
+				NewTexture = newTextureNS
+			});
+		}
+
+		// Emit elevator activated event
+		ElevatorActivated?.Invoke(new ElevatorActivatedEvent
+		{
+			TileX = tileX,
+			TileY = tileY,
+			IsAltElevator = isAltElevator,
+			DestinationLevel = destinationLevel,
+			SoundName = elevatorConfig.Sound
+		});
 	}
 	#endregion
 	#region Actor Update Logic

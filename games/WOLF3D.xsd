@@ -796,10 +796,19 @@
 			<xs:attribute name="ElevatorTo" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>
-						Destination map number when completing level via elevator.
-						Determines next level in sequence or secret level transitions.
-						Used when player activates ELEVATORTILE (typically 21).
-						If standing on ALTELEVATORTILE (107), goes to secret level.
+						Destination map number when completing level via normal elevator.
+						Used when player activates ELEVATORTILE (typically 21) while NOT standing on ALTELEVATORTILE.
+						Defaults to Level + 1 if not specified.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="AltElevatorTo" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Destination map number when completing level via alternate elevator.
+						Used when player activates ELEVATORTILE while standing on ALTELEVATORTILE (typically 107).
+						This typically leads to a secret level in the original game.
+						If not specified, alternate elevator behaves the same as normal elevator (uses ElevatorTo).
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -912,10 +921,48 @@
 				Elevator activation tile. When player uses this tile, triggers level
 				completion and elevator sequence. Destination (next level or secret level)
 				depends on floor tile player is standing on. (ELEVATORTILE = 21)
+
+				In original Wolf3D, the switch texture changes when pressed by incrementing
+				the tile number (tilemap[x][y]++), changing texture from Tile to Tile+1.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Wall tile number for the elevator switch (e.g., 21).
+						The wall texture follows the standard formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="PressedTile" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Wall tile number for the pressed elevator switch texture.
+						Defaults to Tile + 1 (original Wolf3D behavior: tilemap[x][y]++).
+						The pressed texture appears momentarily when the switch is activated.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Faces" type="ElevatorFacesType" default="All">
+				<xs:annotation>
+					<xs:documentation>
+						Which wall faces the elevator switch can be activated from.
+						- "All": Activates from any direction (default, for modding flexibility)
+						- "EastWest": Only activates from east or west (original Wolf3D behavior)
+						- "NorthSouth": Only activates from north or south
+						Original Wolf3D used EastWest because the switch texture only appears on E/W faces.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Sound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound to play when elevator is activated (e.g., "LEVELDONESND").
+						If not specified, defaults to "LEVELDONESND".
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -1297,6 +1344,20 @@
 			<xs:enumeration value="N"/>
 			<xs:enumeration value="W"/>
 			<xs:enumeration value="S"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="ElevatorFacesType">
+		<xs:annotation>
+			<xs:documentation>
+				Specifies which wall faces an elevator switch can be activated from.
+				In original Wolf3D, elevator switches only work from east/west faces (WL_AGENT.C:Cmd_Use elevatorok).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="All"/>
+			<xs:enumeration value="EastWest"/>
+			<xs:enumeration value="NorthSouth"/>
 		</xs:restriction>
 	</xs:simpleType>
 

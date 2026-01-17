@@ -305,3 +305,38 @@ public struct WeaponEquippedEvent
 	// Initial sprite for equipped weapon (idle state)
 	public required ushort Shape { get; init; }
 }
+
+/// <summary>
+/// An elevator switch was activated, triggering level completion.
+/// Triggered in WL_AGENT.C:Cmd_Use when player uses elevator switch (line 1767).
+/// </summary>
+public struct ElevatorActivatedEvent
+{
+	/// <summary>Tile X coordinate of the elevator switch</summary>
+	public required ushort TileX { get; init; }
+	/// <summary>Tile Y coordinate of the elevator switch</summary>
+	public required ushort TileY { get; init; }
+	/// <summary>True if using alternate elevator (player standing on AltElevator tile)</summary>
+	public required bool IsAltElevator { get; init; }
+	/// <summary>Destination map number</summary>
+	public required byte DestinationLevel { get; init; }
+	/// <summary>Sound to play (e.g., "LEVELDONESND")</summary>
+	public required string SoundName { get; init; }
+}
+
+/// <summary>
+/// An elevator switch texture should be flipped to show the pressed state.
+/// Triggered when elevator is activated (WL_AGENT.C: tilemap[checkx][checky]++).
+/// Presentation layer should swap the wall texture from unpressed to pressed.
+/// </summary>
+public struct ElevatorSwitchFlippedEvent
+{
+	/// <summary>Tile X coordinate of the elevator switch</summary>
+	public required ushort TileX { get; init; }
+	/// <summary>Tile Y coordinate of the elevator switch</summary>
+	public required ushort TileY { get; init; }
+	/// <summary>Original (unpressed) wall texture page number</summary>
+	public required ushort OldTexture { get; init; }
+	/// <summary>New (pressed) wall texture page number</summary>
+	public required ushort NewTexture { get; init; }
+}

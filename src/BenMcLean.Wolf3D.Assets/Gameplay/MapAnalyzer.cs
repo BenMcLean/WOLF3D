@@ -21,7 +21,7 @@ public class MapAnalyzer
 	public ushort DoorWall { get; private set; }
 
 	// Special tiles (from WOLF3D.xsd special tile elements - can have multiple)
-	public HashSet<ushort> ElevatorTiles { get; private set; }
+	public Dictionary<ushort, ElevatorConfig> Elevators { get; private set; }
 	public HashSet<ushort> PushableTiles { get; private set; }
 	public HashSet<ushort> ExitTiles { get; private set; }
 	public HashSet<ushort> AmbushTiles { get; private set; }
@@ -58,10 +58,27 @@ public class MapAnalyzer
 		DoorWall = ushort.Parse(wallsElement.Attribute("DoorWall")?.Value
 			?? throw new InvalidDataException("Missing DoorWall attribute"));
 
-		// Parse special floor tiles (can have multiple of each type)
-		ElevatorTiles = [.. wallsElement.Elements("Elevator")
-			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
-				?? throw new InvalidDataException("Elevator element missing Tile attribute")))];
+		// Parse elevator configurations
+		Elevators = [];
+		foreach (XElement elevElem in wallsElement.Elements("Elevator"))
+		{
+			ushort tile = ushort.Parse(elevElem.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("Elevator element missing Tile attribute"));
+			// PressedTile is optional - null means no texture swap on activation
+			ushort? pressedTile = ushort.TryParse(elevElem.Attribute("PressedTile")?.Value, out ushort pt)
+				? pt : null;
+			ElevatorFaces faces = Enum.TryParse(elevElem.Attribute("Faces")?.Value, out ElevatorFaces f)
+				? f : ElevatorFaces.All;  // Default: All (for modding flexibility)
+			string sound = elevElem.Attribute("Sound")?.Value ?? "LEVELDONESND";
+
+			Elevators[tile] = new ElevatorConfig
+			{
+				Tile = tile,
+				PressedTile = pressedTile,
+				Faces = faces,
+				Sound = sound
+			};
+		}
 		PushableTiles = [.. wallsElement.Elements("Pushable")
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("Pushable element missing Tile attribute")))];
@@ -193,7 +210,7 @@ public class MapAnalyzer
 
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
 		(!IsWall(mapData) || PushableTiles.Contains(objectData))
-		&& !ElevatorTiles.Contains(mapData);
+		&& !Elevators.ContainsKey(mapData);
 
 	public bool IsMappable(GameMap map, ushort x, ushort y) =>
 		IsTransparent(map.GetMapData(x, y), map.GetObjectData(x, y))
@@ -225,6 +242,12 @@ public class MapAnalyzer
 		public byte Episode { get; private init; }
 		public byte Level { get; private init; }
 		public byte ElevatorTo { get; private init; }
+		/// <summary>
+		/// Destination map when using elevator while standing on AltElevator tile.
+		/// If null, uses ElevatorTo (no alternate destination for this map).
+		/// Typically used for secret level access in the original game.
+		/// </summary>
+		public byte? AltElevatorTo { get; private init; }
 		public byte? Floor { get; private init; }
 		public ushort? FloorTile { get; private init; }
 		public byte? Ceiling { get; private init; }
@@ -309,7 +332,13 @@ public class MapAnalyzer
 		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
 		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
-		public ReadOnlyCollection<uint> Elevators { get; private set; }
+
+		/// <summary>
+		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
+		/// look up ElevatorConfig from MapAnalyzer.Elevators dictionary.
+		/// </summary>
+		public readonly record struct ElevatorSpawn(ushort Tile, ushort X, ushort Y);
+		public ReadOnlyCollection<ElevatorSpawn> Elevators { get; private set; }
 		public ReadOnlyCollection<uint> AltElevators { get; private set; }
 		public ReadOnlyCollection<uint> Ambushes { get; private set; }
 
@@ -336,6 +365,7 @@ public class MapAnalyzer
 			Episode = byte.TryParse(xml?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
 			Level = byte.TryParse(xml?.Attribute("Level")?.Value, out byte level) ? level : (byte)0;
 			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Level + 1);
+			AltElevatorTo = byte.TryParse(xml.Attribute("AltElevatorTo")?.Value, out byte secretElevatorTo) ? secretElevatorTo : null;
 			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor : null;
 			FloorTile = byte.TryParse(xml?.Attribute("FloorTile")?.Value, out byte floorTile) ? floorTile : (byte?)null;
 			Ceiling = byte.TryParse(xml?.Attribute("Ceiling")?.Value, out byte ceiling) ? ceiling : null;
@@ -469,7 +499,7 @@ public class MapAnalyzer
 			ushort doorFrameVert = (ushort)(mapAnalyzer.DoorWall + 3);   // Vertical door frame
 
 			List<WallSpawn> walls = [];
-			List<uint> elevators = [];
+			List<ElevatorSpawn> elevators = [];
 			List<uint> altElevators = [];
 			List<uint> ambushes = [];
 			List<DoorSpawn> doors = [];
@@ -535,10 +565,10 @@ public class MapAnalyzer
 						doors.Add(new DoorSpawn(doorPage, x, y, false, tile, area1, area2));
 					}
 				}
-				else if (mapAnalyzer.ElevatorTiles.Contains(tile))
+				else if (mapAnalyzer.Elevators.ContainsKey(tile))
 				{
-					// Elevator tiles are walls (no wall spawning needed)
-					elevators.Add(x | (uint)y << 16);
+					// Elevator tiles are walls - store tile number for config lookup
+					elevators.Add(new ElevatorSpawn(tile, x, y));
 				}
 				else if (!mapAnalyzer.IsWall(tile))
 				{
@@ -579,6 +609,22 @@ public record DoorInfo
 	public string CloseSound { get; init; }    // Sound when closing
 }
 
+/// <summary>
+/// Elevator switch metadata from XML.
+/// WL_AGENT.C:Cmd_Use elevator activation logic.
+/// </summary>
+public record ElevatorConfig
+{
+	/// <summary>Wall tile number for the elevator switch (e.g., 21)</summary>
+	public ushort Tile { get; init; }
+	/// <summary>Wall tile number for pressed state. Null means no texture swap on activation.</summary>
+	public ushort? PressedTile { get; init; }
+	/// <summary>Which faces the switch can be activated from</summary>
+	public ElevatorFaces Faces { get; init; }
+	/// <summary>Sound to play when activated (defaults to "LEVELDONESND")</summary>
+	public string Sound { get; init; }
+}
+
 // Object metadata - unified Wolf3D object representation
 public record ObjectInfo
 {
@@ -617,6 +663,20 @@ public enum Direction : byte
 	S = 6,
 	/// <summary>Southeast - 315 degrees, facing +X/+Y</summary>
 	SE = 7
+}
+
+/// <summary>
+/// Specifies which wall faces an elevator switch can be activated from.
+/// In original Wolf3D, elevator switches only work from east/west faces (WL_AGENT.C:Cmd_Use elevatorok).
+/// </summary>
+public enum ElevatorFaces : byte
+{
+	/// <summary>Elevator can be activated from any direction (default for modding flexibility)</summary>
+	All = 0,
+	/// <summary>Elevator can only be activated from east or west faces (original Wolf3D behavior)</summary>
+	EastWest = 1,
+	/// <summary>Elevator can only be activated from north or south faces</summary>
+	NorthSouth = 2
 }
 
 // Object class enum (Wolf3D classtype and stat_t enums combined)
