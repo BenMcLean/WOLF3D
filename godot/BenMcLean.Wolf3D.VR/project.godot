@@ -19,14 +19,11 @@ config/icon="res://icon.svg"
 
 project/assembly_name="BenMcLean.Wolf3D.VR"
 
-[editor]
-
-run/main_run_args="--flatscreen"
-
 [rendering]
 
 renderer/rendering_method="mobile"
 
 [xr]
 
+openxr/enabled=true
 shaders/enabled=true
