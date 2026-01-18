@@ -97,16 +97,14 @@ public partial class MenuRoom : Node3D
 		};
 
 		// Create material that displays the menu viewport texture
-		// UV1Scale.X = -1 flips the texture horizontally to correct for viewing the back of the quad
 		StandardMaterial3D material = new()
 		{
 			AlbedoTexture = _menuManager.Renderer.ViewportTexture,
 			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
 			DisableReceiveShadows = true,
 			DisableAmbientLight = true,
-			CullMode = BaseMaterial3D.CullModeEnum.Disabled, // Visible from both sides
+			CullMode = BaseMaterial3D.CullModeEnum.Back,
 			Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
-			Uv1Scale = new Vector3(-1, 1, 1), // Flip horizontally to correct mirroring
 		};
 
 		// Create the mesh instance
@@ -233,9 +231,10 @@ public partial class MenuRoom : Node3D
 		_menuPanel.GlobalPosition = panelPosition;
 
 		// Rotate panel to face the camera (around Y axis only)
+		// QuadMesh faces +Z by default; rotating by cameraYRotation aligns it to face the camera
 		_menuPanel.Rotation = new Vector3(
 			Mathf.DegToRad(PanelTiltDegrees),  // Slight downward tilt
-			cameraYRotation + Mathf.Pi,        // Face toward camera
+			cameraYRotation,                   // Match camera heading
 			0
 		);
 	}

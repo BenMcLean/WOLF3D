@@ -77,7 +77,7 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 		// Get panel transform
 		Transform3D panelTransform = _menuPanel.GlobalTransform;
 		Vector3 panelPosition = panelTransform.Origin;
-		Vector3 panelNormal = -panelTransform.Basis.Z; // Panel faces -Z after rotation
+		Vector3 panelNormal = panelTransform.Basis.Z; // Panel's front face (+Z) points toward camera
 
 		// Ray-plane intersection
 		// t = dot(panelPosition - origin, normal) / dot(direction, normal)
@@ -110,11 +110,10 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 			return new PointerState { IsActive = false };
 
 		// Convert to menu viewport coordinates (0-320 x 0-200)
-		// Note: X is flipped because the menu panel uses Uv1Scale.X = -1 to correct mirroring
 		return new PointerState
 		{
 			IsActive = true,
-			Position = new Vector2((1 - u) * 320f, v * 200f)
+			Position = new Vector2(u * 320f, v * 200f)
 		};
 	}
 }
