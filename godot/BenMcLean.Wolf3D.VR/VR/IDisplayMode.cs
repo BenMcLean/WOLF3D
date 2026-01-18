@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR.VR;
@@ -100,6 +101,18 @@ public interface IDisplayMode
 	/// Check if the secondary (left) hand grip is pressed.
 	/// </summary>
 	bool IsSecondaryHandGripPressed();
+
+	/// <summary>
+	/// Event fired when a button is pressed on the primary (right) controller.
+	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
+	/// </summary>
+	event Action<string> PrimaryButtonPressed;
+
+	/// <summary>
+	/// Event fired when a button is pressed on the secondary (left) controller.
+	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
+	/// </summary>
+	event Action<string> SecondaryButtonPressed;
 
 	/// <summary>
 	/// Get movement input vector from thumbstick or keyboard.

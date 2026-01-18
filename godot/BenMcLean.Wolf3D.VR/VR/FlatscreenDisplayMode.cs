@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR.VR;
@@ -15,6 +16,10 @@ public class FlatscreenDisplayMode : IDisplayMode
 	// Track key states for input
 	private bool _firePressed;
 	private bool _usePressed;
+
+	// Events not used in flatscreen mode (input comes through InputEvent)
+	public event Action<string> PrimaryButtonPressed;
+	public event Action<string> SecondaryButtonPressed;
 
 	public bool IsVRActive => false;
 

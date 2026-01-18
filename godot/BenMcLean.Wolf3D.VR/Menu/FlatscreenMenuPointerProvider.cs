@@ -6,14 +6,15 @@ namespace BenMcLean.Wolf3D.VR.Menu;
 /// <summary>
 /// Pointer provider for flatscreen mode.
 /// Tracks mouse position and converts to menu viewport coordinates.
+/// Uses event-driven input for button detection.
 /// </summary>
 public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 {
 	private PointerState _primaryPointer;
 	private Vector2 _menuPosition;
 	private Vector2 _menuSize;
-	private bool _wasLeftPressed;
-	private bool _wasRightPressed;
+	private bool _selectPressed;
+	private bool _cancelPressed;
 
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
@@ -34,20 +35,30 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 	}
 
 	/// <inheritdoc/>
+	public void HandleInput(InputEvent @event)
+	{
+		if (@event is InputEventMouseButton mb && mb.Pressed)
+		{
+			if (mb.ButtonIndex == MouseButton.Left)
+				_selectPressed = true;
+			else if (mb.ButtonIndex == MouseButton.Right)
+				_cancelPressed = true;
+		}
+	}
+
+	/// <inheritdoc/>
 	public void Update(float delta)
 	{
 		// Get mouse position in window coordinates
-		// DisplayServer.MouseGetPosition() returns global screen coords
-		// Subtract window position to get window-local coordinates
 		Vector2I screenPos = DisplayServer.MouseGetPosition();
 		Vector2I windowPos = DisplayServer.WindowGetPosition();
 		Vector2 mousePos = screenPos - windowPos;
 
-		// Check mouse button states using direct mouse button detection
-		bool selectPressed = Input.IsMouseButtonPressed(MouseButton.Left) && !_wasLeftPressed;
-		bool cancelPressed = Input.IsMouseButtonPressed(MouseButton.Right) && !_wasRightPressed;
-		_wasLeftPressed = Input.IsMouseButtonPressed(MouseButton.Left);
-		_wasRightPressed = Input.IsMouseButtonPressed(MouseButton.Right);
+		// Capture and clear button states (they were set by HandleInput)
+		bool selectPressed = _selectPressed;
+		bool cancelPressed = _cancelPressed;
+		_selectPressed = false;
+		_cancelPressed = false;
 
 		// Check if mouse is within the menu display area
 		if (mousePos.X < _menuPosition.X || mousePos.X >= _menuPosition.X + _menuSize.X ||

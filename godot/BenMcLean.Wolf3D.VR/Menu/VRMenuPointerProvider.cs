@@ -7,6 +7,7 @@ namespace BenMcLean.Wolf3D.VR.Menu;
 /// <summary>
 /// Pointer provider for VR mode.
 /// Tracks VR controller ray intersections with the menu panel.
+/// Uses event-driven input from XRController3D button signals.
 /// </summary>
 public class VRMenuPointerProvider : IMenuPointerProvider
 {
@@ -16,10 +17,12 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	private MeshInstance3D _menuPanel;
 	private float _panelWidth;
 	private float _panelHeight;
-	private bool _wasPrimaryTriggerPressed;
-	private bool _wasPrimaryGripPressed;
-	private bool _wasSecondaryTriggerPressed;
-	private bool _wasSecondaryGripPressed;
+
+	// Event-driven button states
+	private bool _primarySelectPressed;
+	private bool _primaryCancelPressed;
+	private bool _secondarySelectPressed;
+	private bool _secondaryCancelPressed;
 
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
@@ -34,6 +37,26 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	public VRMenuPointerProvider(IDisplayMode displayMode)
 	{
 		_displayMode = displayMode;
+
+		// Subscribe to controller button events
+		_displayMode.PrimaryButtonPressed += OnPrimaryButtonPressed;
+		_displayMode.SecondaryButtonPressed += OnSecondaryButtonPressed;
+	}
+
+	private void OnPrimaryButtonPressed(string buttonName)
+	{
+		if (buttonName == "trigger_click")
+			_primarySelectPressed = true;
+		else if (buttonName == "grip_click")
+			_primaryCancelPressed = true;
+	}
+
+	private void OnSecondaryButtonPressed(string buttonName)
+	{
+		if (buttonName == "trigger_click")
+			_secondarySelectPressed = true;
+		else if (buttonName == "grip_click")
+			_secondaryCancelPressed = true;
 	}
 
 	/// <summary>
@@ -50,6 +73,16 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// VR controller input comes through IDisplayMode events, not InputEvent.
+	/// This method is a no-op for VR.
+	/// </remarks>
+	public void HandleInput(InputEvent @event)
+	{
+		// VR input comes through IDisplayMode button events
+	}
+
+	/// <inheritdoc/>
 	public void Update(float delta)
 	{
 		if (_menuPanel == null || !_displayMode.IsVRActive)
@@ -59,35 +92,29 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 			return;
 		}
 
-		// Check button states (detect "just pressed" by comparing to previous frame)
-		bool primaryTrigger = _displayMode.IsPrimaryHandTriggerPressed();
-		bool primaryGrip = _displayMode.IsPrimaryHandGripPressed();
-		bool secondaryTrigger = _displayMode.IsSecondaryHandTriggerPressed();
-		bool secondaryGrip = _displayMode.IsSecondaryHandGripPressed();
-
-		bool primarySelectPressed = primaryTrigger && !_wasPrimaryTriggerPressed;
-		bool primaryCancelPressed = primaryGrip && !_wasPrimaryGripPressed;
-		bool secondarySelectPressed = secondaryTrigger && !_wasSecondaryTriggerPressed;
-		bool secondaryCancelPressed = secondaryGrip && !_wasSecondaryGripPressed;
-
-		_wasPrimaryTriggerPressed = primaryTrigger;
-		_wasPrimaryGripPressed = primaryGrip;
-		_wasSecondaryTriggerPressed = secondaryTrigger;
-		_wasSecondaryGripPressed = secondaryGrip;
+		// Capture and clear button states (they were set by event handlers)
+		bool primarySelect = _primarySelectPressed;
+		bool primaryCancel = _primaryCancelPressed;
+		bool secondarySelect = _secondarySelectPressed;
+		bool secondaryCancel = _secondaryCancelPressed;
+		_primarySelectPressed = false;
+		_primaryCancelPressed = false;
+		_secondarySelectPressed = false;
+		_secondaryCancelPressed = false;
 
 		// Cast ray from primary (right) controller
 		_primaryPointer = CastControllerRay(
 			_displayMode.PrimaryHandPosition,
 			_displayMode.PrimaryHandForward,
-			primarySelectPressed,
-			primaryCancelPressed);
+			primarySelect,
+			primaryCancel);
 
 		// Cast ray from secondary (left) controller
 		_secondaryPointer = CastControllerRay(
 			_displayMode.SecondaryHandPosition,
 			_displayMode.SecondaryHandForward,
-			secondarySelectPressed,
-			secondaryCancelPressed);
+			secondarySelect,
+			secondaryCancel);
 	}
 
 	/// <summary>

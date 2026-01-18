@@ -254,6 +254,13 @@ public partial class MenuRoom : Node3D
 			_marginBackground.Color = color;
 	}
 
+	public override void _Input(InputEvent @event)
+	{
+		// Forward input events to the active pointer provider
+		_flatscreenPointerProvider?.HandleInput(@event);
+		_vrPointerProvider?.HandleInput(@event);
+	}
+
 	public override void _Process(double delta)
 	{
 		// Update menu manager

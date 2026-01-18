@@ -49,4 +49,9 @@ public interface IMenuPointerProvider
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds.</param>
 	void Update(float delta);
+	/// <summary>
+	/// Handle an input event. Called from _Input for event-driven input processing.
+	/// </summary>
+	/// <param name="event">The input event to process.</param>
+	void HandleInput(InputEvent @event);
 }

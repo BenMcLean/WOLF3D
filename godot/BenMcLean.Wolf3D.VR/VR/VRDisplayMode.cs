@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace BenMcLean.Wolf3D.VR.VR;
@@ -14,6 +15,9 @@ public class VRDisplayMode : IDisplayMode
 	private XRController3D _leftController;
 	private XRController3D _rightController;
 	private Node _parent;
+
+	public event Action<string> PrimaryButtonPressed;
+	public event Action<string> SecondaryButtonPressed;
 
 	public bool IsVRActive => true;
 
@@ -76,6 +80,10 @@ public class VRDisplayMode : IDisplayMode
 			Tracker = "right_hand"
 		};
 		_origin.AddChild(_rightController);
+
+		// Connect to controller button signals for event-driven input
+		_leftController.ButtonPressed += name => SecondaryButtonPressed?.Invoke(name);
+		_rightController.ButtonPressed += name => PrimaryButtonPressed?.Invoke(name);
 
 		// Enable XR on the viewport
 		if (_parent is Node node)
