@@ -16,6 +16,10 @@ public class MenuRenderer
 	private readonly Control _canvas;
 	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
 	private Color _currentBorderColor = Colors.Black;
+	private Input.PointerState _primaryPointer;
+	private Input.PointerState _secondaryPointer;
+	private TextureRect _primaryCrosshair;
+	private TextureRect _secondaryCrosshair;
 	/// <summary>
 	/// Event fired when the border color changes.
 	/// Allows presentation layer to update margins to match border color.
@@ -102,6 +106,8 @@ public class MenuRenderer
 		RenderMenuItems(menuDef, selectedIndex);
 		// Render cursor (WL_MENU.C:DrawMenuGun)
 		RenderCursor(menuDef, selectedIndex);
+		// Render pointer crosshairs (VR controllers / mouse)
+		RenderCrosshairs();
 	}
 	/// <summary>
 	/// Render a solid background color.
@@ -441,5 +447,93 @@ public class MenuRenderer
 			if (child is Label label)
 				positions.Add(label.Position + label.Size / 2);
 		return [.. positions];
+	}
+	/// <summary>
+	/// Sets the pointer states for crosshair rendering.
+	/// Call this each frame before Update to provide current pointer positions.
+	/// </summary>
+	/// <param name="primary">Primary pointer state (mouse or right VR controller).</param>
+	/// <param name="secondary">Secondary pointer state (left VR controller, inactive for flatscreen).</param>
+	public void SetPointers(Input.PointerState primary, Input.PointerState secondary)
+	{
+		_primaryPointer = primary;
+		_secondaryPointer = secondary;
+	}
+	/// <summary>
+	/// Updates crosshair positions without re-rendering the entire menu.
+	/// Call this each frame after SetPointers to update crosshair display.
+	/// </summary>
+	public void UpdateCrosshairs()
+	{
+		// Update primary crosshair
+		if (_primaryCrosshair != null)
+		{
+			if (_primaryPointer.IsActive && IsPositionOnScreen(_primaryPointer.Position))
+			{
+				_primaryCrosshair.Visible = true;
+				// Center the crosshair on the pointer position
+				_primaryCrosshair.Position = _primaryPointer.Position - _primaryCrosshair.Size / 2;
+			}
+			else
+			{
+				_primaryCrosshair.Visible = false;
+			}
+		}
+		// Update secondary crosshair
+		if (_secondaryCrosshair != null)
+		{
+			if (_secondaryPointer.IsActive && IsPositionOnScreen(_secondaryPointer.Position))
+			{
+				_secondaryCrosshair.Visible = true;
+				// Center the crosshair on the pointer position
+				_secondaryCrosshair.Position = _secondaryPointer.Position - _secondaryCrosshair.Size / 2;
+			}
+			else
+			{
+				_secondaryCrosshair.Visible = false;
+			}
+		}
+	}
+	/// <summary>
+	/// Checks if a position is within the visible screen area.
+	/// </summary>
+	/// <param name="position">Position in viewport coordinates (320x200).</param>
+	/// <returns>True if the position is on screen.</returns>
+	private static bool IsPositionOnScreen(Vector2 position) =>
+		position.X >= 0 && position.X < 320 && position.Y >= 0 && position.Y < 200;
+	/// <summary>
+	/// Creates crosshair TextureRects for active pointers.
+	/// Called during menu rendering to set up crosshair nodes.
+	/// </summary>
+	private void RenderCrosshairs()
+	{
+		// Get the crosshair texture from SharedAssetManager
+		AtlasTexture crosshairTexture = SharedAssetManager.Crosshair;
+		if (crosshairTexture == null)
+			return;
+		// Create primary crosshair (always created, visibility controlled in UpdateCrosshairs)
+		_primaryCrosshair = new TextureRect
+		{
+			Name = "PrimaryCrosshair",
+			Texture = crosshairTexture,
+			Size = crosshairTexture.Region.Size,
+			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+			ZIndex = 100, // Draw crosshairs on top of everything
+			Visible = false, // Start hidden, UpdateCrosshairs will show if active
+		};
+		_canvas.AddChild(_primaryCrosshair);
+		// Create secondary crosshair
+		_secondaryCrosshair = new TextureRect
+		{
+			Name = "SecondaryCrosshair",
+			Texture = crosshairTexture,
+			Size = crosshairTexture.Region.Size,
+			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+			ZIndex = 100,
+			Visible = false,
+		};
+		_canvas.AddChild(_secondaryCrosshair);
+		// Initial update to set positions
+		UpdateCrosshairs();
 	}
 }

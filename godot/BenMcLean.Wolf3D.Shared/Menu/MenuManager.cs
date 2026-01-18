@@ -28,6 +28,7 @@ public class MenuManager
 	private string _currentMenuName;
 	private int _selectedItemIndex = 0;
 	private string _currentMenuMusic = null;
+	private IMenuPointerProvider _pointerProvider;
 	/// <summary>
 	/// Gets the current menu state.
 	/// </summary>
@@ -36,6 +37,14 @@ public class MenuManager
 	/// Gets the menu renderer.
 	/// </summary>
 	public MenuRenderer Renderer => _renderer;
+	/// <summary>
+	/// Sets the pointer provider for crosshair display.
+	/// </summary>
+	/// <param name="provider">The pointer provider to use, or null to disable crosshairs.</param>
+	public void SetPointerProvider(IMenuPointerProvider provider)
+	{
+		_pointerProvider = provider;
+	}
 	/// <summary>
 	/// Creates a new MenuManager.
 	/// </summary>
@@ -254,6 +263,13 @@ public class MenuManager
 		{
 			GD.Print($"DEBUG: Update() - Menu '{_currentMenuName}' not found in collection");
 			return;
+		}
+		// Update pointer provider and crosshairs
+		if (_pointerProvider != null)
+		{
+			_pointerProvider.Update(delta);
+			_renderer.SetPointers(_pointerProvider.PrimaryPointer, _pointerProvider.SecondaryPointer);
+			_renderer.UpdateCrosshairs();
 		}
 		// Update input
 		_input.Update(delta);

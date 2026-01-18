@@ -1,5 +1,7 @@
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
+using BenMcLean.Wolf3D.Shared.Menu.Input;
+using BenMcLean.Wolf3D.VR.Menu;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -17,6 +19,8 @@ public partial class MenuRoom : Node3D
 	private MeshInstance3D _menuPanel;
 	private ColorRect _marginBackground;
 	private bool _menuPanelPositioned;
+	private VRMenuPointerProvider _vrPointerProvider;
+	private FlatscreenMenuPointerProvider _flatscreenPointerProvider;
 
 	// Menu panel positioning in VR (in meters)
 	private const float PanelDistance = 2.5f;         // Distance from camera
@@ -116,6 +120,11 @@ public partial class MenuRoom : Node3D
 		// Add panel to scene; position will be set once XR tracking is active
 		AddChild(_menuPanel);
 
+		// Create VR pointer provider for crosshair tracking
+		_vrPointerProvider = new VRMenuPointerProvider(_displayMode);
+		_vrPointerProvider.SetMenuPanel(_menuPanel, PanelWidth, PanelHeight);
+		_menuManager.SetPointerProvider(_vrPointerProvider);
+
 		// Add simple environment lighting for the VR space
 		WorldEnvironment worldEnvironment = new()
 		{
@@ -189,6 +198,11 @@ public partial class MenuRoom : Node3D
 		// Subscribe to border color changes
 		_menuManager.Renderer.BorderColorChanged += OnBorderColorChanged;
 		OnBorderColorChanged(_menuManager.Renderer.CurrentBorderColor);
+
+		// Create flatscreen pointer provider for mouse crosshair tracking
+		_flatscreenPointerProvider = new FlatscreenMenuPointerProvider();
+		_flatscreenPointerProvider.SetMenuDisplayArea(menuPosition, menuSize);
+		_menuManager.SetPointerProvider(_flatscreenPointerProvider);
 	}
 
 	/// <summary>

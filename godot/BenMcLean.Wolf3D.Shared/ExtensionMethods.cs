@@ -182,9 +182,9 @@ public static class ExtensionMethods
 	public static byte[] DrawCrosshair(this byte[] texture, int x = 0, int y = 0, ushort width = 0, uint color = Constants.White) => texture
 		// Draw the four arms of the crosshair
 		// West arm: 5 pixels wide, 1 pixel tall, at relative position (0, 5)
-		.DrawRectangle(x: x + 0, y: y + 5, color: color, rectWidth: 5, rectHeight: 1, width: width)
+		.DrawRectangle(x: x, y: y + 5, color: color, rectWidth: 5, rectHeight: 1, width: width)
 		// North arm: 1 pixel wide, 4 pixels tall, at relative position (6, 0)
-		.DrawRectangle(x: x + 6, y: y + 0, color: color, rectWidth: 1, rectHeight: 4, width: width)
+		.DrawRectangle(x: x + 6, y: y, color: color, rectWidth: 1, rectHeight: 4, width: width)
 		// East arm: 5 pixels wide, 1 pixel tall, at relative position (8, 5)
 		.DrawRectangle(x: x + 8, y: y + 5, color: color, rectWidth: 5, rectHeight: 1, width: width)
 		// South arm: 1 pixel wide, 4 pixels tall, at relative position (6, 7)

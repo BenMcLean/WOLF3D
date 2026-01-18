@@ -293,7 +293,7 @@ public static class SharedAssetManager
 				position: new Vector2(
 					x: (int)(crosshair.X + 1),
 					y: (int)(crosshair.Y + 1)),
-				size: new Vector2(11, 13)),
+				size: new Vector2(13, 11)),
 		};
 	}
 	#endregion Textures
