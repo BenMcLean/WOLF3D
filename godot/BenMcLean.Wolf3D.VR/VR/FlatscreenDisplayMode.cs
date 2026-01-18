@@ -115,4 +115,10 @@ public class FlatscreenDisplayMode : IDisplayMode
 		// Return zero since FreeLookCamera manages its own rotation
 		return Vector2.Zero;
 	}
+
+	// Per-hand button states - in flatscreen, only primary hand is meaningful
+	public bool IsPrimaryHandTriggerPressed() => _firePressed;
+	public bool IsPrimaryHandGripPressed() => _usePressed;
+	public bool IsSecondaryHandTriggerPressed() => false;
+	public bool IsSecondaryHandGripPressed() => false;
 }

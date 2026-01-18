@@ -394,22 +394,15 @@ public class MenuRenderer
 	/// <param name="selectedIndex">Currently selected item index</param>
 	private void RenderCursor(MenuDefinition menuDef, int selectedIndex)
 	{
-		GD.Print($"DEBUG RenderCursor: CursorPic='{menuDef.CursorPic}'");
 		// Skip rendering if no cursor picture is specified
 		if (string.IsNullOrEmpty(menuDef.CursorPic))
-		{
-			GD.Print("DEBUG RenderCursor: CursorPic is null/empty, skipping");
 			return;
-		}
 		// Get cursor texture from VgaGraph
-		GD.Print($"DEBUG RenderCursor: Looking up '{menuDef.CursorPic}' in VgaGraph (count: {SharedAssetManager.VgaGraph.Count})");
 		if (!SharedAssetManager.VgaGraph.TryGetValue(menuDef.CursorPic, out AtlasTexture cursorTexture))
 		{
 			GD.PrintErr($"ERROR: Cursor image '{menuDef.CursorPic}' not found in VgaGraph");
-			GD.PrintErr($"Available VgaGraph keys: {string.Join(", ", SharedAssetManager.VgaGraph.Keys)}");
 			return;
 		}
-		GD.Print($"DEBUG RenderCursor: Found texture, region={cursorTexture.Region}");
 		// Layout coordinates (matching original DrawMenuGun)
 		// Calculate cursor Y position using accumulated spacing (same logic as RenderMenuItems)
 		float x = menuDef.X ?? 76, // MENU_X from WL_MENU.H
@@ -433,7 +426,6 @@ public class MenuRenderer
 		// WL_MENU.C:DrawMenuGun - cursor is at y-2 (2 pixels above the item)
 		float cursorX = x,
 			cursorY = currentY - 2;
-		GD.Print($"DEBUG RenderCursor: Rendering at ({cursorX}, {cursorY}), selectedIndex={selectedIndex}");
 		TextureRect cursor = new()
 		{
 			Texture = cursorTexture,
@@ -443,7 +435,6 @@ public class MenuRenderer
 			ZIndex = 20, // Draw cursor on top of everything
 		};
 		_canvas.AddChild(cursor);
-		GD.Print("DEBUG RenderCursor: Cursor added to canvas");
 	}
 	/// <summary>
 	/// Get bounding rectangles of all rendered menu items.

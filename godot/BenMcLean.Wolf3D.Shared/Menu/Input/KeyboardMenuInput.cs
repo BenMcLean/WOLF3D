@@ -16,34 +16,17 @@ public class KeyboardMenuInput : IMenuInput
 	/// Reads keyboard input via Godot's Input singleton.
 	/// </summary>
 	/// <returns>Input state snapshot</returns>
-	public MenuInputState GetState()
+	public MenuInputState GetState() => new()
 	{
-		bool selectPressed = Godot.Input.IsActionJustPressed("ui_accept"),
-			cancelPressed = Godot.Input.IsActionJustPressed("ui_cancel"),
-			upPressed = Godot.Input.IsActionJustPressed("ui_up"),
-			downPressed = Godot.Input.IsActionJustPressed("ui_down");
-		// DEBUG: Log any input detected
-		if (selectPressed || cancelPressed || upPressed || downPressed)
-		{
-			GD.Print($"Input detected: Select={selectPressed}, Cancel={cancelPressed}, Up={upPressed}, Down={downPressed}");
-		}
-		return new MenuInputState
-		{
-			// Cursor position not used for keyboard-only input
-			CursorPosition = Vector2.Zero,
-			// Select/Accept: Enter, Space, or gamepad accept
-			SelectPressed = selectPressed,
-			// Cancel/Back: Escape or gamepad cancel
-			CancelPressed = cancelPressed,
-			// Navigation: Arrow keys or gamepad D-pad
-			UpPressed = upPressed,
-			DownPressed = downPressed,
-			LeftPressed = Godot.Input.IsActionJustPressed("ui_left"),
-			RightPressed = Godot.Input.IsActionJustPressed("ui_right"),
-			// No hover for keyboard-only input
-			HoveredItemIndex = -1
-		};
-	}
+		CursorPosition = Vector2.Zero,
+		SelectPressed = Godot.Input.IsActionJustPressed("ui_accept"),
+		CancelPressed = Godot.Input.IsActionJustPressed("ui_cancel"),
+		UpPressed = Godot.Input.IsActionJustPressed("ui_up"),
+		DownPressed = Godot.Input.IsActionJustPressed("ui_down"),
+		LeftPressed = Godot.Input.IsActionJustPressed("ui_left"),
+		RightPressed = Godot.Input.IsActionJustPressed("ui_right"),
+		HoveredItemIndex = -1
+	};
 	/// <summary>
 	/// Update input state (currently no per-frame updates needed for keyboard).
 	/// </summary>

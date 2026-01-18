@@ -82,6 +82,26 @@ public interface IDisplayMode
 	bool IsGripPressed();
 
 	/// <summary>
+	/// Check if the primary (right) hand trigger is pressed.
+	/// </summary>
+	bool IsPrimaryHandTriggerPressed();
+
+	/// <summary>
+	/// Check if the primary (right) hand grip is pressed.
+	/// </summary>
+	bool IsPrimaryHandGripPressed();
+
+	/// <summary>
+	/// Check if the secondary (left) hand trigger is pressed.
+	/// </summary>
+	bool IsSecondaryHandTriggerPressed();
+
+	/// <summary>
+	/// Check if the secondary (left) hand grip is pressed.
+	/// </summary>
+	bool IsSecondaryHandGripPressed();
+
+	/// <summary>
 	/// Get movement input vector from thumbstick or keyboard.
 	/// </summary>
 	Vector2 GetMovementInput();

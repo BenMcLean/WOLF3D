@@ -12,6 +12,8 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 	private PointerState _primaryPointer;
 	private Vector2 _menuPosition;
 	private Vector2 _menuSize;
+	private bool _wasLeftPressed;
+	private bool _wasRightPressed;
 
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
@@ -41,12 +43,22 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 		Vector2I windowPos = DisplayServer.WindowGetPosition();
 		Vector2 mousePos = screenPos - windowPos;
 
+		// Check mouse button states using direct mouse button detection
+		bool selectPressed = Input.IsMouseButtonPressed(MouseButton.Left) && !_wasLeftPressed;
+		bool cancelPressed = Input.IsMouseButtonPressed(MouseButton.Right) && !_wasRightPressed;
+		_wasLeftPressed = Input.IsMouseButtonPressed(MouseButton.Left);
+		_wasRightPressed = Input.IsMouseButtonPressed(MouseButton.Right);
+
 		// Check if mouse is within the menu display area
 		if (mousePos.X < _menuPosition.X || mousePos.X >= _menuPosition.X + _menuSize.X ||
 			mousePos.Y < _menuPosition.Y || mousePos.Y >= _menuPosition.Y + _menuSize.Y)
 		{
-			// Mouse is outside menu area
-			_primaryPointer = new PointerState { IsActive = false };
+			// Mouse is outside menu area - still report cancel press
+			_primaryPointer = new PointerState
+			{
+				IsActive = false,
+				CancelPressed = cancelPressed
+			};
 			return;
 		}
 
@@ -60,7 +72,9 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 		_primaryPointer = new PointerState
 		{
 			IsActive = true,
-			Position = viewportPos
+			Position = viewportPos,
+			SelectPressed = selectPressed,
+			CancelPressed = cancelPressed
 		};
 	}
 }

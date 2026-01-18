@@ -16,6 +16,14 @@ public struct PointerState
 	/// Only valid if IsActive is true.
 	/// </summary>
 	public Vector2 Position;
+	/// <summary>
+	/// True if select button was just pressed this frame (LMB / VR trigger).
+	/// </summary>
+	public bool SelectPressed;
+	/// <summary>
+	/// True if cancel button was just pressed this frame (RMB / VR grip).
+	/// </summary>
+	public bool CancelPressed;
 }
 
 /// <summary>

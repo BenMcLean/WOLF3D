@@ -124,4 +124,16 @@ public class VRDisplayMode : IDisplayMode
 		// Right thumbstick for turning
 		return _rightController.GetVector2("primary");
 	}
+
+	public bool IsPrimaryHandTriggerPressed() =>
+		_rightController != null && _rightController.GetFloat("trigger") > 0.8f;
+
+	public bool IsPrimaryHandGripPressed() =>
+		_rightController != null && _rightController.GetFloat("grip") > 0.8f;
+
+	public bool IsSecondaryHandTriggerPressed() =>
+		_leftController != null && _leftController.GetFloat("trigger") > 0.8f;
+
+	public bool IsSecondaryHandGripPressed() =>
+		_leftController != null && _leftController.GetFloat("grip") > 0.8f;
 }

@@ -256,15 +256,9 @@ public class MenuManager
 	public void Update(float delta)
 	{
 		if (string.IsNullOrEmpty(_currentMenuName))
-		{
-			GD.Print("DEBUG: Update() - _currentMenuName is null or empty");
 			return;
-		}
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
-		{
-			GD.Print($"DEBUG: Update() - Menu '{_currentMenuName}' not found in collection");
 			return;
-		}
 		// Update pointer provider and crosshairs
 		if (_pointerProvider != null)
 		{
@@ -280,56 +274,84 @@ public class MenuManager
 		// Handle navigation
 		if (inputState.UpPressed && _selectedItemIndex > 0)
 		{
-			GD.Print($"DEBUG: Up pressed, changing selection from {_selectedItemIndex} to {_selectedItemIndex - 1}");
 			_selectedItemIndex--;
 			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
 		else if (inputState.DownPressed && _selectedItemIndex < menuDef.Items.Count - 1)
 		{
-			GD.Print($"DEBUG: Down pressed, changing selection from {_selectedItemIndex} to {_selectedItemIndex + 1}");
 			_selectedItemIndex++;
 			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
 		// Handle selection
 		if (inputState.SelectPressed)
-		{
-			GD.Print($"DEBUG: Select pressed, executing action for item {_selectedItemIndex}: {menuDef.Items[_selectedItemIndex].Text}");
 			ExecuteMenuItemAction(menuDef.Items[_selectedItemIndex]);
-		}
 		// Handle cancel/back
 		if (inputState.CancelPressed)
-		{
-			GD.Print("DEBUG: Cancel pressed, going back");
 			BackToPreviousMenu();
-		}
 	}
 	/// <summary>
-	/// Handle pointer-based hover selection.
+	/// Handle pointer-based hover selection and button presses.
 	/// Updates selection when a pointer is over a different menu item than currently selected.
-	/// Primary pointer takes precedence over secondary.
+	/// Handles select (click/trigger) only when pointer is over an item.
+	/// Handles cancel (right-click/grip) regardless of position.
 	/// </summary>
 	/// <param name="menuDef">Current menu definition</param>
 	private void HandlePointerHover(MenuDefinition menuDef)
 	{
-		// Check primary pointer first, then secondary
-		int hoveredIndex = -1;
 		Input.PointerState primary = _pointerProvider.PrimaryPointer;
-		if (primary.IsActive)
-			hoveredIndex = FindHoveredMenuItemIndex(primary.Position);
-		if (hoveredIndex < 0)
+		Input.PointerState secondary = _pointerProvider.SecondaryPointer;
+
+		// Check for cancel from either pointer (works regardless of position)
+		if (primary.CancelPressed || secondary.CancelPressed)
 		{
-			Input.PointerState secondary = _pointerProvider.SecondaryPointer;
-			if (secondary.IsActive)
-				hoveredIndex = FindHoveredMenuItemIndex(secondary.Position);
+			BackToPreviousMenu();
+			return;
 		}
-		// Update selection if hovering over a different item
-		if (hoveredIndex >= 0 && hoveredIndex != _selectedItemIndex)
+
+		// Check primary pointer for hover and select
+		if (primary.IsActive)
 		{
-			_selectedItemIndex = hoveredIndex;
-			PlayCursorMoveSound(menuDef);
-			RefreshMenu();
+			int hoveredIndex = FindHoveredMenuItemIndex(primary.Position);
+			if (hoveredIndex >= 0)
+			{
+				// Update selection if hovering over a different item
+				if (hoveredIndex != _selectedItemIndex)
+				{
+					_selectedItemIndex = hoveredIndex;
+					PlayCursorMoveSound(menuDef);
+					RefreshMenu();
+				}
+				// Handle select only if pointer is over an item
+				if (primary.SelectPressed)
+				{
+					ExecuteMenuItemAction(menuDef.Items[hoveredIndex]);
+					return;
+				}
+			}
+		}
+
+		// Check secondary pointer for hover and select
+		if (secondary.IsActive)
+		{
+			int hoveredIndex = FindHoveredMenuItemIndex(secondary.Position);
+			if (hoveredIndex >= 0)
+			{
+				// Update selection if hovering over a different item
+				if (hoveredIndex != _selectedItemIndex)
+				{
+					_selectedItemIndex = hoveredIndex;
+					PlayCursorMoveSound(menuDef);
+					RefreshMenu();
+				}
+				// Handle select only if pointer is over an item
+				if (secondary.SelectPressed)
+				{
+					ExecuteMenuItemAction(menuDef.Items[hoveredIndex]);
+					return;
+				}
+			}
 		}
 	}
 	/// <summary>
