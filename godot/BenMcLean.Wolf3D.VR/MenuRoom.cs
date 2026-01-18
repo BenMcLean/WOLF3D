@@ -16,6 +16,7 @@ public partial class MenuRoom : Node3D
 	private MenuManager _menuManager;
 	private MeshInstance3D _menuPanel;
 	private ColorRect _marginBackground;
+	private bool _menuPanelPositioned;
 
 	// Menu panel positioning in VR (in meters)
 	private const float PanelDistance = 2.5f;         // Distance from camera
@@ -92,6 +93,7 @@ public partial class MenuRoom : Node3D
 		};
 
 		// Create material that displays the menu viewport texture
+		// UV1Scale.X = -1 flips the texture horizontally to correct for viewing the back of the quad
 		StandardMaterial3D material = new()
 		{
 			AlbedoTexture = _menuManager.Renderer.ViewportTexture,
@@ -100,6 +102,7 @@ public partial class MenuRoom : Node3D
 			DisableAmbientLight = true,
 			CullMode = BaseMaterial3D.CullModeEnum.Disabled, // Visible from both sides
 			Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
+			Uv1Scale = new Vector3(-1, 1, 1), // Flip horizontally to correct mirroring
 		};
 
 		// Create the mesh instance
@@ -110,10 +113,8 @@ public partial class MenuRoom : Node3D
 			MaterialOverride = material,
 		};
 
-		// Position the panel in front of the camera
-		// The panel will be repositioned each frame to follow the player
+		// Add panel to scene; position will be set once XR tracking is active
 		AddChild(_menuPanel);
-		UpdateMenuPanelPosition();
 
 		// Add simple environment lighting for the VR space
 		WorldEnvironment worldEnvironment = new()
@@ -191,8 +192,8 @@ public partial class MenuRoom : Node3D
 	}
 
 	/// <summary>
-	/// Updates the menu panel position to be in front of the VR camera.
-	/// Called each frame in VR mode.
+	/// Positions the menu panel in front of the VR camera.
+	/// Called once after XR tracking becomes active.
 	/// </summary>
 	private void UpdateMenuPanelPosition()
 	{
@@ -236,10 +237,12 @@ public partial class MenuRoom : Node3D
 		// Update menu manager
 		_menuManager?.Update((float)delta);
 
-		// In VR mode, keep the menu panel positioned in front of the player
-		if (_displayMode.IsVRActive)
+		// In VR mode, position the menu panel once after XR tracking is active
+		// (Camera position is zero until tracking starts)
+		if (_displayMode.IsVRActive && !_menuPanelPositioned && _displayMode.ViewerPosition != Vector3.Zero)
 		{
 			UpdateMenuPanelPosition();
+			_menuPanelPositioned = true;
 		}
 	}
 }
