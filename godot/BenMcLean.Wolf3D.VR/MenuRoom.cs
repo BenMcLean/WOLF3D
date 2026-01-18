@@ -22,11 +22,9 @@ public partial class MenuRoom : Node3D
 	private VRMenuPointerProvider _vrPointerProvider;
 	private FlatscreenMenuPointerProvider _flatscreenPointerProvider;
 
-	// Menu panel positioning in VR (in meters)
-	private const float PanelDistance = 2.5f;         // Distance from camera
-	private const float PanelWidth = 1.6f;            // Width of panel (4:3 aspect)
-	private const float PanelHeight = 1.2f;           // Height of panel
-	private const float PanelTiltDegrees = -10f;      // Slight downward tilt
+	// Menu panel sizing in VR (in meters)
+	private const float PanelWidth = Constants.TileWidth;                // One tile wide
+	private const float PanelHeight = Constants.TileWidth * 3f / 4f;     // 4:3 aspect ratio
 
 	/// <summary>
 	/// True when the menu signals to start the game.
@@ -207,36 +205,47 @@ public partial class MenuRoom : Node3D
 	/// Positions the menu panel in front of the VR camera.
 	/// Called once after XR tracking becomes active.
 	/// </summary>
-	private void UpdateMenuPanelPosition()
+	private void PositionMenuPanel()
 	{
 		if (_menuPanel == null || _displayMode.Camera == null)
 			return;
 
-		// Get camera position and forward direction
+		// Get initial camera position and forward direction
 		Vector3 cameraPos = _displayMode.ViewerPosition;
 		float cameraYRotation = _displayMode.ViewerYRotation;
 
-		// Calculate panel position: in front of camera at fixed distance
-		// Use only Y rotation so panel stays vertical
+		// Calculate panel position: one tile width in front of camera's initial position
 		Vector3 forward = new Vector3(
 			Mathf.Sin(cameraYRotation),
 			0,
 			-Mathf.Cos(cameraYRotation)
 		).Normalized();
 
-		Vector3 panelPosition = cameraPos + forward * PanelDistance;
-		// Adjust height to be at eye level (slightly below center of view)
-		panelPosition.Y = cameraPos.Y - 0.1f;
+		Vector3 panelPosition = cameraPos + forward * Constants.TileWidth;
+		// Center panel between floor (0) and ceiling (TileHeight)
+		panelPosition.Y = Constants.HalfTileHeight;
 
 		_menuPanel.GlobalPosition = panelPosition;
+	}
 
-		// Rotate panel to face the camera (around Y axis only)
-		// QuadMesh faces +Z by default; rotating by cameraYRotation aligns it to face the camera
-		_menuPanel.Rotation = new Vector3(
-			Mathf.DegToRad(PanelTiltDegrees),  // Slight downward tilt
-			cameraYRotation,                   // Match camera heading
-			0
-		);
+	/// <summary>
+	/// Rotates the menu panel to face the camera's current position.
+	/// Called every frame. Rotates only on Y axis (no tilt).
+	/// </summary>
+	private void UpdateMenuPanelRotation()
+	{
+		if (_menuPanel == null || _displayMode.Camera == null)
+			return;
+
+		Vector3 cameraPos = _displayMode.ViewerPosition;
+		Vector3 panelPos = _menuPanel.GlobalPosition;
+
+		// Calculate Y rotation to face camera position (ignore Y difference)
+		float deltaX = cameraPos.X - panelPos.X;
+		float deltaZ = cameraPos.Z - panelPos.Z;
+		float yRotation = Mathf.Atan2(deltaX, deltaZ);
+
+		_menuPanel.Rotation = new Vector3(0, yRotation, 0);
 	}
 
 	private void OnBorderColorChanged(Color color)
@@ -254,8 +263,14 @@ public partial class MenuRoom : Node3D
 		// (Camera position is zero until tracking starts)
 		if (_displayMode.IsVRActive && !_menuPanelPositioned && _displayMode.ViewerPosition != Vector3.Zero)
 		{
-			UpdateMenuPanelPosition();
+			PositionMenuPanel();
 			_menuPanelPositioned = true;
+		}
+
+		// Rotate panel to face camera every frame (true billboard)
+		if (_displayMode.IsVRActive && _menuPanelPositioned)
+		{
+			UpdateMenuPanelRotation();
 		}
 	}
 }
