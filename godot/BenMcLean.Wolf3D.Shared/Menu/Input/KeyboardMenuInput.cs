@@ -10,7 +10,7 @@ namespace BenMcLean.Wolf3D.Shared.Menu.Input;
 /// </summary>
 public class KeyboardMenuInput : IMenuInput
 {
-	private Vector2[] _menuItemPositions = [];
+	private Rect2[] _menuItemBounds = [];
 	/// <summary>
 	/// Get the current input state for this frame.
 	/// Reads keyboard input via Godot's Input singleton.
@@ -54,12 +54,12 @@ public class KeyboardMenuInput : IMenuInput
 		// All state is read directly from Godot.Input in GetState()
 	}
 	/// <summary>
-	/// Set the menu item positions for hover detection.
+	/// Set the menu item bounding rectangles for hover detection.
 	/// Not used for keyboard-only input, but stored for future mouse integration.
 	/// </summary>
-	/// <param name="itemPositions">Array of screen positions for each menu item</param>
-	public void SetMenuItemPositions(Vector2[] itemPositions)
+	/// <param name="itemBounds">Array of bounding rectangles for each menu item</param>
+	public void SetMenuItemBounds(Rect2[] itemBounds)
 	{
-		_menuItemPositions = itemPositions;
+		_menuItemBounds = itemBounds;
 	}
 }

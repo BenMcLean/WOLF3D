@@ -69,9 +69,9 @@ public interface IMenuInput
 	/// <param name="delta">Time since last frame in seconds</param>
 	void Update(float delta);
 	/// <summary>
-	/// Set the menu item positions for hover detection.
+	/// Set the menu item bounding rectangles for hover detection.
 	/// Called by MenuRenderer when menu layout changes.
 	/// </summary>
-	/// <param name="itemPositions">Array of screen positions for each menu item</param>
-	void SetMenuItemPositions(Vector2[] itemPositions);
+	/// <param name="itemBounds">Array of bounding rectangles for each menu item (in viewport coordinates 320x200)</param>
+	void SetMenuItemBounds(Rect2[] itemBounds);
 }

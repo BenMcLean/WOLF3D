@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using Godot;
 
@@ -15,6 +16,7 @@ public class MenuRenderer
 	private readonly SubViewport _viewport;
 	private readonly Control _canvas;
 	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
+	private readonly List<Rect2> _menuItemBounds = [];
 	private Color _currentBorderColor = Colors.Black;
 	private Input.PointerState _primaryPointer;
 	private Input.PointerState _secondaryPointer;
@@ -72,6 +74,8 @@ public class MenuRenderer
 		foreach (AtlasTexture texture in _temporaryAtlasTextures)
 			texture?.Dispose();
 		_temporaryAtlasTextures.Clear();
+		// Clear menu item bounds
+		_menuItemBounds.Clear();
 	}
 	/// <summary>
 	/// Render a menu definition to the canvas.
@@ -371,6 +375,13 @@ public class MenuRenderer
 				}
 			};
 			_canvas.AddChild(label);
+			// Store bounds for hover detection - measure text size from font
+			// For multi-line strings, use the maximum width of all lines
+			Font font = theme.DefaultFont;
+			float maxWidth = item.Text.Split('\n')
+				.Max(line => font.GetStringSize(line, fontSize: theme.DefaultFontSize).X);
+			// Use max line width, spacing for height (bitmap fonts return 0 height)
+			_menuItemBounds.Add(new Rect2(new Vector2(itemX, currentY), new Vector2(maxWidth, spacing)));
 			// Move to next item position
 			currentY += spacing;
 		}
@@ -435,19 +446,11 @@ public class MenuRenderer
 		GD.Print("DEBUG RenderCursor: Cursor added to canvas");
 	}
 	/// <summary>
-	/// Get screen positions of all rendered menu items.
-	/// Used by input system for hover detection.
+	/// Get bounding rectangles of all rendered menu items.
+	/// Used for hover detection - hitboxes match text size like hyperlinks.
 	/// </summary>
-	/// <returns>Array of screen positions (center of each item)</returns>
-	public Vector2[] GetMenuItemPositions()
-	{
-		List<Vector2> positions = [];
-		// Find all Label nodes (menu items)
-		foreach (Node child in _canvas.GetChildren())
-			if (child is Label label)
-				positions.Add(label.Position + label.Size / 2);
-		return [.. positions];
-	}
+	/// <returns>Array of bounding rectangles in viewport coordinates (320x200)</returns>
+	public Rect2[] GetMenuItemBounds() => [.. _menuItemBounds];
 	/// <summary>
 	/// Sets the pointer states for crosshair rendering.
 	/// Call this each frame before Update to provide current pointer positions.

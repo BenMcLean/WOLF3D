@@ -29,6 +29,7 @@ public class MenuManager
 	private int _selectedItemIndex = 0;
 	private string _currentMenuMusic = null;
 	private IMenuPointerProvider _pointerProvider;
+	private Rect2[] _currentMenuItemBounds = [];
 	/// <summary>
 	/// Gets the current menu state.
 	/// </summary>
@@ -199,9 +200,9 @@ public class MenuManager
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
 		_renderer.RenderMenu(menuDef, _selectedItemIndex);
-		// Update input with menu item positions for hover detection
-		Vector2[] itemPositions = _renderer.GetMenuItemPositions();
-		_input.SetMenuItemPositions(itemPositions);
+		// Update input with menu item bounds for hover detection
+		_currentMenuItemBounds = _renderer.GetMenuItemBounds();
+		_input.SetMenuItemBounds(_currentMenuItemBounds);
 		// Execute OnSelectionChanged script if defined (WL_MENU.C:1518 - HandleMenu callback)
 		ExecuteOnSelectionChanged(menuDef);
 	}
@@ -270,6 +271,8 @@ public class MenuManager
 			_pointerProvider.Update(delta);
 			_renderer.SetPointers(_pointerProvider.PrimaryPointer, _pointerProvider.SecondaryPointer);
 			_renderer.UpdateCrosshairs();
+			// Handle pointer-based hover selection (mouse/VR controller)
+			HandlePointerHover(menuDef);
 		}
 		// Update input
 		_input.Update(delta);
@@ -301,6 +304,45 @@ public class MenuManager
 			GD.Print("DEBUG: Cancel pressed, going back");
 			BackToPreviousMenu();
 		}
+	}
+	/// <summary>
+	/// Handle pointer-based hover selection.
+	/// Updates selection when a pointer is over a different menu item than currently selected.
+	/// Primary pointer takes precedence over secondary.
+	/// </summary>
+	/// <param name="menuDef">Current menu definition</param>
+	private void HandlePointerHover(MenuDefinition menuDef)
+	{
+		// Check primary pointer first, then secondary
+		int hoveredIndex = -1;
+		Input.PointerState primary = _pointerProvider.PrimaryPointer;
+		if (primary.IsActive)
+			hoveredIndex = FindHoveredMenuItemIndex(primary.Position);
+		if (hoveredIndex < 0)
+		{
+			Input.PointerState secondary = _pointerProvider.SecondaryPointer;
+			if (secondary.IsActive)
+				hoveredIndex = FindHoveredMenuItemIndex(secondary.Position);
+		}
+		// Update selection if hovering over a different item
+		if (hoveredIndex >= 0 && hoveredIndex != _selectedItemIndex)
+		{
+			_selectedItemIndex = hoveredIndex;
+			PlayCursorMoveSound(menuDef);
+			RefreshMenu();
+		}
+	}
+	/// <summary>
+	/// Find the menu item index at the given position.
+	/// </summary>
+	/// <param name="position">Position in viewport coordinates (320x200)</param>
+	/// <returns>Menu item index, or -1 if no item at position</returns>
+	private int FindHoveredMenuItemIndex(Vector2 position)
+	{
+		for (int i = 0; i < _currentMenuItemBounds.Length; i++)
+			if (_currentMenuItemBounds[i].HasPoint(position))
+				return i;
+		return -1;
 	}
 	/// <summary>
 	/// Execute a menu item's inline Lua script.
