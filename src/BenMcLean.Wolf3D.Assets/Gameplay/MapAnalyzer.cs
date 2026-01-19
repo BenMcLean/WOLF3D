@@ -365,7 +365,9 @@ public class MapAnalyzer
 				?? throw new InvalidDataException($"XML tag for map \"{gameMap.Name}\" was not found!");
 			Episode = byte.TryParse(xml?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
 			Level = byte.TryParse(xml?.Attribute("Level")?.Value, out byte level) ? level : (byte)0;
-			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Level + 1);
+			// Default ElevatorTo is the next map (current map number + 1), not Level + 1
+			// Map Number is 0-indexed, so map 0 goes to map 1, map 1 goes to map 2, etc.
+			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(gameMap.Number + 1);
 			AltElevatorTo = byte.TryParse(xml.Attribute("AltElevatorTo")?.Value, out byte secretElevatorTo) ? secretElevatorTo : null;
 			// Floor/Ceiling: Map element overrides Maps element default
 			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor

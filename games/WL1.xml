@@ -470,7 +470,7 @@ end
 		<Map Number="6" Episode="1" Level="7" Par="00:02:30" Music="POW_MUS" />
 		<Map Number="7" Episode="1" Level="8" Par="00:02:30" Music="SUSPENSE_MUS" />
 		<Map Number="8" Episode="1" Level="9" Music="WARMARCH_MUS" />
-		<Map Number="9" Episode="1" Level="10" Ceiling="191" Music="CORNER_MUS" ElevatorTo="2" />
+		<Map Number="9" Episode="1" Level="10" Ceiling="191" Music="CORNER_MUS" ElevatorTo="1" />
 	</Maps>
 	<Audio AudioHead="AUDIOHED.WL1" AudioT="AUDIOT.WL1" StartPCSounds="0" StartAdlibSounds="87" StartMusic="261" >
 		<Sound Number="0" Name="HITWALLSND" />

@@ -5,6 +5,7 @@ using Godot;
 using RectpackSharp;
 using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Shared.GodotLogger;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Graphics;
 
 namespace BenMcLean.Wolf3D.Shared;
@@ -59,6 +60,10 @@ public static class SharedAssetManager
 	/// Crosshair AtlasTexture ready for display in VR and other modes.
 	/// </summary>
 	public static Godot.AtlasTexture Crosshair { get; private set; }
+	/// <summary>
+	/// Status bar definition from VgaGraph.
+	/// </summary>
+	public static StatusBarDefinition StatusBar => CurrentGame?.VgaGraph?.StatusBar;
 	/// <summary>
 	/// Logger factory configured to route logs to Godot.
 	/// </summary>
@@ -390,13 +395,7 @@ public static class SharedAssetManager
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
 				glyph: charCode,
-				uVRect: new Godot.Rect2(
-					position: new Godot.Vector2(
-						x: region.Position.X / (float)AtlasTexture.GetWidth(),
-						y: region.Position.Y / (float)AtlasTexture.GetHeight()),
-					size: new Godot.Vector2(
-						x: region.Size.X / (float)AtlasTexture.GetWidth(),
-						y: region.Size.Y / (float)AtlasTexture.GetHeight())));
+				uVRect: new Godot.Rect2(region.Position.X, region.Position.Y, region.Size.X, region.Size.Y));
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: font.FixedSize,
@@ -426,13 +425,7 @@ public static class SharedAssetManager
 				cacheIndex: 0,
 				size: new Godot.Vector2I(font.FixedSize, 0),
 				glyph: space,
-				uVRect: new Godot.Rect2(
-					position: new Godot.Vector2(
-						x: spaceRegion.Position.X / (float)AtlasTexture.GetWidth(),
-						y: spaceRegion.Position.Y / (float)AtlasTexture.GetHeight()),
-					size: new Godot.Vector2(
-						x: spaceRegion.Size.X / (float)AtlasTexture.GetWidth(),
-						y: spaceRegion.Size.Y / (float)AtlasTexture.GetHeight())));
+				uVRect: new Godot.Rect2(spaceRegion.Position.X, spaceRegion.Position.Y, spaceRegion.Size.X, spaceRegion.Size.Y));
 			font.SetGlyphAdvance(
 				cacheIndex: 0,
 				size: font.FixedSize,

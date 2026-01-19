@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
+using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using BenMcLean.Wolf3D.VR.VR;
@@ -63,6 +64,9 @@ void sky() {
 	private SimulatorController _simulatorController;
 	private PixelPerfectAiming _pixelPerfectAiming;
 	private AimIndicator _aimIndicator;
+	private StatusBarState _statusBarState;
+	private StatusBarRenderer _statusBarRenderer;
+	private CanvasLayer _statusBarCanvas;
 
 	/// <summary>
 	/// Creates a new ActionStage with the specified display mode.
@@ -191,6 +195,48 @@ void sky() {
 		// Create debug aim indicator (temporary - won't be in final game)
 		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode.Camera);
 		AddChild(_aimIndicator);
+		// Create status bar for flatscreen mode
+		if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar != null)
+		{
+			_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
+			_statusBarRenderer = new StatusBarRenderer(_statusBarState);
+
+			// Create CanvasLayer to display status bar at bottom of screen
+			_statusBarCanvas = new CanvasLayer
+			{
+				Name = "StatusBarCanvas",
+				Layer = 10 // On top of game view
+			};
+			AddChild(_statusBarCanvas);
+
+			// Add the status bar viewport as a child so it processes
+			_statusBarCanvas.AddChild(_statusBarRenderer.Viewport);
+
+			// Create TextureRect to display the status bar viewport texture
+			TextureRect statusBarDisplay = new()
+			{
+				Name = "StatusBarDisplay",
+				Texture = _statusBarRenderer.ViewportTexture,
+				// Anchor to bottom of screen, centered horizontally
+				AnchorLeft = 0.5f,
+				AnchorRight = 0.5f,
+				AnchorTop = 1.0f,
+				AnchorBottom = 1.0f,
+				// Scale 3x for visibility (320x40 -> 960x120)
+				CustomMinimumSize = new Vector2(960, 120),
+				Size = new Vector2(960, 120),
+				// Center horizontally, position at bottom
+				OffsetLeft = -480,
+				OffsetRight = 480,
+				OffsetTop = -120,
+				OffsetBottom = 0,
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+			};
+			_statusBarCanvas.AddChild(statusBarDisplay);
+
+			// Set test values
+			_statusBarState.SetValue("Floor", LevelIndex + 1);
+		}
 		}
 		catch (Exception ex)
 		{

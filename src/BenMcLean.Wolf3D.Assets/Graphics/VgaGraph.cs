@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 
 namespace BenMcLean.Wolf3D.Assets.Graphics;
 
@@ -41,6 +42,10 @@ public sealed class VgaGraph
 	/// </summary>
 	public record PicFont(Dictionary<char, int> Glyphs, ushort SpaceWidth, byte SpaceColor);
 	public Dictionary<string, PicFont> PicFonts { get; private init; }
+	/// <summary>
+	/// Status bar definition parsed from XML.
+	/// </summary>
+	public StatusBarDefinition StatusBar { get; private init; }
 	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitFile(ParseHead(vgaHead), vgaGraph, Load16BitPairs(dictionary)), xml)
 	{ }
 	public VgaGraph(byte[][] file, XElement xml)
@@ -119,6 +124,10 @@ public sealed class VgaGraph
 					ChunkFontsByName[name] = index;
 			}
 		}
+		// Parse StatusBar definition
+		XElement statusBarElement = vgaGraph.Element("StatusBar");
+		if (statusBarElement != null)
+			StatusBar = StatusBarDefinition.FromXElement(statusBarElement);
 	}
 	public static int PaletteNumber(int picNumber, XElement xml) =>
 		xml?.Element("VgaGraph")?.Elements("Pic")?.Where(

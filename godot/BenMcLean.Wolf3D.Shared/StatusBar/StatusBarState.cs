@@ -1,0 +1,136 @@
+using System;
+using System.Collections.Generic;
+using BenMcLean.Wolf3D.Assets.Gameplay;
+
+namespace BenMcLean.Wolf3D.Shared.StatusBar;
+
+/// <summary>
+/// Runtime state container for status bar values.
+/// Holds a string-keyed dictionary of integers representing player inventory/stats.
+/// Display-only - syncs from the authoritative Simulator state.
+/// </summary>
+public class StatusBarState
+{
+	private readonly Dictionary<string, int> _values = [];
+	private readonly StatusBarDefinition _definition;
+	/// <summary>
+	/// Event fired when a value changes.
+	/// Parameters: (name, newValue)
+	/// </summary>
+	public event Action<string, int> ValueChanged;
+	/// <summary>
+	/// Current weapon slot (0-3)
+	/// </summary>
+	public int CurrentWeapon { get; set; }
+	/// <summary>
+	/// Current face animation frame.
+	/// Face pattern: FACE{level}{frame}PIC where level is 1-7 based on health, frame is A/B/C
+	/// Level 8 = dead face (FACE8APIC)
+	/// </summary>
+	public int FaceFrame { get; set; }
+	/// <summary>
+	/// Creates a new StatusBarState initialized from a StatusBarDefinition.
+	/// </summary>
+	/// <param name="definition">The status bar definition containing initial values</param>
+	public StatusBarState(StatusBarDefinition definition)
+	{
+		_definition = definition ?? throw new ArgumentNullException(nameof(definition));
+		// Initialize values from definition
+		foreach (StatusBarNumberDefinition number in _definition.Numbers)
+			_values[number.Name] = number.Init;
+		// Initialize weapon state from first available weapon
+		if (_definition.Weapons?.Weapons is not null)
+			foreach (StatusBarWeaponDefinition weapon in _definition.Weapons.Weapons)
+				if (weapon.Init > 0)
+				{
+					CurrentWeapon = weapon.Number;
+					break;
+				}
+	}
+	/// <summary>
+	/// Gets the value for a named status bar item.
+	/// </summary>
+	/// <param name="name">The name of the value (e.g., "Health", "Ammo")</param>
+	/// <returns>The current value, or 0 if not found</returns>
+	public int GetValue(string name) =>
+		_values.TryGetValue(name, out int value) ? value : 0;
+	/// <summary>
+	/// Sets the value for a named status bar item.
+	/// Value is clamped to Max if specified in the definition.
+	/// </summary>
+	/// <param name="name">The name of the value (e.g., "Health", "Ammo")</param>
+	/// <param name="value">The new value</param>
+	public void SetValue(string name, int value)
+	{
+		// Clamp to max if defined
+		StatusBarNumberDefinition numberDef = _definition.GetNumber(name);
+		if (numberDef?.Max.HasValue == true && value > numberDef.Max.Value)
+			value = numberDef.Max.Value;
+		// Clamp minimum to 0
+		if (value < 0)
+			value = 0;
+		// Only update and fire event if value changed
+		if (!_values.TryGetValue(name, out int oldValue) || oldValue != value)
+		{
+			_values[name] = value;
+			ValueChanged?.Invoke(name, value);
+		}
+	}
+	/// <summary>
+	/// Adds a delta to a named status bar item.
+	/// Convenience method that calls GetValue and SetValue.
+	/// </summary>
+	/// <param name="name">The name of the value (e.g., "Health", "Ammo")</param>
+	/// <param name="delta">The amount to add (can be negative)</param>
+	public void AddValue(string name, int delta) =>
+		SetValue(name, GetValue(name) + delta);
+	/// <summary>
+	/// Resets values that have LevelReset defined.
+	/// Called when transitioning between levels.
+	/// </summary>
+	public void OnLevelChange()
+	{
+		foreach (StatusBarNumberDefinition number in _definition.Numbers)
+			if (number.LevelReset.HasValue)
+				SetValue(number.Name, number.LevelReset.Value);
+	}
+	/// <summary>
+	/// Resets all values to their initial state.
+	/// Called when starting a new game.
+	/// </summary>
+	public void Reset()
+	{
+		foreach (StatusBarNumberDefinition number in _definition.Numbers)
+			SetValue(number.Name, number.Init);
+		// Reset weapon to first available
+		if (_definition.Weapons?.Weapons != null)
+			foreach (StatusBarWeaponDefinition weapon in _definition.Weapons.Weapons)
+				if (weapon.Init > 0)
+				{
+					CurrentWeapon = weapon.Number;
+					break;
+				}
+		FaceFrame = 0;
+	}
+	/// <summary>
+	/// Syncs status bar state from simulator values.
+	/// Called each frame or when game state changes.
+	/// Supports custom values defined by modders in XML.
+	/// </summary>
+	/// <param name="values">Dictionary of value names to their current values</param>
+	/// <param name="currentWeapon">Current weapon slot</param>
+	public void SyncFromSimulator(IReadOnlyDictionary<string, int> values, int currentWeapon)
+	{
+		foreach (KeyValuePair<string, int> kvp in values)
+			SetValue(kvp.Key, kvp.Value);
+		CurrentWeapon = currentWeapon;
+	}
+	/// <summary>
+	/// Gets all current values as a read-only dictionary.
+	/// </summary>
+	public IReadOnlyDictionary<string, int> Values => _values;
+	/// <summary>
+	/// Gets the status bar definition this state is based on.
+	/// </summary>
+	public StatusBarDefinition Definition => _definition;
+}
