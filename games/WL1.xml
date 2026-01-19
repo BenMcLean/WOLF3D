@@ -875,7 +875,7 @@ end
 			<ObjectType Number="26" ObClass="block" Page="111" Name="Floor Lamp" />
 			<ObjectType Number="27" ObClass="dressing" Page="112" Name="Chandalier" />
 			<ObjectType Number="28" ObClass="block" Page="113" Name="Hanging Skeleton" />
-			<ObjectType Number="29" ObClass="block" Page="114" Walk="true" If="Health" LessThan="100" AddTo="Health" Add="4" Sound="HEALTH1SND" Flash="#FFFF00" Name="Dog Food" />
+			<ObjectType Number="29" ObClass="bonus" Page="114" Walk="true" If="Health" LessThan="100" AddTo="Health" Add="4" Sound="HEALTH1SND" Flash="#FFFF00" Name="Dog Food" />
 			<ObjectType Number="30" ObClass="block" Page="115" Name="White Column" />
 			<ObjectType Number="31" ObClass="block" Page="116" Name="Green Plant" />
 			<ObjectType Number="32" ObClass="dressing" Page="117" Name="Skeleton" />
