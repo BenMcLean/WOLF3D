@@ -460,17 +460,17 @@ end
 			</Menu>
 		</Menus>
 	</VgaGraph>
-	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1">
-		<Map Number="0" Episode="1" Level="1" Floor="25" Ceiling="29" Border="127" Par="00:01:30" Music="GETTHEM_MUS" AltElevatorTo="9" />
-		<Map Number="1" Episode="1" Level="2" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Music="SEARCHN_MUS" />
-		<Map Number="2" Episode="1" Level="3" Floor="25" Ceiling="29" Border="127" Par="00:02:00" Music="POW_MUS" />
-		<Map Number="3" Episode="1" Level="4" Floor="25" Ceiling="29" Border="127" Par="00:03:30" Music="SUSPENSE_MUS" />
-		<Map Number="4" Episode="1" Level="5" Floor="25" Ceiling="29" Border="127" Par="00:03:00" Music="GETTHEM_MUS" />
-		<Map Number="5" Episode="1" Level="6" Floor="25" Ceiling="29" Border="127" Par="00:03:00" Music="SEARCHN_MUS" />
-		<Map Number="6" Episode="1" Level="7" Floor="25" Ceiling="29" Border="127" Par="00:02:30" Music="POW_MUS" />
-		<Map Number="7" Episode="1" Level="8" Floor="25" Ceiling="29" Border="127" Par="00:02:30" Music="SUSPENSE_MUS" />
-		<Map Number="8" Episode="1" Level="9" Floor="25" Ceiling="29" Border="127" Music="WARMARCH_MUS" />
-		<Map Number="9" Episode="1" Level="10" Floor="25" Ceiling="191" Border="127" Music="CORNER_MUS" ElevatorTo="2" />
+	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29" >
+		<Map Number="0" Episode="1" Level="1" Par="00:01:30" Music="GETTHEM_MUS" AltElevatorTo="9" />
+		<Map Number="1" Episode="1" Level="2" Par="00:02:00" Music="SEARCHN_MUS" />
+		<Map Number="2" Episode="1" Level="3" Par="00:02:00" Music="POW_MUS" />
+		<Map Number="3" Episode="1" Level="4" Par="00:03:30" Music="SUSPENSE_MUS" />
+		<Map Number="4" Episode="1" Level="5" Par="00:03:00" Music="GETTHEM_MUS" />
+		<Map Number="5" Episode="1" Level="6" Par="00:03:00" Music="SEARCHN_MUS" />
+		<Map Number="6" Episode="1" Level="7" Par="00:02:30" Music="POW_MUS" />
+		<Map Number="7" Episode="1" Level="8" Par="00:02:30" Music="SUSPENSE_MUS" />
+		<Map Number="8" Episode="1" Level="9" Music="WARMARCH_MUS" />
+		<Map Number="9" Episode="1" Level="10" Ceiling="191" Music="CORNER_MUS" ElevatorTo="2" />
 	</Maps>
 	<Audio AudioHead="AUDIOHED.WL1" AudioT="AUDIOT.WL1" StartPCSounds="0" StartAdlibSounds="87" StartMusic="261" >
 		<Sound Number="0" Name="HITWALLSND" />

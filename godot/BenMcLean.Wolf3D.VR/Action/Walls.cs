@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator;
 using Godot;
 using System.Collections.Generic;
@@ -15,9 +16,34 @@ namespace BenMcLean.Wolf3D.VR;
 public partial class Walls : Node3D
 {
 	/// <summary>
+	/// Shader for tiling floor/ceiling textures.
+	/// UV coordinates are scaled by tile_repeat uniform to tile the texture across the map.
+	/// </summary>
+	private const string TilingShaderCode = @"
+shader_type spatial;
+render_mode unshaded, cull_back;
+
+uniform sampler2D albedo_texture : source_color, filter_nearest, repeat_enable;
+uniform vec2 tile_repeat = vec2(1.0, 1.0);
+
+void fragment() {
+	vec2 uv = UV * tile_repeat;
+	ALBEDO = texture(albedo_texture, uv).rgb;
+}
+";
+	private static Shader _tilingShader;
+	/// <summary>
 	/// Dictionary of MultiMeshInstance3D nodes, indexed by texture number.
 	/// </summary>
 	public Dictionary<ushort, MultiMeshInstance3D> MeshInstances { get; private init; }
+	/// <summary>
+	/// Floor mesh covering the entire map at Y=0, facing upward.
+	/// </summary>
+	public MeshInstance3D Floor { get; private init; }
+	/// <summary>
+	/// Ceiling mesh covering the entire map at Y=TileHeight, facing downward.
+	/// </summary>
+	public MeshInstance3D Ceiling { get; private init; }
 	// Pushwall tracking
 	private readonly List<PushWallData> pushWalls = [];
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> wallMaterials;
@@ -82,6 +108,42 @@ public partial class Walls : Node3D
 		if (mapAnalysis.PushWalls is not null)
 			foreach (MapAnalysis.PushWallSpawn pw in mapAnalysis.PushWalls)
 				AddPushWall(pw.Shape, pw.X, pw.Y);
+		// Create floor and ceiling
+		float mapWidthMeters = mapAnalysis.Width * Constants.TileWidth,
+			mapDepthMeters = mapAnalysis.Depth * Constants.TileWidth;
+		Vector3 mapCenter = new(mapWidthMeters / 2f, 0f, mapDepthMeters / 2f);
+		// Floor at Y=0, facing upward
+		Floor = new MeshInstance3D
+		{
+			Name = "Floor",
+			Mesh = new QuadMesh { Size = new Vector2(mapWidthMeters, mapDepthMeters) },
+			MaterialOverride = mapAnalysis.FloorTile.HasValue
+				? CreateTilingMaterial(wallMaterials[mapAnalysis.FloorTile.Value], mapAnalysis.Width, mapAnalysis.Depth)
+				: new StandardMaterial3D
+				{
+					ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+					AlbedoColor = SharedAssetManager.GetPaletteColor(mapAnalysis.Floor.Value),
+				},
+		};
+		Floor.RotateX(-Mathf.Pi / 2f); // Rotate to face upward
+		Floor.Position = mapCenter;
+		AddChild(Floor);
+		// Ceiling at Y=TileHeight, facing downward
+		Ceiling = new MeshInstance3D
+		{
+			Name = "Ceiling",
+			Mesh = new QuadMesh { Size = new Vector2(mapWidthMeters, mapDepthMeters) },
+			MaterialOverride = mapAnalysis.CeilingTile.HasValue
+				? CreateTilingMaterial(wallMaterials[mapAnalysis.CeilingTile.Value], mapAnalysis.Width, mapAnalysis.Depth)
+				: new StandardMaterial3D
+				{
+					ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+					AlbedoColor = SharedAssetManager.GetPaletteColor(mapAnalysis.Ceiling.Value),
+				},
+		};
+		Ceiling.RotateX(Mathf.Pi / 2f); // Rotate to face downward
+		Ceiling.Position = mapCenter with { Y = Constants.TileHeight };
+		AddChild(Ceiling);
 	}
 	/// <summary>
 	/// Subscribes to simulator events for pushwall movement, sounds, and elevator switches.
@@ -243,6 +305,21 @@ public partial class Walls : Node3D
 		if (!nextInstanceIndex.ContainsKey(textureIndex))
 			nextInstanceIndex[textureIndex] = 0;
 		return nextInstanceIndex[textureIndex]++;
+	}
+	/// <summary>
+	/// Creates a ShaderMaterial that tiles a texture across the floor or ceiling.
+	/// Each tile will be exactly Constants.TileWidth in size.
+	/// </summary>
+	/// <param name="sourceMaterial">Source material containing the texture to tile</param>
+	/// <param name="tilesX">Number of tiles in X direction (map width)</param>
+	/// <param name="tilesZ">Number of tiles in Z direction (map depth)</param>
+	private static ShaderMaterial CreateTilingMaterial(StandardMaterial3D sourceMaterial, ushort tilesX, ushort tilesZ)
+	{
+		_tilingShader ??= new Shader { Code = TilingShaderCode };
+		ShaderMaterial material = new() { Shader = _tilingShader };
+		material.SetShaderParameter("albedo_texture", sourceMaterial.AlbedoTexture);
+		material.SetShaderParameter("tile_repeat", new Vector2(tilesX, tilesZ));
+		return material;
 	}
 	/// <summary>
 	/// Creates a MultiMeshInstance3D for all walls using a specific texture.

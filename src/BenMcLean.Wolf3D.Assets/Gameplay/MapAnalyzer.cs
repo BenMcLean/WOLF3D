@@ -252,7 +252,6 @@ public class MapAnalyzer
 		public ushort? FloorTile { get; private init; }
 		public byte? Ceiling { get; private init; }
 		public ushort? CeilingTile { get; private init; }
-		public byte Border { get; private init; }
 		public TimeSpan Par { get; private init; }
 		public string Music { get; private init; }
 		#endregion XML Attributes
@@ -360,17 +359,23 @@ public class MapAnalyzer
 			this.gameMap = gameMap ?? throw new ArgumentNullException(nameof(gameMap));
 			logger ??= NullLogger.Instance;
 			#region XML Attributes
-			XElement xml = mapAnalyzer.XML.Element("Maps").Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault()
+			XElement mapsXml = mapAnalyzer.XML.Element("Maps")
+				?? throw new InvalidDataException($"XML tag for Maps was not found!"),
+				xml = mapsXml.Elements("Map").Where(m => ushort.TryParse(m.Attribute("Number")?.Value, out ushort mu) && mu == gameMap.Number).FirstOrDefault()
 				?? throw new InvalidDataException($"XML tag for map \"{gameMap.Name}\" was not found!");
 			Episode = byte.TryParse(xml?.Attribute("Episode")?.Value, out byte episode) ? episode : (byte)0;
 			Level = byte.TryParse(xml?.Attribute("Level")?.Value, out byte level) ? level : (byte)0;
 			ElevatorTo = byte.TryParse(xml.Attribute("ElevatorTo")?.Value, out byte elevatorTo) ? elevatorTo : (byte)(Level + 1);
 			AltElevatorTo = byte.TryParse(xml.Attribute("AltElevatorTo")?.Value, out byte secretElevatorTo) ? secretElevatorTo : null;
-			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor : null;
-			FloorTile = byte.TryParse(xml?.Attribute("FloorTile")?.Value, out byte floorTile) ? floorTile : (byte?)null;
-			Ceiling = byte.TryParse(xml?.Attribute("Ceiling")?.Value, out byte ceiling) ? ceiling : null;
-			CeilingTile = byte.TryParse(xml?.Attribute("CeilingTile")?.Value, out byte ceilingTile) ? ceilingTile : null;
-			Border = byte.TryParse(xml?.Attribute("Border")?.Value, out byte border) ? border : (byte)0;
+			// Floor/Ceiling: Map element overrides Maps element default
+			Floor = byte.TryParse(xml?.Attribute("Floor")?.Value, out byte floor) ? floor
+				: byte.TryParse(mapsXml?.Attribute("Floor")?.Value, out byte defaultFloor) ? defaultFloor : null;
+			FloorTile = ushort.TryParse(xml?.Attribute("FloorTile")?.Value, out ushort floorTile) ? floorTile
+				: ushort.TryParse(mapsXml?.Attribute("FloorTile")?.Value, out ushort defaultFloorTile) ? defaultFloorTile : null;
+			Ceiling = byte.TryParse(xml?.Attribute("Ceiling")?.Value, out byte ceiling) ? ceiling
+				: byte.TryParse(mapsXml?.Attribute("Ceiling")?.Value, out byte defaultCeiling) ? defaultCeiling : null;
+			CeilingTile = ushort.TryParse(xml?.Attribute("CeilingTile")?.Value, out ushort ceilingTile) ? ceilingTile
+				: ushort.TryParse(mapsXml?.Attribute("CeilingTile")?.Value, out ushort defaultCeilingTile) ? defaultCeilingTile : null;
 			Par = TimeSpan.TryParse(xml?.Attribute("Par")?.Value, out TimeSpan par) ? par : TimeSpan.Zero;
 			Music = xml.Attribute("Music")?.Value;
 			#endregion XML Attributes

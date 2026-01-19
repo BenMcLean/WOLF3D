@@ -672,6 +672,7 @@
 		<xs:annotation>
 			<xs:documentation>
 				Level map data from MAPHEAD/GAMEMAPS files.
+				Default floor/ceiling colors and tiles can be specified here and overridden per-map.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -680,6 +681,40 @@
 			</xs:sequence>
 			<xs:attribute name="MapHead" type="xs:string" use="required"/>
 			<xs:attribute name="GameMaps" type="xs:string" use="required"/>
+			<xs:attribute name="Floor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Default floor color as VGA palette index for all maps.
+						Individual Map elements can override this value.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FloorTile" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Default floor texture as VSWAP page number for all maps.
+						When specified, overrides Floor color with a tiled texture.
+						Individual Map elements can override this value.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Ceiling" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Default ceiling color as VGA palette index for all maps.
+						Individual Map elements can override this value.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CeilingTile" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Default ceiling texture as VSWAP page number for all maps.
+						When specified, overrides Ceiling color with a tiled texture.
+						Individual Map elements can override this value.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
