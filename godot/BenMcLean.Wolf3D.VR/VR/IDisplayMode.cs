@@ -71,38 +71,6 @@ public interface IDisplayMode
 	void Update(double delta);
 
 	/// <summary>
-	/// Check if the primary trigger (fire button) is pressed.
-	/// In VR: Right trigger. In flatscreen: Left mouse or X key.
-	/// </summary>
-	bool IsPrimaryTriggerPressed();
-
-	/// <summary>
-	/// Check if the grip button is pressed (use/interact).
-	/// In VR: Right grip. In flatscreen: R key.
-	/// </summary>
-	bool IsGripPressed();
-
-	/// <summary>
-	/// Check if the primary (right) hand trigger is pressed.
-	/// </summary>
-	bool IsPrimaryHandTriggerPressed();
-
-	/// <summary>
-	/// Check if the primary (right) hand grip is pressed.
-	/// </summary>
-	bool IsPrimaryHandGripPressed();
-
-	/// <summary>
-	/// Check if the secondary (left) hand trigger is pressed.
-	/// </summary>
-	bool IsSecondaryHandTriggerPressed();
-
-	/// <summary>
-	/// Check if the secondary (left) hand grip is pressed.
-	/// </summary>
-	bool IsSecondaryHandGripPressed();
-
-	/// <summary>
 	/// Event fired when a button is pressed on the primary (right) controller.
 	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
 	/// </summary>

@@ -98,23 +98,6 @@ public class VRDisplayMode : IDisplayMode
 		// This method can be used for any per-frame VR-specific logic
 	}
 
-	public bool IsPrimaryTriggerPressed()
-	{
-		if (_rightController == null)
-			return false;
-
-		// OpenXR trigger is typically "trigger" action with value 0-1
-		return _rightController.GetFloat("trigger") > 0.8f;
-	}
-
-	public bool IsGripPressed()
-	{
-		if (_rightController == null)
-			return false;
-
-		return _rightController.GetFloat("grip") > 0.8f;
-	}
-
 	public Vector2 GetMovementInput()
 	{
 		if (_leftController == null)
@@ -132,16 +115,4 @@ public class VRDisplayMode : IDisplayMode
 		// Right thumbstick for turning
 		return _rightController.GetVector2("primary");
 	}
-
-	public bool IsPrimaryHandTriggerPressed() =>
-		_rightController != null && _rightController.GetFloat("trigger") > 0.8f;
-
-	public bool IsPrimaryHandGripPressed() =>
-		_rightController != null && _rightController.GetFloat("grip") > 0.8f;
-
-	public bool IsSecondaryHandTriggerPressed() =>
-		_leftController != null && _leftController.GetFloat("trigger") > 0.8f;
-
-	public bool IsSecondaryHandGripPressed() =>
-		_leftController != null && _leftController.GetFloat("grip") > 0.8f;
 }

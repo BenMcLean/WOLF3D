@@ -13,10 +13,6 @@ public class FlatscreenDisplayMode : IDisplayMode
 	private Node3D _cameraHolder;
 	private Node _parent;
 
-	// Track key states for input
-	private bool _firePressed;
-	private bool _usePressed;
-
 	// Events not used in flatscreen mode (input comes through InputEvent)
 	public event Action<string> PrimaryButtonPressed;
 	public event Action<string> SecondaryButtonPressed;
@@ -87,19 +83,6 @@ public class FlatscreenDisplayMode : IDisplayMode
 	public void Update(double delta)
 	{
 		// FreeLookCamera handles its own input processing via _Input and _Process
-		// We just need to track our action inputs here
-		_firePressed = Input.IsActionPressed("ui_accept") || Input.IsKeyPressed(Key.X) || Input.IsMouseButtonPressed(MouseButton.Left);
-		_usePressed = Input.IsKeyPressed(Key.R);
-	}
-
-	public bool IsPrimaryTriggerPressed()
-	{
-		return _firePressed;
-	}
-
-	public bool IsGripPressed()
-	{
-		return _usePressed;
 	}
 
 	public Vector2 GetMovementInput()
@@ -120,10 +103,4 @@ public class FlatscreenDisplayMode : IDisplayMode
 		// Return zero since FreeLookCamera manages its own rotation
 		return Vector2.Zero;
 	}
-
-	// Per-hand button states - in flatscreen, only primary hand is meaningful
-	public bool IsPrimaryHandTriggerPressed() => _firePressed;
-	public bool IsPrimaryHandGripPressed() => _usePressed;
-	public bool IsSecondaryHandTriggerPressed() => false;
-	public bool IsSecondaryHandGripPressed() => false;
 }
