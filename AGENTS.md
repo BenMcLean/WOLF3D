@@ -1,3 +1,47 @@
+## Project Context
+I'm developing a C# recreation of Wolfenstein 3-D for VR and also potentially other alternate gameplay styles in the future.
+
+### Directory Structure & Purpose
+- `BenMcLean.Wolf3D`: **The Active Workspace**. This is the ONLY folder you may edit.
+	- `games\`: XML files like `WL1.xml` describing different Wolfenstein 3-D engine games/mods.
+	- `games\WOLF3D.xsd`: Schema for those XML files.
+	- `src\`: Core projects independent of modern game engines.
+		- `src\BenMcLean.Wolf3D.Assets`: Assets extraction code.
+		- `src\BenMcLean.Wolf3D.Simulator`: Abstract discrete event simulator.
+	- `godot\`: Projects based on Godot 4.
+		- `godot\BenMcLean.Wolf3D.Shared`: Shared library for Godot 4 front-ends.
+		- `godot\BenMcLean.Wolf3D.VR`: VR presentation layer.
+		- `godot\BenMcLean.Wolf3D.Iso`: (Planned) 2D isometric presentation layer.
+- `wolf3d`: **Reference Only**. Recreation of Wolfenstein 3-D source code with annotations.
+- `gebbwolf3`: **Reference Only**. the source files for Fabien Sanglard's "Game Engine Black Book: Wolfenstein 3D" which documents various Wolfenstein 3-D implementation details and the intent behind much of the source code, with the text of the book in the `.tex` files. The actual source code is a higher authority than the book, but the book may help with interpreting the intent.
+
+## Priorities
+1. **Read Context First**: Follow the Wolfenstein 3D Data Type Mapping Guide in proposed code changes.
+2. **Referencing Old Code**: When I refer to "original code", "old C code", or interpretation of the original 1990s game's intent, refer to the `wolf3d/` and `gebbwolf3/` directories. I deviate from the authority of these sources when I have a specific reason to, otherwise I try to follow their intent.
+
+## Strict Prohibitions
+1. **File Editing Restrictions**:
+	- You may **ONLY** edit files within the `BenMcLean.Wolf3D/` directory.
+	- All other directories (e.g., `wolf3d/`, `gebbwolf3/`) are **READ-ONLY**.
+2. **Git Prohibition**:
+	- You are **STRICTLY FORBIDDEN** from using any Git commands (e.g., `git status`, `git diff`, `git commit`).
+	- Do not access or attempt to read Git history or branching information.
+	- Treat the environment as if Git does not exist. The user performs all Git operations manually.
+	- If you realize you have accidentally proposed a Git command, stop immediately, apologize, and reformulate your plan using standard file operations or by asking the user to handle the versioning.
+
+## Code Style & Conventions
+- Follow the data type conventions specified in the Data Type Mapping Guide below.
+- Strictly adhere to the formatting rules in `BenMcLean.Wolf3D/.editorconfig` (e.g., indentation style).
+
+## Logging Strategy
+**Follow a "need to know" logging policy**: Only log messages that indicate problems or are actively useful for debugging.
+
+- **DO NOT log**: Success messages, status updates, progress indicators, or normal flow.
+- **DO log**: 
+	- **Errors**: Actual failures (use `GD.PrintErr` with "ERROR:" prefix).
+	- **Warnings**: Unusual but recoverable situations (use `GD.PrintErr` with "Warning:" prefix).
+	- **Debug info**: Only when actively debugging (must remove before completion).
+
 # Wolfenstein 3D Data Type Mapping Guide
 
 ## Philosophy
