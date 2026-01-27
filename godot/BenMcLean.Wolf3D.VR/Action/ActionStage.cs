@@ -200,6 +200,10 @@ void sky() {
 		// Right click (flatscreen) or left grip (VR) = use/push
 		_displayMode.SecondaryButtonPressed += OnSecondaryButtonPressed;
 
+		// Capture mouse for FPS controls in flatscreen mode
+		if (!_displayMode.IsVRActive)
+			Input.MouseMode = Input.MouseModeEnum.Captured;
+
 		// Create pixel-perfect aiming system
 		_pixelPerfectAiming = new PixelPerfectAiming(this);
 
@@ -468,6 +472,13 @@ void sky() {
 		// Bonuses updates billboard rotations automatically in its own _Process
 		// Doors use two-quad approach with back-face culling - no per-frame updates needed
 		// SimulatorController drives the simulator and updates door/bonus states automatically in its own _Process
+	}
+
+	public override void _ExitTree()
+	{
+		// Release mouse when leaving action stage (returning to menu, etc.)
+		if (!_displayMode.IsVRActive)
+			Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
 
 	/// <summary>

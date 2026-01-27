@@ -51,8 +51,8 @@ public partial class FPSCamera : Camera3D
 
 	public override void _Ready()
 	{
-		// Capture mouse immediately for FPS-style control
-		Input.MouseMode = Input.MouseModeEnum.Captured;
+		// Mouse capture is controlled externally (e.g., by ActionStage)
+		// Menu stages should leave mouse visible
 	}
 
 	public override void _Input(InputEvent @event)
