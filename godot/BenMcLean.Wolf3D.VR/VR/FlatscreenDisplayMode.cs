@@ -109,4 +109,9 @@ public class FlatscreenDisplayMode : IDisplayMode
 		// Return zero since FPSCamera manages its own rotation
 		return Vector2.Zero;
 	}
+
+	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator)
+	{
+		_camera?.SetMovementValidator(validator);
+	}
 }

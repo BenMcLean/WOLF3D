@@ -49,10 +49,23 @@ public partial class FPSCamera : Camera3D
 	private bool _shift = false;
 	private bool _alt = false;
 
+	// Movement validator callback for collision detection
+	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
+
 	public override void _Ready()
 	{
 		// Mouse capture is controlled externally (e.g., by ActionStage)
 		// Menu stages should leave mouse visible
+	}
+
+	/// <summary>
+	/// Sets the movement validator callback for collision detection.
+	/// When set, movement will be validated against walls, doors, and enemies.
+	/// </summary>
+	/// <param name="validator">Callback that takes (currentX, currentZ, desiredX, desiredZ) and returns validated (X, Z)</param>
+	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator)
+	{
+		_validateMovement = validator;
 	}
 
 	public override void _Input(InputEvent @event)
@@ -158,6 +171,7 @@ public partial class FPSCamera : Camera3D
 	/// <summary>
 	/// Updates camera movement based on WASD keys.
 	/// Movement is horizontal only (Y position is fixed by parent).
+	/// When a validator is set, movement is checked against collision.
 	/// </summary>
 	private void UpdateMovement(float delta)
 	{
@@ -188,8 +202,28 @@ public partial class FPSCamera : Camera3D
 			_velocity.X = Mathf.Clamp(_velocity.X + offset.X, -_velMultiplier, _velMultiplier);
 			_velocity.Z = Mathf.Clamp(_velocity.Z + offset.Z, -_velMultiplier, _velMultiplier);
 
-			// Translate in camera's local space (horizontal only)
-			Translate(new Vector3(_velocity.X, 0, _velocity.Z) * delta * speedMulti);
+			// Calculate desired movement in local space
+			Vector3 localMovement = new Vector3(_velocity.X, 0, _velocity.Z) * delta * speedMulti;
+
+			if (_validateMovement != null)
+			{
+				// Convert local movement to global movement
+				Vector3 currentGlobal = GlobalPosition;
+				Vector3 desiredGlobal = currentGlobal + GlobalTransform.Basis * localMovement;
+
+				// Validate the movement (only X and Z; Y is controlled by parent)
+				(float validX, float validZ) = _validateMovement(
+					currentGlobal.X, currentGlobal.Z,
+					desiredGlobal.X, desiredGlobal.Z);
+
+				// Apply validated global position
+				GlobalPosition = new Vector3(validX, currentGlobal.Y, validZ);
+			}
+			else
+			{
+				// No validator - direct movement (NoClip mode or uninitialized)
+				Translate(localMovement);
+			}
 		}
 
 		// Enforce fixed height - reset Y to 0 (parent handles world Y position)

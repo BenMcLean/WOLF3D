@@ -297,6 +297,59 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	public IReadOnlyList<PushWall> PushWalls => simulator?.PushWalls;
 
+	#region Player Movement Validation
+	/// <summary>
+	/// Validates a desired movement and returns the adjusted position.
+	/// Call this before applying position changes to check for collisions.
+	/// Implements wall-sliding: if blocked in one axis, tries sliding along the other.
+	/// </summary>
+	/// <param name="currentX">Current X position in meters (Godot X)</param>
+	/// <param name="currentZ">Current Z position in meters (Godot Z = Wolf3D Y)</param>
+	/// <param name="desiredX">Desired X position in meters</param>
+	/// <param name="desiredZ">Desired Z position in meters</param>
+	/// <returns>Validated position (X, Z) in meters</returns>
+	public (float X, float Z) ValidateMovement(float currentX, float currentZ, float desiredX, float desiredZ)
+	{
+		if (simulator == null)
+			return (desiredX, desiredZ);
+
+		// Convert meters to fixed-point
+		int currentFixedX = currentX.ToFixedPoint();
+		int currentFixedY = currentZ.ToFixedPoint();  // Godot Z = Wolf3D Y
+		int desiredFixedX = desiredX.ToFixedPoint();
+		int desiredFixedY = desiredZ.ToFixedPoint();
+
+		// HeadXZ in fixed-point (meters to fixed-point)
+		int headSize = Constants.HeadXZ.ToFixedPoint();
+
+		// Validate through simulator
+		(int validX, int validY) = simulator.ValidatePlayerMove(
+			currentFixedX, currentFixedY,
+			desiredFixedX, desiredFixedY,
+			headSize);
+
+		// Convert back to meters (Wolf3D Y back to Godot Z)
+		return (validX.ToMeters(), validY.ToMeters());
+	}
+
+	/// <summary>
+	/// Sets or clears NoClip mode. When enabled, player can walk through walls.
+	/// Based on original Wolf3D "MLI" debug/cheat command.
+	/// </summary>
+	/// <param name="enabled">True to enable NoClip, false to disable</param>
+	public void SetNoClip(bool enabled)
+	{
+		if (simulator != null)
+			simulator.NoClip = enabled;
+	}
+
+	/// <summary>
+	/// Gets the current NoClip mode state.
+	/// </summary>
+	/// <returns>True if NoClip is enabled</returns>
+	public bool GetNoClip() => simulator?.NoClip ?? false;
+	#endregion
+
 	/// <summary>
 	/// Event fired when an elevator is activated, triggering level transition.
 	/// WL_AGENT.C:Cmd_Use elevator activation logic (line 1767).

@@ -100,4 +100,11 @@ public interface IDisplayMode
 	/// Get turn input from right thumbstick or mouse.
 	/// </summary>
 	Vector2 GetTurnInput();
+
+	/// <summary>
+	/// Sets the movement validator callback for collision detection.
+	/// When set, movement will be validated against walls, doors, and enemies.
+	/// </summary>
+	/// <param name="validator">Callback that takes (currentX, currentZ, desiredX, desiredZ) and returns validated (X, Z)</param>
+	void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator);
 }

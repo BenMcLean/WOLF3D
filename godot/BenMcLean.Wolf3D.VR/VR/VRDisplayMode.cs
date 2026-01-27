@@ -16,6 +16,10 @@ public class VRDisplayMode : IDisplayMode
 	private XRController3D _rightController;
 	private Node _parent;
 
+	// Movement validation for collision detection
+	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
+	private Vector3 _lastValidHmdPosition;
+
 	public event Action<string> PrimaryButtonPressed;
 	public event Action<string> PrimaryButtonReleased;
 	public event Action<string> SecondaryButtonPressed;
@@ -97,7 +101,50 @@ public class VRDisplayMode : IDisplayMode
 	public void Update(double delta)
 	{
 		// VR tracking is handled automatically by OpenXR
-		// This method can be used for any per-frame VR-specific logic
+		// Validate HMD position against collision and push origin back if needed
+		ValidateVRPosition();
+	}
+
+	/// <summary>
+	/// Validates the VR headset position against collision.
+	/// If the player physically moves into a wall, the XROrigin is pushed back to compensate.
+	/// </summary>
+	private void ValidateVRPosition()
+	{
+		if (_validateMovement == null || _camera == null || _origin == null)
+			return;
+
+		// Get current HMD world position
+		Vector3 hmdGlobal = _camera.GlobalPosition;
+
+		// On first frame, initialize last valid position
+		if (_lastValidHmdPosition == Vector3.Zero)
+		{
+			_lastValidHmdPosition = hmdGlobal;
+			return;
+		}
+
+		// Validate the movement from last valid position to current HMD position
+		(float validX, float validZ) = _validateMovement(
+			_lastValidHmdPosition.X, _lastValidHmdPosition.Z,
+			hmdGlobal.X, hmdGlobal.Z);
+
+		// If position was adjusted, push XROrigin to compensate
+		float deltaX = validX - hmdGlobal.X;
+		float deltaZ = validZ - hmdGlobal.Z;
+
+		if (Mathf.Abs(deltaX) > 0.001f || Mathf.Abs(deltaZ) > 0.001f)
+		{
+			// Push origin by the correction amount
+			Vector3 originPos = _origin.GlobalPosition;
+			_origin.GlobalPosition = new Vector3(
+				originPos.X + deltaX,
+				originPos.Y,
+				originPos.Z + deltaZ);
+		}
+
+		// Update last valid position (the validated position, not the raw HMD)
+		_lastValidHmdPosition = new Vector3(validX, hmdGlobal.Y, validZ);
 	}
 
 	public Vector2 GetMovementInput()
@@ -116,5 +163,12 @@ public class VRDisplayMode : IDisplayMode
 
 		// Right thumbstick for turning
 		return _rightController.GetVector2("primary");
+	}
+
+	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator)
+	{
+		_validateMovement = validator;
+		// Reset last valid position so it gets initialized on next Update
+		_lastValidHmdPosition = Vector3.Zero;
 	}
 }

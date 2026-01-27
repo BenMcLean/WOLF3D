@@ -187,6 +187,10 @@ void sky() {
 			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
 			() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
+		// Wire up movement validation for collision detection
+		// This enables wall collision and wall-sliding behavior
+		_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
+
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
 
