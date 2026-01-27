@@ -26,12 +26,18 @@ public class LuaScriptEngine
 	public IScriptContext CurrentContext { get; set; }
 
 	/// <summary>
-	/// Creates a new LuaScriptEngine with default ActorScriptContext and ActionScriptContext support.
+	/// Creates a new LuaScriptEngine with default action stage context support.
+	/// Includes ActorScriptContext, ActionScriptContext, and ItemScriptContext.
 	/// Used by the action stage (Simulator). For menu scripts, use the constructor that takes contextTypes.
 	/// </summary>
 	/// <param name="logger">Logger for debug output</param>
+	/// <remarks>
+	/// IMPORTANT: Context types must be listed base-classes-first so that shared methods
+	/// (like GetPlayerHealth) are registered with the common base type's check. This allows
+	/// sibling context types (like ActorScriptContext and ItemScriptContext) to both work.
+	/// </remarks>
 	public LuaScriptEngine(ILogger logger = null)
-		: this([typeof(ActorScriptContext), typeof(ActionScriptContext)], logger)
+		: this([typeof(ActionScriptContext), typeof(ActorScriptContext), typeof(ItemScriptContext)], logger)
 	{
 	}
 

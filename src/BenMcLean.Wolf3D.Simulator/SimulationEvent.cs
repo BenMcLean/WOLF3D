@@ -340,3 +340,41 @@ public struct ElevatorSwitchFlippedEvent
 	/// <summary>New (pressed) wall texture page number</summary>
 	public required ushort NewTexture { get; init; }
 }
+
+/// <summary>
+/// Player state changed (health, ammo, score, lives, keys, weapons).
+/// Triggered by item pickups, damage, scoring, etc.
+/// Presentation layer uses this to update HUD/status bar.
+/// </summary>
+public struct PlayerStateChangedEvent
+{
+	/// <summary>Current health (0-100 typical)</summary>
+	public required int Health { get; init; }
+	/// <summary>Current score</summary>
+	public required int Score { get; init; }
+	/// <summary>Current lives</summary>
+	public required int Lives { get; init; }
+	/// <summary>Current ammo for primary ammo type ("bullets")</summary>
+	public required int Ammo { get; init; }
+	/// <summary>Which keys the player has (bitmask or list)</summary>
+	public required int KeyFlags { get; init; }
+}
+
+/// <summary>
+/// A bonus item should play a sound at its position.
+/// Triggered by item pickup scripts (WL_AGENT.C:GetBonus).
+/// Presentation layer plays positional sound at item location.
+/// </summary>
+public struct BonusPlaySoundEvent
+{
+	/// <summary>Index in StatObjList array</summary>
+	public required int StatObjIndex { get; init; }
+	/// <summary>Tile X coordinate of the item</summary>
+	public required ushort TileX { get; init; }
+	/// <summary>Tile Y coordinate of the item</summary>
+	public required ushort TileY { get; init; }
+	/// <summary>Sound name to play (e.g., "HEALTH1SND", "GETKEYSND")</summary>
+	public required string SoundName { get; init; }
+	/// <summary>True if this is a digitized sound, false for AdLib/PC speaker</summary>
+	public required bool IsDigiSound { get; init; }
+}

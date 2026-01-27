@@ -1084,12 +1084,51 @@
 				Static object type definitions. Maps info plane tile numbers to sprite pages
 				and object properties. Equivalent to the statinfo[] array in WL_ACT1.C.
 				Contains decorations, pickups, enemy spawners, player start, etc.
+				Also contains BonusScript definitions for item pickup behavior.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element ref="BonusScript"/>
 				<xs:element ref="ObjectType"/>
 			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="BonusScript">
+		<xs:annotation>
+			<xs:documentation>
+				Named Lua script for item pickup behavior.
+				Referenced by ObjectType elements via Script attribute.
+				Can also be referenced by enemy drop definitions.
+
+				Script receives ItemScriptContext with player state methods.
+				Return true to consume the item, false to leave it.
+
+				Example:
+				&lt;BonusScript Name="health_small"&gt;
+				if GetPlayerHealth() &lt; GetPlayerMaxHealth() then
+				    HealPlayer(4)
+				    PlayLocalDigiSound("HEALTH1SND")
+				    return true
+				end
+				return false
+				&lt;/BonusScript&gt;
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="Name" type="xs:string" use="required">
+						<xs:annotation>
+							<xs:documentation>
+								Unique identifier for this script.
+								Referenced by ObjectType Script attribute and enemy drop definitions.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:extension>
+			</xs:simpleContent>
 		</xs:complexType>
 	</xs:element>
 
@@ -1098,13 +1137,10 @@
 			<xs:documentation>
 				Map tile object - can be decoration, pickup, enemy spawn, or special marker.
 				Replaces Billboard, Pickup, Spawn, Start elements with unified structure.
-				Behavior is defined via optional Script element or handled by C# code.
+				Behavior is defined via Script attribute referencing a BonusScript.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="Script" type="xs:string" minOccurs="0"/>
-			</xs:sequence>
 			<!-- Map tile properties -->
 			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
@@ -1120,6 +1156,14 @@
 			<!-- Pickup properties -->
 			<xs:attribute name="Treasure" type="xs:boolean"/>
 			<xs:attribute name="Sound" type="xs:string"/>
+			<xs:attribute name="Script" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Reference to a BonusScript by Name.
+						Script determines pickup behavior (e.g., conditional health pickup).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 
 			<!-- Enemy spawn properties -->
 			<xs:attribute name="Actor" type="xs:string"/>

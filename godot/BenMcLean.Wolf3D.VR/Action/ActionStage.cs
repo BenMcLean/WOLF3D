@@ -142,6 +142,7 @@ void sky() {
 		// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
 		_bonuses = new Bonuses(
 			VRAssetManager.SpriteMaterials,
+			Shared.SharedAssetManager.DigiSounds,      // Digi sounds for pickup sounds
 			() => _displayMode.ViewerYRotation);  // Delegate returns camera Y rotation for billboard effect
 		AddChild(_bonuses);
 
@@ -188,6 +189,9 @@ void sky() {
 
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
+
+		// Subscribe to player state changes to update status bar
+		_simulatorController.PlayerStateChanged += OnPlayerStateChanged;
 
 		// Create pixel-perfect aiming system
 		_pixelPerfectAiming = new PixelPerfectAiming(this);
@@ -468,6 +472,25 @@ void sky() {
 
 		// Queue a deferred call to reload the stage (can't change scene tree during event handling)
 		CallDeferred(nameof(ReloadLevel));
+	}
+
+	/// <summary>
+	/// Handles player state changes - updates status bar.
+	/// WL_AGENT.C:GetBonus, TakeDamage, GivePoints, etc.
+	/// </summary>
+	private void OnPlayerStateChanged(PlayerStateChangedEvent e)
+	{
+		if (_statusBarState == null)
+			return;
+
+		_statusBarState.SetValue("Health", e.Health);
+		_statusBarState.SetValue("Score", e.Score);
+		_statusBarState.SetValue("Lives", e.Lives);
+		_statusBarState.SetValue("Ammo", e.Ammo);
+
+		// Decode key flags (bit 0 = gold, bit 1 = silver)
+		_statusBarState.SetValue("Gold Key", (e.KeyFlags & 1) != 0 ? 1 : 0);
+		_statusBarState.SetValue("Silver Key", (e.KeyFlags & 2) != 0 ? 1 : 0);
 	}
 
 	/// <summary>

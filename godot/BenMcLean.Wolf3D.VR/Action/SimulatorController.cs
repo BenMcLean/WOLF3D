@@ -82,11 +82,20 @@ public partial class SimulatorController : Node3D
 		// Subscribe to elevator activation for level transitions
 		simulator.ElevatorActivated += e => ElevatorActivated?.Invoke(e);
 
+		// Forward player state changes to presentation layer for HUD updates
+		simulator.PlayerStateChanged += e => PlayerStateChanged?.Invoke(e);
+
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
 		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis, mapAnalysis.Doors);
 		// Load pushwalls into simulator (no spawn events - pushwalls are fixed count)
 		simulator.LoadPushWallsFromMapAnalysis(mapAnalysis.PushWalls);
+
+		// Load item scripts from game configuration
+		// Scripts define conditional pickup behavior (e.g., health only if needed)
+		(System.Collections.Generic.Dictionary<string, string> scripts,
+		 System.Collections.Generic.Dictionary<byte, string> itemNumberToScript) = mapAnalyzer.GetItemScripts();
+		simulator.LoadItemScripts(scripts, itemNumberToScript);
 
 		// Load bonuses into simulator - emits BonusSpawnedEvent for each bonus
 		// VR layer receives these events and displays bonuses
@@ -127,8 +136,8 @@ public partial class SimulatorController : Node3D
 			GD.Print("Equipping pistol to slot 0");
 			simulator.EquipWeapon(0, "pistol");
 
-			// Set initial ammo
-			simulator.SetAmmo("bullets", 99);  // Plenty for testing (original Wolf3D starts with 8)
+			// Set initial ammo (original Wolf3D starts with 8)
+			simulator.SetAmmo("bullets", 8);
 			GD.Print("Weapon initialization complete");
 		}
 		else
@@ -293,4 +302,10 @@ public partial class SimulatorController : Node3D
 	/// WL_AGENT.C:Cmd_Use elevator activation logic (line 1767).
 	/// </summary>
 	public event Action<ElevatorActivatedEvent> ElevatorActivated;
+
+	/// <summary>
+	/// Event fired when player state changes (health, ammo, score, lives, keys).
+	/// Used to update HUD/status bar in presentation layer.
+	/// </summary>
+	public event Action<PlayerStateChangedEvent> PlayerStateChanged;
 }

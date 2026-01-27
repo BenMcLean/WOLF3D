@@ -28,12 +28,15 @@ public abstract class EntityScriptContext : ActionScriptContext
 	/// <summary>
 	/// Play a digitized sound effect at this entity's position.
 	/// Uses spatial audio - sound will be positioned in 3D space.
+	/// Uses PlayDigiSoundAction if wired (which should emit a positional sound event).
 	/// </summary>
 	public virtual void PlayLocalDigiSound(string soundName)
 	{
-		// TODO: Emit event for VR layer to play positional sound
-		// simulator.EmitPlaySoundEvent(soundName, isPositional: true, x: entityX, y: entityY);
-		_logger?.LogDebug("EntityScriptContext: PlayLocalDigiSound({soundName}) at ({x}, {y})",
-			soundName, entityX, entityY);
+		// Use PlayDigiSoundAction - the caller should wire this to emit positional sound
+		if (PlayDigiSoundAction != null)
+			PlayDigiSoundAction(soundName);
+		else
+			_logger?.LogDebug("EntityScriptContext: PlayLocalDigiSound({soundName}) at ({x}, {y}) - no handler wired",
+				soundName, entityX, entityY);
 	}
 }

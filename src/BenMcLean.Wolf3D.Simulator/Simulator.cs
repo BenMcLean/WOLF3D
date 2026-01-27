@@ -83,6 +83,18 @@ public class Simulator
 	// Derived player tile coordinates
 	public ushort PlayerTileX => (ushort)(PlayerX >> 16);
 	public ushort PlayerTileY => (ushort)(PlayerY >> 16);
+	// Player state (WL_DEF.H:gametype structure)
+	private int playerHealth = 100;
+	private int playerMaxHealth = 100;
+	private int playerScore = 0;
+	private int playerLives = 3;
+	private readonly HashSet<int> playerKeys = [];
+	private readonly HashSet<string> playerWeapons = ["knife", "pistol"];
+	private readonly Dictionary<string, int> maxAmmoCapacity = new() { ["bullets"] = 99 };
+	// Item scripts loaded from game config (maps script name to Lua code)
+	private Dictionary<string, string> itemScripts = new();
+	// Map from ItemNumber (byte) to script name for lookup
+	private Dictionary<byte, string> itemNumberToScript = new();
 	#region C# Events for Observer Pattern
 	/// <summary>
 	/// Fired when a door starts opening (position was 0).
@@ -202,6 +214,17 @@ public class Simulator
 	/// WL_AGENT.C:Cmd_Use - tilemap[checkx][checky]++
 	/// </summary>
 	public event Action<ElevatorSwitchFlippedEvent> ElevatorSwitchFlipped;
+	/// <summary>
+	/// Fired when player state changes (health, ammo, score, lives, keys, weapons).
+	/// Used by presentation layer to update status bar/HUD.
+	/// </summary>
+	public event Action<PlayerStateChangedEvent> PlayerStateChanged;
+	/// <summary>
+	/// Fired when a bonus item plays a sound.
+	/// WL_AGENT.C:GetBonus sound effects
+	/// Presentation layer plays sound at item's position.
+	/// </summary>
+	public event Action<BonusPlaySoundEvent> BonusPlaySound;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -230,9 +253,18 @@ public class Simulator
 	/// <param name="playerY">Player Y position in 16.16 fixed-point (from HMD tracking)</param>
 	public void Update(double deltaTime, int playerX, int playerY)
 	{
+		// Store previous position before update
+		int prevX = PlayerX;
+		int prevY = PlayerY;
+
 		// Update player position from presentation layer
 		PlayerX = playerX;
 		PlayerY = playerY;
+
+		// Check for item pickups when player position changes
+		// WL_AGENT.C:ClipMove checks for bonus collision
+		if (PlayerX != prevX || PlayerY != prevY)
+			CheckItemPickups();
 
 		accumulatedTime += deltaTime;
 		// WL_DRAW.C:CalcTics - calculate tics since last refresh
@@ -989,7 +1021,7 @@ public class Simulator
 				spawn.Y,
 				(short)spawn.Shape,  // Cast ushort to short (safe, shape numbers are small)
 				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
-				(byte)spawn.Type);  // itemnumber (ObClass enum -> byte)
+				(byte)spawn.ObjectCode);  // itemnumber - ObjectType Number for script lookup
 
 			// Emit spawn event for VR layer to display the bonus
 			// Shape values: -2 = invisible trigger (Noah's Ark), >= 0 = visible
@@ -999,7 +1031,7 @@ public class Simulator
 				Shape = (short)spawn.Shape,
 				TileX = spawn.X,
 				TileY = spawn.Y,
-				ItemNumber = (byte)spawn.Type
+				ItemNumber = (byte)spawn.ObjectCode
 			});
 
 			lastStatObj++;
@@ -1483,6 +1515,327 @@ public class Simulator
 		}
 	}
 	#endregion
+
+	#region Player State Management
+	/// <summary>
+	/// Get player's current health.
+	/// WL_DEF.H:gametype:health
+	/// </summary>
+	public int GetPlayerHealth() => playerHealth;
+
+	/// <summary>
+	/// Get player's maximum health capacity.
+	/// </summary>
+	public int GetPlayerMaxHealth() => playerMaxHealth;
+
+	/// <summary>
+	/// Get player's current score.
+	/// WL_DEF.H:gametype:score
+	/// </summary>
+	public int GetPlayerScore() => playerScore;
+
+	/// <summary>
+	/// Get player's current lives.
+	/// WL_DEF.H:gametype:lives
+	/// </summary>
+	public int GetPlayerLives() => playerLives;
+
+	/// <summary>
+	/// Get maximum ammo capacity for an ammo type.
+	/// </summary>
+	public int GetMaxAmmo(string ammoType) =>
+		maxAmmoCapacity.TryGetValue(ammoType, out int max) ? max : 99;
+
+	/// <summary>
+	/// Check if player has a specific key.
+	/// WL_DEF.H:gametype:keys
+	/// </summary>
+	public bool PlayerHasKey(int keyType) => playerKeys.Contains(keyType);
+
+	/// <summary>
+	/// Check if player has a specific weapon.
+	/// WL_DEF.H:gametype:bestweapon
+	/// </summary>
+	public bool PlayerHasWeapon(string weaponType) => playerWeapons.Contains(weaponType);
+
+	/// <summary>
+	/// Heal the player (capped at max health).
+	/// WL_AGENT.C:GetBonus health logic
+	/// </summary>
+	public void HealPlayer(int amount)
+	{
+		playerHealth = Math.Min(playerHealth + amount, playerMaxHealth);
+		EmitPlayerStateChanged();
+	}
+
+	/// <summary>
+	/// Damage the player.
+	/// WL_AGENT.C:TakeDamage
+	/// </summary>
+	public void DamagePlayer(int amount)
+	{
+		playerHealth = Math.Max(0, playerHealth - amount);
+		EmitPlayerStateChanged();
+		// TODO: Check for death
+	}
+
+	/// <summary>
+	/// Give ammo to player (capped at max).
+	/// WL_AGENT.C:GetBonus ammo logic
+	/// </summary>
+	public void GiveAmmo(string ammoType, int amount)
+	{
+		int max = GetMaxAmmo(ammoType);
+		int current = GetAmmo(ammoType);
+		ammoInventory[ammoType] = Math.Min(current + amount, max);
+		EmitPlayerStateChanged();
+	}
+
+	/// <summary>
+	/// Give a key to the player.
+	/// WL_AGENT.C:GetBonus key logic
+	/// </summary>
+	public void GiveKey(int keyType)
+	{
+		playerKeys.Add(keyType);
+		EmitPlayerStateChanged();
+	}
+
+	/// <summary>
+	/// Give a weapon to the player.
+	/// WL_AGENT.C:GetBonus weapon logic
+	/// </summary>
+	public void GiveWeapon(string weaponType)
+	{
+		playerWeapons.Add(weaponType);
+		EmitPlayerStateChanged();
+	}
+
+	/// <summary>
+	/// Add to player's score.
+	/// WL_AGENT.C:GetBonus score logic
+	/// </summary>
+	public void AddScore(int points)
+	{
+		playerScore += points;
+		EmitPlayerStateChanged();
+		// TODO: Check for extra life at score thresholds
+	}
+
+	/// <summary>
+	/// Give player an extra life.
+	/// WL_AGENT.C:GetBonus extra life
+	/// </summary>
+	public void GiveExtraLife()
+	{
+		playerLives++;
+		// Also typically fills health and ammo
+		playerHealth = playerMaxHealth;
+		EmitPlayerStateChanged();
+	}
+
+	/// <summary>
+	/// Emit a PlayerStateChanged event to update HUD/status bar.
+	/// </summary>
+	private void EmitPlayerStateChanged()
+	{
+		// Compute key flags as bitmask
+		int keyFlags = 0;
+		foreach (int key in playerKeys)
+			keyFlags |= (1 << key);
+
+		PlayerStateChanged?.Invoke(new PlayerStateChangedEvent
+		{
+			Health = playerHealth,
+			Score = playerScore,
+			Lives = playerLives,
+			Ammo = GetAmmo("bullets"),
+			KeyFlags = keyFlags
+		});
+	}
+
+	/// <summary>
+	/// Emit a BonusPlaySound event for positional audio at an item's location.
+	/// </summary>
+	public void EmitBonusPlaySound(int statObjIndex, ushort tileX, ushort tileY, string soundName, bool isDigiSound)
+	{
+		BonusPlaySound?.Invoke(new BonusPlaySoundEvent
+		{
+			StatObjIndex = statObjIndex,
+			TileX = tileX,
+			TileY = tileY,
+			SoundName = soundName,
+			IsDigiSound = isDigiSound
+		});
+	}
+
+	/// <summary>
+	/// Emit a PlayGlobalSound event for non-positional audio.
+	/// </summary>
+	public void EmitPlayGlobalSound(string soundName)
+	{
+		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
+		{
+			SoundName = soundName
+		});
+	}
+
+	/// <summary>
+	/// Set player health directly (for initialization/save loading).
+	/// </summary>
+	public void SetPlayerHealth(int health) => playerHealth = Math.Max(0, Math.Min(health, playerMaxHealth));
+
+	/// <summary>
+	/// Set player score directly (for initialization/save loading).
+	/// </summary>
+	public void SetPlayerScore(int score) => playerScore = score;
+
+	/// <summary>
+	/// Set player lives directly (for initialization/save loading).
+	/// </summary>
+	public void SetPlayerLives(int lives) => playerLives = lives;
+
+	/// <summary>
+	/// Load item scripts from game configuration.
+	/// Called during level load to set up item pickup behavior.
+	/// </summary>
+	/// <param name="scripts">Dictionary mapping script name to Lua code</param>
+	/// <param name="itemNumberToScriptMap">Dictionary mapping ItemNumber (byte) to script name</param>
+	public void LoadItemScripts(Dictionary<string, string> scripts, Dictionary<byte, string> itemNumberToScriptMap)
+	{
+		itemScripts = scripts ?? new();
+		itemNumberToScript = itemNumberToScriptMap ?? new();
+
+		logger?.LogInformation("LoadItemScripts: Loaded {ScriptCount} scripts, {MappingCount} item->script mappings",
+			itemScripts.Count, itemNumberToScript.Count);
+
+		foreach (KeyValuePair<byte, string> mapping in itemNumberToScript)
+			logger?.LogDebug("  ItemNumber {ItemNumber} -> Script '{ScriptName}'", mapping.Key, mapping.Value);
+	}
+
+	/// <summary>
+	/// Check for item pickups based on player position.
+	/// Items have a 1-tile bounding box (half tile from center to each edge).
+	/// Executes item script if collision detected - script returns true to consume item.
+	/// WL_AGENT.C:ClipMove checks for bonus collision with same box model.
+	/// </summary>
+	private void CheckItemPickups()
+	{
+		// Player position in fixed-point 16.16
+		// Items are centered on their tile - collision box extends half tile in each direction
+		const int HALF_TILE = 0x8000; // Half tile in fixed-point (0.5 * 0x10000)
+
+		for (int i = 0; i < lastStatObj; i++)
+		{
+			StatObj item = StatObjList[i];
+
+			// Skip empty/despawned slots
+			if (item == null || item.IsFree)
+				continue;
+
+			// Item center in fixed-point coordinates
+			int itemCenterX = (item.TileX << 16) + HALF_TILE;
+			int itemCenterY = (item.TileY << 16) + HALF_TILE;
+
+			// Check if player is within 1 tile of item center (box collision)
+			// Distance must be < 1 tile in both X and Y
+			int deltaX = Math.Abs(PlayerX - itemCenterX);
+			int deltaY = Math.Abs(PlayerY - itemCenterY);
+
+			if (deltaX < 0x10000 && deltaY < 0x10000)
+			{
+				// Player is touching item - try to pick it up
+				if (TryPickupItem(i, item))
+				{
+					// Item was consumed - mark as despawned
+					item.ShapeNum = -1;
+
+					// Emit pickup event for presentation layer
+					BonusPickedUp?.Invoke(new BonusPickedUpEvent
+					{
+						StatObjIndex = i,
+						TileX = item.TileX,
+						TileY = item.TileY,
+						ItemNumber = item.ItemNumber
+					});
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Attempt to pick up an item using its Lua script.
+	/// Script returns true if item should be consumed, false otherwise.
+	/// </summary>
+	/// <param name="itemIndex">Index in StatObjList</param>
+	/// <param name="item">The item to pick up</param>
+	/// <returns>True if item was consumed, false if not (e.g., health at max)</returns>
+	private bool TryPickupItem(int itemIndex, StatObj item)
+	{
+		// Look up script name by ItemNumber
+		if (!itemNumberToScript.TryGetValue(item.ItemNumber, out string scriptName))
+		{
+			// No script mapping - item has no script, consume by default
+			logger?.LogWarning("TryPickupItem: No script mapping for ItemNumber {ItemNumber} (index {Index}). Available keys: {Keys}",
+				item.ItemNumber, itemIndex,
+				string.Join(", ", itemNumberToScript.Keys.Select(k => k.ToString())));
+			return true;
+		}
+
+		if (!itemScripts.TryGetValue(scriptName, out string script))
+		{
+			// Script name not found - consume by default
+			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' not found in itemScripts. Available: {Scripts}",
+				scriptName, string.Join(", ", itemScripts.Keys));
+			return true;
+		}
+
+		if (string.IsNullOrWhiteSpace(script))
+		{
+			// Empty script - consume by default
+			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' is empty or whitespace", scriptName);
+			return true;
+		}
+
+		logger?.LogDebug("TryPickupItem: Running script '{ScriptName}' for ItemNumber {ItemNumber}", scriptName, item.ItemNumber);
+
+		// Create script context for this item
+		Lua.ItemScriptContext context = new(
+			this,
+			item,
+			itemIndex,
+			rng,
+			gameClock,
+			logger);
+
+		// Wire up sound callbacks - these emit events for the VR layer
+		context.PlayAdLibSoundAction = soundName =>
+			EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: false);
+		context.PlayDigiSoundAction = soundName =>
+			EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true);
+
+		try
+		{
+			// Execute the item script
+			MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(script, context);
+
+			// Script returns true to consume, false to leave
+			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
+				return result.Boolean;
+
+			// If script doesn't return a boolean, default to consume
+			return true;
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing item script '{ScriptName}' at ({TileX}, {TileY})",
+				scriptName, item.TileX, item.TileY);
+			// On error, don't consume (safer default)
+			return false;
+		}
+	}
+	#endregion
+
 	/// <summary>
 	/// Helper for ActorScriptContext.MoveObj() - fires ActorMovedEvent.
 	/// </summary>

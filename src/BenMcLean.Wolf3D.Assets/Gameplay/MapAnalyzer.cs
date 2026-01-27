@@ -33,6 +33,9 @@ public class MapAnalyzer
 	// Object metadata
 	public Dictionary<ushort, ObjectInfo> Objects { get; private set; }
 
+	// Bonus scripts (script name -> Lua code)
+	public Dictionary<string, string> BonusScripts { get; private set; }
+
 	// Patrol tile metadata (map layer)
 	public Dictionary<ushort, Direction> PatrolTiles { get; private set; }
 
@@ -124,9 +127,20 @@ public class MapAnalyzer
 			if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(shape))
 				States[name] = shape;
 		}
+		// Parse named BonusScript elements (script name -> Lua code)
+		IEnumerable<XElement> bonusScriptElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("BonusScript") ?? Enumerable.Empty<XElement>();
+		BonusScripts = new Dictionary<string, string>();
+		foreach (XElement scriptElement in bonusScriptElements)
+		{
+			string scriptName = scriptElement.Attribute("Name")?.Value;
+			string scriptCode = scriptElement.Value;
+			if (!string.IsNullOrEmpty(scriptName) && !string.IsNullOrEmpty(scriptCode))
+				BonusScripts[scriptName] = scriptCode;
+		}
+
 		// Parse object metadata - unified <ObjectType> elements
-		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? [];
-		Objects = [];
+		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? Enumerable.Empty<XElement>();
+		Objects = new Dictionary<ushort, ObjectInfo>();
 
 		foreach (XElement obj in objectElements)
 		{
@@ -159,10 +173,15 @@ public class MapAnalyzer
 			// Parse actor type (for ObClass.actor - guard, ss, dog, etc.)
 			string actorType = obj.Attribute("Actor")?.Value,
 			// Parse initial state (for actors - s_grdstand, s_grdpath1, etc.)
-				initialState = obj.Attribute("State")?.Value;
+				initialState = obj.Attribute("State")?.Value,
+			// Parse object name
+				objectName = obj.Attribute("Name")?.Value,
+			// Parse script reference (name of BonusScript to use)
+				scriptRef = obj.Attribute("Script")?.Value;
 			ObjectInfo info = new()
 			{
 				Number = number,
+				Name = objectName,
 				ObjectClass = objectClass,
 				Actor = actorType,
 				Page = page,
@@ -171,7 +190,8 @@ public class MapAnalyzer
 				Ambush = obj.IsTrue("Ambush"),
 				IsEnemy = objectClass == ObClass.actor,  // Actors are enemies
 				IsActive = objectClass == ObClass.actor,  // Actors are active objects
-				State = initialState
+				State = initialState,
+				Script = scriptRef  // Now stores script NAME, not code
 			};
 			Objects[number] = info;
 		}
@@ -220,6 +240,30 @@ public class MapAnalyzer
 		|| y < map.Depth - 1 && IsTransparent(map.GetMapData(x, (ushort)(y + 1)), map.GetObjectData(x, (ushort)(y + 1)));
 	public ObjectInfo GetObjectInfo(ushort objectCode) =>
 		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
+
+	/// <summary>
+	/// Build item script dictionaries for the Simulator.
+	/// Returns the named BonusScripts dictionary and a mapping from item number to script name.
+	/// </summary>
+	/// <returns>Tuple of (script name to code, item number to script name) dictionaries</returns>
+	public (Dictionary<string, string> Scripts, Dictionary<byte, string> ItemNumberToScript) GetItemScripts()
+	{
+		Dictionary<byte, string> itemNumberToScript = new();
+
+		foreach (KeyValuePair<ushort, ObjectInfo> kvp in Objects)
+		{
+			ushort number = kvp.Key;
+			ObjectInfo info = kvp.Value;
+
+			// Map item number to script name (if script reference exists)
+			if (number <= byte.MaxValue && !string.IsNullOrEmpty(info.Script))
+				itemNumberToScript[(byte)number] = info.Script;
+		}
+
+		// Return the BonusScripts dictionary directly (script name -> code)
+		// and the item number to script name mapping
+		return (new Dictionary<string, string>(BonusScripts), itemNumberToScript);
+	}
 
 	// Wolf3D object class categorization (using enum)
 	private static bool IsPlayerStart(ObClass? obclass) => obclass == ObClass.playerobj;
@@ -317,7 +361,16 @@ public class MapAnalyzer
 		public ReadOnlyCollection<ActorSpawn> ActorSpawns { get; private set; }
 
 		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
-		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort Shape, ushort X, ushort Y);
+		/// <summary>
+		/// Static object spawn data.
+		/// </summary>
+		/// <param name="StatType">Category for rendering (dressing, block, bonus)</param>
+		/// <param name="Type">Object class enum</param>
+		/// <param name="ObjectCode">Original ObjectType Number from map data (used for script lookup)</param>
+		/// <param name="Shape">VSwap sprite page number</param>
+		/// <param name="X">Tile X coordinate</param>
+		/// <param name="Y">Tile Y coordinate</param>
+		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort ObjectCode, ushort Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
 
 		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
@@ -461,7 +514,7 @@ public class MapAnalyzer
 				else if (IsStatic(objectClass))
 				{
 					StatType statType = GetStatType(objectClass);
-					statics.Add(new StaticSpawn(statType, objectClass, objInfo.Page, x, y));
+					statics.Add(new StaticSpawn(statType, objectClass, objectCode, objInfo.Page, x, y));
 				}
 			}
 
@@ -636,6 +689,7 @@ public record ElevatorConfig
 public record ObjectInfo
 {
 	public ushort Number { get; init; }      // Tile number in map
+	public string Name { get; init; }        // Name identifier for scripting/lookup
 	public ObClass? ObjectClass { get; init; } // Wolf3D obclass (classtype or stat_t)
 	public string Actor { get; init; }       // Actor type for ObClass.actor (guard, ss, dog, etc.)
 	public ushort Page { get; init; }        // VSwap sprite page number for rendering
@@ -645,6 +699,12 @@ public record ObjectInfo
 	public bool IsEnemy { get; init; }       // Counts toward kill percentage (gamestate.killcount/killtotal)
 	public bool IsActive { get; init; }      // Active object (classtype vs stat_t)
 	public string State { get; init; }       // Initial state for actors (e.g., "s_grdstand", "s_grdpath1")
+	/// <summary>
+	/// Reference to a BonusScript by name for item pickup behavior.
+	/// The named script is looked up from MapAnalyzer.BonusScripts.
+	/// Script returns true to consume the item, false to leave it.
+	/// </summary>
+	public string Script { get; init; }
 }
 
 /// <summary>
