@@ -80,6 +80,11 @@ public class Simulator
 	// WL_DEF.H:player->x, player->y (16.16 fixed-point)
 	public int PlayerX { get; private set; }
 	public int PlayerY { get; private set; }
+	/// <summary>
+	/// When true, player movement bypasses all collision checks.
+	/// Based on original Wolf3D "MLI" debug/cheat command.
+	/// </summary>
+	public bool NoClip { get; set; } = false;
 	// Derived player tile coordinates
 	public ushort PlayerTileX => (ushort)(PlayerX >> 16);
 	public ushort PlayerTileY => (ushort)(PlayerY >> 16);
@@ -636,8 +641,33 @@ public class Simulator
 		if (pushWall.Action != PushWallAction.Pushing)
 			return;
 
-		// Rule 4: Track which tile is currently blocked before moving
-		(ushort oldTileX, ushort oldTileY) = pushWall.GetTilePosition();
+		// Calculate trailing edge position BEFORE moving
+		// Trailing edge is half a tile behind center, opposite to movement direction
+		// This determines which tile the back of the pushwall is still in
+		int oldTrailingX = pushWall.X;
+		int oldTrailingY = pushWall.Y;
+		switch (pushWall.Direction)
+		{
+			case Direction.N: oldTrailingY += 0x8000; break; // Moving north, trailing edge is south
+			case Direction.S: oldTrailingY -= 0x8000; break; // Moving south, trailing edge is north
+			case Direction.E: oldTrailingX -= 0x8000; break; // Moving east, trailing edge is west
+			case Direction.W: oldTrailingX += 0x8000; break; // Moving west, trailing edge is east
+		}
+		ushort oldTrailingTileX = (ushort)(oldTrailingX >> 16);
+		ushort oldTrailingTileY = (ushort)(oldTrailingY >> 16);
+
+		// Track leading edge tile BEFORE moving (for claiming new tiles)
+		int oldLeadingX = pushWall.X;
+		int oldLeadingY = pushWall.Y;
+		switch (pushWall.Direction)
+		{
+			case Direction.N: oldLeadingY -= 0x8000; break; // Moving north, leading edge is north
+			case Direction.S: oldLeadingY += 0x8000; break; // Moving south, leading edge is south
+			case Direction.E: oldLeadingX += 0x8000; break; // Moving east, leading edge is east
+			case Direction.W: oldLeadingX -= 0x8000; break; // Moving west, leading edge is west
+		}
+		ushort oldLeadingTileX = (ushort)(oldLeadingX >> 16);
+		ushort oldLeadingTileY = (ushort)(oldLeadingY >> 16);
 
 		// Decrement tic counter
 		pushWall.TicCount--;
@@ -656,15 +686,44 @@ public class Simulator
 			case Direction.W: pushWall.X -= delta; break;
 		}
 
-		// Rule 4: Check if pushwall crossed into a new tile
-		(ushort newTileX, ushort newTileY) = pushWall.GetTilePosition();
-		if (oldTileX != newTileX || oldTileY != newTileY)
+		// Calculate trailing edge position AFTER moving
+		int newTrailingX = pushWall.X;
+		int newTrailingY = pushWall.Y;
+		switch (pushWall.Direction)
 		{
-			// Pushwall crossed tile boundary - update spatial index
-			int oldIdx = GetTileIndex(oldTileX, oldTileY);
-			int newIdx = GetTileIndex(newTileX, newTileY);
-			pushWallAtTile[oldIdx] = -1; // Old tile is now navigable
-			pushWallAtTile[newIdx] = (short)pushWallIndex; // New tile is now blocked
+			case Direction.N: newTrailingY += 0x8000; break;
+			case Direction.S: newTrailingY -= 0x8000; break;
+			case Direction.E: newTrailingX -= 0x8000; break;
+			case Direction.W: newTrailingX += 0x8000; break;
+		}
+		ushort newTrailingTileX = (ushort)(newTrailingX >> 16);
+		ushort newTrailingTileY = (ushort)(newTrailingY >> 16);
+
+		// Calculate leading edge position AFTER moving
+		int newLeadingX = pushWall.X;
+		int newLeadingY = pushWall.Y;
+		switch (pushWall.Direction)
+		{
+			case Direction.N: newLeadingY -= 0x8000; break;
+			case Direction.S: newLeadingY += 0x8000; break;
+			case Direction.E: newLeadingX += 0x8000; break;
+			case Direction.W: newLeadingX -= 0x8000; break;
+		}
+		ushort newLeadingTileX = (ushort)(newLeadingX >> 16);
+		ushort newLeadingTileY = (ushort)(newLeadingY >> 16);
+
+		// Claim new tile when LEADING EDGE enters it
+		if (oldLeadingTileX != newLeadingTileX || oldLeadingTileY != newLeadingTileY)
+		{
+			int newIdx = GetTileIndex(newLeadingTileX, newLeadingTileY);
+			pushWallAtTile[newIdx] = (short)pushWallIndex;
+		}
+
+		// Release old tile only when TRAILING EDGE has fully left it
+		if (oldTrailingTileX != newTrailingTileX || oldTrailingTileY != newTrailingTileY)
+		{
+			int oldIdx = GetTileIndex(oldTrailingTileX, oldTrailingTileY);
+			pushWallAtTile[oldIdx] = -1;
 		}
 
 		// Fire position changed event
@@ -685,6 +744,33 @@ public class Simulator
 			pushWall.Y = (finalY << 16) + 0x8000;
 			pushWall.Action = PushWallAction.Idle;
 			anyPushWallMoving = false; // Rule 3: Release global lock
+
+			// Clean up: release the initial tile and middle tile, keep only final tile
+			// Pushwall moved 2 tiles from initial position, so clear initial and initial+1
+			ushort initialX = pushWall.InitialTileX;
+			ushort initialY = pushWall.InitialTileY;
+			ushort middleX = initialX;
+			ushort middleY = initialY;
+			switch (pushWall.Direction)
+			{
+				case Direction.N: middleY--; break;
+				case Direction.S: middleY++; break;
+				case Direction.E: middleX++; break;
+				case Direction.W: middleX--; break;
+			}
+
+			// Release initial and middle tiles (they may already be released, but ensure it)
+			int initialIdx = GetTileIndex(initialX, initialY);
+			int middleIdx = GetTileIndex(middleX, middleY);
+			int finalIdx = GetTileIndex(finalX, finalY);
+
+			if (pushWallAtTile[initialIdx] == pushWallIndex)
+				pushWallAtTile[initialIdx] = -1;
+			if (pushWallAtTile[middleIdx] == pushWallIndex)
+				pushWallAtTile[middleIdx] = -1;
+
+			// Ensure final tile is claimed
+			pushWallAtTile[finalIdx] = (short)pushWallIndex;
 
 			// Fire final position event
 			PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
@@ -2039,9 +2125,10 @@ public class Simulator
 		return true;
 	}
 	/// <summary>
-	/// Checks if a tile is navigable (can be moved onto).
-	/// Combines static map analysis with dynamic state (doors, pushwalls, actors).
+	/// Checks if a tile is navigable (can be moved onto by actors).
+	/// Combines static map analysis with dynamic state (doors, pushwalls, actors, player).
 	/// Based on Wolf3D collision detection logic.
+	/// WL_STATE.C:TryWalk
 	/// </summary>
 	/// <param name="x">Tile X coordinate</param>
 	/// <param name="y">Tile Y coordinate</param>
@@ -2074,6 +2161,11 @@ public class Simulator
 				return false;
 		}
 
+		// 5. Check for player - actors cannot move onto tiles the player occupies
+		// WL_STATE.C:TryWalk checks player->tilex, player->tiley
+		if (PlayerTileX == x && PlayerTileY == y)
+			return false;
+
 		return true;
 	}
 
@@ -2088,6 +2180,118 @@ public class Simulator
 	{
 		int tileIdx = GetTileIndex(x, y);
 		return doorAtTile[tileIdx];
+	}
+	#endregion
+
+	#region Player Movement Validation
+	/// <summary>
+	/// Validates a desired player position against collision and returns an adjusted position.
+	/// Implements wall-sliding: if direct movement is blocked, tries X-only then Y-only.
+	/// Uses AABB collision with square bounding box.
+	/// Based on WL_AGENT.C:ClipMove combined with Level.PlayerWalk from old Godot 3 version.
+	/// </summary>
+	/// <param name="currentX">Current X position (16.16 fixed-point)</param>
+	/// <param name="currentY">Current Y position (16.16 fixed-point)</param>
+	/// <param name="desiredX">Desired X position (16.16 fixed-point)</param>
+	/// <param name="desiredY">Desired Y position (16.16 fixed-point)</param>
+	/// <param name="headSize">Half-width of collision box (16.16 fixed-point)</param>
+	/// <returns>Validated position (X, Y) in 16.16 fixed-point</returns>
+	public (int X, int Y) ValidatePlayerMove(int currentX, int currentY, int desiredX, int desiredY, int headSize)
+	{
+		// NoClip bypass
+		if (NoClip)
+			return (desiredX, desiredY);
+
+		// Check if full movement is valid
+		if (IsPositionValidForPlayer(desiredX, desiredY, headSize))
+			return (desiredX, desiredY);
+
+		// Wall sliding: try X-only movement
+		if (IsPositionValidForPlayer(desiredX, currentY, headSize))
+			return (desiredX, currentY);
+
+		// Wall sliding: try Y-only movement
+		if (IsPositionValidForPlayer(currentX, desiredY, headSize))
+			return (currentX, desiredY);
+
+		// Completely blocked, stay at current position
+		return (currentX, currentY);
+	}
+
+	/// <summary>
+	/// Checks if a position is valid for the player by testing all four corners of the AABB.
+	/// </summary>
+	/// <param name="centerX">Center X position (16.16 fixed-point)</param>
+	/// <param name="centerY">Center Y position (16.16 fixed-point)</param>
+	/// <param name="headSize">Half-width of collision box (16.16 fixed-point)</param>
+	/// <returns>True if all corners are in valid tiles</returns>
+	private bool IsPositionValidForPlayer(int centerX, int centerY, int headSize)
+	{
+		// Calculate AABB corners
+		int left = centerX - headSize;
+		int right = centerX + headSize;
+		int top = centerY - headSize;
+		int bottom = centerY + headSize;
+
+		// Convert to tile coordinates
+		int leftTile = left >> 16;
+		int rightTile = right >> 16;
+		int topTile = top >> 16;
+		int bottomTile = bottom >> 16;
+
+		// Check all four corners
+		if (!IsTileValidForPlayer(leftTile, topTile)) return false;
+		if (!IsTileValidForPlayer(rightTile, topTile)) return false;
+		if (!IsTileValidForPlayer(leftTile, bottomTile)) return false;
+		if (!IsTileValidForPlayer(rightTile, bottomTile)) return false;
+
+		return true;
+	}
+
+	/// <summary>
+	/// Checks if a tile is valid for player movement.
+	/// Similar to IsTileNavigable but uses int params for bounds checking.
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate</param>
+	/// <param name="tileY">Tile Y coordinate</param>
+	/// <returns>True if the tile can be walked on by the player</returns>
+	private bool IsTileValidForPlayer(int tileX, int tileY)
+	{
+		// Bounds check (handles negative coords and overflow)
+		if (tileX < 0 || tileY < 0 || tileX >= mapWidth || tileY >= mapHeight)
+			return false;
+
+		ushort x = (ushort)tileX;
+		ushort y = (ushort)tileY;
+
+		// Check static navigability (from MapAnalysis BitArray)
+		if (!mapAnalysis.IsNavigable(x, y))
+			return false;
+
+		int tileIdx = GetTileIndex(x, y);
+
+		// Check for doors that aren't fully open
+		if (doorAtTile[tileIdx] >= 0)
+		{
+			Door door = doors[doorAtTile[tileIdx]];
+			// Only allow passing through fully open doors
+			if (door.Action != DoorAction.Open)
+				return false;
+		}
+
+		// Check for push walls
+		if (pushWallAtTile[tileIdx] >= 0)
+			return false;
+
+		// Check for living actors
+		if (actorAtTile[tileIdx] >= 0)
+		{
+			Actor actor = actors[actorAtTile[tileIdx]];
+			if (actor.HitPoints > 0)
+				return false;
+		}
+
+		return true;
 	}
 	#endregion
 }
