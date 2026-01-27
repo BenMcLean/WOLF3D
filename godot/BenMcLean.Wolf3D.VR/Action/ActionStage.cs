@@ -193,6 +193,13 @@ void sky() {
 		// Subscribe to player state changes to update status bar
 		_simulatorController.PlayerStateChanged += OnPlayerStateChanged;
 
+		// Subscribe to display mode button events for shooting and using objects
+		// Left click (flatscreen) or right trigger (VR) = shoot
+		_displayMode.PrimaryButtonPressed += OnPrimaryButtonPressed;
+		_displayMode.PrimaryButtonReleased += OnPrimaryButtonReleased;
+		// Right click (flatscreen) or left grip (VR) = use/push
+		_displayMode.SecondaryButtonPressed += OnSecondaryButtonPressed;
+
 		// Create pixel-perfect aiming system
 		_pixelPerfectAiming = new PixelPerfectAiming(this);
 
@@ -250,47 +257,56 @@ void sky() {
 
 	public override void _Input(InputEvent @event)
 	{
-		if (@event is InputEventKey keyEvent)
+		// Weapon switching - number keys 1-4
+		// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
 		{
-			if (keyEvent.Keycode == Key.R && keyEvent.Pressed)
+			switch (keyEvent.Keycode)
 			{
-				// Use door, pushwall, or elevator player is facing
-				UseObjectPlayerIsFacing();
-			}
-			else if (keyEvent.Keycode == Key.X)
-			{
-				if (keyEvent.Pressed)
-				{
-					// Fire weapon (X key for now, VR trigger later)
-					FireWeapon();
-				}
-				else
-				{
-					// Release trigger - allows semi-auto weapons to fire again
-					ReleaseWeaponTrigger();
-				}
-			}
-			else if (keyEvent.Pressed)
-			{
-				// Weapon switching - number keys 1-4
-				// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
-				switch (keyEvent.Keycode)
-				{
-					case Key.Key1:
-						SwitchWeapon("knife");
-						break;
-					case Key.Key2:
-						SwitchWeapon("pistol");
-						break;
-					case Key.Key3:
-						SwitchWeapon("machinegun");
-						break;
-					case Key.Key4:
-						SwitchWeapon("chaingun");
-						break;
-				}
+				case Key.Key1:
+					SwitchWeapon("knife");
+					break;
+				case Key.Key2:
+					SwitchWeapon("pistol");
+					break;
+				case Key.Key3:
+					SwitchWeapon("machinegun");
+					break;
+				case Key.Key4:
+					SwitchWeapon("chaingun");
+					break;
 			}
 		}
+	}
+
+	/// <summary>
+	/// Handles primary button press (left click in flatscreen, right trigger in VR).
+	/// Fires the equipped weapon.
+	/// </summary>
+	private void OnPrimaryButtonPressed(string buttonName)
+	{
+		if (buttonName == "trigger_click")
+			FireWeapon();
+	}
+
+	/// <summary>
+	/// Handles primary button release (left click release in flatscreen, trigger release in VR).
+	/// Required for semi-auto weapons to fire again.
+	/// </summary>
+	private void OnPrimaryButtonReleased(string buttonName)
+	{
+		if (buttonName == "trigger_click")
+			ReleaseWeaponTrigger();
+	}
+
+	/// <summary>
+	/// Handles secondary button press (right click in flatscreen, left grip in VR).
+	/// Uses doors, pushwalls, or elevators.
+	/// </summary>
+	private void OnSecondaryButtonPressed(string buttonName)
+	{
+		// Accept either grip_click (flatscreen right-click) or any secondary button
+		UseObjectPlayerIsFacing();
 	}
 
 	/// <summary>

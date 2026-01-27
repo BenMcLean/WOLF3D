@@ -73,12 +73,21 @@ public interface IDisplayMode
 	/// <summary>
 	/// Event fired when a button is pressed on the primary (right) controller.
 	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
+	/// In flatscreen mode: left click = trigger_click.
 	/// </summary>
 	event Action<string> PrimaryButtonPressed;
 
 	/// <summary>
+	/// Event fired when a button is released on the primary (right) controller.
+	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
+	/// Used for semi-auto weapon trigger release.
+	/// </summary>
+	event Action<string> PrimaryButtonReleased;
+
+	/// <summary>
 	/// Event fired when a button is pressed on the secondary (left) controller.
 	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
+	/// In flatscreen mode: right click = grip_click (use/push).
 	/// </summary>
 	event Action<string> SecondaryButtonPressed;
 

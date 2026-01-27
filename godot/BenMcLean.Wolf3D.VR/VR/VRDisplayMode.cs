@@ -17,6 +17,7 @@ public class VRDisplayMode : IDisplayMode
 	private Node _parent;
 
 	public event Action<string> PrimaryButtonPressed;
+	public event Action<string> PrimaryButtonReleased;
 	public event Action<string> SecondaryButtonPressed;
 
 	public bool IsVRActive => true;
@@ -84,6 +85,7 @@ public class VRDisplayMode : IDisplayMode
 		// Connect to controller button signals for event-driven input
 		_leftController.ButtonPressed += name => SecondaryButtonPressed?.Invoke(name);
 		_rightController.ButtonPressed += name => PrimaryButtonPressed?.Invoke(name);
+		_rightController.ButtonReleased += name => PrimaryButtonReleased?.Invoke(name);
 
 		// Enable XR on the viewport
 		if (_parent is Node node)

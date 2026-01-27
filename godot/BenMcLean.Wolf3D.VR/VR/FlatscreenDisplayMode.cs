@@ -4,18 +4,24 @@ using Godot;
 namespace BenMcLean.Wolf3D.VR.VR;
 
 /// <summary>
-/// Flatscreen display mode for desktop debugging.
-/// Uses FreeLookCamera for movement and mouse look.
+/// Flatscreen display mode for desktop gameplay.
+/// Uses FPSCamera for WASD movement and mouse look.
+/// Left click fires weapon, right click uses/pushes objects.
 /// </summary>
 public class FlatscreenDisplayMode : IDisplayMode
 {
-	private FreeLookCamera _camera;
+	private FPSCamera _camera;
 	private Node3D _cameraHolder;
 	private Node _parent;
 
-	// Events not used in flatscreen mode (input comes through InputEvent)
 	public event Action<string> PrimaryButtonPressed;
 	public event Action<string> SecondaryButtonPressed;
+
+	/// <summary>
+	/// Event fired when primary button (left click) is released.
+	/// Used for semi-auto weapon trigger release.
+	/// </summary>
+	public event Action<string> PrimaryButtonReleased;
 
 	public bool IsVRActive => false;
 
@@ -63,31 +69,31 @@ public class FlatscreenDisplayMode : IDisplayMode
 		};
 		parent.AddChild(_cameraHolder);
 
-		// Create the FreeLookCamera
-		_camera = new FreeLookCamera
+		// Create the FPSCamera
+		_camera = new FPSCamera
 		{
-			Name = "FreeLookCamera",
+			Name = "FPSCamera",
 			Current = true
 		};
 		_cameraHolder.AddChild(_camera);
 
-		// Enable the free look camera immediately
-		_camera.Enabled = true;
+		// Wire up mouse button events to IDisplayMode events
+		// Left click = primary button (shoot)
+		_camera.LeftClickPressed += () => PrimaryButtonPressed?.Invoke("trigger_click");
+		_camera.LeftClickReleased += () => PrimaryButtonReleased?.Invoke("trigger_click");
 
-		// Reset camera's local transform - Enabled copies GlobalTransform from previous camera
-		// which would carry over the old level's position
-		_camera.Position = Vector3.Zero;
-		_camera.Rotation = Vector3.Zero;
+		// Right click = secondary button (use/push)
+		_camera.RightClickPressed += () => SecondaryButtonPressed?.Invoke("grip_click");
 	}
 
 	public void Update(double delta)
 	{
-		// FreeLookCamera handles its own input processing via _Input and _Process
+		// FPSCamera handles its own input processing via _Input and _Process
 	}
 
 	public Vector2 GetMovementInput()
 	{
-		// WASD is handled by FreeLookCamera internally
+		// WASD is handled by FPSCamera internally
 		// For external queries, return based on key states
 		Vector2 input = Vector2.Zero;
 		if (Input.IsKeyPressed(Key.W)) input.Y -= 1;
@@ -99,8 +105,8 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 	public Vector2 GetTurnInput()
 	{
-		// Mouse look is handled by FreeLookCamera internally
-		// Return zero since FreeLookCamera manages its own rotation
+		// Mouse look is handled by FPSCamera internally
+		// Return zero since FPSCamera manages its own rotation
 		return Vector2.Zero;
 	}
 }
