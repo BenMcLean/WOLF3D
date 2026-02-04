@@ -184,6 +184,48 @@ public class StateFunction
 	}
 }
 /// <summary>
+/// Stores actor class metadata loaded from XML Actor elements.
+/// Used to look up death states, chase states, etc. by actor type name.
+/// </summary>
+public class ActorDefinition
+{
+	/// <summary>
+	/// Actor type name (e.g., "Guard", "Dog", "SS").
+	/// Maps to ActorSpawn.ActorType from map analysis.
+	/// </summary>
+	public string Name { get; set; }
+	/// <summary>
+	/// State name to transition to when actor dies (e.g., "s_grddie1").
+	/// </summary>
+	public string DeathState { get; set; }
+	/// <summary>
+	/// State name for chase behavior (e.g., "s_grdchase1").
+	/// </summary>
+	public string ChaseState { get; set; }
+	/// <summary>
+	/// State name for attack behavior (e.g., "s_grdshoot1").
+	/// </summary>
+	public string AttackState { get; set; }
+	/// <summary>
+	/// Alert sound to play when actor spots player (e.g., "HALTSND").
+	/// </summary>
+	public string AlertDigiSound { get; set; }
+	/// <summary>
+	/// Creates an ActorDefinition from an XElement.
+	/// </summary>
+	public static ActorDefinition FromXElement(XElement element)
+	{
+		return new ActorDefinition
+		{
+			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Actor element must have a Name attribute"),
+			DeathState = element.Attribute("Death")?.Value,
+			ChaseState = element.Attribute("Chase")?.Value,
+			AttackState = element.Attribute("Attack")?.Value,
+			AlertDigiSound = element.Attribute("AlertDigiSound")?.Value
+		};
+	}
+}
+/// <summary>
 /// Container for all state-related data loaded from XML.
 /// </summary>
 public class StateCollection
@@ -196,6 +238,11 @@ public class StateCollection
 	/// All reusable state functions, indexed by name
 	/// </summary>
 	public Dictionary<string, StateFunction> Functions { get; set; } = [];
+	/// <summary>
+	/// Actor class definitions, indexed by actor type name (e.g., "Guard", "Dog").
+	/// Used to look up death states, chase states, etc.
+	/// </summary>
+	public Dictionary<string, ActorDefinition> ActorDefinitions { get; set; } = [];
 	/// <summary>
 	/// Adds a state function to the collection.
 	/// </summary>
@@ -324,6 +371,18 @@ public class StateCollection
 					System.Diagnostics.Debug.WriteLine($"WARNING: State '{state.Name}' references unknown Action function '{state.Action}' - function will be skipped during execution");
 				}
 			}
+		}
+	}
+	/// <summary>
+	/// Loads actor definitions from XML Actor elements.
+	/// </summary>
+	/// <param name="elements">Collection of Actor XElements</param>
+	public void LoadActorDefinitionsFromXml(IEnumerable<XElement> elements)
+	{
+		foreach (XElement element in elements)
+		{
+			ActorDefinition actorDef = ActorDefinition.FromXElement(element);
+			ActorDefinitions[actorDef.Name] = actorDef;
 		}
 	}
 }

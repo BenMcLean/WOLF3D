@@ -161,14 +161,18 @@ public partial class Actors : Node3D
 		_actorData[actorIndex] = data;
 		// Update material
 		if (!isRotated)
+		{
 			// Non-rotated: just set the material directly
-			node.MaterialOverride = _spriteMaterials[newShape];
+			if (_spriteMaterials.TryGetValue(newShape, out StandardMaterial3D material))
+				node.MaterialOverride = material;
+		}
 		else
 		{
 			// Rotated: calculate directional sprite (will be updated in _Process too)
 			ushort directionalSprite = CalculateDirectionalSprite(
 				data.Position, newShape, _getViewerPosition(), data.Facing);
-			node.MaterialOverride = _spriteMaterials[directionalSprite];
+			if (_spriteMaterials.TryGetValue(directionalSprite, out StandardMaterial3D material))
+				node.MaterialOverride = material;
 		}
 	}
 	/// <summary>

@@ -95,6 +95,7 @@ public class PixelPerfectAiming
 		RayHit billboardHit = RaycastBillboards(rayOrigin, rayDirection, cameraForward, maxBillboardDistance);
 		if (billboardHit.IsHit && billboardHit.Distance < closestHit.Distance)
 			closestHit = billboardHit;
+
 		return new AimHitResult
 		{
 			IsHit = closestHit.IsHit,
@@ -456,16 +457,21 @@ public class PixelPerfectAiming
 		if (billboardNormal.Length() < 0.0001f)
 			billboardNormal = new Vector3(0, 0, 1);
 		// Iterate through all billboard instances
-		// For actors (MeshInstance3D), we track actor index for hit detection
-		int actorIndex = 0;
 		foreach (Node child in billboardParent.GetChildren())
 		{
 			if (child is MeshInstance3D billboard)
 			{
+				// Extract actor index from node name (e.g., "Actor_5" -> 5)
+				// Actors use their simulator index in their name for correct hit reporting
+				int actorIndex = -1;
+				if (hitType == HitType.Actor && billboard.Name.ToString().StartsWith("Actor_"))
+				{
+					string indexStr = billboard.Name.ToString().Substring("Actor_".Length);
+					int.TryParse(indexStr, out actorIndex);
+				}
 				RayHit hit = CheckBillboard(billboard, rayOrigin, rayDirection, billboardNormal, currentClosest.Distance, hitType, actorIndex);
 				if (hit.IsHit && hit.Distance < currentClosest.Distance)
 					currentClosest = hit;
-				actorIndex++; // Increment for next actor
 			}
 			else if (child is MultiMeshInstance3D multiMesh)
 			{

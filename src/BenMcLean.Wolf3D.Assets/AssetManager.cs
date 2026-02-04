@@ -83,6 +83,10 @@ public class AssetManager
 		IEnumerable<XElement> stateElements = statInfoElement.Elements("State");
 		if (stateElements != null)
 			stateCollection.LoadStatesFromXml(stateElements, ResolveSpriteNameToNumber);
+		// Load actor definitions (for death states, chase states, etc.)
+		IEnumerable<XElement> actorElements = statInfoElement.Elements("Actor");
+		if (actorElements != null)
+			stateCollection.LoadActorDefinitionsFromXml(actorElements);
 		// Phase 2: Link state references
 		stateCollection.LinkStates();
 		// Phase 3: Validate function references

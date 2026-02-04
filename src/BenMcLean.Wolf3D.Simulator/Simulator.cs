@@ -972,7 +972,6 @@ public class Simulator
 	private void TransitionActorState(int actorIndex, State nextState)
 	{
 		Actor actor = actors[actorIndex];
-		short oldShape = actor.ShapeNum;
 		// Update state
 		actor.CurrentState = nextState;
 		actor.TicCount = nextState.Tics;
@@ -992,16 +991,13 @@ public class Simulator
 				logger?.LogError(ex, "Error executing Action function '{ActionFunction}' for actor {ActorIndex}", nextState.Action, actorIndex);
 			}
 		}
-		// Fire sprite changed event if sprite actually changed
-		if (oldShape != actor.ShapeNum)
+		// Always fire sprite changed event to update visual
+		ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
 		{
-			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
-			{
-				ActorIndex = actorIndex,
-				Shape = (ushort)actor.ShapeNum,
-				IsRotated = nextState.Rotate
-			});
-		}
+			ActorIndex = actorIndex,
+			Shape = (ushort)actor.ShapeNum,
+			IsRotated = nextState.Rotate
+		});
 	}
 	#endregion
 	/// <summary>
@@ -1590,14 +1586,20 @@ public class Simulator
 			return;
 
 		Actor actor = actors[actorIndex];
-		actor.HitPoints -= damage;
 
-		if (actor.HitPoints <= 0)
+		// One-shot kill: Transition to death state immediately
+		// (Damage/HP system can be refined later)
+		actor.HitPoints = 0;
+
+		// Look up the death state for this actor type
+		if (stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef)
+			&& !string.IsNullOrEmpty(actorDef.DeathState))
 		{
-			// Actor died - trigger death state transition
-			// TODO: Transition to death state (requires death state definitions)
-			// For now, just ensure HP doesn't go negative
-			actor.HitPoints = 0;
+			// Transition to death state
+			TransitionActorStateByName(actorIndex, actorDef.DeathState);
+
+			// Clear shootable flag - dead actors can't be shot again
+			actor.Flags &= ~ActorFlags.Shootable;
 		}
 	}
 	#endregion

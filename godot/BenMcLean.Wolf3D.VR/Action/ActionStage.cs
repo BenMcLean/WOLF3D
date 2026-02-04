@@ -319,12 +319,32 @@ void sky() {
 
 	/// <summary>
 	/// Fires the weapon in the primary slot (slot 0).
-	/// For now, no hit detection - just triggers the animation and sound.
+	/// Performs pixel-perfect raycast hit detection against actors.
 	/// </summary>
 	private void FireWeapon()
 	{
-		// Fire weapon slot 0 with no hit (basic implementation)
-		_simulatorController.FireWeapon(0, null, null);
+		// Use same ray calculation as AimIndicator for consistency
+		// This ensures the fired shot goes where the aim indicator shows
+		Vector3 rayOrigin = _displayMode.Camera.GlobalPosition;
+		Vector3 rayDirection = -_displayMode.Camera.GlobalTransform.Basis.Z;
+		Vector3 cameraForward = rayDirection;
+
+		// Perform pixel-perfect raycast
+		PixelPerfectAiming.AimHitResult hitResult = _pixelPerfectAiming.Raycast(rayOrigin, rayDirection, cameraForward);
+
+		// Extract hit actor index (null if no actor hit)
+		int? hitActorIndex = (hitResult.IsHit && hitResult.Type == PixelPerfectAiming.HitType.Actor)
+			? hitResult.ActorIndex
+			: null;
+
+		// Convert hit position to simulator coordinates (null if no hit)
+		(int x, int y)? hitPoint = hitResult.IsHit
+			? ((int)(hitResult.Position.X * 65536f / Constants.TileWidth),
+			   (int)(hitResult.Position.Z * 65536f / Constants.TileWidth))
+			: null;
+
+		// Fire weapon with hit detection results
+		_simulatorController.FireWeapon(0, hitActorIndex, hitPoint);
 	}
 
 	/// <summary>
