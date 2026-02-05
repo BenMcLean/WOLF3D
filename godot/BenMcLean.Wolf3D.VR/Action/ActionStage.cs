@@ -194,8 +194,9 @@ void sky() {
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
 
-		// Subscribe to player state changes to update status bar
-		_simulatorController.PlayerStateChanged += OnPlayerStateChanged;
+		// Initialize inventory from StatusBar definition
+		if (SharedAssetManager.StatusBar != null)
+			_simulatorController.Simulator.Inventory.InitializeFromDefinition(SharedAssetManager.StatusBar);
 
 		// Subscribe to display mode button events for shooting and using objects
 		// Left click (flatscreen) or right trigger (VR) = shoot
@@ -219,6 +220,9 @@ void sky() {
 		{
 			_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
 			_statusBarRenderer = new StatusBarRenderer(_statusBarState);
+
+			// Subscribe status bar directly to Inventory for automatic updates
+			_statusBarState.SubscribeToInventory(_simulatorController.Simulator.Inventory);
 
 			// Create CanvasLayer to display status bar at bottom of screen
 			_statusBarCanvas = new CanvasLayer
@@ -253,7 +257,7 @@ void sky() {
 			};
 			_statusBarCanvas.AddChild(statusBarDisplay);
 
-			// Set test values
+			// Set floor number (not part of Inventory as it's level metadata, not player state)
 			_statusBarState.SetValue("Floor", LevelIndex + 1);
 		}
 		}
@@ -525,24 +529,6 @@ void sky() {
 		CallDeferred(nameof(ReloadLevel));
 	}
 
-	/// <summary>
-	/// Handles player state changes - updates status bar.
-	/// WL_AGENT.C:GetBonus, TakeDamage, GivePoints, etc.
-	/// </summary>
-	private void OnPlayerStateChanged(PlayerStateChangedEvent e)
-	{
-		if (_statusBarState == null)
-			return;
-
-		_statusBarState.SetValue("Health", e.Health);
-		_statusBarState.SetValue("Score", e.Score);
-		_statusBarState.SetValue("Lives", e.Lives);
-		_statusBarState.SetValue("Ammo", e.Ammo);
-
-		// Decode key flags (bit 0 = gold, bit 1 = silver)
-		_statusBarState.SetValue("Gold Key", (e.KeyFlags & 1) != 0 ? 1 : 0);
-		_statusBarState.SetValue("Silver Key", (e.KeyFlags & 2) != 0 ? 1 : 0);
-	}
 
 	/// <summary>
 	/// Reloads the current ActionStage with the new LevelIndex.

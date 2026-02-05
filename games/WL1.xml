@@ -867,98 +867,99 @@ end
 		<StatInfo>
 			<!-- Bonus pickup scripts -->
 			<BonusScript Name="health_small"><![CDATA[
-if GetPlayerHealth() < GetPlayerMaxHealth() then
-	HealPlayer(4)
+if GetValue("Health") < GetMax("Health") then
+	AddValue("Health", 4)
 	PlayAdLibSound("HEALTH1SND")
 	return true
 end
 return false
 ]]></BonusScript>
 			<BonusScript Name="health_medium"><![CDATA[
-if GetPlayerHealth() < GetPlayerMaxHealth() then
-	HealPlayer(10)
+if GetValue("Health") < GetMax("Health") then
+	AddValue("Health", 10)
 	PlayAdLibSound("HEALTH1SND")
 	return true
 end
 return false
 ]]></BonusScript>
 			<BonusScript Name="health_large"><![CDATA[
-if GetPlayerHealth() < GetPlayerMaxHealth() then
-	HealPlayer(25)
+if GetValue("Health") < GetMax("Health") then
+	AddValue("Health", 25)
 	PlayAdLibSound("HEALTH2SND")
 	return true
 end
 return false
 ]]></BonusScript>
 			<BonusScript Name="health_desperate"><![CDATA[
-if GetPlayerHealth() < 12 then
-	HealPlayer(1)
+if GetValue("Health") < 12 then
+	AddValue("Health", 1)
 	PlayLocalDigiSound("SLURPIESND")
 	return true
 end
 return false
 ]]></BonusScript>
 			<BonusScript Name="key_gold"><![CDATA[
-GivePlayerKey(0)
+SetValue("Gold Key", 1)
 PlayAdLibSound("GETKEYSND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="key_silver"><![CDATA[
-GivePlayerKey(1)
+SetValue("Silver Key", 1)
 PlayAdLibSound("GETKEYSND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="ammo_clip"><![CDATA[
-if GetPlayerAmmo("bullets") < GetPlayerMaxAmmo("bullets") then
-	GiveAmmo("bullets", 8)
+if GetValue("Ammo") < GetMax("Ammo") then
+	AddValue("Ammo", 8)
 	PlayAdLibSound("GETAMMOSND")
 	return true
 end
 return false
 ]]></BonusScript>
 			<BonusScript Name="ammo_clip_small"><![CDATA[
-if GetPlayerAmmo("bullets") < GetPlayerMaxAmmo("bullets") then
-	GiveAmmo("bullets", 4)
+if GetValue("Ammo") < GetMax("Ammo") then
+	AddValue("Ammo", 4)
 	PlayAdLibSound("GETAMMOSND")
 	return true
 end
 return false
 ]]></BonusScript>
 			<BonusScript Name="weapon_machinegun"><![CDATA[
-GiveWeapon("machinegun")
-GiveAmmo("bullets", 6)
+SetValue("Weapon2", 1)
+AddValue("Ammo", 6)
 PlayAdLibSound("GETMACHINESND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="weapon_chaingun"><![CDATA[
-GiveWeapon("chaingun")
-GiveAmmo("bullets", 6)
+SetValue("Weapon3", 1)
+AddValue("Ammo", 6)
 PlayAdLibSound("GETGATLINGSND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_cross"><![CDATA[
-GiveScore(100)
+AddValue("Score", 100)
 PlayAdLibSound("BONUS1SND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_chalice"><![CDATA[
-GiveScore(500)
+AddValue("Score", 500)
 PlayAdLibSound("BONUS2SND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_chest"><![CDATA[
-GiveScore(1000)
+AddValue("Score", 1000)
 PlayAdLibSound("BONUS3SND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_crown"><![CDATA[
-GiveScore(5000)
+AddValue("Score", 5000)
 PlayAdLibSound("BONUS4SND")
 return true
 ]]></BonusScript>
 			<BonusScript Name="extra_life"><![CDATA[
-GiveExtraLife()
-GiveAmmo("bullets", 25)
+AddValue("Lives", 1)
+SetValue("Health", GetMax("Health"))
+AddValue("Ammo", 25)
 PlayAdLibSound("BONUS1UPSND")
 return true
 ]]></BonusScript>

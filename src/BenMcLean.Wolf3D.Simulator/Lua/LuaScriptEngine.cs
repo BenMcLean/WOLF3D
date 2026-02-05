@@ -33,7 +33,7 @@ public class LuaScriptEngine
 	/// <param name="logger">Logger for debug output</param>
 	/// <remarks>
 	/// IMPORTANT: Context types must be listed base-classes-first so that shared methods
-	/// (like GetPlayerHealth) are registered with the common base type's check. This allows
+	/// (like GetValue, SetValue, Has) are registered with the common base type's check. This allows
 	/// sibling context types (like ActorScriptContext and ItemScriptContext) to both work.
 	/// </remarks>
 	public LuaScriptEngine(ILogger logger = null)

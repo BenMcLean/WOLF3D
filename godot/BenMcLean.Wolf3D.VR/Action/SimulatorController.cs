@@ -16,6 +16,11 @@ namespace BenMcLean.Wolf3D.VR;
 public partial class SimulatorController : Node3D
 {
 	private Simulator.Simulator simulator;
+	/// <summary>
+	/// Gets the underlying simulator instance.
+	/// Exposes Inventory for direct status bar subscription.
+	/// </summary>
+	public Simulator.Simulator Simulator => simulator;
 	private Doors doors;
 	private Walls walls;
 	private Bonuses bonuses;

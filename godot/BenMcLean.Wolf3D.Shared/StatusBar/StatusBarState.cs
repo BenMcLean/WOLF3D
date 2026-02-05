@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator;
 
 namespace BenMcLean.Wolf3D.Shared.StatusBar;
 
@@ -124,6 +125,18 @@ public class StatusBarState
 		foreach (KeyValuePair<string, int> kvp in values)
 			SetValue(kvp.Key, kvp.Value);
 		CurrentWeapon = currentWeapon;
+	}
+	/// <summary>
+	/// Subscribes to an Inventory's ValueChanged event for automatic sync.
+	/// When inventory values change, this StatusBarState will be updated automatically.
+	/// This enables direct subscription from the status bar to the simulator's inventory.
+	/// </summary>
+	/// <param name="inventory">The Inventory to subscribe to</param>
+	public void SubscribeToInventory(Inventory inventory)
+	{
+		if (inventory == null)
+			throw new ArgumentNullException(nameof(inventory));
+		inventory.ValueChanged += (name, value) => SetValue(name, value);
 	}
 	/// <summary>
 	/// Gets all current values as a read-only dictionary.

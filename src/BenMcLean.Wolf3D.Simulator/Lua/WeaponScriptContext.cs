@@ -102,6 +102,7 @@ public class WeaponScriptContext : ActionScriptContext
 	/// <summary>
 	/// Check if player has enough ammo for this weapon.
 	/// WL_AGENT.C ammo check equivalent.
+	/// Uses generic inventory API: GetValue("Ammo")
 	/// </summary>
 	/// <param name="amount">Amount of ammo required (default: weapon's AmmoPerShot)</param>
 	/// <returns>True if enough ammo available (or weapon doesn't require ammo)</returns>
@@ -113,12 +114,13 @@ public class WeaponScriptContext : ActionScriptContext
 		if (required <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
 			return true;
 
-		return simulator.GetAmmo(weaponInfo.AmmoType) >= required;
+		return GetValue("Ammo") >= required;
 	}
 
 	/// <summary>
 	/// Consume ammo for this weapon.
 	/// WL_AGENT.C:gamestate.ammo-- equivalent.
+	/// Uses generic inventory API: AddValue("Ammo", -amount)
 	/// </summary>
 	/// <param name="amount">Amount of ammo to consume (default: weapon's AmmoPerShot)</param>
 	public void ConsumeAmmo(int? amount = null)
@@ -128,15 +130,15 @@ public class WeaponScriptContext : ActionScriptContext
 		if (toConsume <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
 			return;
 
-		int currentAmmo = simulator.GetAmmo(weaponInfo.AmmoType);
-		simulator.SetAmmo(weaponInfo.AmmoType, System.Math.Max(0, currentAmmo - toConsume));
+		AddValue("Ammo", -toConsume);
 
 		_logger?.LogDebug("WeaponScriptContext: ConsumeAmmo({amount}) for {weaponType}, remaining: {remaining}",
-			toConsume, weaponSlot.WeaponType, simulator.GetAmmo(weaponInfo.AmmoType));
+			toConsume, weaponSlot.WeaponType, GetValue("Ammo"));
 	}
 
 	/// <summary>
 	/// Get current ammo count for this weapon's ammo type.
+	/// Uses generic inventory API: GetValue("Ammo")
 	/// </summary>
 	/// <returns>Current ammo count (0 if weapon doesn't use ammo)</returns>
 	public int GetAmmoCount()
@@ -144,7 +146,7 @@ public class WeaponScriptContext : ActionScriptContext
 		if (string.IsNullOrEmpty(weaponInfo.AmmoType))
 			return 0;
 
-		return simulator.GetAmmo(weaponInfo.AmmoType);
+		return GetValue("Ammo");
 	}
 	#endregion Ammo Management
 
@@ -239,53 +241,10 @@ public class WeaponScriptContext : ActionScriptContext
 	#endregion Weapon Switching
 
 	#region ActionScriptContext Abstract Method Implementations
-	// These are required by ActionScriptContext but not used for weapons
-	// Weapons don't spawn actors or manage player health directly
 
-	public override void SpawnActor(int type, int x, int y)
-	{
-		_logger?.LogWarning("WeaponScriptContext: SpawnActor() not supported for weapons");
-	}
+	// Actor API stubs (not used by weapons)
+	public override void SpawnActor(int type, int x, int y) { }
+	public override void DespawnActor(int actorId) { }
 
-	public override void DespawnActor(int actorId)
-	{
-		_logger?.LogWarning("WeaponScriptContext: DespawnActor() not supported for weapons");
-	}
-
-	public override int GetPlayerHealth()
-	{
-		// TODO: Return actual player health when implemented
-		return 100;
-	}
-
-	public override int GetPlayerMaxHealth()
-	{
-		return 100;
-	}
-
-	public override void HealPlayer(int amount)
-	{
-		_logger?.LogWarning("WeaponScriptContext: HealPlayer() not typically used for weapons");
-	}
-
-	public override void DamagePlayer(int amount)
-	{
-		_logger?.LogWarning("WeaponScriptContext: DamagePlayer() not typically used for weapons");
-	}
-
-	public override void GivePlayerAmmo(int weaponType, int amount)
-	{
-		_logger?.LogWarning("WeaponScriptContext: GivePlayerAmmo() not typically used for weapons");
-	}
-
-	public override void GivePlayerKey(int keyColor)
-	{
-		_logger?.LogWarning("WeaponScriptContext: GivePlayerKey() not supported for weapons");
-	}
-
-	public override bool PlayerHasKey(int keyColor)
-	{
-		return false;
-	}
 	#endregion ActionScriptContext Abstract Method Implementations
 }

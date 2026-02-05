@@ -853,6 +853,7 @@ public class ActorScriptContext : EntityScriptContext
 	public int BitShiftLeft(int value, int bits) => value << bits;
 	#endregion Utilities
 	#region ActionScriptContext Abstract Method Implementations
+
 	/// <summary>
 	/// Play a positional digi sound at this actor's location.
 	/// WL_STATE.C:PlaySoundLocActor
@@ -862,46 +863,16 @@ public class ActorScriptContext : EntityScriptContext
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
 	public override void PlayLocalDigiSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
 
-	// PlayDigiSound (global), PlayAdLibSound, PlayMusic, and StopMusic are inherited from BaseScriptContext
+	// Actor API stubs (actors can spawn other actors in some mods)
 	public override void SpawnActor(int type, int x, int y)
 	{
 		// TODO: Implement actor spawning from scripts
 	}
+
 	public override void DespawnActor(int actorId)
 	{
 		// TODO: Implement actor despawning
 	}
-	public override int GetPlayerHealth()
-	{
-		// TODO: Return actual player health
-		return 100;
-	}
-	public override int GetPlayerMaxHealth()
-	{
-		return 100;
-	}
-	public override void HealPlayer(int amount)
-	{
-		// TODO: Implement player healing (for friendly NPCs?)
-	}
-	public override void DamagePlayer(int amount)
-	{
-		// TODO: Get actual player reference and damage it
-		// For now, just a placeholder
-		// simulator.Player.TakeDamage(amount);
-	}
-	public override void GivePlayerAmmo(int weaponType, int amount)
-	{
-		// TODO: Implement ammo (for friendly NPCs giving items?)
-	}
-	public override void GivePlayerKey(int keyColor)
-	{
-		// TODO: Implement key giving
-	}
-	public override bool PlayerHasKey(int keyColor)
-	{
-		// TODO: Return actual key state
-		return false;
-	}
+
 	#endregion ActionScriptContext Abstract Method Implementations
 }

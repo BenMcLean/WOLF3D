@@ -40,9 +40,6 @@ public class Simulator
 	private readonly List<WeaponSlot> weaponSlots = [];
 	// Weapon definitions (loaded from XML)
 	private WeaponCollection weaponCollection;
-	// Player ammo inventory (global, not per-slot)
-	// WL_DEF.H:gametype:ammo
-	private readonly Dictionary<string, int> ammoInventory = new();
 	// State machine data for actors and weapons
 	private readonly StateCollection stateCollection;
 	// Lua script engine for state functions
@@ -88,14 +85,9 @@ public class Simulator
 	// Derived player tile coordinates
 	public ushort PlayerTileX => (ushort)(PlayerX >> 16);
 	public ushort PlayerTileY => (ushort)(PlayerY >> 16);
-	// Player state (WL_DEF.H:gametype structure)
-	private int playerHealth = 100;
-	private int playerMaxHealth = 100;
-	private int playerScore = 0;
-	private int playerLives = 3;
-	private readonly HashSet<int> playerKeys = [];
-	private readonly HashSet<string> playerWeapons = ["knife", "pistol"];
-	private readonly Dictionary<string, int> maxAmmoCapacity = new() { ["bullets"] = 99 };
+	// Player inventory (health, score, lives, keys, ammo, weapons)
+	// Unified dictionary-based system for moddability and serialization
+	public Inventory Inventory { get; } = new();
 	// Item scripts loaded from game config (maps script name to Lua code)
 	private Dictionary<string, string> itemScripts = new();
 	// Map from ItemNumber (byte) to script name for lookup
@@ -247,6 +239,8 @@ public class Simulator
 		// Initialize Lua script engine and compile all state functions
 		luaScriptEngine = new Lua.LuaScriptEngine(logger);
 		luaScriptEngine.CompileAllStateFunctions(stateCollection);
+		// Wire Inventory.ValueChanged to PlayerStateChanged for backwards compatibility
+		Inventory.ValueChanged += (name, value) => EmitPlayerStateChanged();
 	}
 	/// <summary>
 	/// Update the simulation with elapsed real time.
@@ -1325,20 +1319,16 @@ public class Simulator
 	/// </summary>
 	/// <param name="ammoType">Ammo type identifier (e.g., "bullets")</param>
 	/// <param name="amount">Amount of ammo</param>
-	public void SetAmmo(string ammoType, int amount)
-	{
-		ammoInventory[ammoType] = amount;
-	}
+	public void SetAmmo(string ammoType, int amount) =>
+		Inventory.SetValue("Ammo", amount);
 
 	/// <summary>
 	/// Get ammo count for a specific ammo type.
 	/// </summary>
 	/// <param name="ammoType">Ammo type identifier</param>
 	/// <returns>Current ammo count (0 if type not found)</returns>
-	public int GetAmmo(string ammoType)
-	{
-		return ammoInventory.TryGetValue(ammoType, out int amount) ? amount : 0;
-	}
+	public int GetAmmo(string ammoType) =>
+		Inventory.GetValue("Ammo");
 
 	/// <summary>
 	/// Update a single weapon slot's state machine.
@@ -1417,8 +1407,8 @@ public class Simulator
 						bool hasAmmo = true;
 						if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
 						{
-							hasAmmo = ammoInventory.TryGetValue(weaponInfo.AmmoType, out int currentAmmo)
-							          && currentAmmo >= weaponInfo.AmmoPerShot;
+							int currentAmmo = Inventory.GetValue("Ammo");
+							hasAmmo = currentAmmo >= weaponInfo.AmmoPerShot;
 						}
 
 						// If trigger held and have ammo, loop back to fire frame
@@ -1427,10 +1417,7 @@ public class Simulator
 							// Consume ammo for the next shot
 							if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
 							{
-								if (ammoInventory.TryGetValue(weaponInfo.AmmoType, out int currentAmmo))
-								{
-									ammoInventory[weaponInfo.AmmoType] = currentAmmo - weaponInfo.AmmoPerShot;
-								}
+								Inventory.AddValue("Ammo", -weaponInfo.AmmoPerShot);
 							}
 
 							// Emit weapon fired event for sound
@@ -1519,7 +1506,8 @@ public class Simulator
 		// Check ammo (if weapon requires it)
 		if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
 		{
-			if (!ammoInventory.TryGetValue(weaponInfo.AmmoType, out int currentAmmo) || currentAmmo < weaponInfo.AmmoPerShot)
+			int currentAmmo = Inventory.GetValue("Ammo");
+			if (currentAmmo < weaponInfo.AmmoPerShot)
 			{
 				// Out of ammo - play dry fire sound, don't shoot
 				EmitGlobalSound("NOITEMSND");
@@ -1527,7 +1515,7 @@ public class Simulator
 			}
 
 			// Consume ammo
-			ammoInventory[weaponInfo.AmmoType] = currentAmmo - weaponInfo.AmmoPerShot;
+			Inventory.SetValue("Ammo", currentAmmo - weaponInfo.AmmoPerShot);
 		}
 
 		// Start fire animation
@@ -1609,52 +1597,60 @@ public class Simulator
 	/// Get player's current health.
 	/// WL_DEF.H:gametype:health
 	/// </summary>
-	public int GetPlayerHealth() => playerHealth;
+	public int GetPlayerHealth() => Inventory.GetValue("Health");
 
 	/// <summary>
 	/// Get player's maximum health capacity.
 	/// </summary>
-	public int GetPlayerMaxHealth() => playerMaxHealth;
+	public int GetPlayerMaxHealth() => Inventory.GetMax("Health");
 
 	/// <summary>
 	/// Get player's current score.
 	/// WL_DEF.H:gametype:score
 	/// </summary>
-	public int GetPlayerScore() => playerScore;
+	public int GetPlayerScore() => Inventory.GetValue("Score");
 
 	/// <summary>
 	/// Get player's current lives.
 	/// WL_DEF.H:gametype:lives
 	/// </summary>
-	public int GetPlayerLives() => playerLives;
+	public int GetPlayerLives() => Inventory.GetValue("Lives");
 
 	/// <summary>
 	/// Get maximum ammo capacity for an ammo type.
 	/// </summary>
-	public int GetMaxAmmo(string ammoType) =>
-		maxAmmoCapacity.TryGetValue(ammoType, out int max) ? max : 99;
+	public int GetMaxAmmo(string ammoType) => Inventory.GetMax("Ammo");
 
 	/// <summary>
 	/// Check if player has a specific key.
 	/// WL_DEF.H:gametype:keys
 	/// </summary>
-	public bool PlayerHasKey(int keyType) => playerKeys.Contains(keyType);
+	public bool PlayerHasKey(int keyType) => keyType switch
+	{
+		0 => Inventory.Has("Gold Key"),
+		1 => Inventory.Has("Silver Key"),
+		_ => false
+	};
 
 	/// <summary>
 	/// Check if player has a specific weapon.
 	/// WL_DEF.H:gametype:bestweapon
 	/// </summary>
-	public bool PlayerHasWeapon(string weaponType) => playerWeapons.Contains(weaponType);
+	public bool PlayerHasWeapon(string weaponType) => weaponType switch
+	{
+		"knife" => Inventory.Has("Weapon0"),
+		"pistol" => Inventory.Has("Weapon1"),
+		"machinegun" => Inventory.Has("Weapon2"),
+		"chaingun" => Inventory.Has("Weapon3"),
+		_ => false
+	};
 
 	/// <summary>
 	/// Heal the player (capped at max health).
 	/// WL_AGENT.C:GetBonus health logic
 	/// </summary>
-	public void HealPlayer(int amount)
-	{
-		playerHealth = Math.Min(playerHealth + amount, playerMaxHealth);
-		EmitPlayerStateChanged();
-	}
+	public void HealPlayer(int amount) =>
+		Inventory.AddValue("Health", amount);
 
 	/// <summary>
 	/// Damage the player.
@@ -1662,8 +1658,7 @@ public class Simulator
 	/// </summary>
 	public void DamagePlayer(int amount)
 	{
-		playerHealth = Math.Max(0, playerHealth - amount);
-		EmitPlayerStateChanged();
+		Inventory.AddValue("Health", -amount);
 		// TODO: Check for death
 	}
 
@@ -1671,13 +1666,8 @@ public class Simulator
 	/// Give ammo to player (capped at max).
 	/// WL_AGENT.C:GetBonus ammo logic
 	/// </summary>
-	public void GiveAmmo(string ammoType, int amount)
-	{
-		int max = GetMaxAmmo(ammoType);
-		int current = GetAmmo(ammoType);
-		ammoInventory[ammoType] = Math.Min(current + amount, max);
-		EmitPlayerStateChanged();
-	}
+	public void GiveAmmo(string ammoType, int amount) =>
+		Inventory.AddValue("Ammo", amount);
 
 	/// <summary>
 	/// Give a key to the player.
@@ -1685,8 +1675,14 @@ public class Simulator
 	/// </summary>
 	public void GiveKey(int keyType)
 	{
-		playerKeys.Add(keyType);
-		EmitPlayerStateChanged();
+		string keyName = keyType switch
+		{
+			0 => "Gold Key",
+			1 => "Silver Key",
+			_ => null
+		};
+		if (keyName != null)
+			Inventory.SetValue(keyName, 1);
 	}
 
 	/// <summary>
@@ -1695,8 +1691,16 @@ public class Simulator
 	/// </summary>
 	public void GiveWeapon(string weaponType)
 	{
-		playerWeapons.Add(weaponType);
-		EmitPlayerStateChanged();
+		string weaponKey = weaponType switch
+		{
+			"knife" => "Weapon0",
+			"pistol" => "Weapon1",
+			"machinegun" => "Weapon2",
+			"chaingun" => "Weapon3",
+			_ => null
+		};
+		if (weaponKey != null)
+			Inventory.SetValue(weaponKey, 1);
 	}
 
 	/// <summary>
@@ -1705,8 +1709,7 @@ public class Simulator
 	/// </summary>
 	public void AddScore(int points)
 	{
-		playerScore += points;
-		EmitPlayerStateChanged();
+		Inventory.AddValue("Score", points);
 		// TODO: Check for extra life at score thresholds
 	}
 
@@ -1716,10 +1719,9 @@ public class Simulator
 	/// </summary>
 	public void GiveExtraLife()
 	{
-		playerLives++;
-		// Also typically fills health and ammo
-		playerHealth = playerMaxHealth;
-		EmitPlayerStateChanged();
+		Inventory.AddValue("Lives", 1);
+		// Also typically fills health
+		Inventory.SetValue("Health", Inventory.GetMax("Health"));
 	}
 
 	/// <summary>
@@ -1729,14 +1731,16 @@ public class Simulator
 	{
 		// Compute key flags as bitmask
 		int keyFlags = 0;
-		foreach (int key in playerKeys)
-			keyFlags |= (1 << key);
+		if (Inventory.Has("Gold Key"))
+			keyFlags |= 1;
+		if (Inventory.Has("Silver Key"))
+			keyFlags |= 2;
 
 		PlayerStateChanged?.Invoke(new PlayerStateChangedEvent
 		{
-			Health = playerHealth,
-			Score = playerScore,
-			Lives = playerLives,
+			Health = Inventory.GetValue("Health"),
+			Score = Inventory.GetValue("Score"),
+			Lives = Inventory.GetValue("Lives"),
 			Ammo = GetAmmo("bullets"),
 			KeyFlags = keyFlags
 		});
@@ -1771,17 +1775,17 @@ public class Simulator
 	/// <summary>
 	/// Set player health directly (for initialization/save loading).
 	/// </summary>
-	public void SetPlayerHealth(int health) => playerHealth = Math.Max(0, Math.Min(health, playerMaxHealth));
+	public void SetPlayerHealth(int health) => Inventory.SetValue("Health", health);
 
 	/// <summary>
 	/// Set player score directly (for initialization/save loading).
 	/// </summary>
-	public void SetPlayerScore(int score) => playerScore = score;
+	public void SetPlayerScore(int score) => Inventory.SetValue("Score", score);
 
 	/// <summary>
 	/// Set player lives directly (for initialization/save loading).
 	/// </summary>
-	public void SetPlayerLives(int lives) => playerLives = lives;
+	public void SetPlayerLives(int lives) => Inventory.SetValue("Lives", lives);
 
 	/// <summary>
 	/// Load item scripts from game configuration.

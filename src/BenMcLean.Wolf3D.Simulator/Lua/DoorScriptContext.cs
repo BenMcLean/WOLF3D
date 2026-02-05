@@ -34,51 +34,7 @@ public class DoorScriptContext : EntityScriptContext
 	// - IsLocked()
 	// - etc.
 
-	// Action API implementations (doors may need limited subset)
-	public override void SpawnActor(int type, int x, int y)
-	{
-		// TODO: Implement or disable for door context
-	}
-
-	public override void DespawnActor(int actorId)
-	{
-		// TODO: Implement or disable for door context
-	}
-
-	public override int GetPlayerHealth()
-	{
-		// TODO: Return actual player health
-		return 100;
-	}
-
-	public override int GetPlayerMaxHealth()
-	{
-		return 100;
-	}
-
-	public override void HealPlayer(int amount)
-	{
-		// TODO: Implement healing
-	}
-
-	public override void DamagePlayer(int amount)
-	{
-		// TODO: Implement damage
-	}
-
-	public override void GivePlayerAmmo(int weaponType, int amount)
-	{
-		// TODO: Implement ammo
-	}
-
-	public override void GivePlayerKey(int keyColor)
-	{
-		// TODO: Implement keys
-	}
-
-	public override bool PlayerHasKey(int keyColor)
-	{
-		// TODO: Return actual key state
-		return false;
-	}
+	// Actor API stubs (not used by doors)
+	public override void SpawnActor(int type, int x, int y) { }
+	public override void DespawnActor(int actorId) { }
 }

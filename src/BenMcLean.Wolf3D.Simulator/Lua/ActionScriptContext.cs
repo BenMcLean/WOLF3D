@@ -4,8 +4,8 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 
 /// <summary>
 /// Script context for the action stage (gameplay).
-/// Extends BaseScriptContext with deterministic RNG/GameClock and action-specific API.
-/// Provides action methods like spawn actors, damage player, inventory management.
+/// Extends BaseScriptContext with deterministic RNG/GameClock and generic inventory API.
+/// All player state (health, ammo, keys, weapons, score, lives) is accessed via the Inventory.
 /// </summary>
 public abstract class ActionScriptContext : BaseScriptContext, IActionScriptContext
 {
@@ -24,22 +24,64 @@ public abstract class ActionScriptContext : BaseScriptContext, IActionScriptCont
 		this.gameClock = gameClock;
 	}
 
-	// Action-specific API (to be implemented by derived classes or Simulator integration)
+	#region Generic Inventory API (exposed to Lua)
+
+	/// <summary>
+	/// Get the value of any inventory item.
+	/// Examples: GetValue("Health"), GetValue("Ammo"), GetValue("Gold Key"), GetValue("Weapon2")
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <returns>Current value, or 0 if not found</returns>
+	public int GetValue(string name) => simulator.Inventory.GetValue(name);
+
+	/// <summary>
+	/// Set the value of any inventory item.
+	/// Value is clamped to [0, Max] if a maximum is defined.
+	/// Examples: SetValue("Health", 100), SetValue("Gold Key", 1)
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <param name="value">The new value</param>
+	public void SetValue(string name, int value) => simulator.Inventory.SetValue(name, value);
+
+	/// <summary>
+	/// Add to any inventory item value.
+	/// Examples: AddValue("Health", 10), AddValue("Ammo", -1), AddValue("Score", 500)
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <param name="delta">Amount to add (can be negative)</param>
+	public void AddValue(string name, int delta) => simulator.Inventory.AddValue(name, delta);
+
+	/// <summary>
+	/// Get the maximum value for any inventory item.
+	/// Examples: GetMax("Health") returns 100, GetMax("Ammo") returns 99
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <returns>Maximum value, or int.MaxValue if no max defined</returns>
+	public int GetMax(string name) => simulator.Inventory.GetMax(name);
+
+	/// <summary>
+	/// Check if player has an inventory item (value > 0).
+	/// Examples: Has("Gold Key"), Has("Weapon2"), Has("Ammo")
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <returns>True if value > 0</returns>
+	public bool Has(string name) => simulator.Inventory.Has(name);
+
+	#endregion
+
+	#region Actor API (to be implemented by derived classes)
+
 	public abstract void SpawnActor(int type, int x, int y);
 	public abstract void DespawnActor(int actorId);
-	public abstract int GetPlayerHealth();
-	public abstract int GetPlayerMaxHealth();
-	public abstract void HealPlayer(int amount);
-	public abstract void DamagePlayer(int amount);
-	public abstract void GivePlayerAmmo(int weaponType, int amount);
-	public abstract void GivePlayerKey(int keyColor);
-	public abstract bool PlayerHasKey(int keyColor);
+
+	#endregion
 }
 
 /// <summary>
 /// Script context for bonus objects (pickups).
 /// Extends EntityScriptContext with bonus-specific API.
 /// Inherits PlayLocalDigiSound for positional audio at bonus location.
+/// Uses generic inventory API from ActionScriptContext.
 /// </summary>
 public class BonusScriptContext : EntityScriptContext
 {
@@ -54,51 +96,7 @@ public class BonusScriptContext : EntityScriptContext
 	{
 	}
 
-	// Action API stubs (to be implemented as simulator evolves)
-	public override void SpawnActor(int type, int x, int y)
-	{
-		// TODO: Implement actor spawning
-	}
-
-	public override void DespawnActor(int actorId)
-	{
-		// TODO: Implement despawning
-	}
-
-	public override int GetPlayerHealth()
-	{
-		// TODO: Return actual player health
-		return 100;
-	}
-
-	public override int GetPlayerMaxHealth()
-	{
-		return 100;
-	}
-
-	public override void HealPlayer(int amount)
-	{
-		// TODO: Implement healing
-	}
-
-	public override void DamagePlayer(int amount)
-	{
-		// TODO: Implement damage
-	}
-
-	public override void GivePlayerAmmo(int weaponType, int amount)
-	{
-		// TODO: Implement ammo
-	}
-
-	public override void GivePlayerKey(int keyColor)
-	{
-		// TODO: Implement keys
-	}
-
-	public override bool PlayerHasKey(int keyColor)
-	{
-		// TODO: Return actual key state
-		return false;
-	}
+	// Actor API stubs (not used by bonuses)
+	public override void SpawnActor(int type, int x, int y) { }
+	public override void DespawnActor(int actorId) { }
 }
