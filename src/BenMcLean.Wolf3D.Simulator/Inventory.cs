@@ -165,4 +165,26 @@ public class Inventory
 		foreach (KeyValuePair<string, int> kvp in _initValues)
 			SetValue(kvp.Key, kvp.Value);
 	}
+
+	/// <summary>
+	/// Captures the current inventory state for preservation across level transitions.
+	/// Returns a snapshot of all current values.
+	/// </summary>
+	/// <returns>Dictionary containing all current inventory values</returns>
+	public Dictionary<string, int> CaptureState() =>
+		new(_values);
+
+	/// <summary>
+	/// Restores inventory state from a previously captured snapshot.
+	/// Used during level transitions to preserve player state.
+	/// </summary>
+	/// <param name="savedState">Dictionary containing saved inventory values</param>
+	public void RestoreState(Dictionary<string, int> savedState)
+	{
+		if (savedState == null)
+			return;
+
+		foreach (KeyValuePair<string, int> kvp in savedState)
+			SetValue(kvp.Key, kvp.Value);
+	}
 }

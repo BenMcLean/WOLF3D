@@ -158,7 +158,7 @@
 			<Number Name="Lives" X="128" Y="16" Digits="2" Init="3" />
 			<Face X="134" Y="5" />
 			<Number Name="Health" X="192" Y="16" Digits="3" Init="100" Max="100" />
-			<Number Name="Ammo" X="232" Y="16" Digits="2" Init="6" Max="99" />
+			<Number Name="Ammo" X="232" Y="16" Digits="2" Init="8" Max="99" />
 			<Number Name="Gold Key" X="240" Y="4" Have="GOLDKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
 			<Number Name="Silver Key" X="240" Y="20" Have="SILVERKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
 			<Number Name="Weapon0" Init="1" Max="1" />
@@ -653,12 +653,37 @@ end
 			<Ambush Tile="106" />
 			<AltElevator Tile="107" />
 
-			<!-- Door types: Tile is base (even), Tile+1 (odd) implied, Lock=(Tile-90)/2 -->
+			<!-- Door types: Tile is base (even), Tile+1 (odd) implied -->
+			<!-- Doors with no script open freely. Doors with scripts return true to open, false to stay locked. -->
 			<Door Tile="90" Name="normal" Page="0" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+if Has("Gold Key") then
+	return true
+end
+PlayLocalDigiSound("NOWAYSND")
+return false
+]]></Door>
+			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+if Has("Silver Key") then
+	return true
+end
+PlayLocalDigiSound("NOWAYSND")
+return false
+]]></Door>
+			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+if Has("Gold Key") then
+	return true
+end
+PlayLocalDigiSound("NOWAYSND")
+return false
+]]></Door>
+			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+if Has("Silver Key") then
+	return true
+end
+PlayLocalDigiSound("NOWAYSND")
+return false
+]]></Door>
 			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 		</WallPlane>
 		<SpritePlane>

@@ -54,6 +54,8 @@ void sky() {
 	};
 
 	private readonly IDisplayMode _displayMode;
+	private readonly Dictionary<string, int> _savedInventory;
+	private readonly string _savedWeaponType;
 	private Walls _walls;
 	private DebugMarkers _debugMarkers;
 	private Fixtures _fixtures;
@@ -72,9 +74,13 @@ void sky() {
 	/// Creates a new ActionStage with the specified display mode.
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
-	public ActionStage(IDisplayMode displayMode)
+	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
+	/// <param name="savedWeaponType">Optional saved weapon type from level transition (null for new game).</param>
+	public ActionStage(IDisplayMode displayMode, Dictionary<string, int> savedInventory = null, string savedWeaponType = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
+		_savedInventory = savedInventory;
+		_savedWeaponType = savedWeaponType;
 	}
 
 	public override void _Ready()
@@ -83,6 +89,10 @@ void sky() {
 		{
 			// Get current level analysis
 			MapAnalysis = Shared.SharedAssetManager.CurrentGame.MapAnalyses[LevelIndex];
+
+		// Play level music
+		if (!string.IsNullOrWhiteSpace(MapAnalysis.Music))
+			Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, MapAnalysis.Music);
 
 		// Setup sky with floor/ceiling colors from map
 		SetupSky(MapAnalysis);
@@ -196,7 +206,22 @@ void sky() {
 
 		// Initialize inventory from StatusBar definition
 		if (SharedAssetManager.StatusBar != null)
+		{
 			_simulatorController.Simulator.Inventory.InitializeFromDefinition(SharedAssetManager.StatusBar);
+
+			// If this is a level transition (saved state exists), restore player state
+			if (_savedInventory != null)
+			{
+				// Restore inventory values (ammo, health, score, lives, weapons)
+				_simulatorController.Simulator.Inventory.RestoreState(_savedInventory);
+				// Reset only level-specific values (keys)
+				_simulatorController.Simulator.Inventory.OnLevelChange();
+
+				// Restore equipped weapon (e.g., if player had machinegun, keep it)
+				if (!string.IsNullOrEmpty(_savedWeaponType))
+					_simulatorController.Simulator.EquipWeapon(0, _savedWeaponType);
+			}
+		}
 
 		// Subscribe to display mode button events for shooting and using objects
 		// Left click (flatscreen) or right trigger (VR) = shoot
@@ -223,6 +248,12 @@ void sky() {
 
 			// Subscribe status bar directly to Inventory for automatic updates
 			_statusBarState.SubscribeToInventory(_simulatorController.Simulator.Inventory);
+
+			// Sync status bar with current inventory values (important for level transitions
+			// where inventory was restored before status bar was created)
+			_statusBarState.SyncFromSimulator(
+				_simulatorController.Simulator.Inventory.Values,
+				0);  // TODO: Get actual current weapon slot
 
 			// Create CanvasLayer to display status bar at bottom of screen
 			_statusBarCanvas = new CanvasLayer
@@ -504,6 +535,16 @@ void sky() {
 
 	public override void _ExitTree()
 	{
+		// Unsubscribe from display mode events to prevent ObjectDisposedException
+		// when old ActionStage is freed during level transitions
+		_displayMode.PrimaryButtonPressed -= OnPrimaryButtonPressed;
+		_displayMode.PrimaryButtonReleased -= OnPrimaryButtonReleased;
+		_displayMode.SecondaryButtonPressed -= OnSecondaryButtonPressed;
+
+		// Unsubscribe from simulator events
+		if (_simulatorController != null)
+			_simulatorController.ElevatorActivated -= OnElevatorActivated;
+
 		// Release mouse when leaving action stage (returning to menu, etc.)
 		if (!_displayMode.IsVRActive)
 			Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -533,6 +574,7 @@ void sky() {
 	/// <summary>
 	/// Reloads the current ActionStage with the new LevelIndex.
 	/// Called deferred after elevator activation.
+	/// Preserves player inventory state (ammo, health, score, weapons) across level transitions.
 	/// </summary>
 	private void ReloadLevel()
 	{
@@ -546,8 +588,15 @@ void sky() {
 			return;
 		}
 
-		// Create a new ActionStage with the same display mode and updated level index
-		ActionStage newStage = new(_displayMode)
+		// Capture player inventory state before destroying this stage
+		// This preserves ammo, health, score, lives, and weapons across level transitions
+		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.CaptureState();
+
+		// Capture current weapon type (e.g., "pistol", "machinegun", "chaingun")
+		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
+
+		// Create a new ActionStage with the same display mode, updated level index, and saved state
+		ActionStage newStage = new(_displayMode, savedInventory, savedWeaponType)
 		{
 			LevelIndex = LevelIndex
 		};

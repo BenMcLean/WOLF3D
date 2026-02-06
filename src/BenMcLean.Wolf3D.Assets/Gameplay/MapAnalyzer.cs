@@ -106,11 +106,13 @@ public class MapAnalyzer
 				TileNumber = tileNum,
 				Name = doorElem.Attribute("Name")?.Value
 					?? throw new InvalidDataException("Door element missing Name attribute"),
-				Key = doorElem.Attribute("Key")?.Value,  // Optional
+				Key = doorElem.Attribute("Key")?.Value,  // Optional - required inventory item
+				Script = doorElem.Value?.Trim(),  // Optional - inline Lua script (CDATA)
 				Page = ushort.Parse(doorElem.Attribute("Page")?.Value
 					?? throw new InvalidDataException("Door element missing Page attribute")),
 				OpenSound = doorElem.Attribute("OpenSound")?.Value,  // Optional
-				CloseSound = doorElem.Attribute("CloseSound")?.Value  // Optional
+				CloseSound = doorElem.Attribute("CloseSound")?.Value,  // Optional
+				LockedSound = doorElem.Attribute("LockedSound")?.Value  // Optional
 			};
 			// Store both even (vertical) and odd (horizontal) tile numbers
 			Doors[tileNum] = info;
@@ -664,9 +666,11 @@ public record DoorInfo
 	public ushort TileNumber { get; init; }    // Base tile number from wall plane (even, odd is +1)
 	public string Name { get; init; }          // Door type name (e.g., "normal", "gold")
 	public string Key { get; init; }           // Required key item (null if no key needed)
+	public string Script { get; init; }        // Lua script that returns true if door can open (null = always opens)
 	public ushort Page { get; init; }          // Page offset from DoorWall
 	public string OpenSound { get; init; }     // Sound when opening
 	public string CloseSound { get; init; }    // Sound when closing
+	public string LockedSound { get; init; }   // Sound when door is locked (optional)
 }
 
 /// <summary>

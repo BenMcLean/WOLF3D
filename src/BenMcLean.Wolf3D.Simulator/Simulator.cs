@@ -332,12 +332,76 @@ public class Simulator
 		{
 			case DoorAction.Closed:
 			case DoorAction.Closing:
-				OpenDoor(doorIndex);
+				// Check door script before opening (for locked doors)
+				if (CanOpenDoor(doorIndex, door))
+					OpenDoor(doorIndex);
 				break;
 			case DoorAction.Open:
 			case DoorAction.Opening:
 				CloseDoor(doorIndex);
 				break;
+		}
+	}
+
+	/// <summary>
+	/// Check if a door can be opened by running its script (if any).
+	/// Scripts can check inventory for keys using Has("Gold Key"), etc.
+	/// If no script is defined, the door can always be opened.
+	/// </summary>
+	private bool CanOpenDoor(ushort doorIndex, Door door)
+	{
+		// Look up door info to get script
+		if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) != true)
+			return true; // No door info, allow open
+
+		// If no script defined, door can be opened
+		if (string.IsNullOrWhiteSpace(doorInfo.Script))
+			return true;
+
+		// Create script context for this door
+		Lua.DoorScriptContext context = new(
+			this,
+			rng,
+			gameClock,
+			door.TileX,
+			door.TileY,
+			logger);
+
+		// Wire up sound callbacks
+		context.PlayAdLibSoundAction = soundName =>
+			EmitDoorPlaySound(doorIndex, soundName);
+		context.PlayDigiSoundAction = soundName =>
+			EmitDoorPlaySound(doorIndex, soundName);
+
+		try
+		{
+			// Execute the door script
+			MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(doorInfo.Script, context);
+
+			// Script returns true if door can open, false if locked
+			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
+			{
+				if (!result.Boolean)
+				{
+					// Door is locked - fire event (script handles sound via PlayLocalDigiSound)
+					DoorLocked?.Invoke(new DoorLockedEvent
+					{
+						DoorIndex = doorIndex,
+						RequiredKey = doorInfo.Key ?? "unknown"
+					});
+				}
+				return result.Boolean;
+			}
+
+			// If script doesn't return a boolean, allow open
+			return true;
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing door script for door at ({TileX}, {TileY})",
+				door.TileX, door.TileY);
+			// On error, allow open (safer default - don't trap player)
+			return true;
 		}
 	}
 	/// <summary>
@@ -1311,6 +1375,19 @@ public class Simulator
 			WeaponType = weaponType,
 			Shape = (ushort)slot.ShapeNum
 		});
+	}
+
+	/// <summary>
+	/// Get the weapon type currently equipped in a slot.
+	/// Used to preserve weapon selection across level transitions.
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot index</param>
+	/// <returns>Weapon type identifier (e.g., "pistol"), or null if slot is empty or invalid</returns>
+	public string GetEquippedWeaponType(int slotIndex)
+	{
+		if (slotIndex < 0 || slotIndex >= weaponSlots.Count)
+			return null;
+		return weaponSlots[slotIndex].WeaponType;
 	}
 
 	/// <summary>
