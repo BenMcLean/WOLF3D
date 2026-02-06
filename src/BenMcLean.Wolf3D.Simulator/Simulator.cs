@@ -709,26 +709,29 @@ public class Simulator
 		// Calculate trailing edge position BEFORE moving
 		// Trailing edge is half a tile behind center, opposite to movement direction
 		// This determines which tile the back of the pushwall is still in
+		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
+		// A position at exactly N*65536 is counted as tile N, so +0x8000 would be next tile
 		int oldTrailingX = pushWall.X;
 		int oldTrailingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
-			case Direction.N: oldTrailingY += 0x8000; break; // Moving north, trailing edge is south
+			case Direction.N: oldTrailingY += 0x7FFF; break; // Moving north, trailing edge is south (stay inside tile)
 			case Direction.S: oldTrailingY -= 0x8000; break; // Moving south, trailing edge is north
 			case Direction.E: oldTrailingX -= 0x8000; break; // Moving east, trailing edge is west
-			case Direction.W: oldTrailingX += 0x8000; break; // Moving west, trailing edge is east
+			case Direction.W: oldTrailingX += 0x7FFF; break; // Moving west, trailing edge is east (stay inside tile)
 		}
 		ushort oldTrailingTileX = (ushort)(oldTrailingX >> 16);
 		ushort oldTrailingTileY = (ushort)(oldTrailingY >> 16);
 
 		// Track leading edge tile BEFORE moving (for claiming new tiles)
+		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
 		int oldLeadingX = pushWall.X;
 		int oldLeadingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
 			case Direction.N: oldLeadingY -= 0x8000; break; // Moving north, leading edge is north
-			case Direction.S: oldLeadingY += 0x8000; break; // Moving south, leading edge is south
-			case Direction.E: oldLeadingX += 0x8000; break; // Moving east, leading edge is east
+			case Direction.S: oldLeadingY += 0x7FFF; break; // Moving south, leading edge is south (stay inside tile)
+			case Direction.E: oldLeadingX += 0x7FFF; break; // Moving east, leading edge is east (stay inside tile)
 			case Direction.W: oldLeadingX -= 0x8000; break; // Moving west, leading edge is west
 		}
 		ushort oldLeadingTileX = (ushort)(oldLeadingX >> 16);
@@ -752,26 +755,28 @@ public class Simulator
 		}
 
 		// Calculate trailing edge position AFTER moving
+		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
 		int newTrailingX = pushWall.X;
 		int newTrailingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
-			case Direction.N: newTrailingY += 0x8000; break;
+			case Direction.N: newTrailingY += 0x7FFF; break; // Stay inside tile
 			case Direction.S: newTrailingY -= 0x8000; break;
 			case Direction.E: newTrailingX -= 0x8000; break;
-			case Direction.W: newTrailingX += 0x8000; break;
+			case Direction.W: newTrailingX += 0x7FFF; break; // Stay inside tile
 		}
 		ushort newTrailingTileX = (ushort)(newTrailingX >> 16);
 		ushort newTrailingTileY = (ushort)(newTrailingY >> 16);
 
 		// Calculate leading edge position AFTER moving
+		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
 		int newLeadingX = pushWall.X;
 		int newLeadingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
 			case Direction.N: newLeadingY -= 0x8000; break;
-			case Direction.S: newLeadingY += 0x8000; break;
-			case Direction.E: newLeadingX += 0x8000; break;
+			case Direction.S: newLeadingY += 0x7FFF; break; // Stay inside tile
+			case Direction.E: newLeadingX += 0x7FFF; break; // Stay inside tile
 			case Direction.W: newLeadingX -= 0x8000; break;
 		}
 		ushort newLeadingTileX = (ushort)(newLeadingX >> 16);
