@@ -484,6 +484,13 @@ public class Simulator
 			return;
 		// Nothing blocking, start closing
 		door.Action = DoorAction.Closing;
+
+		// Restore door to spatial index immediately when closing starts
+		// This ensures collision detection blocks passage during the entire closing animation
+		// (doorAtTile was cleared when door became fully Open)
+		int tileIdx = GetTileIndex(door.TileX, door.TileY);
+		doorAtTile[tileIdx] = (short)doorIndex;
+
 		DoorClosing?.Invoke(new DoorClosingEvent
 		{
 			DoorIndex = doorIndex,
