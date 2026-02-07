@@ -243,12 +243,11 @@ public partial class SimulatorController : Node3D
 	/// <summary>
 	/// Player fires weapon in specified slot.
 	/// Call this from player input handling (e.g., trigger press or X key).
-	/// Based on WL_AGENT.C:Cmd_Fire and GunAttack.
+	/// Hit detection is handled by the weapon state machine via HitDetection callback.
+	/// Based on WL_AGENT.C:Cmd_Fire.
 	/// </summary>
 	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>
-	/// <param name="hitActorIndex">Index of actor hit (null if miss)</param>
-	/// <param name="hitPoint">World coordinates where shot hit (null if miss)</param>
-	public void FireWeapon(int slotIndex, int? hitActorIndex, (int x, int y)? hitPoint)
+	public void FireWeapon(int slotIndex)
 	{
 		if (simulator == null)
 			return;
@@ -256,8 +255,6 @@ public partial class SimulatorController : Node3D
 		simulator.QueueAction(new FireWeaponAction
 		{
 			SlotIndex = slotIndex,
-			HitActorIndex = hitActorIndex,
-			HitPoint = hitPoint
 		});
 	}
 

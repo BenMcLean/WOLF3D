@@ -93,6 +93,14 @@ public class Simulator
 	// Player inventory (health, score, lives, keys, ammo, weapons)
 	// Unified dictionary-based system for moddability and serialization
 	public Inventory Inventory { get; } = new();
+	/// <summary>
+	/// Callback for weapon hit detection. Presentation layer sets this to perform
+	/// a raycast when the weapon state machine reaches a fire action.
+	/// Called by A_PistolAttack, A_MachineGunAttack, A_ChainGunAttack, etc.
+	/// Parameter: weapon slot index. Returns: hit actor index or null if miss.
+	/// Based on WL_AGENT.C:GunAttack performing raycast on the fire frame in T_Attack.
+	/// </summary>
+	public Func<int, int?> HitDetection { get; set; }
 	// Item scripts loaded from game config (maps script name to Lua code)
 	private Dictionary<string, string> itemScripts = new();
 	// Map from ItemNumber (byte) to script name for lookup
@@ -1295,6 +1303,10 @@ public class Simulator
 				facing: spawn.Facing,
 				hitPoints: hitPoints);
 			// Set additional flags from spawn data
+			// WL_ACT1.C:SpawnStand/SpawnPatrol - enemies are FL_SHOOTABLE if they have a death state
+			if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition actorDef)
+				&& !string.IsNullOrEmpty(actorDef.DeathState))
+				actor.Flags |= ActorFlags.Shootable;
 			if (spawn.Ambush)
 				actor.Flags |= ActorFlags.Ambush;
 			if (spawn.Patrol)
@@ -1541,61 +1553,41 @@ public class Simulator
 
 		// Execute Action function if present (optional Lua support)
 		// TODO: Full Lua script execution for weapon actions
-		// For now, handle rapid fire check directly in C#
-		if (!string.IsNullOrEmpty(nextState.Action))
+		// For now, handle weapon actions directly in C#
+		if (!string.IsNullOrEmpty(nextState.Action)
+			&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
 		{
-			// Quick implementation of A_RapidFire for machine gun and chain gun
-			// WL_AGENT.C:T_Attack cases 3 & 4 (lines 2203, 2223)
-			if (nextState.Action == "A_RapidFire")
+			switch (nextState.Action)
 			{
-				// Check if trigger still held and ammo available
-				if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
-				{
-					// Get weapon info to check ammo
-					if (weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
+				// WL_AGENT.C:GunAttack - hitscan attack actions
+				// Each performs raycast via HitDetection callback, consumes ammo, applies damage
+				case "A_PistolAttack":
+				case "A_MachineGunAttack":
+				case "A_ChainGunAttack":
+					ExecuteGunAttack(slotIndex, slot, weaponInfo);
+					break;
+
+				// WL_AGENT.C:T_Attack cases 3 & 4 - loop back to fire state if trigger held
+				case "A_RapidFire":
+					if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
 					{
-						// Check ammo availability
 						bool hasAmmo = true;
 						if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
-						{
-							int currentAmmo = Inventory.GetValue("Ammo");
-							hasAmmo = currentAmmo >= weaponInfo.AmmoPerShot;
-						}
+							hasAmmo = Inventory.GetValue("Ammo") >= weaponInfo.AmmoPerShot;
 
-						// If trigger held and have ammo, loop back to fire frame
 						if (hasAmmo)
 						{
-							// Consume ammo for the next shot
-							if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
-							{
-								Inventory.AddValue("Ammo", -weaponInfo.AmmoPerShot);
-							}
-
-							// Emit weapon fired event for sound
-							// WL_AGENT.C:GunAttack plays sound each time
-							WeaponFired?.Invoke(new WeaponFiredEvent
-							{
-								SlotIndex = slotIndex,
-								WeaponType = slot.WeaponType,
-								SoundName = weaponInfo.FireSound ?? string.Empty,
-								DidHit = false,  // Rapid fire hits handled separately by presentation
-								HitActorIndex = null
-							});
-
-							// Loop back to fire frame using weapon's FireState from XML
 							string fireFrameState = weaponInfo.FireState;
-
 							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
 							{
 								slot.CurrentState = fireState;
 								slot.TicCount = fireState.Tics;
 								slot.ShapeNum = fireState.Shape;
-								slot.AttackFrame = 1;  // Reset to fire frame
-								// Don't increment further - we're looping back
+								slot.AttackFrame = 1;
 							}
 						}
 					}
-				}
+					break;
 			}
 		}
 
@@ -1648,22 +1640,18 @@ public class Simulator
 		if (weaponInfo.FireMode == "semi" && slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
 			return;
 
-		// Check ammo (if weapon requires it)
+		// Check ammo before starting animation (dry fire check)
 		if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
 		{
-			int currentAmmo = Inventory.GetValue("Ammo");
-			if (currentAmmo < weaponInfo.AmmoPerShot)
+			if (Inventory.GetValue("Ammo") < weaponInfo.AmmoPerShot)
 			{
-				// Out of ammo - play dry fire sound, don't shoot
 				EmitGlobalSound("NOITEMSND");
 				return;
 			}
-
-			// Consume ammo
-			Inventory.SetValue("Ammo", currentAmmo - weaponInfo.AmmoPerShot);
 		}
 
-		// Start fire animation
+		// Start fire animation - ammo consumption, hit detection, and damage
+		// are handled by the attack action (A_PistolAttack, etc.) on the fire frame
 		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out State fireState))
 			return;
 
@@ -1673,23 +1661,6 @@ public class Simulator
 		slot.Flags |= WeaponSlotFlags.TriggerHeld | WeaponSlotFlags.Attacking;
 		slot.Flags &= ~WeaponSlotFlags.Ready;
 		slot.AttackFrame = 0;
-
-		// Apply damage if presentation reported a hit
-		// Based on WL_AGENT.C:GunAttack/KnifeAttack damage application
-		if (action.HitActorIndex.HasValue)
-		{
-			ApplyWeaponDamage(action.HitActorIndex.Value, weaponInfo.BaseDamage);
-		}
-
-		// Emit weapon fired event (for sound, muzzle flash)
-		WeaponFired?.Invoke(new WeaponFiredEvent
-		{
-			SlotIndex = action.SlotIndex,
-			WeaponType = slot.WeaponType,
-			SoundName = weaponInfo.FireSound ?? string.Empty,
-			DidHit = action.HitActorIndex.HasValue,
-			HitActorIndex = action.HitActorIndex
-		});
 	}
 
 	/// <summary>
@@ -1708,6 +1679,40 @@ public class Simulator
 	}
 
 	/// <summary>
+	/// Execute a gun attack action (A_PistolAttack, A_MachineGunAttack, A_ChainGunAttack).
+	/// Consumes ammo, performs hit detection via callback, applies damage, emits event.
+	/// Based on WL_AGENT.C:GunAttack - called on the fire frame of every weapon.
+	/// </summary>
+	private void ExecuteGunAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
+	{
+		// Check and consume ammo
+		if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
+		{
+			int currentAmmo = Inventory.GetValue("Ammo");
+			if (currentAmmo < weaponInfo.AmmoPerShot)
+				return;
+			Inventory.SetValue("Ammo", currentAmmo - weaponInfo.AmmoPerShot);
+		}
+
+		// Perform hit detection via presentation layer callback
+		int? hitActorIndex = HitDetection?.Invoke(slotIndex);
+
+		// Apply damage if hit
+		if (hitActorIndex.HasValue)
+			ApplyWeaponDamage(hitActorIndex.Value, weaponInfo.BaseDamage);
+
+		// Emit weapon fired event (for sound, muzzle flash)
+		WeaponFired?.Invoke(new WeaponFiredEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = slot.WeaponType,
+			SoundName = weaponInfo.FireSound ?? string.Empty,
+			DidHit = hitActorIndex.HasValue,
+			HitActorIndex = hitActorIndex
+		});
+	}
+
+	/// <summary>
 	/// Apply damage to an actor from a weapon hit.
 	/// Based on WL_AGENT.C:DamageActor.
 	/// </summary>
@@ -1719,6 +1724,10 @@ public class Simulator
 			return;
 
 		Actor actor = actors[actorIndex];
+
+		// WL_AGENT.C:DamageActor - only damage shootable (alive) actors
+		if (!actor.Flags.HasFlag(ActorFlags.Shootable))
+			return;
 
 		// One-shot kill: Transition to death state immediately
 		// (Damage/HP system can be refined later)

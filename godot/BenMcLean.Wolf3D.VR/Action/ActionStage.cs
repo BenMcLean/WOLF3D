@@ -198,6 +198,10 @@ void sky() {
 			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
 			() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
+		// Wire up hit detection callback for weapon state machine
+		// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
+		_simulatorController.Simulator.HitDetection = PerformWeaponRaycast;
+
 		// Wire up movement validation for collision detection
 		// This enables wall collision and wall-sliding behavior
 		_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
@@ -371,32 +375,32 @@ void sky() {
 
 	/// <summary>
 	/// Fires the weapon in the primary slot (slot 0).
-	/// Performs pixel-perfect raycast hit detection against actors.
+	/// Signals the simulator that the trigger was pulled.
+	/// Hit detection is handled by the weapon state machine via HitDetection callback.
 	/// </summary>
 	private void FireWeapon()
 	{
-		// Use same ray calculation as AimIndicator for consistency
-		// This ensures the fired shot goes where the aim indicator shows
+		_simulatorController.FireWeapon(0);
+	}
+
+	/// <summary>
+	/// Performs a raycast for weapon hit detection.
+	/// Called by the simulator's weapon state machine on fire frames (A_PistolAttack, etc.).
+	/// Based on WL_AGENT.C:GunAttack performing raycast on each fire frame in T_Attack.
+	/// </summary>
+	/// <param name="slotIndex">Weapon slot index</param>
+	/// <returns>Hit actor index, or null if miss</returns>
+	private int? PerformWeaponRaycast(int slotIndex)
+	{
 		Vector3 rayOrigin = _displayMode.Camera.GlobalPosition;
 		Vector3 rayDirection = -_displayMode.Camera.GlobalTransform.Basis.Z;
 		Vector3 cameraForward = rayDirection;
 
-		// Perform pixel-perfect raycast
 		PixelPerfectAiming.AimHitResult hitResult = _pixelPerfectAiming.Raycast(rayOrigin, rayDirection, cameraForward);
 
-		// Extract hit actor index (null if no actor hit)
-		int? hitActorIndex = (hitResult.IsHit && hitResult.Type == PixelPerfectAiming.HitType.Actor)
+		return (hitResult.IsHit && hitResult.Type == PixelPerfectAiming.HitType.Actor)
 			? hitResult.ActorIndex
 			: null;
-
-		// Convert hit position to simulator coordinates (null if no hit)
-		(int x, int y)? hitPoint = hitResult.IsHit
-			? ((int)(hitResult.Position.X * 65536f / Constants.TileWidth),
-			   (int)(hitResult.Position.Z * 65536f / Constants.TileWidth))
-			: null;
-
-		// Fire weapon with hit detection results
-		_simulatorController.FireWeapon(0, hitActorIndex, hitPoint);
 	}
 
 	/// <summary>
