@@ -247,6 +247,10 @@ public class LuaScriptEngine
 						else
 							invokeArgs[i] = luaArg.ToObject();
 					}
+					else if (parameters[i].HasDefaultValue)
+					{
+						invokeArgs[i] = parameters[i].DefaultValue;
+					}
 				}
 
 				// Invoke the method (static methods use null as instance)

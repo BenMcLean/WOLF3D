@@ -895,6 +895,7 @@ return false
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 4)
 	PlayAdLibSound("HEALTH1SND")
+	FlashScreen(0xFFF800)
 	return true
 end
 return false
@@ -903,6 +904,7 @@ return false
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 10)
 	PlayAdLibSound("HEALTH1SND")
+	FlashScreen(0xFFF800)
 	return true
 end
 return false
@@ -911,6 +913,7 @@ return false
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 25)
 	PlayAdLibSound("HEALTH2SND")
+	FlashScreen(0xFFF800)
 	return true
 end
 return false
@@ -919,6 +922,7 @@ return false
 if GetValue("Health") < 12 then
 	AddValue("Health", 1)
 	PlayLocalDigiSound("SLURPIESND")
+	FlashScreen(0xFFF800)
 	return true
 end
 return false
@@ -926,17 +930,20 @@ return false
 			<BonusScript Name="key_gold"><![CDATA[
 SetValue("Gold Key", 1)
 PlayAdLibSound("GETKEYSND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="key_silver"><![CDATA[
 SetValue("Silver Key", 1)
 PlayAdLibSound("GETKEYSND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="ammo_clip"><![CDATA[
 if GetValue("Ammo") < GetMax("Ammo") then
 	AddValue("Ammo", 8)
 	PlayAdLibSound("GETAMMOSND")
+	FlashScreen(0xFFF800)
 	return true
 end
 return false
@@ -945,6 +952,7 @@ return false
 if GetValue("Ammo") < GetMax("Ammo") then
 	AddValue("Ammo", 4)
 	PlayAdLibSound("GETAMMOSND")
+	FlashScreen(0xFFF800)
 	return true
 end
 return false
@@ -953,32 +961,38 @@ return false
 SetValue("Weapon2", 1)
 AddValue("Ammo", 6)
 PlayAdLibSound("GETMACHINESND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="weapon_chaingun"><![CDATA[
 SetValue("Weapon3", 1)
 AddValue("Ammo", 6)
 PlayAdLibSound("GETGATLINGSND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_cross"><![CDATA[
 AddValue("Score", 100)
 PlayAdLibSound("BONUS1SND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_chalice"><![CDATA[
 AddValue("Score", 500)
 PlayAdLibSound("BONUS2SND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_chest"><![CDATA[
 AddValue("Score", 1000)
 PlayAdLibSound("BONUS3SND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="treasure_crown"><![CDATA[
 AddValue("Score", 5000)
 PlayAdLibSound("BONUS4SND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 			<BonusScript Name="extra_life"><![CDATA[
@@ -986,6 +1000,7 @@ AddValue("Lives", 1)
 SetValue("Health", GetMax("Health"))
 AddValue("Ammo", 25)
 PlayAdLibSound("BONUS1UPSND")
+FlashScreen(0xFFF800)
 return true
 ]]></BonusScript>
 

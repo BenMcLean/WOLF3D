@@ -378,3 +378,17 @@ public struct BonusPlaySoundEvent
 	/// <summary>True if this is a digitized sound, false for AdLib/PC speaker</summary>
 	public required bool IsDigiSound { get; init; }
 }
+
+/// <summary>
+/// Screen flash effect (palette shift).
+/// WL_PLAY.C: Bonus flash (NUMWHITESHIFTS * WHITETICS = 18 tics), damage flash, etc.
+/// Triggered by Lua scripts via FlashScreen() or internally by game events.
+/// Presentation layer renders a full-screen color overlay that fades out over the duration.
+/// </summary>
+public struct ScreenFlashEvent
+{
+	/// <summary>24-bit RGB color (e.g., 0xFF0000 for red)</summary>
+	public required uint Color { get; init; }
+	/// <summary>Duration in tics (default 18, matching original Wolf3D bonus flash)</summary>
+	public required short Duration { get; init; }
+}

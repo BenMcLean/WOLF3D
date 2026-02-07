@@ -69,6 +69,21 @@ public abstract class ActionScriptContext : BaseScriptContext, IActionScriptCont
 
 	#endregion
 
+	#region Screen Flash API (exposed to Lua)
+
+	/// <summary>
+	/// Triggers a full-screen color flash effect.
+	/// WL_PLAY.C: Bonus flash (white/yellow), damage flash (red).
+	/// </summary>
+	/// <param name="color">24-bit RGB color (e.g., 0xFF0000 for red, 0xFFFF00 for yellow)</param>
+	/// <param name="duration">Duration in tics (default 18 = ~257ms, matching original Wolf3D bonus flash)</param>
+	public void FlashScreen(int color, int duration = 18)
+	{
+		simulator.EmitScreenFlash((uint)color, (short)duration);
+	}
+
+	#endregion
+
 	#region Actor API (to be implemented by derived classes)
 
 	public abstract void SpawnActor(int type, int x, int y);

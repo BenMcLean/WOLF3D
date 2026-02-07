@@ -90,6 +90,9 @@ public partial class SimulatorController : Node3D
 		// Forward player state changes to presentation layer for HUD updates
 		simulator.PlayerStateChanged += e => PlayerStateChanged?.Invoke(e);
 
+		// Forward screen flash events to presentation layer
+		simulator.ScreenFlash += e => ScreenFlash?.Invoke(e);
+
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
 		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis, mapAnalysis.Doors);
@@ -376,4 +379,10 @@ public partial class SimulatorController : Node3D
 	/// Used to update HUD/status bar in presentation layer.
 	/// </summary>
 	public event Action<PlayerStateChangedEvent> PlayerStateChanged;
+
+	/// <summary>
+	/// Event fired when a screen flash effect should be displayed.
+	/// WL_PLAY.C: Bonus flash, damage flash, etc.
+	/// </summary>
+	public event Action<ScreenFlashEvent> ScreenFlash;
 }

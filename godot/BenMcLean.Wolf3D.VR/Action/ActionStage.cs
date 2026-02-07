@@ -64,6 +64,7 @@ void sky() {
 	private Doors _doors;
 	private Weapons _weapons;
 	private SimulatorController _simulatorController;
+	private ScreenFlashOverlay _screenFlashOverlay;
 	private PixelPerfectAiming _pixelPerfectAiming;
 	private AimIndicator _aimIndicator;
 	private StatusBarState _statusBarState;
@@ -200,6 +201,12 @@ void sky() {
 		// Wire up movement validation for collision detection
 		// This enables wall collision and wall-sliding behavior
 		_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
+
+		// Create screen flash overlay (palette-shift effects: damage flash, bonus flash, fades)
+		// Uses CanvasLayer so it covers everything on screen regardless of 3D depth
+		_screenFlashOverlay = new ScreenFlashOverlay();
+		AddChild(_screenFlashOverlay);
+		_screenFlashOverlay.Subscribe(_simulatorController);
 
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;

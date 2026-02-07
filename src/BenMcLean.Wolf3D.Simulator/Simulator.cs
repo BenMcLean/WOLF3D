@@ -227,6 +227,12 @@ public class Simulator
 	/// Presentation layer plays sound at item's position.
 	/// </summary>
 	public event Action<BonusPlaySoundEvent> BonusPlaySound;
+	/// <summary>
+	/// Fired when a screen flash effect should be displayed.
+	/// WL_PLAY.C: Bonus flash, damage flash, etc.
+	/// Presentation layer renders a color overlay that fades out.
+	/// </summary>
+	public event Action<ScreenFlashEvent> ScreenFlash;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -2221,6 +2227,18 @@ public class Simulator
 			SoundName = soundName,
 			SoundId = -1
 		});
+	}
+
+	/// <summary>
+	/// Emits a screen flash event for palette-shift effects.
+	/// WL_PLAY.C: Bonus flash, damage flash, etc.
+	/// Called from Lua scripts via FlashScreen() or internally by game events.
+	/// </summary>
+	/// <param name="color">24-bit RGB color (e.g., 0xFF0000 for red)</param>
+	/// <param name="duration">Duration in tics (default 18, matching original Wolf3D bonus flash)</param>
+	internal void EmitScreenFlash(uint color, short duration)
+	{
+		ScreenFlash?.Invoke(new ScreenFlashEvent { Color = color, Duration = duration });
 	}
 
 	#region Spatial Index
