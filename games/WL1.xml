@@ -1041,6 +1041,9 @@ return true
 			<ObjectType Number="68" ObClass="block" Page="153" Name="Stove" />
 			<ObjectType Number="69" ObClass="block" Page="154" Name="Rack" />
 			<ObjectType Number="70" ObClass="block" Page="155" Name="Vines" />
+			<!-- Drop-only items: never placed on maps, only spawned by PlaceItemType (enemy death drops) -->
+			<!-- WL_ACT1.C:statinfo[] last entry: {SPR_STAT_26,bo_clip2} - same sprite as bo_clip but gives 4 ammo instead of 8 -->
+			<ObjectType Number="71" ObClass="bonus" Page="134" Script="ammo_clip_small" Name="bo_clip2" />
 			<Turn Number="90" Direction="E" Name="Turn E" />
 			<Turn Number="91" Direction="NE" Name="Turn NE" />
 			<Turn Number="92" Direction="N" Name="Turn N" />
@@ -1109,11 +1112,7 @@ return true
 			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="4" State="s_dogpath1" />
 			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="4" State="s_dogpath1" />
 			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
-			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" AddTo="Score" Add="100" >
-				<PlaceItem>
-					<ObjectType Number="49" ObClass="bonus" Page="134" Script="ammo_clip_small" Name="bo_clip2" />
-				</PlaceItem>
-			</Actor>
+			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" />
 			<!-- State Functions (Lua implementations of Think/Action) -->
 			<Function Name="T_Stand" Description="Actor standing idle, watching for player (generic for all actor types)">
 				<![CDATA[
@@ -1215,11 +1214,11 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			<State Name="s_grdchase3" Rotate="true" Shape="SPR_GRD_W3_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_grdchase3s" />
 			<State Name="s_grdchase3s" Rotate="true" Shape="SPR_GRD_W3_1" Tics="3" Speed="1536" Next="s_grdchase4" />
 			<State Name="s_grdchase4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_grdchase1" />
-			<State Name="s_grddie1" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie2" Alive="false" Mark="false" />
+			<State Name="s_grddie1" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie2" Action="A_GuardDeathScream" Alive="false" Mark="false" />
 			<State Name="s_grddie2" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddie3" Alive="false" Mark="false" />
 			<State Name="s_grddie3" Shape="SPR_GRD_DIE_3" Tics="15" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" AddTo="Score" Add="200" />
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
 			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500" Next="s_dogpath2" />
 			<State Name="s_dogpath2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="15" Think="T_Path" Speed="1500" Next="s_dogpath3" />
@@ -1237,22 +1236,11 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			<State Name="s_dogchase3" Rotate="true" Shape="SPR_DOG_W3_1" Tics="10" Think="T_DogChase" Speed="3000" Next="s_dogchase3s" />
 			<State Name="s_dogchase3s" Rotate="true" Shape="SPR_DOG_W3_1" Tics="3" Speed="3000" Next="s_dogchase4" />
 			<State Name="s_dogchase4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="8" Think="T_DogChase" Speed="3000" Next="s_dogchase1" />
-			<State Name="s_dogdie1" Shape="SPR_DOG_DIE_1" Tics="15" Speed="0" Next="s_dogdie2" Alive="false" Mark="false" />
+			<State Name="s_dogdie1" Shape="SPR_DOG_DIE_1" Tics="15" Speed="0" Next="s_dogdie2" Action="A_DogDeathScream" Alive="false" Mark="false" />
 			<State Name="s_dogdie2" Shape="SPR_DOG_DIE_2" Tics="15" Speed="0" Next="s_dogdie3" Alive="false" Mark="false" />
 			<State Name="s_dogdie3" Shape="SPR_DOG_DIE_3" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
-			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertDigiSound="SCHUTZADSND" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" AddTo="Score" Add="200" >
-				<Condition If="Weapon2" LessThan="1" >
-					<PlaceItem>
-						<ObjectType Number="50" ObClass="bonus" Page="135" Script="weapon_machinegun" Name="Machine Gun" />
-					</PlaceItem>
-					<Else>
-						<PlaceItem>
-							<ObjectType Number="49" ObClass="bonus" Page="134" Script="ammo_clip_small" Name="bo_clip2" />
-						</PlaceItem>
-					</Else>
-				</Condition>
-			</Actor>
+			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertDigiSound="SCHUTZADSND" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_ssstand" />
 			<State Name="s_sspath1" Rotate="true" Shape="SPR_SS_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_sspath1s" />
 			<State Name="s_sspath1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="5" Speed="512" Next="s_sspath2" />
@@ -1277,15 +1265,11 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			<State Name="s_sschase3" Rotate="true" Shape="SPR_SS_W3_1" Tics="10" Think="T_Chase" Speed="2048" Next="s_sschase3s" />
 			<State Name="s_sschase3s" Rotate="true" Shape="SPR_SS_W3_1" Tics="3" Speed="2048" Next="s_sschase4" />
 			<State Name="s_sschase4" Rotate="true" Shape="SPR_SS_W4_1" Tics="8" Think="T_Chase" Speed="2048" Next="s_sschase1" />
-			<State Name="s_ssdie1" Shape="SPR_SS_DIE_1" Tics="15" Speed="0" Next="s_ssdie2" Alive="false" Mark="false" />
+			<State Name="s_ssdie1" Shape="SPR_SS_DIE_1" Tics="15" Speed="0" Next="s_ssdie2" Action="A_SSDeathScream" Alive="false" Mark="false" />
 			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3" Alive="false" Mark="false" />
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="GUTENTAGSND" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" AddTo="Score" Add="5000" >
-				<PlaceItem>
-					<ObjectType Number="43" ObClass="bonus" Page="128" Script="key_gold" Name="Gold Key" />
-				</PlaceItem>
-			</Actor>
+			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="GUTENTAGSND" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0" Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase1s" />
 			<State Name="s_bosschase1s" Shape="SPR_BOSS_W1" Tics="3" Speed="512" Next="s_bosschase2" />
@@ -1293,7 +1277,7 @@ SetFlag(0x20)  -- FL_FIRSTATTACK
 			<State Name="s_bosschase3" Shape="SPR_BOSS_W3" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase3s" />
 			<State Name="s_bosschase3s" Shape="SPR_BOSS_W3" Tics="3" Speed="512" Next="s_bosschase4" />
 			<State Name="s_bosschase4" Shape="SPR_BOSS_W4" Tics="8" Think="T_Chase" Speed="512" Next="s_bosschase1" />
-			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Alive="false" />
+			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Action="A_BossDeathScream" Alive="false" />
 			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3" Alive="false" Mark="false" />
 			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
 			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
@@ -1787,6 +1771,49 @@ else
 	-- Guards, officers, and other enemies use NAZIFIRESND
 	PlayLocalDigiSound("NAZIFIRESND")
 end
+]]>
+			</Function>
+			<Function Name="A_GuardDeathScream" Description="Guard death - score, ammo drop, random death scream (WL_STATE.C:KillActor + WL_ACT2.C:A_DeathScream)">
+				<![CDATA[
+-- WL_STATE.C:KillActor - award score for guard kill
+AddValue("Score", 100)
+-- WL_ACT1.C:PlaceItemType - drop ammo clip (bo_clip2: 4 ammo, not bo_clip: 8 ammo)
+PlaceItemType(71, 134)
+-- WL_ACT2.C:A_DeathScream - random death scream (1 of 6 in original, 3 unique sounds)
+local sounds = {"DEATHSCREAM1SND", "DEATHSCREAM2SND", "DEATHSCREAM3SND"}
+PlayLocalDigiSound(sounds[US_RndT() % 3 + 1])
+]]>
+			</Function>
+			<Function Name="A_DogDeathScream" Description="Dog death - score, dog death sound (WL_STATE.C:KillActor + WL_ACT2.C:A_DeathScream)">
+				<![CDATA[
+-- WL_STATE.C:KillActor - award score for dog kill
+AddValue("Score", 200)
+-- WL_ACT2.C:A_DeathScream - dog death sound
+PlayLocalDigiSound("DOGDEATHSND")
+]]>
+			</Function>
+			<Function Name="A_SSDeathScream" Description="SS death - score, conditional weapon/ammo drop, death sound (WL_STATE.C:KillActor + WL_ACT2.C:A_DeathScream)">
+				<![CDATA[
+-- WL_STATE.C:KillActor - award score for SS kill
+AddValue("Score", 500)
+-- WL_ACT1.C:PlaceItemType - drop machinegun if player doesn't have one, else ammo clip
+if GetValue("Weapon2") < 1 then
+	PlaceItemType(50, 135)
+else
+	PlaceItemType(71, 134)
+end
+-- WL_ACT2.C:A_DeathScream - SS death sound
+PlayLocalDigiSound("LEBENSND")
+]]>
+			</Function>
+			<Function Name="A_BossDeathScream" Description="Hans death - score, gold key drop, boss death sound (WL_STATE.C:KillActor + WL_ACT2.C:A_DeathScream)">
+				<![CDATA[
+-- WL_STATE.C:KillActor - award score for boss kill
+AddValue("Score", 5000)
+-- WL_ACT1.C:PlaceItemType - drop gold key at death location
+PlaceItemType(43, 128)
+-- WL_ACT2.C:A_DeathScream - boss death sound
+PlayLocalDigiSound("MUTTISND")
 ]]>
 			</Function>
 		</StatInfo>

@@ -1195,6 +1195,53 @@ public class Simulator
 		}
 	}
 	/// <summary>
+	/// Spawn a pickup item at a tile location during gameplay.
+	/// WL_ACT1.C:PlaceItemType - scans StatObjList for a free slot, populates it,
+	/// and emits BonusSpawnedEvent for the presentation layer.
+	/// Called from Lua death scripts (e.g., guards dropping ammo clips).
+	/// </summary>
+	/// <param name="objectCode">Item number (ObjectType Number from XML, e.g., 49 for ammo clip)</param>
+	/// <param name="page">VSwap sprite page number</param>
+	/// <param name="tileX">Tile X coordinate to place item at</param>
+	/// <param name="tileY">Tile Y coordinate to place item at</param>
+	/// <returns>True if item was placed, false if no free slots available</returns>
+	public bool PlaceItemType(ushort objectCode, ushort page, ushort tileX, ushort tileY)
+	{
+		// WL_ACT1.C:PlaceItemType - scan for free slot
+		for (int i = 0; i < lastStatObj; i++)
+		{
+			if (StatObjList[i].IsFree)
+			{
+				StatObjList[i] = new StatObj(tileX, tileY, (short)page, 0, (byte)objectCode);
+				BonusSpawned?.Invoke(new BonusSpawnedEvent
+				{
+					StatObjIndex = i,
+					Shape = (short)page,
+					TileX = tileX,
+					TileY = tileY,
+					ItemNumber = (byte)objectCode
+				});
+				return true;
+			}
+		}
+		// No free slot found - try appending if space remains
+		if (lastStatObj < StatObj.MAXSTATS)
+		{
+			StatObjList[lastStatObj] = new StatObj(tileX, tileY, (short)page, 0, (byte)objectCode);
+			BonusSpawned?.Invoke(new BonusSpawnedEvent
+			{
+				StatObjIndex = lastStatObj,
+				Shape = (short)page,
+				TileX = tileX,
+				TileY = tileY,
+				ItemNumber = (byte)objectCode
+			});
+			lastStatObj++;
+			return true;
+		}
+		return false;
+	}
+	/// <summary>
 	/// Initialize actors from MapAnalyzer data - creates Actor instances and fires ActorSpawnedEvent for each.
 	/// Based on WL_GAME.C:ScanInfoPlane
 	/// </summary>

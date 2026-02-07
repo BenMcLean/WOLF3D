@@ -852,6 +852,19 @@ public class ActorScriptContext : EntityScriptContext
 	/// </summary>
 	public int BitShiftLeft(int value, int bits) => value << bits;
 	#endregion Utilities
+	#region Item Drops
+	/// <summary>
+	/// WL_ACT1.C:PlaceItemType - spawn a pickup item at this actor's tile.
+	/// Called from Lua death scripts to drop items (ammo, weapons, keys).
+	/// </summary>
+	/// <param name="objectCode">Item number (ObjectType Number from XML)</param>
+	/// <param name="page">VSwap sprite page number</param>
+	/// <returns>True if item was placed, false if no free slots</returns>
+	public bool PlaceItemType(int objectCode, int page)
+	{
+		return simulator.PlaceItemType((ushort)objectCode, (ushort)page, actor.TileX, actor.TileY);
+	}
+	#endregion Item Drops
 	#region ActionScriptContext Abstract Method Implementations
 
 	/// <summary>
