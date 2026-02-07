@@ -40,6 +40,11 @@ public class Simulator
 	private readonly List<WeaponSlot> weaponSlots = [];
 	// Weapon definitions (loaded from XML)
 	private WeaponCollection weaponCollection;
+	/// <summary>
+	/// Gets the weapon definitions loaded from XML.
+	/// Used by presentation layer for data-driven weapon mapping.
+	/// </summary>
+	public WeaponCollection WeaponCollection => weaponCollection;
 	// State machine data for actors and weapons
 	private readonly StateCollection stateCollection;
 	// Lua script engine for state functions
@@ -1367,6 +1372,10 @@ public class Simulator
 			return;
 		}
 
+		// WL_AGENT.C:CheckWeaponChange - player must have the weapon to equip it
+		if (!PlayerHasWeapon(weaponType))
+			return;
+
 		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out State idleState))
 		{
 			logger?.LogError("Weapon {WeaponType} idle state {IdleState} not found", weaponType, weaponInfo.IdleState);
@@ -1520,14 +1529,8 @@ public class Simulator
 								HitActorIndex = null
 							});
 
-							// Loop back to frame 1 (fire frame)
-							// Machine gun: s_machinegun_1, Chain gun: s_chaingun_1
-							string fireFrameState = slot.WeaponType switch
-							{
-								"machinegun" => "s_machinegun_1",
-								"chaingun" => "s_chaingun_1",
-								_ => null
-							};
+							// Loop back to fire frame using weapon's FireState from XML
+							string fireFrameState = weaponInfo.FireState;
 
 							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
 							{
@@ -1725,14 +1728,12 @@ public class Simulator
 	/// Check if player has a specific weapon.
 	/// WL_DEF.H:gametype:bestweapon
 	/// </summary>
-	public bool PlayerHasWeapon(string weaponType) => weaponType switch
+	public bool PlayerHasWeapon(string weaponType)
 	{
-		"knife" => Inventory.Has("Weapon0"),
-		"pistol" => Inventory.Has("Weapon1"),
-		"machinegun" => Inventory.Has("Weapon2"),
-		"chaingun" => Inventory.Has("Weapon3"),
-		_ => false
-	};
+		if (weaponCollection != null && weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo))
+			return Inventory.Has(WeaponCollection.GetInventoryKey(weaponInfo.Number));
+		return false;
+	}
 
 	/// <summary>
 	/// Heal the player (capped at max health).
@@ -1780,16 +1781,8 @@ public class Simulator
 	/// </summary>
 	public void GiveWeapon(string weaponType)
 	{
-		string weaponKey = weaponType switch
-		{
-			"knife" => "Weapon0",
-			"pistol" => "Weapon1",
-			"machinegun" => "Weapon2",
-			"chaingun" => "Weapon3",
-			_ => null
-		};
-		if (weaponKey != null)
-			Inventory.SetValue(weaponKey, 1);
+		if (weaponCollection != null && weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo))
+			Inventory.SetValue(WeaponCollection.GetInventoryKey(weaponInfo.Number), 1);
 	}
 
 	/// <summary>

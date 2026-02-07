@@ -249,11 +249,22 @@ void sky() {
 			// Subscribe status bar directly to Inventory for automatic updates
 			_statusBarState.SubscribeToInventory(_simulatorController.Simulator.Inventory);
 
+			// Subscribe to weapon equipped events to update status bar weapon display
+			_simulatorController.Simulator.WeaponEquipped += OnWeaponEquipped;
+
 			// Sync status bar with current inventory values (important for level transitions
 			// where inventory was restored before status bar was created)
+			int currentWeaponNumber = 0;
+			string equippedType = _simulatorController.Simulator.GetEquippedWeaponType(0);
+			if (equippedType != null
+				&& _simulatorController.Simulator.WeaponCollection != null
+				&& _simulatorController.Simulator.WeaponCollection.TryGetWeapon(equippedType, out WeaponInfo equippedWeapon))
+			{
+				currentWeaponNumber = equippedWeapon.Number;
+			}
 			_statusBarState.SyncFromSimulator(
 				_simulatorController.Simulator.Inventory.Values,
-				0);  // TODO: Get actual current weapon slot
+				currentWeaponNumber);
 
 			// Create CanvasLayer to display status bar at bottom of screen
 			_statusBarCanvas = new CanvasLayer
@@ -300,24 +311,23 @@ void sky() {
 
 	public override void _Input(InputEvent @event)
 	{
-		// Weapon switching - number keys 1-4
+		// Weapon switching - number keys map to weapon numbers from XML
 		// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
 		{
-			switch (keyEvent.Keycode)
+			int weaponNumber = keyEvent.Keycode switch
 			{
-				case Key.Key1:
-					SwitchWeapon("knife");
-					break;
-				case Key.Key2:
-					SwitchWeapon("pistol");
-					break;
-				case Key.Key3:
-					SwitchWeapon("machinegun");
-					break;
-				case Key.Key4:
-					SwitchWeapon("chaingun");
-					break;
+				Key.Key1 => 0,
+				Key.Key2 => 1,
+				Key.Key3 => 2,
+				Key.Key4 => 3,
+				_ => -1
+			};
+			if (weaponNumber >= 0
+				&& _simulatorController.Simulator?.WeaponCollection != null
+				&& _simulatorController.Simulator.WeaponCollection.TryGetWeaponByNumber(weaponNumber, out WeaponInfo weaponInfo))
+			{
+				SwitchWeapon(weaponInfo.Name);
 			}
 		}
 	}
@@ -399,6 +409,20 @@ void sky() {
 	private void SwitchWeapon(string weaponType)
 	{
 		_simulatorController.SwitchWeapon(0, weaponType);
+	}
+
+	/// <summary>
+	/// Handles WeaponEquipped event to update status bar weapon display.
+	/// Only updates for slot 0 (primary weapon shown on status bar).
+	/// </summary>
+	private void OnWeaponEquipped(WeaponEquippedEvent e)
+	{
+		if (e.SlotIndex == 0 && _statusBarState != null
+			&& _simulatorController.Simulator?.WeaponCollection != null
+			&& _simulatorController.Simulator.WeaponCollection.TryGetWeapon(e.WeaponType, out WeaponInfo weaponInfo))
+		{
+			_statusBarState.CurrentWeapon = weaponInfo.Number;
+		}
 	}
 
 	/// <summary>

@@ -230,13 +230,28 @@ public class WeaponScriptContext : ActionScriptContext
 
 	#region Weapon Switching
 	/// <summary>
-	/// Switch to knife (out of ammo fallback).
-	/// WL_AGENT.C case -1: gamestate.weapon = wp_knife.
+	/// Switch to the lowest-numbered weapon (out of ammo fallback).
+	/// WL_AGENT.C case -1: gamestate.weapon = wp_knife equivalent.
+	/// Data-driven: finds weapon with lowest Number in WeaponCollection.
 	/// </summary>
-	public void SwitchToKnife()
+	public void SwitchToLowestWeapon()
 	{
-		simulator.EquipWeapon(slotIndex, "knife");
-		_logger?.LogDebug("WeaponScriptContext: SwitchToKnife() for slot {slotIndex}", slotIndex);
+		WeaponCollection weaponCollection = simulator.WeaponCollection;
+		if (weaponCollection != null)
+		{
+			WeaponInfo lowest = null;
+			foreach (WeaponInfo weapon in weaponCollection.Weapons.Values)
+			{
+				if (lowest == null || weapon.Number < lowest.Number)
+					lowest = weapon;
+			}
+			if (lowest != null)
+			{
+				simulator.EquipWeapon(slotIndex, lowest.Name);
+				_logger?.LogDebug("WeaponScriptContext: SwitchToLowestWeapon() -> {weaponName} for slot {slotIndex}",
+					lowest.Name, slotIndex);
+			}
+		}
 	}
 	#endregion Weapon Switching
 

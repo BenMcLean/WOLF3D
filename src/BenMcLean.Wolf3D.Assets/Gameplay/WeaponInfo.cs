@@ -18,6 +18,13 @@ public class WeaponInfo
 	public string Name { get; set; }
 
 	/// <summary>
+	/// Weapon number for ordering and keyboard mapping.
+	/// WL_DEF.H: wp_knife=0, wp_pistol=1, wp_machinegun=2, wp_chaingun=3
+	/// Parsed from WeaponNumber attribute in XML.
+	/// </summary>
+	public int Number { get; set; }
+
+	/// <summary>
 	/// Initial/idle state name (e.g., "s_knife_idle", "s_pistol_ready").
 	/// The weapon stays in this state when not attacking.
 	/// Based on WL_AGENT.C:s_player state pattern.
@@ -80,6 +87,7 @@ public class WeaponInfo
 		return new WeaponInfo
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Weapon element must have Name attribute"),
+			Number = int.TryParse(element.Attribute("WeaponNumber")?.Value, out int num) ? num : 0,
 			IdleState = element.Attribute("IdleState")?.Value ?? throw new ArgumentException("Weapon element must have IdleState attribute"),
 			FireState = element.Attribute("FireState")?.Value ?? throw new ArgumentException("Weapon element must have FireState attribute"),
 			BaseDamage = short.TryParse(element.Attribute("BaseDamage")?.Value, out short dmg) ? dmg : (short)0,
@@ -103,6 +111,11 @@ public class WeaponCollection
 	public Dictionary<string, WeaponInfo> Weapons { get; } = new();
 
 	/// <summary>
+	/// All weapons, indexed by weapon number for keyboard mapping and status bar.
+	/// </summary>
+	private Dictionary<int, WeaponInfo> weaponsByNumber = new();
+
+	/// <summary>
 	/// Loads weapon definitions from XML elements.
 	/// Typically called during game initialization from &lt;Weapons&gt; section.
 	/// </summary>
@@ -113,6 +126,7 @@ public class WeaponCollection
 		{
 			WeaponInfo weapon = WeaponInfo.FromXElement(element);
 			Weapons[weapon.Name] = weapon;
+			weaponsByNumber[weapon.Number] = weapon;
 		}
 	}
 
@@ -126,4 +140,24 @@ public class WeaponCollection
 	{
 		return Weapons.TryGetValue(weaponName, out weaponInfo);
 	}
+
+	/// <summary>
+	/// Attempts to get weapon info by weapon number.
+	/// Used for keyboard mapping (Key1→weapon 0, Key2→weapon 1, etc.).
+	/// </summary>
+	/// <param name="number">The weapon number (e.g., 0 for knife, 1 for pistol)</param>
+	/// <param name="weaponInfo">The weapon info if found</param>
+	/// <returns>True if weapon exists with that number, false otherwise</returns>
+	public bool TryGetWeaponByNumber(int number, out WeaponInfo weaponInfo)
+	{
+		return weaponsByNumber.TryGetValue(number, out weaponInfo);
+	}
+
+	/// <summary>
+	/// Gets the inventory key for a weapon number.
+	/// Centralizes the key format used for weapon ownership tracking.
+	/// </summary>
+	/// <param name="weaponNumber">The weapon number</param>
+	/// <returns>Inventory key string (e.g., "Weapon0", "Weapon1")</returns>
+	public static string GetInventoryKey(int weaponNumber) => $"Weapon{weaponNumber}";
 }

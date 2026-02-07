@@ -131,19 +131,29 @@ public partial class SimulatorController : Node3D
 
 		// Initialize weapon slots - 1 for traditional FPS view (bottom of screen)
 		// Later: use 2 for VR dual-wielding
-		GD.Print($"WeaponCollection: {weaponCollection?.Weapons.Count ?? 0} weapons");
 		if (weaponCollection != null && weaponCollection.Weapons.Count > 0)
 		{
-			GD.Print($"Initializing 1 weapon slot");
 			simulator.InitializeWeaponSlots(1, weaponCollection);
 
-			// Equip pistol to primary slot
-			GD.Print("Equipping pistol to slot 0");
-			simulator.EquipWeapon(0, "pistol");
+			// Determine starting weapon: highest-numbered weapon the player has at init
+			// Matches Wolf3D's bestweapon concept (WL_DEF.H:gametype:bestweapon)
+			string startingWeapon = null;
+			int highestNumber = -1;
+			foreach (WeaponInfo weapon in weaponCollection.Weapons.Values)
+			{
+				string inventoryKey = WeaponCollection.GetInventoryKey(weapon.Number);
+				if (simulator.Inventory.GetValue(inventoryKey) > 0 && weapon.Number > highestNumber)
+				{
+					highestNumber = weapon.Number;
+					startingWeapon = weapon.Name;
+				}
+			}
+
+			if (startingWeapon != null)
+				simulator.EquipWeapon(0, startingWeapon);
 
 			// Set initial ammo (original Wolf3D starts with 8)
 			simulator.SetAmmo("bullets", 8);
-			GD.Print("Weapon initialization complete");
 		}
 		else
 		{
