@@ -153,7 +153,7 @@ public class ActorScriptContext : EntityScriptContext
 		// If no patrol point found, keep current direction (don't modify actor.Facing)
 		// WL_ACT2.C:4058 - Set distance to move one full tile
 		actor.Distance = 0x10000; // TILEGLOBAL
-		// WL_ACT2.C:4060 - TryWalk: update tilex/tiley to destination and check collision
+								  // WL_ACT2.C:4060 - TryWalk: update tilex/tiley to destination and check collision
 		if (actor.Facing is not null)
 		{
 			// Save current position in case move is blocked
@@ -162,13 +162,13 @@ public class ActorScriptContext : EntityScriptContext
 			// WL_STATE.C:216-250 - Update tilex/tiley based on direction
 			switch (actor.Facing.Value)
 			{
-				case Direction.N:  actor.TileY--; break;
+				case Direction.N: actor.TileY--; break;
 				case Direction.NE: actor.TileX++; actor.TileY--; break;
-				case Direction.E:  actor.TileX++; break;
+				case Direction.E: actor.TileX++; break;
 				case Direction.SE: actor.TileX++; actor.TileY++; break;
-				case Direction.S:  actor.TileY++; break;
+				case Direction.S: actor.TileY++; break;
 				case Direction.SW: actor.TileX--; actor.TileY++; break;
-				case Direction.W:  actor.TileX--; break;
+				case Direction.W: actor.TileX--; break;
 				case Direction.NW: actor.TileX--; actor.TileY--; break;
 			}
 			// WL_STATE.C:253+ - Check if destination tile is navigable
@@ -206,13 +206,13 @@ public class ActorScriptContext : EntityScriptContext
 		// WL_STATE.C:727-763 - Apply movement to fixed-point coordinates
 		switch (actor.Facing.Value)
 		{
-			case Direction.N:  actor.Y -= move; break;
+			case Direction.N: actor.Y -= move; break;
 			case Direction.NE: actor.Y -= move; actor.X += move; break;
-			case Direction.E:  actor.X += move; break;
+			case Direction.E: actor.X += move; break;
 			case Direction.SE: actor.X += move; actor.Y += move; break;
-			case Direction.S:  actor.Y += move; break;
+			case Direction.S: actor.Y += move; break;
 			case Direction.SW: actor.X -= move; actor.Y += move; break;
-			case Direction.W:  actor.X -= move; break;
+			case Direction.W: actor.X -= move; break;
 			case Direction.NW: actor.X -= move; actor.Y -= move; break;
 		}
 		// Decrement distance remaining to destination
@@ -266,13 +266,13 @@ public class ActorScriptContext : EntityScriptContext
 		// Convert facing direction to dx/dy delta
 		switch (actor.Facing)
 		{
-			case Direction.E:  dx = speed; break;
+			case Direction.E: dx = speed; break;
 			case Direction.NE: dx = speed; dy = -speed; break;
-			case Direction.N:  dy = -speed; break;
+			case Direction.N: dy = -speed; break;
 			case Direction.NW: dx = -speed; dy = -speed; break;
-			case Direction.W:  dx = -speed; break;
+			case Direction.W: dx = -speed; break;
 			case Direction.SW: dx = -speed; dy = speed; break;
-			case Direction.S:  dy = speed; break;
+			case Direction.S: dy = speed; break;
 			case Direction.SE: dx = speed; dy = speed; break;
 		}
 		// Apply movement (simplified - no collision detection yet)
@@ -390,7 +390,7 @@ public class ActorScriptContext : EntityScriptContext
 			// Direction enum: E=0, NE=1, N=2, NW=3, W=4, SW=5, S=6, SE=7
 			// Convert to radians: E=0, NE=π/4, N=π/2, etc.
 			float facingAngle = (byte)actor.Facing.Value * (float)(System.Math.PI / 4f),
-			// Calculate angular difference
+				// Calculate angular difference
 				angleDiff = angleToPlayer - facingAngle;
 			// Normalize to [-PI, PI]
 			while (angleDiff > System.Math.PI) angleDiff -= (float)(2f * System.Math.PI);
@@ -482,8 +482,8 @@ public class ActorScriptContext : EntityScriptContext
 			if (!(x == actorTileX && y == actorTileY)
 				&& !simulator.IsTileTransparentForSight((ushort)x, (ushort)y))
 				// Check static transparency (walls) AND dynamic obstacles (doors, pushwalls)
-					return false; // Obstacle blocks sight
-			// Bresenham step - check both intermediate tiles if moving diagonally
+				return false; // Obstacle blocks sight
+							  // Bresenham step - check both intermediate tiles if moving diagonally
 			int e2 = 2 * err;
 			bool movedX = false, movedY = false;
 			if (e2 > -dy)
@@ -564,28 +564,28 @@ public class ActorScriptContext : EntityScriptContext
 		ushort checkX1 = 0, checkY1 = 0, checkX2 = 0, checkY2 = 0;
 		switch ((Direction)dir)
 		{
-			case Direction.E:  actor.TileX++; break;
+			case Direction.E: actor.TileX++; break;
 			case Direction.NE:
 				actor.TileX++; actor.TileY--;
 				isDiagonal = true;
 				checkX1 = actor.TileX; checkY1 = oldTileY;  // East
 				checkX2 = oldTileX; checkY2 = actor.TileY;  // North
 				break;
-			case Direction.N:  actor.TileY--; break;
+			case Direction.N: actor.TileY--; break;
 			case Direction.NW:
 				actor.TileX--; actor.TileY--;
 				isDiagonal = true;
 				checkX1 = actor.TileX; checkY1 = oldTileY;  // West
 				checkX2 = oldTileX; checkY2 = actor.TileY;  // North
 				break;
-			case Direction.W:  actor.TileX--; break;
+			case Direction.W: actor.TileX--; break;
 			case Direction.SW:
 				actor.TileX--; actor.TileY++;
 				isDiagonal = true;
 				checkX1 = actor.TileX; checkY1 = oldTileY;  // West
 				checkX2 = oldTileX; checkY2 = actor.TileY;  // South
 				break;
-			case Direction.S:  actor.TileY++; break;
+			case Direction.S: actor.TileY++; break;
 			case Direction.SE:
 				actor.TileX++; actor.TileY++;
 				isDiagonal = true;
@@ -598,7 +598,7 @@ public class ActorScriptContext : EntityScriptContext
 		if (isDiagonal)
 		{
 			if (!simulator.IsTileNavigable(checkX1, checkY1) ||
-			    !simulator.IsTileNavigable(checkX2, checkY2))
+				!simulator.IsTileNavigable(checkX2, checkY2))
 			{
 				// Blocked by adjacent tile
 				actor.TileX = oldTileX;
@@ -713,13 +713,13 @@ public class ActorScriptContext : EntityScriptContext
 		Direction direction = (Direction)dir;
 		Direction opposite = direction switch
 		{
-			Direction.E  => Direction.W,
+			Direction.E => Direction.W,
 			Direction.NE => Direction.SW,
-			Direction.N  => Direction.S,
+			Direction.N => Direction.S,
 			Direction.NW => Direction.SE,
-			Direction.W  => Direction.E,
+			Direction.W => Direction.E,
 			Direction.SW => Direction.NE,
-			Direction.S  => Direction.N,
+			Direction.S => Direction.N,
 			Direction.SE => Direction.NW,
 			_ => Direction.E
 		};
@@ -763,12 +763,12 @@ public class ActorScriptContext : EntityScriptContext
 			d1 = 0;  // east
 		else if (deltaX < 0)
 			d1 = 4;  // west
-		// Select cardinal direction based on Y delta
+					 // Select cardinal direction based on Y delta
 		if (deltaY > 0)
 			d2 = 6;  // south
 		else if (deltaY < 0)
 			d2 = 2;  // north
-		// Prioritize direction with larger delta (WL_STATE.C:553)
+					 // Prioritize direction with larger delta (WL_STATE.C:553)
 		if (prioritizeLarger)
 		{
 			int absDx = deltaX < 0 ? -deltaX : deltaX,
@@ -860,10 +860,8 @@ public class ActorScriptContext : EntityScriptContext
 	/// <param name="objectCode">Item number (ObjectType Number from XML)</param>
 	/// <param name="page">VSwap sprite page number</param>
 	/// <returns>True if item was placed, false if no free slots</returns>
-	public bool PlaceItemType(int objectCode, int page)
-	{
-		return simulator.PlaceItemType((ushort)objectCode, (ushort)page, actor.TileX, actor.TileY);
-	}
+	public bool PlaceItemType(int objectCode, int page) =>
+		simulator.PlaceItemType((ushort)objectCode, (ushort)page, actor.TileX, actor.TileY);
 	#endregion Item Drops
 	#region ActionScriptContext Abstract Method Implementations
 
