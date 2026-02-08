@@ -1710,6 +1710,49 @@ public class Simulator
 			DidHit = hitActorIndex.HasValue,
 			HitActorIndex = hitActorIndex
 		});
+
+		// WL_AGENT.C:GunAttack - madenoise = true
+		PropagateNoise();
+	}
+
+	/// <summary>
+	/// WL_AGENT.C:GunAttack sets madenoise = true
+	/// WL_STATE.C:SightPlayer checks madenoise to alert non-ambush enemies in connected areas
+	/// Instead of a per-tic flag, we immediately alert on the fire frame.
+	/// </summary>
+	private void PropagateNoise()
+	{
+		if (mapAnalysis is null) return;
+
+		short playerArea = mapAnalysis.GetAreaNumber(PlayerTileX, PlayerTileY);
+		if (playerArea < 0) return;
+
+		List<ushort> connectedAreas = AreaConnect.FloorCodes((ushort)playerArea);
+
+		for (int i = 0; i < actors.Count; i++)
+		{
+			Actor actor = actors[i];
+
+			if (!actor.Flags.HasFlag(ActorFlags.Shootable)) continue;
+			if (actor.Flags.HasFlag(ActorFlags.AttackMode)) continue;
+			if (actor.Flags.HasFlag(ActorFlags.Ambush)) continue;
+
+			short actorArea = mapAnalysis.GetAreaNumber(actor.TileX, actor.TileY);
+			if (actorArea < 0 || !connectedAreas.Contains((ushort)actorArea)) continue;
+
+			// WL_STATE.C:SightPlayer - ob->temp2 = 1 + US_RndT()/4
+			actor.ReactionTimer = (short)(1 + rng.Next(256) / 4);
+
+			if (stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef)
+				&& !string.IsNullOrEmpty(actorDef.ChaseState))
+			{
+				TransitionActorStateByName(i, actorDef.ChaseState);
+				actor.Flags |= ActorFlags.AttackMode;
+
+				if (!string.IsNullOrEmpty(actorDef.AlertDigiSound))
+					EmitActorPlaySound(i, actorDef.AlertDigiSound);
+			}
+		}
 	}
 
 	/// <summary>

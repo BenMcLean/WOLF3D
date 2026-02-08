@@ -331,11 +331,11 @@ public class MapAnalyzer
 
 		/// <summary>
 		/// Gets the raw floor code tile at the specified position.
-		/// WL_ACT1.C uses mapsegs[0] to read floor codes from the map's "other" layer.
+		/// WL_ACT1.C uses mapsegs[0] (wall/structural plane) which contains floor codes for walkable tiles.
 		/// </summary>
 		public ushort GetFloorCode(int x, int y) =>
 			x >= 0 && y >= 0 && x < Width && y < Depth
-			? gameMap.OtherData[y * Width + x]
+			? gameMap.MapData[y * Width + x]
 			: (ushort)0;
 
 		/// <summary>
