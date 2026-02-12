@@ -165,6 +165,9 @@
 			<Number Name="Weapon1" Init="1" Max="1" />
 			<Number Name="Weapon2" Init="0" Max="1" />
 			<Number Name="Weapon3" Init="0" Max="1" />
+			<Number Name="SelectedWeapon0" Init="1" />
+			<Number Name="SelectedWeapon1" Init="1" />
+			<Number Name="StatusBarWeapon" Init="1" />
 			<Weapons X="256" Y="8">
 				<Weapon Number="0" Pic="KNIFEPIC" Init="1" />
 				<Weapon Number="1" Pic="GUNPIC" Init="1" />

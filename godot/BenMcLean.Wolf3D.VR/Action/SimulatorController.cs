@@ -142,23 +142,6 @@ public partial class SimulatorController : Node3D
 		{
 			simulator.InitializeWeaponSlots(1, weaponCollection);
 
-			// Determine starting weapon: highest-numbered weapon the player has at init
-			// Matches Wolf3D's bestweapon concept (WL_DEF.H:gametype:bestweapon)
-			string startingWeapon = null;
-			int highestNumber = -1;
-			foreach (WeaponInfo weapon in weaponCollection.Weapons.Values)
-			{
-				string inventoryKey = WeaponCollection.GetInventoryKey(weapon.Number);
-				if (simulator.Inventory.GetValue(inventoryKey) > 0 && weapon.Number > highestNumber)
-				{
-					highestNumber = weapon.Number;
-					startingWeapon = weapon.Name;
-				}
-			}
-
-			if (startingWeapon != null)
-				simulator.EquipWeapon(0, startingWeapon);
-
 			// Set initial ammo (original Wolf3D starts with 8)
 			simulator.SetAmmo("bullets", 8);
 		}

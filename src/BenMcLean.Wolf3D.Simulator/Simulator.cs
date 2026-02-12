@@ -1456,6 +1456,11 @@ public class Simulator
 		slot.AttackFrame = 0;
 		slot.Flags = WeaponSlotFlags.Ready;
 
+		// Track selected weapon per slot and update status bar weapon in inventory
+		// Inventory is the single source of truth for the presentation layer
+		Inventory.SetValue($"SelectedWeapon{slotIndex}", weaponInfo.Number);
+		Inventory.SetValue("StatusBarWeapon", weaponInfo.Number);
+
 		WeaponEquipped?.Invoke(new WeaponEquippedEvent
 		{
 			SlotIndex = slotIndex,

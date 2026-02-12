@@ -250,10 +250,16 @@ void sky() {
 				_simulatorController.Simulator.Inventory.RestoreState(_savedInventory);
 				// Reset only level-specific values (keys)
 				_simulatorController.Simulator.Inventory.OnLevelChange();
+			}
 
-				// Restore equipped weapon (e.g., if player had machinegun, keep it)
-				if (!string.IsNullOrEmpty(_savedWeaponType))
-					_simulatorController.Simulator.EquipWeapon(0, _savedWeaponType);
+			// Equip starting weapon from inventory (SelectedWeapon0 is set by XML Init or restored state)
+			// Must happen after inventory initialization so SelectedWeapon0 has its value
+			WeaponCollection weaponCollection = _simulatorController.Simulator.WeaponCollection;
+			if (weaponCollection != null)
+			{
+				int startingWeaponNumber = _simulatorController.Simulator.Inventory.GetValue("SelectedWeapon0");
+				if (weaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
+					_simulatorController.Simulator.EquipWeapon(0, startWeapon.Name);
 			}
 		}
 
@@ -283,22 +289,11 @@ void sky() {
 			// Subscribe status bar directly to Inventory for automatic updates
 			_statusBarState.SubscribeToInventory(_simulatorController.Simulator.Inventory);
 
-			// Subscribe to weapon equipped events to update status bar weapon display
-			_simulatorController.Simulator.WeaponEquipped += OnWeaponEquipped;
-
 			// Sync status bar with current inventory values (important for level transitions
 			// where inventory was restored before status bar was created)
-			int currentWeaponNumber = 0;
-			string equippedType = _simulatorController.Simulator.GetEquippedWeaponType(0);
-			if (equippedType != null
-				&& _simulatorController.Simulator.WeaponCollection != null
-				&& _simulatorController.Simulator.WeaponCollection.TryGetWeapon(equippedType, out WeaponInfo equippedWeapon))
-			{
-				currentWeaponNumber = equippedWeapon.Number;
-			}
+			// CurrentWeapon is derived from StatusBarWeapon in the inventory values
 			_statusBarState.SyncFromSimulator(
-				_simulatorController.Simulator.Inventory.Values,
-				currentWeaponNumber);
+				_simulatorController.Simulator.Inventory.Values);
 
 			// Create CanvasLayer to display status bar at bottom of screen
 			_statusBarCanvas = new CanvasLayer
@@ -443,20 +438,6 @@ void sky() {
 	private void SwitchWeapon(string weaponType)
 	{
 		_simulatorController.SwitchWeapon(0, weaponType);
-	}
-
-	/// <summary>
-	/// Handles WeaponEquipped event to update status bar weapon display.
-	/// Only updates for slot 0 (primary weapon shown on status bar).
-	/// </summary>
-	private void OnWeaponEquipped(WeaponEquippedEvent e)
-	{
-		if (e.SlotIndex == 0 && _statusBarState != null
-			&& _simulatorController.Simulator?.WeaponCollection != null
-			&& _simulatorController.Simulator.WeaponCollection.TryGetWeapon(e.WeaponType, out WeaponInfo weaponInfo))
-		{
-			_statusBarState.CurrentWeapon = weaponInfo.Number;
-		}
 	}
 
 	/// <summary>

@@ -39,14 +39,10 @@ public class StatusBarState
 		// Initialize values from definition
 		foreach (StatusBarNumberDefinition number in _definition.Numbers)
 			_values[number.Name] = number.Init;
-		// Initialize weapon state from first available weapon
-		if (_definition.Weapons?.Weapons is not null)
-			foreach (StatusBarWeaponDefinition weapon in _definition.Weapons.Weapons)
-				if (weapon.Init > 0)
-				{
-					CurrentWeapon = weapon.Number;
-					break;
-				}
+		// Initialize weapon display from StatusBarWeapon inventory value
+		StatusBarNumberDefinition statusBarWeapon = _definition.GetNumber("StatusBarWeapon");
+		if (statusBarWeapon != null)
+			CurrentWeapon = statusBarWeapon.Init;
 	}
 	/// <summary>
 	/// Gets the value for a named status bar item.
@@ -103,28 +99,25 @@ public class StatusBarState
 	{
 		foreach (StatusBarNumberDefinition number in _definition.Numbers)
 			SetValue(number.Name, number.Init);
-		// Reset weapon to first available
-		if (_definition.Weapons?.Weapons != null)
-			foreach (StatusBarWeaponDefinition weapon in _definition.Weapons.Weapons)
-				if (weapon.Init > 0)
-				{
-					CurrentWeapon = weapon.Number;
-					break;
-				}
+		// Reset weapon display from StatusBarWeapon inventory value
+		StatusBarNumberDefinition statusBarWeapon = _definition.GetNumber("StatusBarWeapon");
+		if (statusBarWeapon != null)
+			CurrentWeapon = statusBarWeapon.Init;
 		FaceFrame = 0;
 	}
 	/// <summary>
 	/// Syncs status bar state from simulator values.
 	/// Called each frame or when game state changes.
 	/// Supports custom values defined by modders in XML.
+	/// CurrentWeapon is derived from the StatusBarWeapon inventory value.
 	/// </summary>
 	/// <param name="values">Dictionary of value names to their current values</param>
-	/// <param name="currentWeapon">Current weapon slot</param>
-	public void SyncFromSimulator(IReadOnlyDictionary<string, int> values, int currentWeapon)
+	public void SyncFromSimulator(IReadOnlyDictionary<string, int> values)
 	{
 		foreach (KeyValuePair<string, int> kvp in values)
 			SetValue(kvp.Key, kvp.Value);
-		CurrentWeapon = currentWeapon;
+		if (values.TryGetValue("StatusBarWeapon", out int weapon))
+			CurrentWeapon = weapon;
 	}
 	/// <summary>
 	/// Subscribes to an Inventory's ValueChanged event for automatic sync.
@@ -136,7 +129,12 @@ public class StatusBarState
 	{
 		if (inventory == null)
 			throw new ArgumentNullException(nameof(inventory));
-		inventory.ValueChanged += (name, value) => SetValue(name, value);
+		inventory.ValueChanged += (name, value) =>
+		{
+			SetValue(name, value);
+			if (name == "StatusBarWeapon")
+				CurrentWeapon = value;
+		};
 	}
 	/// <summary>
 	/// Gets all current values as a read-only dictionary.
