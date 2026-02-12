@@ -1634,8 +1634,8 @@ public class Simulator
 
 		WeaponSlot slot = weaponSlots[action.SlotIndex];
 
-		// Validate: slot must have a weapon and be ready
-		if (slot.WeaponType == null || !slot.Flags.HasFlag(WeaponSlotFlags.Ready))
+		// Validate: slot must have a weapon
+		if (slot.WeaponType == null)
 			return;
 
 		if (!weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
