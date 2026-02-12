@@ -54,8 +54,9 @@ public partial class FPSCamera : Camera3D
 
 	public override void _Ready()
 	{
-		// Mouse capture is controlled externally (e.g., by ActionStage)
-		// Menu stages should leave mouse visible
+		// Pausable so mouse look and WASD movement stop during fade transitions,
+		// while the Camera3D still renders. VR head tracking (OpenXR runtime) is unaffected.
+		ProcessMode = ProcessModeEnum.Pausable;
 	}
 
 	/// <summary>
