@@ -647,7 +647,7 @@ end
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
 			<!-- Special floor tiles -->
-			<Elevator Tile="21" Faces="EastWest" Sound="LEVELDONESND" />
+			<Elevator Tile="21" PressedTile="22" Faces="EastWest" Sound="LEVELDONESND" />
 			<Pushable Tile="98" />
 			<Exit Tile="99" />
 			<Ambush Tile="106" />

@@ -68,6 +68,7 @@ public class MapAnalyzer
 			ushort tile = ushort.Parse(elevElem.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("Elevator element missing Tile attribute"));
 			// PressedTile is optional - null means no texture swap on activation
+			// WL_AGENT.C: tilemap[checkx][checky]++ swaps to the next tile
 			ushort? pressedTile = ushort.TryParse(elevElem.Attribute("PressedTile")?.Value, out ushort pt)
 				? pt : null;
 			ElevatorFaces faces = Enum.TryParse(elevElem.Attribute("Faces")?.Value, out ElevatorFaces f)

@@ -927,30 +927,31 @@ public class Simulator
 		// WL_AGENT.C: tilemap[checkx][checky]++
 		if (elevatorConfig.PressedTile.HasValue)
 		{
-			// Calculate texture pages for the switch flip
 			// Wolf3D wall texture formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1
-			// Elevator switches are on E/W faces (vertical walls), so use vertwall formula
-			ushort oldTextureEW = (ushort)((elevatorConfig.Tile - 1) * 2 + 1);
-			ushort newTextureEW = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2 + 1);
-			// Also flip horizontal texture for N/S faces (for mods that allow N/S activation)
-			ushort oldTextureNS = (ushort)((elevatorConfig.Tile - 1) * 2);
-			ushort newTextureNS = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2);
+			// Only swap the faces specified by Faces (e.g., EastWest = vertwall only)
+			if (elevatorConfig.Faces == ElevatorFaces.EastWest || elevatorConfig.Faces == ElevatorFaces.All)
+			{
+				// vertwall formula for E/W-facing surfaces
+				ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
+				{
+					TileX = tileX,
+					TileY = tileY,
+					OldTexture = (ushort)((elevatorConfig.Tile - 1) * 2 + 1),
+					NewTexture = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2 + 1)
+				});
+			}
 
-			// Flip both orientations so presentation layer can handle whichever is visible
-			ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
+			if (elevatorConfig.Faces == ElevatorFaces.NorthSouth || elevatorConfig.Faces == ElevatorFaces.All)
 			{
-				TileX = tileX,
-				TileY = tileY,
-				OldTexture = oldTextureEW,
-				NewTexture = newTextureEW
-			});
-			ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
-			{
-				TileX = tileX,
-				TileY = tileY,
-				OldTexture = oldTextureNS,
-				NewTexture = newTextureNS
-			});
+				// horizwall formula for N/S-facing surfaces
+				ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
+				{
+					TileX = tileX,
+					TileY = tileY,
+					OldTexture = (ushort)((elevatorConfig.Tile - 1) * 2),
+					NewTexture = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2)
+				});
+			}
 		}
 
 		// Emit elevator activated event

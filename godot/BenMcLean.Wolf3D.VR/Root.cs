@@ -89,9 +89,9 @@ public partial class Root : Node3D
 
 	public override void _Process(double delta)
 	{
-		// Skip movement processing during transitions to prevent input leaking through
-		if (_transitionState == TransitionState.Idle)
-			DisplayMode?.Update(delta);
+		// Always update display mode so VR head tracking and camera continue during fades.
+		// Only SimulatorController is Pausable — presentation nodes keep rendering.
+		DisplayMode?.Update(delta);
 
 		// Don't poll for new transitions while one is in progress
 		if (_transitionState != TransitionState.Idle)

@@ -62,6 +62,10 @@ public partial class SimulatorController : Node3D
 			stateCollection = new StateCollection();
 		}
 
+		// Simulation pauses during fade transitions while presentation layer keeps rendering
+		// (VR head tracking and camera must continue, only gameplay logic pauses)
+		ProcessMode = ProcessModeEnum.Pausable;
+
 		// Create deterministic RNG and GameClock
 		RNG rng = new(0); // TODO: Use seed from game settings or save file
 		GameClock gameClock = new();

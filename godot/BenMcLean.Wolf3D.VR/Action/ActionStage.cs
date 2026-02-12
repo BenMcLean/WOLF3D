@@ -105,9 +105,6 @@ void sky() {
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_savedInventory = savedInventory;
 		_savedWeaponType = savedWeaponType;
-		// Must be Pausable so gameplay stops during fade transitions
-		// (Root is ProcessMode.Always, so Inherit would resolve to Always)
-		ProcessMode = ProcessModeEnum.Pausable;
 	}
 
 	public override void _Ready()

@@ -974,8 +974,8 @@
 				<xs:annotation>
 					<xs:documentation>
 						Wall tile number for the pressed elevator switch texture.
-						Defaults to Tile + 1 (original Wolf3D behavior: tilemap[x][y]++).
-						The pressed texture appears momentarily when the switch is activated.
+						WL_AGENT.C: tilemap[checkx][checky]++ swaps the switch to this tile.
+						Only the faces specified by Faces attribute are swapped.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
