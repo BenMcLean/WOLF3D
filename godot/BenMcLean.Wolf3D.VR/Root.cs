@@ -26,6 +26,7 @@ public partial class Root : Node3D
 
 	private Node _currentScene;
 	private Node _pendingScene;
+	private Action _pendingMidFadeAction;
 	private Shared.DosScreen _errorScreen;
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
@@ -76,6 +77,9 @@ public partial class Root : Node3D
 			// Boot to MenuRoom - no fade for initial scene
 			MenuRoom menuRoom = new(DisplayMode);
 			TransitionToImmediate(menuRoom);
+
+			// Wire up fade transitions for menu screen navigations
+			menuRoom.SetFadeTransitionHandler(StartMenuFade);
 		}
 		catch (Exception ex)
 		{
@@ -129,9 +133,19 @@ public partial class Root : Node3D
 			return;
 
 		_pendingScene = newScene;
-		_transitionState = TransitionState.FadingOut;
-		GetTree().Paused = true;
-		_fadeOverlay.FadeToBlack(FadeDuration);
+		StartFade(() =>
+		{
+			// Swap scenes while screen is fully black
+			if (_currentScene != null)
+			{
+				RemoveChild(_currentScene);
+				_currentScene.QueueFree();
+			}
+
+			_currentScene = _pendingScene;
+			_pendingScene = null;
+			AddChild(_currentScene);
+		});
 	}
 
 	/// <summary>
@@ -154,20 +168,40 @@ public partial class Root : Node3D
 	}
 
 	/// <summary>
-	/// Called when fade-to-black completes. Swaps scenes and starts fade-in.
+	/// Starts a fade-out, executes the action at mid-fade, then fades back in.
+	/// Used for both scene transitions and menu screen navigations.
+	/// </summary>
+	private void StartFade(Action midFadeAction)
+	{
+		_pendingMidFadeAction = midFadeAction;
+		_transitionState = TransitionState.FadingOut;
+		GetTree().Paused = true;
+		_fadeOverlay.FadeToBlack(FadeDuration);
+	}
+
+	/// <summary>
+	/// Callback for menu screen navigations (Main → Episodes, etc.).
+	/// Wraps the menu navigation in a fade transition.
+	/// </summary>
+	private void StartMenuFade(Action menuNavigation)
+	{
+		if (_errorMode || _transitionState != TransitionState.Idle)
+		{
+			// If we can't fade, just navigate immediately
+			menuNavigation();
+			return;
+		}
+
+		StartFade(menuNavigation);
+	}
+
+	/// <summary>
+	/// Called when fade-to-black completes. Executes mid-fade action and starts fade-in.
 	/// </summary>
 	private void OnFadeOutComplete()
 	{
-		// Swap scenes while screen is fully black
-		if (_currentScene != null)
-		{
-			RemoveChild(_currentScene);
-			_currentScene.QueueFree();
-		}
-
-		_currentScene = _pendingScene;
-		_pendingScene = null;
-		AddChild(_currentScene);
+		_pendingMidFadeAction?.Invoke();
+		_pendingMidFadeAction = null;
 
 		// Start fade-in
 		_transitionState = TransitionState.FadingIn;

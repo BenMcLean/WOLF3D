@@ -35,6 +35,12 @@ public class MenuManager
 	/// </summary>
 	public MenuState SessionState => _sessionState;
 	/// <summary>
+	/// Optional callback to wrap menu navigations in a fade transition.
+	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
+	/// If null, navigations happen immediately without fading.
+	/// </summary>
+	public Action<Action> FadeTransitionCallback { get; set; }
+	/// <summary>
 	/// Gets the menu renderer.
 	/// </summary>
 	public MenuRenderer Renderer => _renderer;
@@ -126,17 +132,32 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Navigate to a menu by name.
+	/// If FadeTransitionCallback is set, wraps the navigation in a fade transition.
 	/// Pushes the current menu onto the stack and displays the new menu.
 	/// Automatically plays the menu's music if defined.
 	/// </summary>
 	/// <param name="menuName">Name of menu to navigate to</param>
 	public void NavigateToMenu(string menuName)
 	{
-		if (!_menuCollection.Menus.TryGetValue(menuName, out MenuDefinition menuDef))
+		if (!_menuCollection.Menus.ContainsKey(menuName))
 		{
 			_logger?.LogError("Menu '{menuName}' not found", menuName);
 			return;
 		}
+		if (FadeTransitionCallback != null)
+		{
+			FadeTransitionCallback(() => NavigateToMenuImmediate(menuName));
+			return;
+		}
+		NavigateToMenuImmediate(menuName);
+	}
+	/// <summary>
+	/// Navigate to a menu immediately without fading.
+	/// </summary>
+	private void NavigateToMenuImmediate(string menuName)
+	{
+		if (!_menuCollection.Menus.TryGetValue(menuName, out MenuDefinition menuDef))
+			return;
 		// Push current menu onto stack if not empty
 		if (!string.IsNullOrEmpty(_currentMenuName))
 			_menuStack.Push(_currentMenuName);
@@ -164,9 +185,27 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Navigate back to the previous menu.
+	/// If FadeTransitionCallback is set, wraps the navigation in a fade transition.
 	/// Pops the menu stack.
 	/// </summary>
 	public void BackToPreviousMenu()
+	{
+		if (_menuStack.Count == 0)
+		{
+			_logger?.LogDebug("No previous menu to navigate to");
+			return;
+		}
+		if (FadeTransitionCallback != null)
+		{
+			FadeTransitionCallback(BackToPreviousMenuImmediate);
+			return;
+		}
+		BackToPreviousMenuImmediate();
+	}
+	/// <summary>
+	/// Navigate back immediately without fading.
+	/// </summary>
+	private void BackToPreviousMenuImmediate()
 	{
 		if (_menuStack.Count > 0)
 		{
@@ -175,8 +214,6 @@ public class MenuManager
 			RefreshMenu();
 			_logger?.LogDebug("Navigated back to menu: {menuName}", _currentMenuName);
 		}
-		else
-			_logger?.LogDebug("No previous menu to navigate to");
 	}
 	/// <summary>
 	/// Close all menus and return to game.

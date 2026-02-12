@@ -1,3 +1,4 @@
+using System;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
@@ -43,6 +44,17 @@ public partial class MenuRoom : Node3D
 	public int SelectedDifficulty => _menuManager?.SessionState?.SelectedDifficulty ?? 0;
 
 	/// <summary>
+	/// Sets the fade transition handler for menu screen navigations.
+	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
+	/// Must be called after _Ready (when MenuManager exists).
+	/// </summary>
+	public void SetFadeTransitionHandler(Action<Action> handler)
+	{
+		if (_menuManager != null)
+			_menuManager.FadeTransitionCallback = handler;
+	}
+
+	/// <summary>
 	/// Creates a new MenuRoom with the specified display mode.
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
@@ -50,6 +62,9 @@ public partial class MenuRoom : Node3D
 	{
 		_displayMode = displayMode;
 		Name = "MenuRoom";
+		// Must be Pausable so menu input stops during fade transitions
+		// (Root is ProcessMode.Always, so Inherit would resolve to Always)
+		ProcessMode = ProcessModeEnum.Pausable;
 	}
 
 	public override void _Ready()
