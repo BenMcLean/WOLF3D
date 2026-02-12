@@ -5,11 +5,12 @@ using BenMcLean.Wolf3D.Simulator;
 namespace BenMcLean.Wolf3D.VR;
 
 /// <summary>
-/// Full-screen color overlay for flash and fade effects.
+/// Full-screen color overlay for gameplay flash effects (damage, bonus pickups).
 /// WL_PLAY.C:InitRedShifts - bonus flash shifts palette toward (R=64,G=62,B=0) in VGA 6-bit,
 /// which is yellow (0xFFF800 in 8-bit RGB), not white despite the "whiteshifts" variable name.
 /// Uses a CanvasLayer with ColorRect to guarantee the overlay covers everything on screen,
 /// regardless of 3D geometry depth.
+/// Scene transition fading is handled separately by ScreenFadeOverlay (CanvasLayer 101).
 /// </summary>
 public partial class ScreenFlashOverlay : Node
 {
@@ -27,12 +28,6 @@ public partial class ScreenFlashOverlay : Node
 	private float flashAlpha;
 	private float flashDecayRate; // Alpha units per second
 	private Color flashColor;
-
-	// Fade state (for scene transitions, not driven by simulator events)
-	private float fadeAlpha;
-	private float fadeTargetAlpha;
-	private float fadeRate; // Alpha units per second
-	private Color fadeColor;
 
 	public override void _Ready()
 	{
@@ -88,87 +83,27 @@ public partial class ScreenFlashOverlay : Node
 		UpdateOverlay();
 	}
 
-	/// <summary>
-	/// Initiates a fade-to-black effect over the specified duration.
-	/// Used for scene transitions (elevator activation, death, etc.).
-	/// </summary>
-	/// <param name="durationSeconds">Duration of the fade in seconds</param>
-	public void FadeToBlack(float durationSeconds)
-	{
-		fadeColor = new Color(0f, 0f, 0f);
-		fadeTargetAlpha = 1f;
-		fadeRate = (durationSeconds > 0) ? (1f / durationSeconds) : 1f;
-		UpdateOverlay();
-	}
-
-	/// <summary>
-	/// Initiates a fade-from-black effect over the specified duration.
-	/// Used after scene transitions to reveal the new scene.
-	/// </summary>
-	/// <param name="durationSeconds">Duration of the fade in seconds</param>
-	public void FadeFromBlack(float durationSeconds)
-	{
-		fadeColor = new Color(0f, 0f, 0f);
-		fadeAlpha = 1f;
-		fadeTargetAlpha = 0f;
-		fadeRate = (durationSeconds > 0) ? (1f / durationSeconds) : 1f;
-		UpdateOverlay();
-	}
-
 	public override void _Process(double delta)
 	{
-		bool needsUpdate = false;
-		float dt = (float)delta;
+		if (flashAlpha <= 0f)
+			return;
 
-		// Decay flash alpha
-		if (flashAlpha > 0f)
-		{
-			flashAlpha -= flashDecayRate * dt;
-			if (flashAlpha < 0f)
-				flashAlpha = 0f;
-			needsUpdate = true;
-		}
+		flashAlpha -= flashDecayRate * (float)delta;
+		if (flashAlpha < 0f)
+			flashAlpha = 0f;
 
-		// Animate fade alpha toward target
-		if (fadeAlpha != fadeTargetAlpha)
-		{
-			float step = fadeRate * dt;
-			if (fadeTargetAlpha > fadeAlpha)
-			{
-				fadeAlpha += step;
-				if (fadeAlpha >= fadeTargetAlpha)
-					fadeAlpha = fadeTargetAlpha;
-			}
-			else
-			{
-				fadeAlpha -= step;
-				if (fadeAlpha <= fadeTargetAlpha)
-					fadeAlpha = fadeTargetAlpha;
-			}
-			needsUpdate = true;
-		}
-
-		if (needsUpdate)
-			UpdateOverlay();
+		UpdateOverlay();
 	}
 
 	private void UpdateOverlay()
 	{
-		// Combine flash and fade: use whichever alpha is higher
-		float combinedAlpha = Mathf.Max(flashAlpha, fadeAlpha);
-
-		if (combinedAlpha <= 0f)
+		if (flashAlpha <= 0f)
 		{
 			colorRect.Visible = false;
 			return;
 		}
 
 		colorRect.Visible = true;
-		// Use flash color for flash effects, fade color for fade effects
-		Color displayColor = (flashAlpha >= fadeAlpha)
-			? new Color(flashColor.R, flashColor.G, flashColor.B, combinedAlpha)
-			: new Color(fadeColor.R, fadeColor.G, fadeColor.B, combinedAlpha);
-
-		colorRect.Color = displayColor;
+		colorRect.Color = new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha);
 	}
 }

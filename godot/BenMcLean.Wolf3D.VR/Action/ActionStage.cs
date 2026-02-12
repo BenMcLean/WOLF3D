@@ -18,6 +18,29 @@ namespace BenMcLean.Wolf3D.VR;
 /// </summary>
 public partial class ActionStage : Node3D
 {
+	/// <summary>
+	/// Represents a pending level transition requested by elevator activation.
+	/// Root polls this to initiate a fade transition.
+	/// </summary>
+	public class LevelTransitionRequest
+	{
+		public int LevelIndex { get; }
+		public Dictionary<string, int> SavedInventory { get; }
+		public string SavedWeaponType { get; }
+
+		public LevelTransitionRequest(int levelIndex, Dictionary<string, int> savedInventory, string savedWeaponType)
+		{
+			LevelIndex = levelIndex;
+			SavedInventory = savedInventory;
+			SavedWeaponType = savedWeaponType;
+		}
+	}
+
+	/// <summary>
+	/// Set when an elevator is activated. Root polls this to initiate a fade transition.
+	/// </summary>
+	public LevelTransitionRequest PendingTransition { get; private set; }
+
 	[Export]
 	public int LevelIndex { get; set; } = 0;
 
@@ -586,58 +609,20 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Handles elevator activation - triggers level transition.
+	/// Handles elevator activation - captures player state and sets PendingTransition
+	/// for Root to poll and initiate a fade transition.
 	/// WL_AGENT.C:Cmd_Use elevator completion triggers gamestate.victoryflag.
 	/// </summary>
 	private void OnElevatorActivated(ElevatorActivatedEvent e)
 	{
-		GD.Print($"Elevator activated! Destination level: {e.DestinationLevel}, IsAltElevator: {e.IsAltElevator}");
-
 		// Play elevator sound
 		if (!string.IsNullOrEmpty(e.SoundName))
 			EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 
-		// TODO: Implement proper level transition with intermission screen
-		// For now, just reload with the new level index
-		LevelIndex = e.DestinationLevel;
-
-		// Queue a deferred call to reload the stage (can't change scene tree during event handling)
-		CallDeferred(nameof(ReloadLevel));
-	}
-
-
-	/// <summary>
-	/// Reloads the current ActionStage with the new LevelIndex.
-	/// Called deferred after elevator activation.
-	/// Preserves player inventory state (ammo, health, score, weapons) across level transitions.
-	/// </summary>
-	private void ReloadLevel()
-	{
-		GD.Print($"Loading level {LevelIndex}...");
-
-		// Get the parent node and this node's position in the tree
-		Node parent = GetParent();
-		if (parent == null)
-		{
-			GD.PrintErr("ERROR: Cannot reload level - ActionStage has no parent");
-			return;
-		}
-
-		// Capture player inventory state before destroying this stage
-		// This preserves ammo, health, score, lives, and weapons across level transitions
+		// Capture player inventory state before transition
 		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.CaptureState();
-
-		// Capture current weapon type (e.g., "pistol", "machinegun", "chaingun")
 		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 
-		// Create a new ActionStage with the same display mode, updated level index, and saved state
-		ActionStage newStage = new(_displayMode, savedInventory, savedWeaponType)
-		{
-			LevelIndex = LevelIndex
-		};
-
-		// Replace this stage with the new one
-		parent.AddChild(newStage);
-		QueueFree();
+		PendingTransition = new LevelTransitionRequest(e.DestinationLevel, savedInventory, savedWeaponType);
 	}
 }

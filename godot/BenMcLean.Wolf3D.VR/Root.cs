@@ -7,15 +7,29 @@ namespace BenMcLean.Wolf3D.VR;
 /// <summary>
 /// Root node for the VR application.
 /// Manages global VR environment (sky, lighting) and scene transitions.
+/// Owns the ScreenFadeOverlay for fade-to-black/fade-from-black transitions.
 /// </summary>
 public partial class Root : Node3D
 {
+	// VW_FadeOut/VW_FadeIn: 30 interpolation steps at 70Hz
+	private const float FadeDuration = 30f / 70f;
+
+	private enum TransitionState
+	{
+		Idle,
+		FadingOut,
+		FadingIn,
+	}
+
 	[Export]
 	public int CurrentLevelIndex { get; set; } = 0;
 
 	private Node _currentScene;
+	private Node _pendingScene;
 	private Shared.DosScreen _errorScreen;
 	private bool _errorMode = false;
+	private ScreenFadeOverlay _fadeOverlay;
+	private TransitionState _transitionState = TransitionState.Idle;
 
 	/// <summary>
 	/// The active display mode (VR or flatscreen).
@@ -25,6 +39,9 @@ public partial class Root : Node3D
 
 	public override void _Ready()
 	{
+		// Root must keep processing during pause so fade overlay animates
+		ProcessMode = ProcessModeEnum.Always;
+
 		// Register error display callback
 		ExceptionHandler.DisplayCallback = ShowErrorScreen;
 
@@ -33,6 +50,12 @@ public partial class Root : Node3D
 			// Initialize display mode FIRST (VR or flatscreen)
 			// This must happen before anything else that needs the camera
 			DisplayMode = DisplayModeFactory.Create();
+
+			// Create fade overlay for scene transitions
+			_fadeOverlay = new ScreenFadeOverlay();
+			AddChild(_fadeOverlay);
+			_fadeOverlay.FadeOutComplete += OnFadeOutComplete;
+			_fadeOverlay.FadeInComplete += OnFadeInComplete;
 
 			// Load game assets
 			// TODO: Eventually this will be done from menu selection, not hardcoded
@@ -50,9 +73,9 @@ public partial class Root : Node3D
 			if (!string.IsNullOrWhiteSpace(songName))
 				Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
 
-			// Boot to MenuRoom which wraps MenuStage with VR support
+			// Boot to MenuRoom - no fade for initial scene
 			MenuRoom menuRoom = new(DisplayMode);
-			TransitionTo(menuRoom);
+			TransitionToImmediate(menuRoom);
 		}
 		catch (Exception ex)
 		{
@@ -62,8 +85,13 @@ public partial class Root : Node3D
 
 	public override void _Process(double delta)
 	{
-		// Update display mode each frame
-		DisplayMode?.Update(delta);
+		// Skip movement processing during transitions to prevent input leaking through
+		if (_transitionState == TransitionState.Idle)
+			DisplayMode?.Update(delta);
+
+		// Don't poll for new transitions while one is in progress
+		if (_transitionState != TransitionState.Idle)
+			return;
 
 		// Poll MenuRoom for game start signal
 		if (_currentScene is MenuRoom menuRoom)
@@ -78,27 +106,81 @@ public partial class Root : Node3D
 				TransitionTo(actionStage);
 			}
 		}
+		// Poll ActionStage for level transition requests (elevator)
+		else if (_currentScene is ActionStage actionStage)
+		{
+			if (actionStage.PendingTransition is ActionStage.LevelTransitionRequest request)
+			{
+				ActionStage newStage = new(DisplayMode, request.SavedInventory, request.SavedWeaponType)
+				{
+					LevelIndex = request.LevelIndex
+				};
+				TransitionTo(newStage);
+			}
+		}
 	}
+
 	/// <summary>
-	/// Transitions to a new scene, replacing the current one.
+	/// Transitions to a new scene with fade-to-black and fade-from-black.
 	/// </summary>
-	/// <param name="newScene">The scene node to transition to</param>
 	public void TransitionTo(Node newScene)
 	{
-		// Don't allow transitions in error mode
+		if (_errorMode || _transitionState != TransitionState.Idle)
+			return;
+
+		_pendingScene = newScene;
+		_transitionState = TransitionState.FadingOut;
+		GetTree().Paused = true;
+		_fadeOverlay.FadeToBlack(FadeDuration);
+	}
+
+	/// <summary>
+	/// Transitions to a new scene immediately without fading.
+	/// Used for the initial boot scene.
+	/// </summary>
+	private void TransitionToImmediate(Node newScene)
+	{
 		if (_errorMode)
 			return;
 
-		// Remove and free the current scene
 		if (_currentScene != null)
 		{
 			RemoveChild(_currentScene);
 			_currentScene.QueueFree();
 		}
 
-		// Add the new scene
 		_currentScene = newScene;
 		AddChild(_currentScene);
+	}
+
+	/// <summary>
+	/// Called when fade-to-black completes. Swaps scenes and starts fade-in.
+	/// </summary>
+	private void OnFadeOutComplete()
+	{
+		// Swap scenes while screen is fully black
+		if (_currentScene != null)
+		{
+			RemoveChild(_currentScene);
+			_currentScene.QueueFree();
+		}
+
+		_currentScene = _pendingScene;
+		_pendingScene = null;
+		AddChild(_currentScene);
+
+		// Start fade-in
+		_transitionState = TransitionState.FadingIn;
+		_fadeOverlay.FadeFromBlack(FadeDuration);
+	}
+
+	/// <summary>
+	/// Called when fade-from-black completes. Returns to idle and unpauses.
+	/// </summary>
+	private void OnFadeInComplete()
+	{
+		_transitionState = TransitionState.Idle;
+		GetTree().Paused = false;
 	}
 
 	/// <summary>
