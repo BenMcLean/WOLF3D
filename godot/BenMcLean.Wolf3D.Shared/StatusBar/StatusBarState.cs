@@ -14,6 +14,8 @@ public class StatusBarState
 {
 	private readonly Dictionary<string, int> _values = [];
 	private readonly StatusBarDefinition _definition;
+	private Inventory _subscribedInventory;
+	private Action<string, int> _inventoryHandler;
 	/// <summary>
 	/// Event fired when a value changes.
 	/// Parameters: (name, newValue)
@@ -129,12 +131,29 @@ public class StatusBarState
 	{
 		if (inventory == null)
 			throw new ArgumentNullException(nameof(inventory));
-		inventory.ValueChanged += (name, value) =>
+		// Unsubscribe from previous inventory if any
+		UnsubscribeFromInventory();
+		_subscribedInventory = inventory;
+		_inventoryHandler = (name, value) =>
 		{
 			SetValue(name, value);
 			if (name == "StatusBarWeapon")
 				CurrentWeapon = value;
 		};
+		inventory.ValueChanged += _inventoryHandler;
+	}
+	/// <summary>
+	/// Unsubscribes from the previously subscribed Inventory.
+	/// Called during cleanup to prevent dangling references.
+	/// </summary>
+	public void UnsubscribeFromInventory()
+	{
+		if (_subscribedInventory != null && _inventoryHandler != null)
+		{
+			_subscribedInventory.ValueChanged -= _inventoryHandler;
+			_subscribedInventory = null;
+			_inventoryHandler = null;
+		}
 	}
 	/// <summary>
 	/// Gets all current values as a read-only dictionary.

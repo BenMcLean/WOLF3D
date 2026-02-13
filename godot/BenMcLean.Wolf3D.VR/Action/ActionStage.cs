@@ -41,6 +41,11 @@ public partial class ActionStage : Node3D
 	/// </summary>
 	public LevelTransitionRequest PendingTransition { get; private set; }
 
+	/// <summary>
+	/// Set when the player presses ESC. Root polls this to transition back to the main menu.
+	/// </summary>
+	public bool PendingReturnToMenu { get; private set; }
+
 	[Export]
 	public int LevelIndex { get; set; } = 0;
 
@@ -79,6 +84,9 @@ void sky() {
 	private readonly IDisplayMode _displayMode;
 	private readonly Dictionary<string, int> _savedInventory;
 	private readonly string _savedWeaponType;
+	private readonly Simulator.Simulator _existingSimulator;
+	private readonly Vector3? _resumePosition;
+	private readonly float? _resumeYRotation;
 	private Walls _walls;
 	private DebugMarkers _debugMarkers;
 	private Fixtures _fixtures;
@@ -107,6 +115,24 @@ void sky() {
 		_savedWeaponType = savedWeaponType;
 	}
 
+	/// <summary>
+	/// Creates a new ActionStage that resumes from an existing simulator state.
+	/// Used when returning from the menu to a suspended game.
+	/// </summary>
+	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
+	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
+	/// <param name="levelIndex">The level index to display.</param>
+	/// <param name="resumePosition">Player position to restore.</param>
+	/// <param name="resumeYRotation">Player Y rotation to restore.</param>
+	public ActionStage(IDisplayMode displayMode, Simulator.Simulator existingSimulator, int levelIndex, Vector3 resumePosition, float resumeYRotation)
+	{
+		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
+		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
+		LevelIndex = levelIndex;
+		_resumePosition = resumePosition;
+		_resumeYRotation = resumeYRotation;
+	}
+
 	public override void _Ready()
 	{
 		try
@@ -124,10 +150,16 @@ void sky() {
 		// Initialize display mode camera rig
 		_displayMode.Initialize(this);
 
-		// Position camera at player start
+		// Position camera at player start or resume position
 		Vector3 cameraPosition;
 		float cameraRotationY = 0f;
-		if (MapAnalysis.PlayerStart.HasValue)
+		if (_resumePosition.HasValue)
+		{
+			// Resuming from suspended game - restore exact position/rotation
+			cameraPosition = _resumePosition.Value;
+			cameraRotationY = _resumeYRotation ?? 0f;
+		}
+		else if (MapAnalysis.PlayerStart.HasValue)
 		{
 			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
 			// Center of the player's starting grid square
@@ -205,21 +237,37 @@ void sky() {
 			Shared.SharedAssetManager.DigiSounds);  // Sound library for door sounds
 		AddChild(_doors);
 
-		// Create simulator controller and initialize with map data
+		// Create simulator controller
 		_simulatorController = new SimulatorController();
 		AddChild(_simulatorController);
-		// Initialize with StateCollection and WeaponCollection from game assets
-		_simulatorController.Initialize(
-			Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
-			MapAnalysis,
-			_doors,
-			_walls,
-			_bonuses,
-			_actors,
-			_weapons,
-			Shared.SharedAssetManager.CurrentGame.StateCollection,
-			Shared.SharedAssetManager.CurrentGame.WeaponCollection,
-			() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));  // Delegate returns Wolf3D 16.16 fixed-point coordinates
+
+		if (_existingSimulator != null)
+		{
+			// Resuming from suspended game - reuse existing simulator
+			_simulatorController.InitializeFromExisting(
+				_existingSimulator,
+				_doors,
+				_walls,
+				_bonuses,
+				_actors,
+				_weapons,
+				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));
+		}
+		else
+		{
+			// New game or level transition - create fresh simulator
+			_simulatorController.Initialize(
+				Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
+				MapAnalysis,
+				_doors,
+				_walls,
+				_bonuses,
+				_actors,
+				_weapons,
+				Shared.SharedAssetManager.CurrentGame.StateCollection,
+				Shared.SharedAssetManager.CurrentGame.WeaponCollection,
+				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));
+		}
 
 		// Wire up hit detection callback for weapon state machine
 		// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
@@ -238,8 +286,8 @@ void sky() {
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
 
-		// Initialize inventory from StatusBar definition
-		if (SharedAssetManager.StatusBar != null)
+		// Initialize inventory (skip for resumed games - simulator already has state)
+		if (_existingSimulator == null && SharedAssetManager.StatusBar != null)
 		{
 			_simulatorController.Simulator.Inventory.InitializeFromDefinition(SharedAssetManager.StatusBar);
 
@@ -340,10 +388,17 @@ void sky() {
 
 	public override void _Input(InputEvent @event)
 	{
-		// Weapon switching - number keys map to weapon numbers from XML
-		// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
 		{
+			// ESC returns to main menu
+			if (keyEvent.Keycode == Key.Escape)
+			{
+				PendingReturnToMenu = true;
+				return;
+			}
+
+			// Weapon switching - number keys map to weapon numbers from XML
+			// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 			int weaponNumber = keyEvent.Keycode switch
 			{
 				Key.Key1 => 0,
@@ -583,6 +638,13 @@ void sky() {
 		// Unsubscribe from simulator events
 		if (_simulatorController != null)
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
+
+		// Clear HitDetection delegate (points at this ActionStage's method)
+		if (_simulatorController?.Simulator != null)
+			_simulatorController.Simulator.HitDetection = null;
+
+		// Unsubscribe status bar from inventory to prevent dangling references
+		_statusBarState?.UnsubscribeFromInventory();
 
 		// Release mouse when leaving action stage (returning to menu, etc.)
 		if (!_displayMode.IsVRActive)

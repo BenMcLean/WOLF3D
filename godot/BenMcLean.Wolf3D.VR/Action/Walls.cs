@@ -151,10 +151,27 @@ void fragment() {
 	/// </summary>
 	public void Subscribe(Simulator.Simulator simulator)
 	{
+		Unsubscribe();
 		this.simulator = simulator;
 		simulator.PushWallPositionChanged += OnPushWallPositionChanged;
 		simulator.PushWallPlaySound += OnPushWallPlaySound;
 		simulator.ElevatorSwitchFlipped += OnElevatorSwitchFlipped;
+	}
+	/// <summary>
+	/// Unsubscribes from simulator events.
+	/// Automatically called when subscribing to a new simulator or when this node is freed.
+	/// </summary>
+	public void Unsubscribe()
+	{
+		if (simulator == null)
+			return;
+		simulator.PushWallPositionChanged -= OnPushWallPositionChanged;
+		simulator.PushWallPlaySound -= OnPushWallPlaySound;
+		simulator.ElevatorSwitchFlipped -= OnElevatorSwitchFlipped;
+	}
+	public override void _ExitTree()
+	{
+		Unsubscribe();
 	}
 	/// <summary>
 	/// Handles pushwall position changes from the simulator.

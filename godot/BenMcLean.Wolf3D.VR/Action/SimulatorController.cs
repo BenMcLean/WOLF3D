@@ -28,6 +28,11 @@ public partial class SimulatorController : Node3D
 	private Weapons weapons;
 	private Func<(int X, int Y)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates
 
+	// Named event handlers for cleanup in _ExitTree
+	private Action<ElevatorActivatedEvent> _elevatorHandler;
+	private Action<PlayerStateChangedEvent> _playerStateHandler;
+	private Action<ScreenFlashEvent> _screenFlashHandler;
+
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
 	/// Call this after adding the controller to the scene tree.
@@ -89,13 +94,16 @@ public partial class SimulatorController : Node3D
 		weapons.Subscribe(simulator);
 
 		// Subscribe to elevator activation for level transitions
-		simulator.ElevatorActivated += e => ElevatorActivated?.Invoke(e);
+		_elevatorHandler = e => ElevatorActivated?.Invoke(e);
+		simulator.ElevatorActivated += _elevatorHandler;
 
 		// Forward player state changes to presentation layer for HUD updates
-		simulator.PlayerStateChanged += e => PlayerStateChanged?.Invoke(e);
+		_playerStateHandler = e => PlayerStateChanged?.Invoke(e);
+		simulator.PlayerStateChanged += _playerStateHandler;
 
 		// Forward screen flash events to presentation layer
-		simulator.ScreenFlash += e => ScreenFlash?.Invoke(e);
+		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
+		simulator.ScreenFlash += _screenFlashHandler;
 
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
@@ -148,6 +156,63 @@ public partial class SimulatorController : Node3D
 		else
 		{
 			GD.PrintErr("WARNING: No WeaponCollection provided - weapons will not function");
+		}
+	}
+
+	/// <summary>
+	/// Initializes the controller with an existing simulator (for resuming a suspended game).
+	/// Does NOT create new RNG/GameClock/Simulator - reuses the existing one.
+	/// Subscribes presentation layers and replays current state.
+	/// </summary>
+	public void InitializeFromExisting(
+		Simulator.Simulator existingSimulator,
+		Doors doorsNode,
+		Walls wallsNode,
+		Bonuses bonusesNode,
+		Actors actorsNode,
+		Weapons weaponsNode,
+		Func<(int X, int Y)> getPlayerPosition)
+	{
+		// Simulation pauses during fade transitions while presentation layer keeps rendering
+		ProcessMode = ProcessModeEnum.Pausable;
+
+		simulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
+		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
+		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
+		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
+		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
+		weapons = weaponsNode ?? throw new ArgumentNullException(nameof(weaponsNode));
+		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
+
+		// Subscribe presentation layers to existing simulator
+		doors.Subscribe(simulator);
+		walls.Subscribe(simulator);
+		bonuses.Subscribe(simulator);
+		actors.Subscribe(simulator);
+		weapons.Subscribe(simulator);
+
+		// Subscribe event forwarding handlers
+		_elevatorHandler = e => ElevatorActivated?.Invoke(e);
+		simulator.ElevatorActivated += _elevatorHandler;
+		_playerStateHandler = e => PlayerStateChanged?.Invoke(e);
+		simulator.PlayerStateChanged += _playerStateHandler;
+		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
+		simulator.ScreenFlash += _screenFlashHandler;
+
+		// Replay current state to newly subscribed presentation layers
+		simulator.EmitAllEntityState();
+	}
+
+	public override void _ExitTree()
+	{
+		if (simulator != null)
+		{
+			if (_elevatorHandler != null)
+				simulator.ElevatorActivated -= _elevatorHandler;
+			if (_playerStateHandler != null)
+				simulator.PlayerStateChanged -= _playerStateHandler;
+			if (_screenFlashHandler != null)
+				simulator.ScreenFlash -= _screenFlashHandler;
 		}
 	}
 

@@ -2214,6 +2214,17 @@ public class Simulator
 				IsRotated = actor.CurrentState?.Rotate ?? false
 			});
 
+			// Emit precise 16.16 fixed-point position
+			// ActorSpawnedEvent only has tile coordinates; actors may be mid-tile
+			// (e.g., dead actors that stopped mid-movement)
+			ActorMoved?.Invoke(new ActorMovedEvent
+			{
+				ActorIndex = i,
+				X = actor.X,
+				Y = actor.Y,
+				Facing = actor.Facing
+			});
+
 			// Also emit current actor sprite state
 			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
 			{
@@ -2221,6 +2232,31 @@ public class Simulator
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = actor.CurrentState?.Rotate ?? false
 			});
+		}
+
+		// Emit weapon equipped events for all active weapon slots
+		for (int i = 0; i < weaponSlots.Count; i++)
+		{
+			WeaponSlot slot = weaponSlots[i];
+			if (!string.IsNullOrEmpty(slot.WeaponType))
+			{
+				WeaponEquipped?.Invoke(new WeaponEquippedEvent
+				{
+					SlotIndex = i,
+					WeaponType = slot.WeaponType,
+					Shape = (ushort)slot.ShapeNum
+				});
+
+				// Also emit current weapon sprite state
+				if (slot.ShapeNum >= 0)
+				{
+					WeaponSpriteChanged?.Invoke(new WeaponSpriteChangedEvent
+					{
+						SlotIndex = i,
+						Shape = (ushort)slot.ShapeNum
+					});
+				}
+			}
 		}
 	}
 

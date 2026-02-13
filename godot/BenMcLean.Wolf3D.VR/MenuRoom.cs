@@ -34,6 +34,19 @@ public partial class MenuRoom : Node3D
 	public bool ShouldStartGame => _menuManager?.SessionState?.StartGame ?? false;
 
 	/// <summary>
+	/// Set by Root when a game is suspended in the background.
+	/// When true, pressing ESC at the root menu will resume the game.
+	/// </summary>
+	public bool HasSuspendedGame { get; set; }
+
+	/// <summary>
+	/// Set when the player wants to resume a suspended game.
+	/// Set when ESC/Cancel is pressed at the root menu while HasSuspendedGame is true.
+	/// Polled by Root._Process(); Root is responsible for acting on this.
+	/// </summary>
+	public bool PendingResumeGame { get; private set; }
+
+	/// <summary>
 	/// Selected episode from menu.
 	/// </summary>
 	public int SelectedEpisode => _menuManager?.SessionState?.SelectedEpisode ?? 0;
@@ -280,6 +293,13 @@ public partial class MenuRoom : Node3D
 	{
 		// Update menu manager
 		_menuManager?.Update((float)delta);
+
+		// Check if ESC was pressed at root menu with a suspended game
+		if (_menuManager?.CancelAtRootRequested == true && HasSuspendedGame)
+		{
+			_menuManager.ClearCancelAtRoot();
+			PendingResumeGame = true;
+		}
 
 		// In VR mode, position the menu panel once after XR tracking is active
 		// (Camera position is zero until tracking starts)

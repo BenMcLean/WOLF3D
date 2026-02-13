@@ -127,15 +127,6 @@ public partial class FPSCamera : Camera3D
 				case Key.Alt:
 					_alt = keyEvent.Pressed;
 					break;
-				case Key.Escape:
-					// Toggle mouse capture with Escape
-					if (keyEvent.Pressed)
-					{
-						Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
-							? Input.MouseModeEnum.Visible
-							: Input.MouseModeEnum.Captured;
-					}
-					break;
 			}
 		}
 	}

@@ -1,4 +1,5 @@
 using System;
+using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -24,6 +25,16 @@ public partial class Root : Node3D
 	[Export]
 	public int CurrentLevelIndex { get; set; } = 0;
 
+	/// <summary>
+	/// Captures the state needed to resume a suspended game.
+	/// The Simulator is a pure C# object (no Godot dependencies) and survives ActionStage destruction.
+	/// </summary>
+	private record SuspendedGameState(
+		Simulator.Simulator Simulator,
+		int LevelIndex,
+		Vector3 PlayerPosition,
+		float PlayerYRotation);
+
 	private Node _currentScene;
 	private Node _pendingScene;
 	private Action _pendingMidFadeAction;
@@ -31,6 +42,7 @@ public partial class Root : Node3D
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
 	private TransitionState _transitionState = TransitionState.Idle;
+	private SuspendedGameState _suspendedGame;
 
 	/// <summary>
 	/// The active display mode (VR or flatscreen).
@@ -97,11 +109,17 @@ public partial class Root : Node3D
 		if (_transitionState != TransitionState.Idle)
 			return;
 
-		// Poll MenuRoom for game start signal
+		// Poll MenuRoom for game start or resume signal
 		if (_currentScene is MenuRoom menuRoom)
 		{
-			if (menuRoom.ShouldStartGame)
+			if (menuRoom.PendingResumeGame && _suspendedGame != null)
 			{
+				ResumeGame();
+			}
+			else if (menuRoom.ShouldStartGame)
+			{
+				// Starting a new game discards any suspended game
+				_suspendedGame = null;
 				// Get selected episode and difficulty from menu
 				int episode = menuRoom.SelectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
@@ -110,11 +128,17 @@ public partial class Root : Node3D
 				TransitionTo(actionStage);
 			}
 		}
-		// Poll ActionStage for level transition requests (elevator)
+		// Poll ActionStage for level transition or return-to-menu requests
 		else if (_currentScene is ActionStage actionStage)
 		{
-			if (actionStage.PendingTransition is ActionStage.LevelTransitionRequest request)
+			if (actionStage.PendingReturnToMenu)
 			{
+				SuspendToMenu(actionStage);
+			}
+			else if (actionStage.PendingTransition is ActionStage.LevelTransitionRequest request)
+			{
+				// Level transitions discard the suspended game (new level = new state)
+				_suspendedGame = null;
 				ActionStage newStage = new(DisplayMode, request.SavedInventory, request.SavedWeaponType)
 				{
 					LevelIndex = request.LevelIndex
@@ -122,6 +146,59 @@ public partial class Root : Node3D
 				TransitionTo(newStage);
 			}
 		}
+	}
+
+	/// <summary>
+	/// Suspends the current game and transitions to the main menu.
+	/// Captures the Simulator and player state before destroying the ActionStage.
+	/// </summary>
+	private void SuspendToMenu(ActionStage actionStage)
+	{
+		// Capture state before ActionStage is destroyed
+		_suspendedGame = new SuspendedGameState(
+			actionStage.SimulatorController.Simulator,
+			actionStage.LevelIndex,
+			DisplayMode.ViewerPosition,
+			DisplayMode.ViewerYRotation);
+
+		MenuRoom menuRoom = new(DisplayMode) { HasSuspendedGame = true };
+		_pendingScene = menuRoom;
+		StartFade(() =>
+		{
+			if (_currentScene != null)
+			{
+				RemoveChild(_currentScene);
+				_currentScene.QueueFree();
+			}
+
+			_currentScene = menuRoom;
+			_pendingScene = null;
+			AddChild(menuRoom);
+
+			// Wire up fade handler after MenuRoom._Ready has run
+			menuRoom.SetFadeTransitionHandler(StartMenuFade);
+		});
+	}
+
+	/// <summary>
+	/// Resumes a suspended game from the menu.
+	/// Creates a new ActionStage that reuses the existing Simulator.
+	/// </summary>
+	private void ResumeGame()
+	{
+		if (_suspendedGame == null)
+			return;
+
+		SuspendedGameState state = _suspendedGame;
+		ActionStage actionStage = new(
+			DisplayMode,
+			state.Simulator,
+			state.LevelIndex,
+			state.PlayerPosition,
+			state.PlayerYRotation);
+
+		_suspendedGame = null;
+		TransitionTo(actionStage);
 	}
 
 	/// <summary>

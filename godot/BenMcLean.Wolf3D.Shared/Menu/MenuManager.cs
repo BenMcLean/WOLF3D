@@ -35,6 +35,11 @@ public class MenuManager
 	/// </summary>
 	public MenuState SessionState => _sessionState;
 	/// <summary>
+	/// Set when ESC/Cancel is pressed at the root menu (no parent to go back to).
+	/// Consumer must clear via <see cref="ClearCancelAtRoot"/>.
+	/// </summary>
+	public bool CancelAtRootRequested { get; private set; }
+	/// <summary>
 	/// Optional callback to wrap menu navigations in a fade transition.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// If null, navigations happen immediately without fading.
@@ -192,7 +197,7 @@ public class MenuManager
 	{
 		if (_menuStack.Count == 0)
 		{
-			_logger?.LogDebug("No previous menu to navigate to");
+			CancelAtRootRequested = true;
 			return;
 		}
 		if (FadeTransitionCallback != null)
@@ -290,6 +295,11 @@ public class MenuManager
 	/// Handles input and executes menu actions.
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds</param>
+	/// <summary>
+	/// Clears the <see cref="CancelAtRootRequested"/> flag after the consumer has acted on it.
+	/// </summary>
+	public void ClearCancelAtRoot() => CancelAtRootRequested = false;
+
 	public void Update(float delta)
 	{
 		if (string.IsNullOrEmpty(_currentMenuName))
