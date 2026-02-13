@@ -295,7 +295,7 @@ void sky() {
 			if (_savedInventory != null)
 			{
 				// Restore inventory values (ammo, health, score, lives, weapons)
-				_simulatorController.Simulator.Inventory.RestoreState(_savedInventory);
+				_simulatorController.Simulator.Inventory.LoadState(_savedInventory);
 				// Reset only level-specific values (keys)
 				_simulatorController.Simulator.Inventory.OnLevelChange();
 			}
@@ -663,7 +663,7 @@ void sky() {
 			EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 
 		// Capture player inventory state before transition
-		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.CaptureState();
+		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
 		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 
 		PendingTransition = new LevelTransitionRequest(e.DestinationLevel, savedInventory, savedWeaponType);

@@ -1,3 +1,5 @@
+using BenMcLean.Wolf3D.Simulator.State;
+
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Fixtures (scenery) are display-only and not simulated.
 /// Based on WL_DEF.H:statstruct (lines 948-955).
 /// </summary>
-public class StatObj
+public class StatObj : IStateSavable<StatObj>
 {
 	/// <summary>
 	/// Maximum number of static objects (bonus items) per level.
@@ -58,4 +60,23 @@ public class StatObj
 	/// WL_ACT1.C:PlaceItemType checks for shapenum == -1
 	/// </summary>
 	public bool IsFree => ShapeNum == -1;
+
+	/// <summary>
+	/// Returns a shallow copy of this StatObj.
+	/// StatObj is its own snapshot type since all properties are already public+settable
+	/// and no type conversions are needed.
+	/// </summary>
+	public StatObj SaveState() => new(TileX, TileY, ShapeNum, Flags, ItemNumber);
+
+	/// <summary>
+	/// Copies all field values from another StatObj instance.
+	/// </summary>
+	public void LoadState(StatObj other)
+	{
+		TileX = other.TileX;
+		TileY = other.TileY;
+		ShapeNum = other.ShapeNum;
+		Flags = other.Flags;
+		ItemNumber = other.ItemNumber;
+	}
 }

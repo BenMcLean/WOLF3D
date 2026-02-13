@@ -1,10 +1,12 @@
+using BenMcLean.Wolf3D.Simulator.State;
+
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
 /// <summary>
 /// Door state in the simulation. Mutable.
 /// Based on WL_DEF.H:doorstruct (lines 964-975) and related door logic in WL_ACT1.C.
 /// </summary>
-public class Door
+public class Door : IStateSavable<DoorSnapshot>
 {
 	// Static properties (from MapAnalysis.DoorSpawn - not serialized, loaded from map)
 	// WL_DEF.H:doorstruct:tilex (original: byte)
@@ -59,6 +61,28 @@ public class Door
 		Action = DoorAction.Closed;
 		Position = 0;
 		TicCount = 0;
+	}
+
+	/// <summary>
+	/// Captures only dynamic door state. Static properties (TileX, TileY, FacesEastWest,
+	/// Lock, TileNumber, Area1, Area2) come from map data on restore.
+	/// </summary>
+	public DoorSnapshot SaveState() => new()
+	{
+		Action = (byte)Action,
+		Position = Position,
+		TicCount = TicCount
+	};
+
+	/// <summary>
+	/// Restores dynamic door state from a snapshot.
+	/// Static properties are not modified (they come from LoadDoorsFromMapAnalysis).
+	/// </summary>
+	public void LoadState(DoorSnapshot state)
+	{
+		Action = (DoorAction)state.Action;
+		Position = state.Position;
+		TicCount = state.TicCount;
 	}
 }
 

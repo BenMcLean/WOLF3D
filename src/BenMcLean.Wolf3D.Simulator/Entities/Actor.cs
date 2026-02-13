@@ -1,5 +1,7 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.State;
+using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -8,7 +10,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Based on WL_DEF.H:objstruct (lines 884-933) and related actor logic.
 /// Actors use state machines defined in State.cs, with Think/Action functions in Lua.
 /// </summary>
-public class Actor
+public class Actor : IStateSavable<ActorSnapshot>
 {
 	// Static properties (from MapAnalysis.ActorSpawn - not serialized, loaded from map)
 
@@ -25,7 +27,7 @@ public class Actor
 	/// Current state in the actor's state machine.
 	/// Determines sprite, duration, Think/Action functions.
 	/// </summary>
-	public State CurrentState { get; set; }
+	public GameplayState CurrentState { get; set; }
 
 	/// <summary>
 	/// WL_DEF.H:objstruct:ticcount (original: int = 16-bit signed)
@@ -119,7 +121,7 @@ public class Actor
 	/// <param name="tileY">Starting tile Y coordinate</param>
 	/// <param name="facing">Starting facing direction</param>
 	/// <param name="hitPoints">Starting hit points</param>
-	public Actor(string actorType, State initialState, ushort tileX, ushort tileY, Direction facing, short hitPoints)
+	public Actor(string actorType, GameplayState initialState, ushort tileX, ushort tileY, Direction facing, short hitPoints)
 	{
 		ActorType = actorType;
 		CurrentState = initialState;
@@ -142,6 +144,51 @@ public class Actor
 	/// Useful for collision detection and pathfinding.
 	/// </summary>
 	public (ushort tileX, ushort tileY) GetTilePosition() => (TileX, TileY);
+
+	/// <summary>
+	/// Captures all mutable actor state. CurrentState is stored as its Name string;
+	/// the Simulator resolves it back to a State reference via StateCollection after
+	/// calling LoadState() on all actors.
+	/// </summary>
+	public ActorSnapshot SaveState() => new()
+	{
+		ActorType = ActorType,
+		CurrentStateName = CurrentState?.Name,
+		TicCount = TicCount,
+		TileX = TileX,
+		TileY = TileY,
+		X = X,
+		Y = Y,
+		Facing = Facing.HasValue ? (byte?)((byte)Facing.Value) : null,
+		HitPoints = HitPoints,
+		Speed = Speed,
+		ShapeNum = ShapeNum,
+		Flags = (int)Flags,
+		Distance = Distance,
+		ReactionTimer = ReactionTimer
+	};
+
+	/// <summary>
+	/// Restores all value-type fields from a snapshot.
+	/// CurrentState is NOT restored here - it requires resolution via StateCollection,
+	/// which is done by Simulator.LoadState() after calling this method.
+	/// </summary>
+	public void LoadState(ActorSnapshot state)
+	{
+		// CurrentState resolved separately by Simulator via StateCollection
+		TicCount = state.TicCount;
+		TileX = state.TileX;
+		TileY = state.TileY;
+		X = state.X;
+		Y = state.Y;
+		Facing = state.Facing.HasValue ? (Direction)state.Facing.Value : null;
+		HitPoints = state.HitPoints;
+		Speed = state.Speed;
+		ShapeNum = state.ShapeNum;
+		Flags = (ActorFlags)state.Flags;
+		Distance = state.Distance;
+		ReactionTimer = state.ReactionTimer;
+	}
 }
 
 /// <summary>

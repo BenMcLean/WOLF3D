@@ -1,4 +1,5 @@
 using System;
+using BenMcLean.Wolf3D.Simulator.State;
 
 namespace BenMcLean.Wolf3D.Simulator;
 
@@ -7,7 +8,7 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// Provides os.time() and os.clock() functionality to Lua scripts
 /// with fixed epoch and tic-based progression.
 /// </summary>
-public class GameClock(DateTime? epoch = null)
+public class GameClock(DateTime? epoch = null) : IStateSavable<GameClockSnapshot>
 {
 	/// <summary>
 	/// Game epoch - when the game "starts" in-universe.
@@ -53,15 +54,18 @@ public class GameClock(DateTime? epoch = null)
 		return dt.ToString(format);
 	}
 	/// <summary>
-	/// Get current state for serialization
+	/// Captures the current clock state for serialization.
+	/// Only elapsed tics need saving - the epoch is a construction-time parameter.
 	/// </summary>
-	public GameClockState GetState() => new(Epoch, elapsedTics);
+	public GameClockSnapshot SaveState() => new()
+	{
+		EpochTicks = Epoch.Ticks,
+		ElapsedTics = elapsedTics
+	};
+
 	/// <summary>
-	/// Restore state from serialization
+	/// Restores clock state from a snapshot.
+	/// Epoch is validated but not overwritten (must match construction-time value).
 	/// </summary>
-	public void SetState(GameClockState state) => elapsedTics = state.ElapsedTics;
-	/// <summary>
-	/// Serializable state for save/load
-	/// </summary>
-	public record GameClockState(DateTime Epoch, long ElapsedTics);
+	public void LoadState(GameClockSnapshot state) => elapsedTics = state.ElapsedTics;
 }

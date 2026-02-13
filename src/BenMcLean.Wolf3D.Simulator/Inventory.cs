@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.State;
 
 namespace BenMcLean.Wolf3D.Simulator;
 
@@ -11,7 +12,7 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// - Easy serialization: Dictionary<string, int> is trivially JSON-serializable
 /// - Event-driven updates: ValueChanged event enables direct UI subscription
 /// </summary>
-public class Inventory
+public class Inventory : IStateSavable<Dictionary<string, int>>
 {
 	private readonly Dictionary<string, int> _values = [];
 	private readonly Dictionary<string, int> _maxValues = [];
@@ -167,19 +168,19 @@ public class Inventory
 	}
 
 	/// <summary>
-	/// Captures the current inventory state for preservation across level transitions.
-	/// Returns a snapshot of all current values.
+	/// Captures the current inventory state for preservation across level transitions
+	/// and save games. Returns a snapshot of all current values.
 	/// </summary>
 	/// <returns>Dictionary containing all current inventory values</returns>
-	public Dictionary<string, int> CaptureState() =>
+	public Dictionary<string, int> SaveState() =>
 		new(_values);
 
 	/// <summary>
 	/// Restores inventory state from a previously captured snapshot.
-	/// Used during level transitions to preserve player state.
+	/// Used during level transitions and save game loading to preserve player state.
 	/// </summary>
 	/// <param name="savedState">Dictionary containing saved inventory values</param>
-	public void RestoreState(Dictionary<string, int> savedState)
+	public void LoadState(Dictionary<string, int> savedState)
 	{
 		if (savedState == null)
 			return;

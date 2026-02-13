@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Entities;
+using BenMcLean.Wolf3D.Simulator.State;
+using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
@@ -12,12 +14,17 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// Discrete event simulator for Wolfenstein 3D game logic.
 /// Runs at 70Hz tic rate matching the original game (WL_DRAW.C:CalcTics).
 /// </summary>
-public class Simulator
+public class Simulator : IStateSavable<SimulatorSnapshot>
 {
 	public const double TicRate = 70.0, // Hz
 		TicDuration = 1.0 / TicRate; // ~14.2857ms
 	public const int MaxTicsPerUpdate = 10; // Prevent spiral of death
 	private double accumulatedTime;
+	/// <summary>
+	/// Game identifier (from XML Game Name attribute, e.g., "Wolfenstein 3-D").
+	/// Set by the caller after construction. Used to validate save game compatibility.
+	/// </summary>
+	public string GameName { get; set; }
 	private readonly List<PlayerAction> pendingActions = [];
 	public IReadOnlyList<Door> Doors => doors;
 	private readonly List<Door> doors = [];
@@ -1052,14 +1059,14 @@ public class Simulator
 	/// </summary>
 	public void TransitionActorStateByName(int actorIndex, string stateName)
 	{
-		if (stateCollection.States.TryGetValue(stateName, out State nextState))
+		if (stateCollection.States.TryGetValue(stateName, out GameplayState nextState))
 			TransitionActorState(actorIndex, nextState);
 	}
 	/// <summary>
 	/// Transitions an actor to a new state.
 	/// Updates sprite, tics, executes Action function, and fires events.
 	/// </summary>
-	private void TransitionActorState(int actorIndex, State nextState)
+	private void TransitionActorState(int actorIndex, GameplayState nextState)
 	{
 		Actor actor = actors[actorIndex];
 		// Update state
@@ -1286,7 +1293,7 @@ public class Simulator
 				}
 			}
 
-			if (!stateCollection.States.TryGetValue(initialStateName, out State initialState))
+			if (!stateCollection.States.TryGetValue(initialStateName, out GameplayState initialState))
 			{
 				System.Diagnostics.Debug.WriteLine($"Warning: Initial state '{initialStateName}' not found for actor type '{spawn.ActorType}', skipping");
 				continue;
@@ -1442,7 +1449,7 @@ public class Simulator
 		if (!PlayerHasWeapon(weaponType))
 			return;
 
-		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out State idleState))
+		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out GameplayState idleState))
 		{
 			logger?.LogError("Weapon {WeaponType} idle state {IdleState} not found", weaponType, weaponInfo.IdleState);
 			return;
@@ -1547,7 +1554,7 @@ public class Simulator
 	/// </summary>
 	/// <param name="slotIndex">Weapon slot index</param>
 	/// <param name="nextState">New state to transition to</param>
-	private void TransitionWeaponState(int slotIndex, State nextState)
+	private void TransitionWeaponState(int slotIndex, GameplayState nextState)
 	{
 		WeaponSlot slot = weaponSlots[slotIndex];
 		short oldShape = slot.ShapeNum;
@@ -1584,7 +1591,7 @@ public class Simulator
 						if (hasAmmo)
 						{
 							string fireFrameState = weaponInfo.FireState;
-							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
+							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out GameplayState fireState))
 							{
 								slot.CurrentState = fireState;
 								slot.TicCount = fireState.Tics;
@@ -1658,7 +1665,7 @@ public class Simulator
 
 		// Start fire animation - ammo consumption, hit detection, and damage
 		// are handled by the attack action (A_PistolAttack, etc.) on the fire frame
-		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out State fireState))
+		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out GameplayState fireState))
 			return;
 
 		TransitionWeaponState(action.SlotIndex, fireState);
@@ -2539,6 +2546,286 @@ public class Simulator
 		}
 
 		return true;
+	}
+	#endregion
+
+	#region Save/Load State
+	/// <summary>
+	/// Captures the entire simulator state into a serializable snapshot.
+	/// Only mutable runtime state is captured; static/structural data loaded from
+	/// game files is not included (see SimulatorSnapshot documentation for details).
+	/// </summary>
+	public SimulatorSnapshot SaveState()
+	{
+		// Capture door dynamic state (matched by index on restore)
+		DoorSnapshot[] doorSnapshots = new DoorSnapshot[doors.Count];
+		for (int i = 0; i < doors.Count; i++)
+			doorSnapshots[i] = doors[i].SaveState();
+
+		// Capture pushwall dynamic state (matched by index on restore)
+		PushWallSnapshot[] pushWallSnapshots = new PushWallSnapshot[pushWalls.Count];
+		for (int i = 0; i < pushWalls.Count; i++)
+			pushWallSnapshots[i] = pushWalls[i].SaveState();
+
+		// Capture actor state (CurrentStateName resolved on restore)
+		ActorSnapshot[] actorSnapshots = new ActorSnapshot[actors.Count];
+		for (int i = 0; i < actors.Count; i++)
+			actorSnapshots[i] = actors[i].SaveState();
+
+		// Capture weapon slot state (CurrentStateName resolved on restore)
+		WeaponSlotSnapshot[] weaponSlotSnapshots = new WeaponSlotSnapshot[weaponSlots.Count];
+		for (int i = 0; i < weaponSlots.Count; i++)
+			weaponSlotSnapshots[i] = weaponSlots[i].SaveState();
+
+		// Capture StatObjList (StatObj is its own snapshot type)
+		StatObj[] statObjSnapshots = new StatObj[StatObjList.Length];
+		for (int i = 0; i < StatObjList.Length; i++)
+			statObjSnapshots[i] = StatObjList[i]?.SaveState();
+
+		// Capture patrol directions with enum stored as byte
+		Dictionary<uint, byte> patrolDirs = null;
+		if (patrolDirectionAtTile != null)
+		{
+			patrolDirs = new Dictionary<uint, byte>(patrolDirectionAtTile.Count);
+			foreach (KeyValuePair<uint, Direction> kvp in patrolDirectionAtTile)
+				patrolDirs[kvp.Key] = (byte)kvp.Value;
+		}
+
+		return new SimulatorSnapshot
+		{
+			GameName = GameName,
+			CurrentTic = CurrentTic,
+			AccumulatedTime = accumulatedTime,
+			PlayerX = PlayerX,
+			PlayerY = PlayerY,
+			NoClip = NoClip,
+			Doors = doorSnapshots,
+			PushWalls = pushWallSnapshots,
+			AnyPushWallMoving = anyPushWallMoving,
+			Actors = actorSnapshots,
+			WeaponSlots = weaponSlotSnapshots,
+			StatObjList = statObjSnapshots,
+			LastStatObj = lastStatObj,
+			PatrolDirectionAtTile = patrolDirs,
+			InventoryValues = Inventory.SaveState(),
+			RngStateA = rng.StateA,
+			RngStateB = rng.StateB,
+			GameClock = gameClock.SaveState()
+		};
+	}
+
+	/// <summary>
+	/// Restores the simulator to a previously saved state.
+	///
+	/// Prerequisites (caller must do before calling this):
+	/// 1. Simulator constructed with same stateCollection, rng, gameClock
+	/// 2. Level loaded (LoadDoorsFromMapAnalysis, LoadPushWallsFromMapAnalysis,
+	///    LoadActorsFromMapAnalysis, LoadBonusesFromMapAnalysis, LoadItemScripts)
+	///
+	/// This method:
+	/// 1. Validates GameName matches
+	/// 2. Restores all entity dynamic state
+	/// 3. Resolves CurrentState references for actors/weapons via StateCollection
+	/// 4. Rebuilds spatial indices from entity positions
+	/// 5. Rebuilds AreaConnect from door states
+	/// 6. Restores RNG, GameClock, inventory, and simulation time
+	/// 7. Clears pending actions
+	/// </summary>
+	public void LoadState(SimulatorSnapshot snapshot)
+	{
+		if (snapshot == null)
+			throw new ArgumentNullException(nameof(snapshot));
+
+		// Validate game compatibility
+		if (!string.IsNullOrEmpty(GameName) && !string.IsNullOrEmpty(snapshot.GameName)
+			&& GameName != snapshot.GameName)
+		{
+			throw new InvalidOperationException(
+				$"Save game is for '{snapshot.GameName}' but current game is '{GameName}'");
+		}
+
+		// Restore simulation time
+		CurrentTic = snapshot.CurrentTic;
+		accumulatedTime = snapshot.AccumulatedTime;
+
+		// Restore player position
+		PlayerX = snapshot.PlayerX;
+		PlayerY = snapshot.PlayerY;
+		NoClip = snapshot.NoClip;
+
+		// Restore door dynamic state (doors already created by LoadDoorsFromMapAnalysis)
+		if (snapshot.Doors != null)
+		{
+			for (int i = 0; i < Math.Min(doors.Count, snapshot.Doors.Length); i++)
+				doors[i].LoadState(snapshot.Doors[i]);
+		}
+
+		// Restore pushwall dynamic state
+		if (snapshot.PushWalls != null)
+		{
+			for (int i = 0; i < Math.Min(pushWalls.Count, snapshot.PushWalls.Length); i++)
+				pushWalls[i].LoadState(snapshot.PushWalls[i]);
+		}
+		anyPushWallMoving = snapshot.AnyPushWallMoving;
+
+		// Restore actor state (value fields only)
+		if (snapshot.Actors != null)
+		{
+			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
+				actors[i].LoadState(snapshot.Actors[i]);
+		}
+
+		// Resolve CurrentState references for actors via StateCollection
+		if (snapshot.Actors != null)
+		{
+			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
+			{
+				string stateName = snapshot.Actors[i].CurrentStateName;
+				if (stateName != null && stateCollection.States.TryGetValue(stateName, out GameplayState state))
+					actors[i].CurrentState = state;
+			}
+		}
+
+		// Restore weapon slot state (value fields only)
+		if (snapshot.WeaponSlots != null)
+		{
+			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
+				weaponSlots[i].LoadState(snapshot.WeaponSlots[i]);
+		}
+
+		// Resolve CurrentState references for weapon slots via StateCollection
+		if (snapshot.WeaponSlots != null)
+		{
+			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
+			{
+				string stateName = snapshot.WeaponSlots[i].CurrentStateName;
+				if (stateName != null && stateCollection.States.TryGetValue(stateName, out GameplayState state))
+					weaponSlots[i].CurrentState = state;
+			}
+		}
+
+		// Restore StatObjList
+		if (snapshot.StatObjList != null)
+		{
+			for (int i = 0; i < Math.Min(StatObjList.Length, snapshot.StatObjList.Length); i++)
+			{
+				if (snapshot.StatObjList[i] != null)
+				{
+					if (StatObjList[i] == null)
+						StatObjList[i] = new StatObj();
+					StatObjList[i].LoadState(snapshot.StatObjList[i]);
+				}
+				else
+				{
+					StatObjList[i] = new StatObj(); // Free slot
+				}
+			}
+		}
+		lastStatObj = snapshot.LastStatObj;
+
+		// Restore patrol directions
+		if (snapshot.PatrolDirectionAtTile != null)
+		{
+			patrolDirectionAtTile = new Dictionary<uint, Direction>(snapshot.PatrolDirectionAtTile.Count);
+			foreach (KeyValuePair<uint, byte> kvp in snapshot.PatrolDirectionAtTile)
+				patrolDirectionAtTile[kvp.Key] = (Direction)kvp.Value;
+		}
+
+		// Restore inventory
+		if (snapshot.InventoryValues != null)
+			Inventory.LoadState(snapshot.InventoryValues);
+
+		// Restore RNG state
+		rng.StateA = snapshot.RngStateA;
+		rng.StateB = snapshot.RngStateB;
+
+		// Restore GameClock
+		if (snapshot.GameClock != null)
+			gameClock.LoadState(snapshot.GameClock);
+
+		// Clear pending actions (transient per-frame queue)
+		pendingActions.Clear();
+
+		// Rebuild spatial indices from entity positions
+		RebuildSpatialIndices();
+
+		// Rebuild AreaConnect from door states
+		RebuildAreaConnect();
+	}
+
+	/// <summary>
+	/// Rebuilds all spatial index arrays (actorAtTile, doorAtTile, pushWallAtTile)
+	/// from current entity positions. Called after LoadState to reconstruct derived data.
+	/// </summary>
+	private void RebuildSpatialIndices()
+	{
+		int tileCount = mapWidth * mapHeight;
+
+		// Clear all spatial indices
+#if NET6_0_OR_GREATER
+		Array.Fill(actorAtTile, (short)-1);
+		Array.Fill(doorAtTile, (short)-1);
+		Array.Fill(pushWallAtTile, (short)-1);
+#else
+		for (int i = 0; i < tileCount; i++)
+		{
+			actorAtTile[i] = -1;
+			doorAtTile[i] = -1;
+			pushWallAtTile[i] = -1;
+		}
+#endif
+
+		// Rebuild door spatial index
+		// Doors that are fully Open have their doorAtTile cleared (allows actor pathfinding through)
+		// All other states (Closed, Opening, Closing) occupy the tile
+		for (int i = 0; i < doors.Count; i++)
+		{
+			if (doors[i].Action != DoorAction.Open)
+			{
+				int tileIdx = GetTileIndex(doors[i].TileX, doors[i].TileY);
+				doorAtTile[tileIdx] = (short)i;
+			}
+		}
+
+		// Rebuild pushwall spatial index from current positions
+		for (int i = 0; i < pushWalls.Count; i++)
+		{
+			(ushort tileX, ushort tileY) = pushWalls[i].GetTilePosition();
+			int tileIdx = GetTileIndex(tileX, tileY);
+			pushWallAtTile[tileIdx] = (short)i;
+		}
+
+		// Rebuild actor spatial index
+		for (int i = 0; i < actors.Count; i++)
+		{
+			int tileIdx = GetTileIndex(actors[i].TileX, actors[i].TileY);
+			actorAtTile[tileIdx] = (short)i;
+		}
+	}
+
+	/// <summary>
+	/// Rebuilds the AreaConnect symmetric matrix from current door states.
+	/// Open doors increment the connection count between the two areas they connect.
+	/// Called after LoadState to reconstruct derived data.
+	/// </summary>
+	private void RebuildAreaConnect()
+	{
+		if (AreaConnect == null || mapAnalysis == null)
+			return;
+
+		// Reset all connections to zero
+		AreaConnect = new SymmetricMatrix(mapAnalysis.FloorCodeCount);
+
+		// Open doors connect their two areas
+		for (int i = 0; i < doors.Count; i++)
+		{
+			Door door = doors[i];
+			if (door.Action == DoorAction.Open && door.Area1 >= 0 && door.Area2 >= 0)
+			{
+				short currentCount = AreaConnect[(ushort)door.Area1, (ushort)door.Area2];
+				AreaConnect[(ushort)door.Area1, (ushort)door.Area2] = (short)(currentCount + 1);
+			}
+		}
 	}
 	#endregion
 }

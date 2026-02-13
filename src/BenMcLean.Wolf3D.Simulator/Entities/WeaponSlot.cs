@@ -1,5 +1,7 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.State;
+using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -9,7 +11,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// and WL_AGENT.C:attackinfo structure.
 /// Each slot runs an independent state machine for weapon animations.
 /// </summary>
-public class WeaponSlot
+public class WeaponSlot : IStateSavable<WeaponSlotSnapshot>
 {
 	/// <summary>
 	/// Slot index (0 = left hand VR / primary traditional, 1 = right hand VR, etc.)
@@ -29,7 +31,7 @@ public class WeaponSlot
 	/// Based on WL_DEF.H:objstruct:state pattern (same as actors).
 	/// Determines sprite, duration, and behavior functions.
 	/// </summary>
-	public State CurrentState { get; set; }
+	public GameplayState CurrentState { get; set; }
 
 	/// <summary>
 	/// WL_AGENT.C:attackcount (original: int = 16-bit signed)
@@ -75,6 +77,37 @@ public class WeaponSlot
 		ShapeNum = -1;
 		AttackFrame = 0;
 		Flags = WeaponSlotFlags.None;
+	}
+
+	/// <summary>
+	/// Captures all mutable weapon slot state. CurrentState is stored as its Name string;
+	/// the Simulator resolves it back to a State reference via StateCollection after
+	/// calling LoadState() on all weapon slots.
+	/// </summary>
+	public WeaponSlotSnapshot SaveState() => new()
+	{
+		SlotIndex = SlotIndex,
+		WeaponType = WeaponType,
+		CurrentStateName = CurrentState?.Name,
+		TicCount = TicCount,
+		ShapeNum = ShapeNum,
+		AttackFrame = AttackFrame,
+		Flags = (int)Flags
+	};
+
+	/// <summary>
+	/// Restores all value-type fields from a snapshot.
+	/// CurrentState is NOT restored here - it requires resolution via StateCollection,
+	/// which is done by Simulator.LoadState() after calling this method.
+	/// </summary>
+	public void LoadState(WeaponSlotSnapshot state)
+	{
+		WeaponType = state.WeaponType;
+		// CurrentState resolved separately by Simulator via StateCollection
+		TicCount = state.TicCount;
+		ShapeNum = state.ShapeNum;
+		AttackFrame = state.AttackFrame;
+		Flags = (WeaponSlotFlags)state.Flags;
 	}
 }
 

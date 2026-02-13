@@ -1,4 +1,5 @@
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -7,7 +8,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Based on WL_DEF.H:pwallstruct and related pushwall logic in WL_ACT1.C.
 /// Pushwalls are special walls that can be pushed by the player to reveal secrets.
 /// </summary>
-public class PushWall
+public class PushWall : IStateSavable<PushWallSnapshot>
 {
 	/// <summary>
 	/// How long a pushwall takes to move one full tile (in tics).
@@ -104,6 +105,32 @@ public class PushWall
 	{
 		(ushort currentX, ushort currentY) = GetTilePosition();
 		return currentX == x && currentY == y;
+	}
+
+	/// <summary>
+	/// Captures only dynamic pushwall state. Static properties (Shape, InitialTileX,
+	/// InitialTileY) come from map data on restore via LoadPushWallsFromMapAnalysis.
+	/// </summary>
+	public PushWallSnapshot SaveState() => new()
+	{
+		Action = (byte)Action,
+		Direction = (byte)Direction,
+		X = X,
+		Y = Y,
+		TicCount = TicCount
+	};
+
+	/// <summary>
+	/// Restores dynamic pushwall state from a snapshot.
+	/// Static properties are not modified (they come from LoadPushWallsFromMapAnalysis).
+	/// </summary>
+	public void LoadState(PushWallSnapshot state)
+	{
+		Action = (PushWallAction)state.Action;
+		Direction = (Direction)state.Direction;
+		X = state.X;
+		Y = state.Y;
+		TicCount = state.TicCount;
 	}
 }
 
