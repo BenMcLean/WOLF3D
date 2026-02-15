@@ -1,4 +1,5 @@
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Shared;
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -309,9 +310,11 @@ public partial class Actors : Node3D
 			return;
 		}
 		// Look up sound from digi sounds library
+		// Fall back to global playback (AdLib/PC Speaker) if digi sound not available
+		// Original Wolf3D shareware (UPLOAD) excludes some digi sounds (e.g., DOGATTACKSND)
 		if (!_digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
 		{
-			GD.PrintErr($"WARNING: Sound '{evt.SoundName}' not found in digi sounds library");
+			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
 			return;
 		}
 		// Stop any currently playing sound before starting the new one

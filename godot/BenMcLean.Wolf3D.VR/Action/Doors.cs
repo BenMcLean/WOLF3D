@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using Godot;
 using System;
@@ -428,9 +429,10 @@ public partial class Doors : Node3D
 		}
 
 		// Look up sound from digi sounds library
+		// Fall back to global playback (AdLib/PC Speaker) if digi sound not available
 		if (!digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
 		{
-			GD.PrintErr($"WARNING: Sound '{evt.SoundName}' not found in digi sounds library");
+			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
 			return;
 		}
 

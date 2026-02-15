@@ -198,7 +198,8 @@ void fragment() {
 			data.Speaker.Play();
 		}
 		else
-			GD.PrintErr($"Sound not found: {evt.SoundName}");
+			// Fall back to global playback (AdLib/PC Speaker) if digi sound not available
+			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
 	}
 	/// <summary>
 	/// Handles elevator switch texture flip from the simulator.
