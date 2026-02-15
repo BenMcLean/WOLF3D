@@ -455,58 +455,10 @@ public class ActorScriptContext : EntityScriptContext
 	public bool CheckLine()
 	{
 		if (mapAnalysis is null)
-		{
-			// Fallback if no map analysis available
 			return CalculateDistanceToPlayer() < 20;
-		}
-		int actorTileX = actor.TileX,
-			actorTileY = actor.TileY,
-			playerTileX = simulator.PlayerTileX,
-			playerTileY = simulator.PlayerTileY,
-			// No FOV check - CheckLine is used for shooting and doesn't care about facing direction
-			// Bresenham's line algorithm to walk from actor to player
-			dx = System.Math.Abs(playerTileX - actorTileX),
-			dy = System.Math.Abs(playerTileY - actorTileY),
-			sx = actorTileX < playerTileX ? 1 : -1,
-			sy = actorTileY < playerTileY ? 1 : -1,
-			err = dx - dy,
-			x = actorTileX,
-			y = actorTileY;
-		while (true)
-		{
-			// Reached player position - line of sight is clear
-			if (x == playerTileX && y == playerTileY)
-				return true;
-			// Check if current tile blocks sight
-			// Skip the actor's own tile (we start there)
-			if (!(x == actorTileX && y == actorTileY)
-				&& !simulator.IsTileTransparentForSight((ushort)x, (ushort)y))
-				// Check static transparency (walls) AND dynamic obstacles (doors, pushwalls)
-				return false; // Obstacle blocks sight
-							  // Bresenham step - check both intermediate tiles if moving diagonally
-			int e2 = 2 * err;
-			bool movedX = false, movedY = false;
-			if (e2 > -dy)
-			{
-				err -= dy;
-				x += sx;
-				movedX = true;
-			}
-			if (e2 < dx)
-			{
-				err += dx;
-				y += sy;
-				movedY = true;
-			}
-			// If we moved diagonally, check the intermediate tile we might have cut through
-			// This prevents seeing through corners
-			if (movedX && movedY)
-			{
-				// Check the tile at (x - sx, y) - the tile we passed through horizontally
-				if (!simulator.IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
-					return false;
-			}
-		}
+		return simulator.HasLineOfSight(
+			actor.TileX, actor.TileY,
+			simulator.PlayerTileX, simulator.PlayerTileY);
 	}
 	#endregion Line of Sight
 	#region Pathfinding & Navigation

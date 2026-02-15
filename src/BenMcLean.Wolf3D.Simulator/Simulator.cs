@@ -1765,8 +1765,32 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	private void ExecuteKnifeAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
 	{
-		// Perform hit detection via presentation layer callback
-		int? hitActorIndex = HitDetection?.Invoke(slotIndex);
+		// WL_AGENT.C:KnifeAttack - position-based melee, no raycast needed
+		int? hitActorIndex = null;
+		int closestDist = int.MaxValue;
+
+		for (int i = 0; i < actors.Count; i++)
+		{
+			Actor actor = actors[i];
+			if (!actor.Flags.HasFlag(ActorFlags.Shootable)) continue;
+
+			int dx = Math.Abs(PlayerTileX - actor.TileX);
+			int dy = Math.Abs(PlayerTileY - actor.TileY);
+			int chebyshev = Math.Max(dx, dy); // Chebyshev distance
+
+			// WL_AGENT.C:KnifeAttack - range check (0x18000 ≈ 1.5 tiles)
+			if (chebyshev > 1) continue;
+
+			// Line of sight check (replaces FL_VISABLE + shootdelta from original)
+			if (!HasLineOfSight(PlayerTileX, PlayerTileY, actor.TileX, actor.TileY))
+				continue;
+
+			if (chebyshev < closestDist)
+			{
+				closestDist = chebyshev;
+				hitActorIndex = i;
+			}
+		}
 
 		// Apply damage if hit
 		if (hitActorIndex.HasValue)
@@ -2487,6 +2511,49 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Based on WL_DEF.H actorat array indexing.
 	/// </summary>
 	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
+
+	/// <summary>
+	/// Bresenham tile-based line-of-sight check between two tile positions.
+	/// Based on WL_STATE.C:CheckLine.
+	/// </summary>
+	public bool HasLineOfSight(ushort fromX, ushort fromY, ushort toX, ushort toY)
+	{
+		int dx = Math.Abs(toX - fromX),
+			dy = Math.Abs(toY - fromY),
+			sx = fromX < toX ? 1 : -1,
+			sy = fromY < toY ? 1 : -1,
+			err = dx - dy,
+			x = fromX,
+			y = fromY;
+		while (true)
+		{
+			if (x == toX && y == toY)
+				return true;
+			if (!(x == fromX && y == fromY)
+				&& !IsTileTransparentForSight((ushort)x, (ushort)y))
+				return false;
+			int e2 = 2 * err;
+			bool movedX = false, movedY = false;
+			if (e2 > -dy)
+			{
+				err -= dy;
+				x += sx;
+				movedX = true;
+			}
+			if (e2 < dx)
+			{
+				err += dx;
+				y += sy;
+				movedY = true;
+			}
+			// Prevent seeing through corners
+			if (movedX && movedY)
+			{
+				if (!IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
+					return false;
+			}
+		}
+	}
 
 	/// <summary>
 	/// Checks if a tile is transparent for line-of-sight purposes.
