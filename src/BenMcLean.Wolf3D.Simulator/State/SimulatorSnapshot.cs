@@ -72,6 +72,13 @@ public record SimulatorSnapshot
 	public bool NoClip { get; init; }
 
 	/// <summary>
+	/// Whether god mode cheat is active.
+	/// Based on original Wolf3D god mode cheat.
+	/// WL_PLAY.C:godmode
+	/// </summary>
+	public bool GodMode { get; init; }
+
+	/// <summary>
 	/// Dynamic state of all doors. Matched by index to doors loaded from map.
 	/// Static door properties come from LoadDoorsFromMapAnalysis.
 	/// </summary>

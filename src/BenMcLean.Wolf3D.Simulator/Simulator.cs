@@ -95,6 +95,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	public bool NoClip { get; set; } = false;
 	/// <summary>
+	/// When true, player is immune to all damage.
+	/// Based on original Wolf3D god mode cheat.
+	/// WL_PLAY.C:godmode
+	/// </summary>
+	public bool GodMode { get; set; } = false;
+	/// <summary>
 	/// When true, applies original Wolf3D distance-based miss chance on top of hit detection.
 	/// VR sets this to false (pixel-perfect aiming handles accuracy).
 	/// Traditional/Iso presentation layers set this to true.
@@ -255,6 +261,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Presentation layer renders a color overlay that fades out.
 	/// </summary>
 	public event Action<ScreenFlashEvent> ScreenFlash;
+	/// <summary>
+	/// Fired when player health reaches zero.
+	/// WL_AGENT.C:TakeDamage death check.
+	/// Presentation layer handles death sequence and restart.
+	/// </summary>
+	public event Action<PlayerDiedEvent> PlayerDied;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -1981,8 +1993,20 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	public void DamagePlayer(int amount)
 	{
+		// WL_AGENT.C:TakeDamage - god mode check
+		if (GodMode)
+			return;
+		// WL_AGENT.C:TakeDamage - baby difficulty halves damage twice (>>2)
+		if (Inventory.GetValue("Difficulty") == 0)
+			amount >>= 2;
+		if (amount <= 0)
+			return;
 		Inventory.AddValue("Health", -amount);
-		// TODO: Check for death
+		// WL_AGENT.C:TakeDamage - red screen flash proportional to damage
+		EmitScreenFlash(0xFF0000, (short)Math.Min(amount, 60));
+		// WL_AGENT.C:TakeDamage - check for death
+		if (Inventory.GetValue("Health") <= 0)
+			PlayerDied?.Invoke(new PlayerDiedEvent());
 	}
 
 	/// <summary>
@@ -2714,6 +2738,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			PlayerX = PlayerX,
 			PlayerY = PlayerY,
 			NoClip = NoClip,
+			GodMode = GodMode,
 			Doors = doorSnapshots,
 			PushWalls = pushWallSnapshots,
 			AnyPushWallMoving = anyPushWallMoving,
@@ -2767,6 +2792,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		PlayerX = snapshot.PlayerX;
 		PlayerY = snapshot.PlayerY;
 		NoClip = snapshot.NoClip;
+		GodMode = snapshot.GodMode;
 
 		// Restore door dynamic state (doors already created by LoadDoorsFromMapAnalysis)
 		if (snapshot.Doors != null)

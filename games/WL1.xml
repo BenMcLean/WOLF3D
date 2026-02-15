@@ -1730,12 +1730,41 @@ while move > 0 do
 end
 ]]>
 			</Function>
+			<!-- WL_ACT2.C:T_Bite -->
+			<Function Name="T_Bite" Description="Dog bite attack - melee damage when adjacent to player">
+				<![CDATA[
+-- WL_ACT2.C:T_Bite (lines 4270-4305)
+-- Dog bite attack: check distance, roll for hit, apply damage
+
+PlayLocalDigiSound("DOGATTACKSND")
+
+-- WL_ACT2.C:4281-4291 - Check if adjacent to player (within 1 tile)
+local dx = GetPlayerX() - GetX()
+if dx < 0 then dx = -dx end
+dx = dx - 0x10000  -- TILEGLOBAL
+if dx > 0x10000 then  -- MINACTORDIST
+	return
+end
+
+local dy = GetPlayerY() - GetY()
+if dy < 0 then dy = -dy end
+dy = dy - 0x10000  -- TILEGLOBAL
+if dy > 0x10000 then  -- MINACTORDIST
+	return
+end
+
+-- WL_ACT2.C:4293 - 70% hit chance (180/256)
+if US_RndT() < 180 then
+	-- WL_ACT2.C:4297 - Damage: US_RndT() >> 4 (0-15)
+	DamagePlayer(BitShiftRight(US_RndT(), 4))
+end
+]]>
+			</Function>
 			<!-- WL_ACT2.C:T_Shoot -->
 			<Function Name="T_Shoot" Description="Enemy shooting action - checks line of sight">
 				<![CDATA[
 -- WL_ACT2.C:T_Shoot (lines 4150-4218)
 -- Attempt to shoot the player based on line of sight and distance
--- Note: Damage calculation skipped until health system is implemented
 
 -- WL_ACT2.C:4157-4158 - Check if player is in the same area
 -- (skipped - assume player is always reachable for now)
@@ -1777,7 +1806,7 @@ if US_RndT() < hitchance then
 		damage = US_RndT() / 16  -- Long range
 	end
 
-	-- TODO: TakeDamage(damage) when health system is implemented
+	DamagePlayer(damage)
 end
 
 -- WL_ACT2.C:4219-4256 - Play appropriate firing sound based on actor type

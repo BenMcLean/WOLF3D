@@ -862,6 +862,11 @@ public class ActorScriptContext : EntityScriptContext
 	/// <returns>True if item was placed, false if no free slots</returns>
 	public bool PlaceItemType(int objectCode, int page) =>
 		simulator.PlaceItemType((ushort)objectCode, (ushort)page, actor.TileX, actor.TileY);
+	/// <summary>
+	/// Damage the player. God mode check happens inside Simulator.DamagePlayer.
+	/// WL_AGENT.C:TakeDamage
+	/// </summary>
+	public void DamagePlayer(int amount) => simulator.DamagePlayer(amount);
 	#endregion Item Drops
 	#region ActionScriptContext Abstract Method Implementations
 

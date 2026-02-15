@@ -392,3 +392,10 @@ public struct ScreenFlashEvent
 	/// <summary>Duration in tics (default 18, matching original Wolf3D bonus flash)</summary>
 	public required short Duration { get; init; }
 }
+
+/// <summary>
+/// Player health reached zero.
+/// WL_AGENT.C:TakeDamage death check.
+/// Presentation layer handles death sequence and restart.
+/// </summary>
+public struct PlayerDiedEvent { }
