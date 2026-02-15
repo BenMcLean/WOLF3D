@@ -94,6 +94,13 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Based on original Wolf3D "MLI" debug/cheat command.
 	/// </summary>
 	public bool NoClip { get; set; } = false;
+	/// <summary>
+	/// When true, applies original Wolf3D distance-based miss chance on top of hit detection.
+	/// VR sets this to false (pixel-perfect aiming handles accuracy).
+	/// Traditional/Iso presentation layers set this to true.
+	/// Based on WL_AGENT.C:GunAttack distance check.
+	/// </summary>
+	public bool UseAccuracyFalloff { get; set; } = true;
 	// Derived player tile coordinates
 	public ushort PlayerTileX => (ushort)(PlayerX >> 16);
 	public ushort PlayerTileY => (ushort)(PlayerY >> 16);
@@ -1265,28 +1272,30 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	}
 	/// <summary>
 	/// Initialize actors from MapAnalyzer data - creates Actor instances and fires ActorSpawnedEvent for each.
+	/// HP and initial state are read from ActorDefinition (parsed from XML).
 	/// Based on WL_GAME.C:ScanInfoPlane
 	/// </summary>
 	/// <param name="mapAnalysis">Map analysis containing actor spawn data</param>
-	/// <param name="actorInitialStates">Dictionary mapping actor types to their initial state names</param>
-	/// <param name="actorHitPoints">Dictionary mapping actor types to their initial hit points</param>
-	public void LoadActorsFromMapAnalysis(
-		MapAnalysis mapAnalysis,
-		Dictionary<string, string> actorInitialStates,
-		Dictionary<string, short> actorHitPoints)
+	public void LoadActorsFromMapAnalysis(MapAnalysis mapAnalysis)
 	{
 		// Note: mapAnalysis, mapWidth, mapHeight, and spatial arrays are already initialized by LoadDoorsFromMapAnalysis
 		actors.Clear();
+		int difficulty = Inventory.GetValue("Difficulty");
 		int actorIndex = 0;
 		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
 		{
 			// Use initial state from spawn data (from ObjectType XML)
 			string initialStateName = spawn.InitialState;
 
-			// Fall back to actorInitialStates dictionary if no state specified in spawn
+			// Fall back to ActorDefinition.InitialState if no state specified in spawn
 			if (string.IsNullOrEmpty(initialStateName))
 			{
-				if (!actorInitialStates.TryGetValue(spawn.ActorType, out initialStateName))
+				if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition def)
+					&& !string.IsNullOrEmpty(def.InitialState))
+				{
+					initialStateName = def.InitialState;
+				}
+				else
 				{
 					System.Diagnostics.Debug.WriteLine($"Warning: No initial state defined for actor type '{spawn.ActorType}', skipping");
 					continue;
@@ -1298,10 +1307,14 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 				System.Diagnostics.Debug.WriteLine($"Warning: Initial state '{initialStateName}' not found for actor type '{spawn.ActorType}', skipping");
 				continue;
 			}
-			// Look up initial hit points for this actor type
-			if (!actorHitPoints.TryGetValue(spawn.ActorType, out short hitPoints))
-				// Default to 1 hitpoint if not defined
-				hitPoints = 1;
+			// Look up initial hit points from ActorDefinition
+			short hitPoints = 1; // Default
+			if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition actorDef)
+				&& actorDef.HitPointsByDifficulty != null
+				&& difficulty >= 0 && difficulty < actorDef.HitPointsByDifficulty.Length)
+			{
+				hitPoints = actorDef.GetHitPoints(difficulty);
+			}
 			// Create actor instance
 			Actor actor = new(
 				actorType: spawn.ActorType,
@@ -1312,8 +1325,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 				hitPoints: hitPoints);
 			// Set additional flags from spawn data
 			// WL_ACT1.C:SpawnStand/SpawnPatrol - enemies are FL_SHOOTABLE if they have a death state
-			if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition actorDef)
-				&& !string.IsNullOrEmpty(actorDef.DeathState))
+			if (actorDef != null && !string.IsNullOrEmpty(actorDef.DeathState))
 				actor.Flags |= ActorFlags.Shootable;
 			if (spawn.Ambush)
 				actor.Flags |= ActorFlags.Ambush;
@@ -1572,6 +1584,11 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		{
 			switch (nextState.Action)
 			{
+				// WL_AGENT.C:KnifeAttack - melee attack action
+				case "A_KnifeAttack":
+					ExecuteKnifeAttack(slotIndex, slot, weaponInfo);
+					break;
+
 				// WL_AGENT.C:GunAttack - hitscan attack actions
 				// Each performs raycast via HitDetection callback, consumes ammo, applies damage
 				case "A_PistolAttack":
@@ -1712,7 +1729,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 
 		// Apply damage if hit
 		if (hitActorIndex.HasValue)
-			ApplyWeaponDamage(hitActorIndex.Value, weaponInfo.BaseDamage);
+			ApplyWeaponDamage(hitActorIndex.Value, weaponInfo);
 
 		// Emit weapon fired event (for sound, muzzle flash)
 		WeaponFired?.Invoke(new WeaponFiredEvent
@@ -1726,6 +1743,34 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 
 		// WL_AGENT.C:GunAttack - madenoise = true
 		PropagateNoise();
+	}
+
+	/// <summary>
+	/// Execute a knife attack action (A_KnifeAttack).
+	/// Performs hit detection via callback, applies melee damage.
+	/// No ammo consumed. No noise propagation (knife is silent).
+	/// Based on WL_AGENT.C:KnifeAttack.
+	/// </summary>
+	private void ExecuteKnifeAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
+	{
+		// Perform hit detection via presentation layer callback
+		int? hitActorIndex = HitDetection?.Invoke(slotIndex);
+
+		// Apply damage if hit
+		if (hitActorIndex.HasValue)
+			ApplyWeaponDamage(hitActorIndex.Value, weaponInfo);
+
+		// Emit weapon fired event (for sound, animation)
+		WeaponFired?.Invoke(new WeaponFiredEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = slot.WeaponType,
+			SoundName = weaponInfo.FireSound ?? string.Empty,
+			DidHit = hitActorIndex.HasValue,
+			HitActorIndex = hitActorIndex
+		});
+
+		// No PropagateNoise() - knife is silent (WL_AGENT.C:KnifeAttack doesn't set madenoise)
 	}
 
 	/// <summary>
@@ -1770,11 +1815,13 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 
 	/// <summary>
 	/// Apply damage to an actor from a weapon hit.
-	/// Based on WL_AGENT.C:DamageActor.
+	/// Calculates damage based on distance and weapon type, matching original Wolf3D formulas.
+	/// Based on WL_AGENT.C:GunAttack (damage tiers), WL_AGENT.C:KnifeAttack (melee),
+	/// and WL_STATE.C:DamageActor (surprise bonus, pain states, death transition).
 	/// </summary>
 	/// <param name="actorIndex">Index of actor to damage</param>
-	/// <param name="damage">Amount of damage to apply</param>
-	private void ApplyWeaponDamage(int actorIndex, short damage)
+	/// <param name="weaponInfo">Weapon used for the attack</param>
+	private void ApplyWeaponDamage(int actorIndex, WeaponInfo weaponInfo)
 	{
 		if (actorIndex < 0 || actorIndex >= actors.Count)
 			return;
@@ -1785,19 +1832,87 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		if (!actor.Flags.HasFlag(ActorFlags.Shootable))
 			return;
 
-		// One-shot kill: Transition to death state immediately
-		// (Damage/HP system can be refined later)
-		actor.HitPoints = 0;
+		bool isMelee = weaponInfo.AmmoPerShot <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType);
+		int damage;
 
-		// Look up the death state for this actor type
-		if (stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef)
-			&& !string.IsNullOrEmpty(actorDef.DeathState))
+		if (isMelee)
 		{
-			// Transition to death state
-			TransitionActorStateByName(actorIndex, actorDef.DeathState);
+			// WL_AGENT.C:KnifeAttack - damage = US_RndT() >> 4 (0-15)
+			damage = rng.Next(256) >> 4;
+		}
+		else
+		{
+			// WL_AGENT.C:GunAttack - Chebyshev distance between player and actor tiles
+			int dx = Math.Abs(PlayerTileX - actor.TileX);
+			int dy = Math.Abs(PlayerTileY - actor.TileY);
+			int dist = Math.Max(dx, dy);
 
-			// Clear shootable flag - dead actors can't be shot again
-			actor.Flags &= ~ActorFlags.Shootable;
+			// WL_AGENT.C:GunAttack - accuracy falloff at distance
+			if (UseAccuracyFalloff && dist >= 4)
+			{
+				if (rng.Next(256) / 12 < dist)
+					return; // Miss
+			}
+
+			// WL_AGENT.C:GunAttack - distance-based damage tiers
+			if (dist < 2)
+				damage = rng.Next(256) / 4;   // 0-63
+			else if (dist < 4)
+				damage = rng.Next(256) / 6;   // 0-42
+			else
+				damage = rng.Next(256) / 6;   // 0-42
+		}
+
+		// WL_STATE.C:DamageActor - surprise bonus (FL_ATTACKMODE not set = unaware)
+		if (!actor.Flags.HasFlag(ActorFlags.AttackMode))
+			damage *= 2;
+
+		// Apply damage
+		actor.HitPoints -= (short)damage;
+
+		// Look up actor definition for state transitions
+		stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef);
+
+		if (actor.HitPoints <= 0)
+		{
+			// WL_STATE.C:DamageActor - actor killed
+			actor.HitPoints = 0;
+
+			if (actorDef != null && !string.IsNullOrEmpty(actorDef.DeathState))
+			{
+				TransitionActorStateByName(actorIndex, actorDef.DeathState);
+				// Clear shootable flag - dead actors can't be shot again
+				actor.Flags &= ~ActorFlags.Shootable;
+			}
+		}
+		else
+		{
+			// WL_STATE.C:DamageActor - actor hurt but alive
+
+			// If not in attack mode, trigger first sighting (wake up)
+			if (!actor.Flags.HasFlag(ActorFlags.AttackMode) && actorDef != null)
+			{
+				if (!string.IsNullOrEmpty(actorDef.ChaseState))
+				{
+					TransitionActorStateByName(actorIndex, actorDef.ChaseState);
+					actor.Flags |= ActorFlags.AttackMode;
+
+					if (!string.IsNullOrEmpty(actorDef.AlertDigiSound))
+						EmitActorPlaySound(actorIndex, actorDef.AlertDigiSound);
+				}
+			}
+
+			// Transition to pain state (if actor has one)
+			// WL_STATE.C:DamageActor - alternates between two pain frames based on HP parity
+			if (actorDef != null)
+			{
+				string painState = (actor.HitPoints & 1) != 0
+					? actorDef.PainState
+					: actorDef.PainState1 ?? actorDef.PainState;
+
+				if (!string.IsNullOrEmpty(painState))
+					TransitionActorStateByName(actorIndex, painState);
+			}
 		}
 	}
 	#endregion

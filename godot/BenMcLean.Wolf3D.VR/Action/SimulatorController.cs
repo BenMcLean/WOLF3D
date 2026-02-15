@@ -121,28 +121,17 @@ public partial class SimulatorController : Node3D
 		// VR layer receives these events and displays bonuses
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
 
+		// Set difficulty before loading actors (HP selection depends on it)
+		// TODO: Load from game settings / save file instead of hardcoding
+		simulator.Inventory.SetValue("Difficulty", 3); // Death Incarnate
+
+		// VR uses pixel-perfect aiming - disable distance-based miss chance
+		simulator.UseAccuracyFalloff = false;
+
 		// Load actors into simulator - emits ActorSpawnedEvent for each actor
 		// VR layer receives these events and creates actor visuals
-		// TODO: Load actorInitialStates and actorHitPoints from game data
-		Dictionary<string, string> actorInitialStates = new Dictionary<string, string>
-		{
-			// TODO: These mappings should come from game data file
-			{ "guard", "s_grdstand" },
-			{ "ss", "s_ssstand" },
-			{ "dog", "s_dogstand" },
-			{ "officer", "s_ofcstand" },
-			{ "mutant", "s_mutstand" }
-		};
-		Dictionary<string, short> actorHitPoints = new Dictionary<string, short>
-		{
-			// TODO: These values should come from game data file
-			{ "guard", 25 },
-			{ "ss", 100 },
-			{ "dog", 1 },
-			{ "officer", 50 },
-			{ "mutant", 55 }
-		};
-		simulator.LoadActorsFromMapAnalysis(mapAnalysis, actorInitialStates, actorHitPoints);
+		// HP and initial states are now read from ActorDefinition in XML
+		simulator.LoadActorsFromMapAnalysis(mapAnalysis);
 
 		// Initialize weapon slots - 1 for traditional FPS view (bottom of screen)
 		// Later: use 2 for VR dual-wielding

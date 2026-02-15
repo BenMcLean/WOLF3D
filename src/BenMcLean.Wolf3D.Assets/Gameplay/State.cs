@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets.Gameplay;
@@ -211,17 +212,52 @@ public class ActorDefinition
 	/// </summary>
 	public string AlertDigiSound { get; set; }
 	/// <summary>
+	/// Hit points by difficulty level, parsed from HP="25,25,25,25" attribute.
+	/// Index is 0-based difficulty (e.g., 0=Can I Play Daddy?, 3=Death Incarnate).
+	/// </summary>
+	public short[] HitPointsByDifficulty { get; set; }
+	/// <summary>
+	/// Pain state name (e.g., "s_grdpain"). Used when hit but not killed.
+	/// Alternates with PainState1 based on HP parity.
+	/// Bosses may have no pain state (null).
+	/// </summary>
+	public string PainState { get; set; }
+	/// <summary>
+	/// Alternate pain state name (e.g., "s_grdpain1").
+	/// Used when HP is even after damage. Null if only one pain sprite.
+	/// </summary>
+	public string PainState1 { get; set; }
+	/// <summary>
+	/// Initial standing state name (e.g., "s_grdstand").
+	/// Used by Simulator to spawn actors without hardcoded state dictionaries.
+	/// </summary>
+	public string InitialState { get; set; }
+	/// <summary>
+	/// Returns hit points for the given difficulty level.
+	/// No clamping — throws IndexOutOfRangeException on bad index (informative crash).
+	/// </summary>
+	public short GetHitPoints(int difficulty) => HitPointsByDifficulty[difficulty];
+	/// <summary>
 	/// Creates an ActorDefinition from an XElement.
 	/// </summary>
 	public static ActorDefinition FromXElement(XElement element)
 	{
+		string hpAttr = element.Attribute("HP")?.Value;
+		short[] hitPoints = null;
+		if (!string.IsNullOrEmpty(hpAttr))
+			hitPoints = hpAttr.Split(',').Select(s => short.Parse(s.Trim())).ToArray();
+
 		return new ActorDefinition
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Actor element must have a Name attribute"),
 			DeathState = element.Attribute("Death")?.Value,
 			ChaseState = element.Attribute("Chase")?.Value,
 			AttackState = element.Attribute("Attack")?.Value,
-			AlertDigiSound = element.Attribute("AlertDigiSound")?.Value
+			AlertDigiSound = element.Attribute("AlertDigiSound")?.Value,
+			HitPointsByDifficulty = hitPoints,
+			PainState = element.Attribute("Pain")?.Value,
+			PainState1 = element.Attribute("Pain1")?.Value,
+			InitialState = element.Attribute("Stand")?.Value
 		};
 	}
 }
