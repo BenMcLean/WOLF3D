@@ -2081,21 +2081,16 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// <param name="itemNumberToScriptMap">Dictionary mapping ItemNumber (byte) to script name</param>
 	public void LoadItemScripts(Dictionary<string, string> scripts, Dictionary<byte, string> itemNumberToScriptMap)
 	{
-		itemScripts = scripts ?? new();
-		itemNumberToScript = itemNumberToScriptMap ?? new();
-
-		logger?.LogInformation("LoadItemScripts: Loaded {ScriptCount} scripts, {MappingCount} item->script mappings",
-			itemScripts.Count, itemNumberToScript.Count);
-
-		foreach (KeyValuePair<byte, string> mapping in itemNumberToScript)
-			logger?.LogDebug("  ItemNumber {ItemNumber} -> Script '{ScriptName}'", mapping.Key, mapping.Value);
+		itemScripts = scripts ?? [];
+		itemNumberToScript = itemNumberToScriptMap ?? [];
 	}
 
 	/// <summary>
 	/// Check for item pickups based on player position.
-	/// Items have a 1-tile bounding box (half tile from center to each edge).
+	/// Player must be within the item's tile to pick it up.
 	/// Executes item script if collision detected - script returns true to consume item.
-	/// WL_AGENT.C:ClipMove checks for bonus collision with same box model.
+	/// Intentional difference from original: Wolf3D picked up items based on visibility
+	/// via TransformTile in WL_DRAW.C. We use a simple tile-based proximity check instead.
 	/// </summary>
 	private void CheckItemPickups()
 	{
@@ -2115,12 +2110,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			int itemCenterX = (item.TileX << 16) + HALF_TILE;
 			int itemCenterY = (item.TileY << 16) + HALF_TILE;
 
-			// Check if player is within 1 tile of item center (box collision)
-			// Distance must be < 1 tile in both X and Y
+			// Check if player is within the item's tile (box collision)
+			// Distance must be < half a tile from center in both X and Y
 			int deltaX = Math.Abs(PlayerX - itemCenterX);
 			int deltaY = Math.Abs(PlayerY - itemCenterY);
 
-			if (deltaX < 0x10000 && deltaY < 0x10000)
+			if (deltaX < HALF_TILE && deltaY < HALF_TILE)
 			{
 				// Player is touching item - try to pick it up
 				if (TryPickupItem(i, item))
@@ -2174,8 +2169,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' is empty or whitespace", scriptName);
 			return true;
 		}
-
-		//logger?.LogDebug("TryPickupItem: Running script '{ScriptName}' for ItemNumber {ItemNumber}", scriptName, item.ItemNumber);
 
 		// Create script context for this item
 		Lua.ItemScriptContext context = new(
