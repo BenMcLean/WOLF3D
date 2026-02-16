@@ -350,20 +350,11 @@ public class MenuPauseDefinition
 	/// </summary>
 	/// <param name="element">The XElement containing pause data (&lt;Pause&gt;)</param>
 	/// <returns>A new MenuPauseDefinition instance</returns>
-	public static MenuPauseDefinition FromXElement(XElement element)
+	public static MenuPauseDefinition FromXElement(XElement element) => new()
 	{
-		MenuPauseDefinition pause = new()
-		{
-			Script = element.Value?.Trim()
-		};
-		string durationStr = element.Attribute("Duration")?.Value;
-		if (!string.IsNullOrEmpty(durationStr))
-		{
-			if (System.Xml.XmlConvert.ToTimeSpan(durationStr) is TimeSpan ts)
-				pause.Duration = ts;
-		}
-		return pause;
-	}
+		Script = element.Value?.Trim(),
+		Duration = TimeSpan.TryParse(element.Attribute("Duration")?.Value, out TimeSpan duration) ? duration : null,
+	};
 }
 
 /// <summary>

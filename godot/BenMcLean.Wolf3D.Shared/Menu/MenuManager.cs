@@ -426,7 +426,7 @@ public class MenuManager
 			RefreshMenu();
 		}
 		// Handle selection
-		if (inputState.SelectPressed)
+		if (inputState.SelectPressed && menuDef.Items.Count > 0)
 			ExecuteMenuItemAction(menuDef.Items[_selectedItemIndex]);
 		// Handle cancel/back
 		if (inputState.CancelPressed)
