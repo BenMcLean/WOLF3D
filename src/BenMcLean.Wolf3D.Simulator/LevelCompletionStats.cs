@@ -18,3 +18,14 @@ public record LevelCompletionStats(
 	long ElapsedTics,
 	TimeSpan ParTime,
 	int Score);
+
+/// <summary>
+/// Averaged statistics across all completed levels in an episode.
+/// Used by the Victory screen (WL_INTER.C:Victory).
+/// </summary>
+public record AccumulatedStats(
+	int AverageKillRatio,
+	int AverageSecretRatio,
+	int AverageTreasureRatio,
+	long TotalTics,
+	int LevelCount);

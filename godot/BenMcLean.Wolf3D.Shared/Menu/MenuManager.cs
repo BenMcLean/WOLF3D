@@ -407,7 +407,9 @@ public class MenuManager
 		if (_activeSequence != null && !_activeSequence.IsComplete)
 		{
 			_activeSequence.Update(delta, anyButtonPressed);
-			if (_activeSequence.IsComplete)
+			// Sequence callback (e.g., Pause script) may navigate to a new menu,
+			// which replaces _activeSequence. Null-check before accessing.
+			if (_activeSequence != null && _activeSequence.IsComplete)
 				_activeSequence = null;
 			return;
 		}

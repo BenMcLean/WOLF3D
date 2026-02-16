@@ -124,6 +124,9 @@ public partial class MenuRoom : Node3D
 			// Pass completion stats to the script context for Lua access
 			if (LevelTransition?.CompletionStats != null)
 				_menuManager.ScriptContext.CompletionStats = LevelTransition.CompletionStats;
+			// Pass accumulated stats for Victory screen
+			if (LevelTransition?.AllLevelStats != null)
+				_menuManager.ScriptContext.AllLevelStats = LevelTransition.AllLevelStats;
 			// Navigate to the override menu (e.g., "LevelComplete") instead of default
 			_menuManager.NavigateToMenu(StartMenuOverride);
 		}

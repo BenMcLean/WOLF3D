@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Simulator.Lua;
@@ -81,6 +82,25 @@ public abstract class ActionScriptContext : BaseScriptContext, IActionScriptCont
 	{
 		simulator.EmitScreenFlash((uint)color, (short)duration);
 	}
+
+	#endregion
+
+	#region Menu Navigation API (exposed to Lua)
+
+	/// <summary>
+	/// Delegate for navigating to a named menu screen.
+	/// Wired by Simulator when creating item script contexts.
+	/// Generic mechanism — any BonusScript can trigger any menu.
+	/// </summary>
+	public Action<string> NavigateToMenuAction { get; set; }
+
+	/// <summary>
+	/// Navigate to a named menu screen.
+	/// Exposed to Lua. Used by VictoryTile, Bible quiz triggers, etc.
+	/// WL_AGENT.C:VictoryTile → gamestate.victoryflag → Victory screen.
+	/// </summary>
+	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory")</param>
+	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
 
 	#endregion
 

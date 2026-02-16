@@ -399,3 +399,15 @@ public struct ScreenFlashEvent
 /// Presentation layer handles death sequence and restart.
 /// </summary>
 public struct PlayerDiedEvent { }
+
+/// <summary>
+/// An item script requested navigation to a named menu screen.
+/// Generic mechanism — any BonusScript can trigger any menu defined in XML.
+/// WL_AGENT.C:VictoryTile sets gamestate.victoryflag → Victory screen.
+/// Noah's Ark uses this for Bible quiz menus triggered by item pickups.
+/// </summary>
+public struct NavigateToMenuEvent
+{
+	/// <summary>Menu name as defined in XML (e.g., "Victory", "Quiz")</summary>
+	public required string MenuName { get; init; }
+}

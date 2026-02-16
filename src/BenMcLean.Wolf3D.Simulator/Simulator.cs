@@ -121,6 +121,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Based on WL_AGENT.C:GunAttack performing raycast on the fire frame in T_Attack.
 	/// </summary>
 	public Func<int, int?> HitDetection { get; set; }
+	/// <summary>
+	/// Accumulated level completion stats across levels, appended on elevator activation.
+	/// Corresponds to original WL_INTER.C:LRstruct LevelRatios[].
+	/// Dynamically sized (no hardcoded max) for game-agnostic modding support.
+	/// </summary>
+	public List<LevelCompletionStats> LevelRatios { get; } = new();
 	// Item scripts loaded from game config (maps script name to Lua code)
 	private Dictionary<string, string> itemScripts = new();
 	// Map from ItemNumber (byte) to script name for lookup
@@ -267,6 +273,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Presentation layer handles death sequence and restart.
 	/// </summary>
 	public event Action<PlayerDiedEvent> PlayerDied;
+	/// <summary>
+	/// Fired when an item script requests navigation to a named menu screen.
+	/// Generic mechanism for VictoryTile, Bible quiz, or any menu-triggering item.
+	/// WL_AGENT.C:VictoryTile
+	/// </summary>
+	public event Action<NavigateToMenuEvent> NavigateToMenu;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -1254,16 +1266,16 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			StatObjList[lastStatObj] = new StatObj(
 				spawn.X,
 				spawn.Y,
-				(short)spawn.Shape,  // Cast ushort to short (safe, shape numbers are small)
+				spawn.Shape,  // short: -2 = invisible trigger, >= 0 = visible sprite page
 				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
 				(byte)spawn.ObjectCode);  // itemnumber - ObjectType Number for script lookup
 
 			// Emit spawn event for VR layer to display the bonus
-			// Shape values: -2 = invisible trigger (Noah's Ark), >= 0 = visible
+			// Shape values: -2 = invisible trigger (Noah's Ark, VictoryTile), >= 0 = visible
 			BonusSpawned?.Invoke(new BonusSpawnedEvent
 			{
 				StatObjIndex = lastStatObj,
-				Shape = (short)spawn.Shape,
+				Shape = spawn.Shape,
 				TileX = spawn.X,
 				TileY = spawn.Y,
 				ItemNumber = (byte)spawn.ObjectCode
@@ -1606,6 +1618,39 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			CurrentTic,
 			parTime,
 			Inventory.GetValue("Score"));
+	}
+
+	/// <summary>
+	/// Computes averaged statistics across all accumulated level completions.
+	/// Used by the Victory screen (WL_INTER.C:Victory).
+	/// Returns null if no levels have been completed.
+	/// </summary>
+	public AccumulatedStats GetAccumulatedStats()
+	{
+		if (LevelRatios.Count == 0)
+			return null;
+
+		long totalTics = 0;
+		int killRatioSum = 0, secretRatioSum = 0, treasureRatioSum = 0;
+		for (int i = 0; i < LevelRatios.Count; i++)
+		{
+			LevelCompletionStats stats = LevelRatios[i];
+			totalTics += stats.ElapsedTics;
+			killRatioSum += stats.KillTotal > 0
+				? (int)(stats.KillCount * 100L / stats.KillTotal) : 0;
+			secretRatioSum += stats.SecretTotal > 0
+				? (int)(stats.SecretCount * 100L / stats.SecretTotal) : 0;
+			treasureRatioSum += stats.TreasureTotal > 0
+				? (int)(stats.TreasureCount * 100L / stats.TreasureTotal) : 0;
+		}
+
+		int count = LevelRatios.Count;
+		return new AccumulatedStats(
+			killRatioSum / count,
+			secretRatioSum / count,
+			treasureRatioSum / count,
+			totalTics,
+			count);
 	}
 
 	/// <summary>
@@ -2278,7 +2323,10 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			PlayAdLibSoundAction = soundName =>
 					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: false),
 			PlayDigiSoundAction = soundName =>
-					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true)
+					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true),
+			// Wire up menu navigation - generic mechanism for VictoryTile, quiz triggers, etc.
+			NavigateToMenuAction = menuName =>
+					NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName })
 		};
 
 		try

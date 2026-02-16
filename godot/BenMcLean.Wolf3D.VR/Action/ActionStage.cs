@@ -29,12 +29,33 @@ public partial class ActionStage : Node3D
 		public string SavedWeaponType { get; }
 		public LevelCompletionStats CompletionStats { get; }
 
-		public LevelTransitionRequest(int levelIndex, Dictionary<string, int> savedInventory, string savedWeaponType, LevelCompletionStats completionStats = null)
+		/// <summary>
+		/// Menu to show for this transition. Defaults to "LevelComplete" for elevator transitions.
+		/// Set to "Victory" by VictoryTile, or any other menu name by item scripts.
+		/// </summary>
+		public string MenuName { get; }
+
+		/// <summary>
+		/// Accumulated stats from all completed levels in this episode.
+		/// Grows as the player progresses through levels.
+		/// Used by Victory screen to display averaged stats.
+		/// </summary>
+		public List<LevelCompletionStats> AllLevelStats { get; }
+
+		public LevelTransitionRequest(
+			int levelIndex,
+			Dictionary<string, int> savedInventory,
+			string savedWeaponType,
+			LevelCompletionStats completionStats = null,
+			string menuName = "LevelComplete",
+			List<LevelCompletionStats> allLevelStats = null)
 		{
 			LevelIndex = levelIndex;
 			SavedInventory = savedInventory;
 			SavedWeaponType = savedWeaponType;
 			CompletionStats = completionStats;
+			MenuName = menuName;
+			AllLevelStats = allLevelStats ?? new List<LevelCompletionStats>();
 		}
 	}
 
@@ -87,6 +108,7 @@ void sky() {
 	private readonly int _difficulty;
 	private readonly Dictionary<string, int> _savedInventory;
 	private readonly string _savedWeaponType;
+	private readonly List<LevelCompletionStats> _allLevelStats;
 	private readonly Simulator.Simulator _existingSimulator;
 	private readonly Vector3? _resumePosition;
 	private readonly float? _resumeYRotation;
@@ -112,7 +134,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedWeaponType">Optional saved weapon type from level transition (null for new game).</param>
-	public ActionStage(IDisplayMode displayMode, int difficulty = 2, Dictionary<string, int> savedInventory = null, string savedWeaponType = null)
+	public ActionStage(IDisplayMode displayMode, int difficulty = 2, Dictionary<string, int> savedInventory = null, string savedWeaponType = null, List<LevelCompletionStats> allLevelStats = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_difficulty = savedInventory != null && savedInventory.TryGetValue("Difficulty", out int savedDifficulty)
@@ -120,6 +142,7 @@ void sky() {
 			: difficulty;
 		_savedInventory = savedInventory;
 		_savedWeaponType = savedWeaponType;
+		_allLevelStats = allLevelStats ?? new List<LevelCompletionStats>();
 	}
 
 	/// <summary>
@@ -296,6 +319,9 @@ void sky() {
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
 
+		// Subscribe to menu navigation events (VictoryTile, quiz triggers, etc.)
+		_simulatorController.NavigateToMenu += OnNavigateToMenu;
+
 		// Subscribe to display mode button events for shooting and using objects
 		// Left click (flatscreen) or right trigger (VR) = shoot
 		_displayMode.PrimaryButtonPressed += OnPrimaryButtonPressed;
@@ -390,7 +416,11 @@ void sky() {
 			byte destinationLevel = MapAnalysis.ElevatorTo;
 			LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
 				LevelIndex + 1, false, MapAnalysis.Par);
-			PendingTransition = new LevelTransitionRequest(destinationLevel, savedInventory, savedWeaponType, stats);
+			List<LevelCompletionStats> allStats = new(_allLevelStats);
+			if (stats != null) allStats.Add(stats);
+			PendingTransition = new LevelTransitionRequest(
+				destinationLevel, savedInventory, savedWeaponType, stats,
+				allLevelStats: allStats);
 			return;
 		}
 
@@ -634,7 +664,10 @@ void sky() {
 
 		// Unsubscribe from simulator events
 		if (_simulatorController != null)
+		{
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
+			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
+		}
 
 		// Clear HitDetection delegate (points at this ActionStage's method)
 		if (_simulatorController?.Simulator != null)
@@ -669,6 +702,39 @@ void sky() {
 			e.IsAltElevator,               // Secret level flag
 			MapAnalysis.Par);           // Par time from map data
 
-		PendingTransition = new LevelTransitionRequest(e.DestinationLevel, savedInventory, savedWeaponType, stats);
+		// Accumulate stats across levels for Victory screen
+		List<LevelCompletionStats> allStats = new(_allLevelStats);
+		if (stats != null)
+			allStats.Add(stats);
+
+		PendingTransition = new LevelTransitionRequest(
+			e.DestinationLevel, savedInventory, savedWeaponType, stats,
+			allLevelStats: allStats);
+	}
+
+	/// <summary>
+	/// Handles menu navigation events from item scripts (e.g., VictoryTile).
+	/// Captures completion stats and sets a pending transition to the requested menu.
+	/// WL_AGENT.C:VictoryTile → gamestate.victoryflag.
+	/// </summary>
+	private void OnNavigateToMenu(NavigateToMenuEvent e)
+	{
+		// Capture player inventory state
+		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
+
+		// Capture level completion stats
+		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
+			LevelIndex + 1, false, MapAnalysis.Par);
+
+		// Accumulate stats across levels
+		List<LevelCompletionStats> allStats = new(_allLevelStats);
+		if (stats != null)
+			allStats.Add(stats);
+
+		PendingTransition = new LevelTransitionRequest(
+			0, savedInventory, savedWeaponType, stats,
+			menuName: e.MenuName,
+			allLevelStats: allStats);
 	}
 }

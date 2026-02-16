@@ -41,11 +41,13 @@ public partial class Fixtures : Node3D
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
 
 		// Filter for only dressing and block objects (exclude bonus/pickup items)
-		List<MapAnalysis.StaticSpawn> fixtureSpawns = [.. staticSpawns.Where(s => s.StatType == StatType.dressing || s.StatType == StatType.block)];
+		List<MapAnalysis.StaticSpawn> fixtureSpawns = [.. staticSpawns.Where(s =>
+			(s.StatType == StatType.dressing || s.StatType == StatType.block)
+			&& s.Shape >= 0)];  // Skip invisible triggers (Shape == -2)
 
 		// Group fixtures by sprite page number
 		Dictionary<ushort, MapAnalysis.StaticSpawn[]> fixturesByPage = fixtureSpawns
-			.GroupBy(s => s.Shape)
+			.GroupBy(s => (ushort)s.Shape)
 			.ToDictionary(g => g.Key, g => g.ToArray());
 
 		// Create MultiMesh for each unique sprite page

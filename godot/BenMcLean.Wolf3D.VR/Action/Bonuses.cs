@@ -194,10 +194,8 @@ public partial class Bonuses : Node3D
 	public void HideBonus(int statObjIndex)
 	{
 		if (!_simulatorToRenderMap.TryGetValue(statObjIndex, out BonusRenderData renderData))
-		{
-			GD.PrintErr($"Warning: Tried to hide bonus at simulator index {statObjIndex} but no render mapping exists");
+			// No render mapping — expected for invisible triggers (shape -2, e.g., VictoryTile)
 			return;
-		}
 
 		// Hide by scaling to zero
 		Transform3D transform = Transform3D.Identity.Scaled(Vector3.Zero);

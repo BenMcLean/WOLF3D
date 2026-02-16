@@ -126,7 +126,8 @@ public partial class Root : Node3D
 				_suspendedGame = null;
 				ActionStage newStage = new(DisplayMode,
 					savedInventory: intermissionRequest.SavedInventory,
-					savedWeaponType: intermissionRequest.SavedWeaponType)
+					savedWeaponType: intermissionRequest.SavedWeaponType,
+					allLevelStats: intermissionRequest.AllLevelStats)
 				{
 					LevelIndex = intermissionRequest.LevelIndex
 				};
@@ -154,10 +155,10 @@ public partial class Root : Node3D
 			{
 				// Level transitions discard the suspended game (new level = new state)
 				_suspendedGame = null;
-				// Route through intermission screen
+				// Route through intermission/victory screen
 				MenuRoom intermissionRoom = new(DisplayMode)
 				{
-					StartMenuOverride = "LevelComplete",
+					StartMenuOverride = request.MenuName ?? "LevelComplete",
 					LevelTransition = request,
 				};
 				TransitionTo(intermissionRoom);
@@ -239,6 +240,10 @@ public partial class Root : Node3D
 			_currentScene = _pendingScene;
 			_pendingScene = null;
 			AddChild(_currentScene);
+
+			// Wire up fade handler for any MenuRoom (intermission, victory, etc.)
+			if (_currentScene is MenuRoom mr)
+				mr.SetFadeTransitionHandler(StartMenuFade);
 		});
 	}
 

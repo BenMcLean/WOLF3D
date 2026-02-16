@@ -583,6 +583,51 @@ end
 				]]>
 				</OnShow>
 			</Menu>
+		<!-- Victory screen: WL_INTER.C:Victory -->
+		<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
+		<Menu Name="Victory" Font="L" BorderColor="127" Music="URAHERO_MUS"
+			  X="0" Y="0" Indent="0" Spacing="13">
+			<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
+			<Picture Name="L_BJWINSPIC" X="8" Y="4" />
+			<!-- WL_INTER.C:Write(18,2,STR_YOUWIN) = pixel (144,16) -->
+			<Text X="144" Y="16" Font="L">YOU WIN!</Text>
+			<!-- WL_INTER.C:Write(TIMEX,TIMEY-2,STR_TOTALTIME) TIMEX=14,TIMEY=8 → pixel (112,48) -->
+			<Text X="112" Y="48" Font="L">TOTAL TIME</Text>
+			<!-- Total time value displayed by Lua -->
+			<Text Name="TotalTimeValue" X="208" Y="64" Font="L">0:00</Text>
+			<!-- WL_INTER.C:Write(12,RATIOY-2,"averages") RATIOY=14 → pixel (96,96) -->
+			<Text X="96" Y="96" Font="L">AVERAGES</Text>
+			<!-- WL_INTER.C:Write(RATIOX+8,RATIOY,"kill    %") RATIOX=6 → pixel (112,112) -->
+			<Text X="112" Y="112" Font="L">KILL    %</Text>
+			<!-- WL_INTER.C:Write(RATIOX+4,RATIOY+2,"secret    %") → pixel (80,128) -->
+			<Text X="80" Y="128" Font="L">SECRET    %</Text>
+			<!-- WL_INTER.C:Write(RATIOX,RATIOY+4,"treasure    %") → pixel (48,144) -->
+			<Text X="48" Y="144" Font="L">TREASURE    %</Text>
+			<!-- Ticker values for averaged ratios -->
+			<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+			<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+			<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+			<Pause>NavigateToMenu("Main")</Pause>
+			<OnShow>
+				<![CDATA[
+				SetText("TotalTimeValue", FormatTime(GetTotalTime()))
+
+				-- Calculate averaged ratios across all completed levels
+				local kr = GetAverageKillRatio()
+				local sr = GetAverageSecretRatio()
+				local tr = GetAverageTreasureRatio()
+
+				-- Queue victory sequence (same ticker pattern as intermission)
+				QueueDelay(2)
+				StartTicker("AvgKillRatio", kr)
+				StartTicker("AvgSecretRatio", sr)
+				StartTicker("AvgTreasureRatio", tr)
+			]]>
+			</OnShow>
+		</Menu>
 		</Menus>
 	</VgaGraph>
 	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29" >
@@ -1166,6 +1211,12 @@ FlashScreen(0xFFF800)
 return true
 ]]>
 			</BonusScript>
+			<BonusScript Name="VictoryTile">
+				<![CDATA[
+NavigateToMenu("Victory")
+return true
+]]>
+			</BonusScript>
 
 			<ObjectType Number="19" ObClass="playerobj" Direction="E" Name="Player Start East" />
 			<ObjectType Number="20" ObClass="playerobj" Direction="N" Name="Player Start North" />
@@ -1231,7 +1282,7 @@ return true
 			<Turn Number="96" Direction="S" Name="Turn S" />
 			<Turn Number="97" Direction="SE" Name="Turn SE" />
 			<Pushwall Number="98" DigiSound="PUSHWALLSND" Name="Secret Door" />
-			<Trigger Number="99" Name="End Game Trigger" />
+			<ObjectType Number="99" ObClass="bonus" Script="VictoryTile" Name="End Game Trigger" />
 			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdstand" />
 			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdstand" />
 			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdstand" />

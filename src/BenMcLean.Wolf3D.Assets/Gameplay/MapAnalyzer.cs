@@ -162,7 +162,13 @@ public class MapAnalyzer
 
 			// Parse sprite page number
 			// Try explicit Page attribute first, then fall back to State->Shape->Page lookup
-			if (!ushort.TryParse(obj.Attribute("Page")?.Value, out ushort page))
+			// Default to -2 (invisible trigger) if no page can be determined
+			short page = -2;
+			if (ushort.TryParse(obj.Attribute("Page")?.Value, out ushort parsedPage))
+			{
+				page = (short)parsedPage;
+			}
+			else
 			{
 				// No explicit Page - try looking up from State attribute
 				string stateName = obj.Attribute("State")?.Value;
@@ -170,7 +176,7 @@ public class MapAnalyzer
 					&& States.TryGetValue(stateName, out string shapeName)
 					&& Sprites.TryGetValue(shapeName, out ushort pageFromState))
 				{
-					page = pageFromState;
+					page = (short)pageFromState;
 				}
 			}
 			// Parse actor type (for ObClass.actor - guard, ss, dog, etc.)
@@ -362,7 +368,7 @@ public class MapAnalyzer
 
 		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
 		// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
-		public readonly record struct ActorSpawn(string ActorType, ushort Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol, string InitialState, byte Difficulty);
+		public readonly record struct ActorSpawn(string ActorType, short Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol, string InitialState, byte Difficulty);
 		public ReadOnlyCollection<ActorSpawn> ActorSpawns { get; private set; }
 
 		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
@@ -375,7 +381,7 @@ public class MapAnalyzer
 		/// <param name="Shape">VSwap sprite page number</param>
 		/// <param name="X">Tile X coordinate</param>
 		/// <param name="Y">Tile Y coordinate</param>
-		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort ObjectCode, ushort Shape, ushort X, ushort Y);
+		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort ObjectCode, short Shape, ushort X, ushort Y);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
 
 		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
@@ -700,7 +706,7 @@ public record ObjectInfo
 	public string Name { get; init; }        // Name identifier for scripting/lookup
 	public ObClass? ObjectClass { get; init; } // Wolf3D obclass (classtype or stat_t)
 	public string Actor { get; init; }       // Actor type for ObClass.actor (guard, ss, dog, etc.)
-	public ushort Page { get; init; }        // VSwap sprite page number for rendering
+	public short Page { get; init; }         // VSwap sprite page number for rendering (-2 = invisible trigger)
 	public Direction? Facing { get; init; }  // N/S/E/W (for player & enemies)
 	public bool Patrol { get; init; }        // Enemy patrols (vs. standing still)
 	public bool Ambush { get; init; }        // Enemy doesn't move until spotted (FL_AMBUSH flag)

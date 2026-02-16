@@ -32,6 +32,7 @@ public partial class SimulatorController : Node3D
 	private Action<ElevatorActivatedEvent> _elevatorHandler;
 	private Action<PlayerStateChangedEvent> _playerStateHandler;
 	private Action<ScreenFlashEvent> _screenFlashHandler;
+	private Action<NavigateToMenuEvent> _navigateToMenuHandler;
 
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
@@ -108,6 +109,10 @@ public partial class SimulatorController : Node3D
 		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
 		simulator.ScreenFlash += _screenFlashHandler;
 
+		// Forward menu navigation events (VictoryTile, quiz triggers, etc.)
+		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
+		simulator.NavigateToMenu += _navigateToMenuHandler;
+
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar != null)
@@ -180,6 +185,8 @@ public partial class SimulatorController : Node3D
 		simulator.PlayerStateChanged += _playerStateHandler;
 		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
 		simulator.ScreenFlash += _screenFlashHandler;
+		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
+		simulator.NavigateToMenu += _navigateToMenuHandler;
 
 		// Replay current state to newly subscribed presentation layers
 		simulator.EmitAllEntityState();
@@ -195,6 +202,8 @@ public partial class SimulatorController : Node3D
 				simulator.PlayerStateChanged -= _playerStateHandler;
 			if (_screenFlashHandler != null)
 				simulator.ScreenFlash -= _screenFlashHandler;
+			if (_navigateToMenuHandler != null)
+				simulator.NavigateToMenu -= _navigateToMenuHandler;
 		}
 	}
 
@@ -416,4 +425,10 @@ public partial class SimulatorController : Node3D
 	/// WL_PLAY.C: Bonus flash, damage flash, etc.
 	/// </summary>
 	public event Action<ScreenFlashEvent> ScreenFlash;
+
+	/// <summary>
+	/// Event fired when an item script requests navigation to a named menu screen.
+	/// Generic mechanism for VictoryTile, Bible quiz, or any menu-triggering item.
+	/// </summary>
+	public event Action<NavigateToMenuEvent> NavigateToMenu;
 }

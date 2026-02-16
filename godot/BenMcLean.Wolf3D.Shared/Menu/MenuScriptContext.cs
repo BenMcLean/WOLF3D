@@ -385,6 +385,73 @@ public class MenuScriptContext(
 		ContinueToNextLevelRequested = true;
 	}
 	#endregion Intermission
+	#region Accumulated Stats (Victory Screen)
+	/// <summary>
+	/// Accumulated level completion stats from all completed levels in the episode.
+	/// Set when showing the Victory screen.
+	/// Null when not in victory mode.
+	/// </summary>
+	public System.Collections.Generic.List<LevelCompletionStats> AllLevelStats { get; set; }
+	/// <summary>
+	/// Get the average kill ratio across all completed levels.
+	/// WL_INTER.C:Victory averaged stats display.
+	/// </summary>
+	/// <returns>Average kill percentage (0-100)</returns>
+	public int GetAverageKillRatio()
+	{
+		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		int sum = 0;
+		for (int i = 0; i < AllLevelStats.Count; i++)
+		{
+			LevelCompletionStats s = AllLevelStats[i];
+			sum += s.KillTotal > 0 ? (int)(s.KillCount * 100L / s.KillTotal) : 0;
+		}
+		return sum / AllLevelStats.Count;
+	}
+	/// <summary>
+	/// Get the average secret ratio across all completed levels.
+	/// </summary>
+	/// <returns>Average secret percentage (0-100)</returns>
+	public int GetAverageSecretRatio()
+	{
+		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		int sum = 0;
+		for (int i = 0; i < AllLevelStats.Count; i++)
+		{
+			LevelCompletionStats s = AllLevelStats[i];
+			sum += s.SecretTotal > 0 ? (int)(s.SecretCount * 100L / s.SecretTotal) : 0;
+		}
+		return sum / AllLevelStats.Count;
+	}
+	/// <summary>
+	/// Get the average treasure ratio across all completed levels.
+	/// </summary>
+	/// <returns>Average treasure percentage (0-100)</returns>
+	public int GetAverageTreasureRatio()
+	{
+		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		int sum = 0;
+		for (int i = 0; i < AllLevelStats.Count; i++)
+		{
+			LevelCompletionStats s = AllLevelStats[i];
+			sum += s.TreasureTotal > 0 ? (int)(s.TreasureCount * 100L / s.TreasureTotal) : 0;
+		}
+		return sum / AllLevelStats.Count;
+	}
+	/// <summary>
+	/// Get the total time across all completed levels in seconds.
+	/// WL_INTER.C:Victory total time display.
+	/// </summary>
+	/// <returns>Total time in seconds</returns>
+	public double GetTotalTime()
+	{
+		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		long totalTics = 0;
+		for (int i = 0; i < AllLevelStats.Count; i++)
+			totalTics += AllLevelStats[i].ElapsedTics;
+		return totalTics / 70.0;
+	}
+	#endregion Accumulated Stats
 	#region UI Control (to be implemented by MenuManager)
 	/// <summary>
 	/// Delegate for showing a confirmation dialog.
