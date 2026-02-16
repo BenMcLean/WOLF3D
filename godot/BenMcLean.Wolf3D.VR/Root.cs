@@ -86,12 +86,16 @@ public partial class Root : Node3D
 			if (!string.IsNullOrWhiteSpace(songName))
 				Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
 
-			// Boot to MenuRoom - no fade for initial scene
+			// Boot to MenuRoom and fade in from black
 			MenuRoom menuRoom = new(DisplayMode);
 			TransitionToImmediate(menuRoom);
 
 			// Wire up fade transitions for menu screen navigations
 			menuRoom.SetFadeTransitionHandler(StartMenuFade);
+
+			// Fade in the initial screen (all screens should fade in)
+			_transitionState = TransitionState.FadingIn;
+			_fadeOverlay.FadeFromBlack(FadeDuration);
 		}
 		catch (Exception ex)
 		{
