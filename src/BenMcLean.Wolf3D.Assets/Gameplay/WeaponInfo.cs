@@ -63,12 +63,13 @@ public class WeaponInfo
 	public string AmmoType { get; set; }
 
 	/// <summary>
-	/// Fire mode: "semi" = one shot per trigger pull, "auto" = continuous while held.
-	/// Based on WL_AGENT.C chaingun hold logic (attack code 4).
-	/// - "semi": Pistol behavior (must release trigger between shots)
-	/// - "auto": Machinegun/Chaingun behavior (holds fire while trigger held)
+	/// Whether the weapon fires continuously while the trigger is held.
+	/// Based on WL_AGENT.C:T_Attack cases 3 &amp; 4 (machine gun/chain gun loop-back).
+	/// false: Must release trigger between shots (knife, pistol)
+	/// true: Continues firing while trigger held (machine gun, chain gun)
+	/// Parsed from RapidFire attribute in XML.
 	/// </summary>
-	public string FireMode { get; set; } = "semi";
+	public bool RapidFire { get; set; }
 
 	/// <summary>
 	/// Sound to play when firing (e.g., "ATKKNIFESND", "ATKPISTOLSND", "ATKGATGUNSND").
@@ -93,7 +94,7 @@ public class WeaponInfo
 			BaseDamage = short.TryParse(element.Attribute("BaseDamage")?.Value, out short dmg) ? dmg : (short)0,
 			AmmoPerShot = short.TryParse(element.Attribute("AmmoPerShot")?.Value, out short ammo) ? ammo : (short)0,
 			AmmoType = element.Attribute("AmmoType")?.Value,
-			FireMode = element.Attribute("FireMode")?.Value ?? "semi",
+			RapidFire = string.Equals(element.Attribute("RapidFire")?.Value, "true", StringComparison.OrdinalIgnoreCase),
 			FireSound = element.Attribute("FireSound")?.Value
 		};
 	}

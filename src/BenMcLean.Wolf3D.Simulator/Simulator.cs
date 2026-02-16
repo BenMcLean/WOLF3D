@@ -1640,6 +1640,32 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			slot.Flags |= WeaponSlotFlags.Ready;
 			slot.Flags &= ~WeaponSlotFlags.Attacking;
 			slot.AttackFrame = 0;  // Reset attack frame when idle
+
+			// WL_AGENT.C:T_Player line 2288 - auto-fire on return to idle.
+			// In original Wolf3D, T_Attack eating a press during wind-down clears
+			// buttonheld, so when T_Player runs next frame with the button still
+			// physically held, it appears as a fresh press and fires immediately.
+			// We replicate this: if TriggerHeld is set when returning to idle,
+			// and the weapon is auto-mode, immediately start a new attack.
+			if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld)
+				&& slot.WeaponType != null
+				&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo idleWeaponInfo)
+				&& idleWeaponInfo.RapidFire)
+			{
+				bool hasAmmo = true;
+				if (idleWeaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(idleWeaponInfo.AmmoType))
+					hasAmmo = Inventory.GetValue("Ammo") >= idleWeaponInfo.AmmoPerShot;
+
+				if (hasAmmo && stateCollection.States.TryGetValue(idleWeaponInfo.FireState, out GameplayState autoFireState))
+				{
+					slot.CurrentState = autoFireState;
+					slot.TicCount = autoFireState.Tics;
+					slot.ShapeNum = autoFireState.Shape;
+					slot.AttackFrame = 0;
+					slot.Flags |= WeaponSlotFlags.Attacking;
+					slot.Flags &= ~WeaponSlotFlags.Ready;
+				}
+			}
 		}
 		else
 		{
@@ -1674,12 +1700,24 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		if (slot.WeaponType == null)
 			return;
 
+		// WL_AGENT.C:T_Attack lines 2119-2120 - fresh presses during attack are eaten/ignored.
+		// Cannot start a new attack while one is already playing.
+		// However, record TriggerHeld so that when the attack animation completes,
+		// the weapon can auto-fire for auto-mode weapons. This matches original behavior:
+		// T_Attack eats the press, but the button state persists, causing T_Player to
+		// detect a fresh press on the frame after the attack ends.
+		if (slot.Flags.HasFlag(WeaponSlotFlags.Attacking))
+		{
+			slot.Flags |= WeaponSlotFlags.TriggerHeld;
+			return;
+		}
+
 		if (!weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
 			return;
 
-		// Check fire mode: semi-auto requires trigger release first
-		// Based on WL_AGENT.C:buttonheld[] tracking (line 2266-2268)
-		if (weaponInfo.FireMode == "semi" && slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
+		// Non-rapid-fire weapons require trigger release between shots.
+		// WL_AGENT.C:T_Player line 2288 - fire only on rising edge (buttonstate && !buttonheld)
+		if (!weaponInfo.RapidFire && slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
 			return;
 
 		// Check ammo before starting animation (dry fire check)
@@ -1955,45 +1993,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 
 	#region Player State Management
 	/// <summary>
-	/// Get player's current health.
-	/// WL_DEF.H:gametype:health
-	/// </summary>
-	public int GetPlayerHealth() => Inventory.GetValue("Health");
-
-	/// <summary>
-	/// Get player's maximum health capacity.
-	/// </summary>
-	public int GetPlayerMaxHealth() => Inventory.GetMax("Health");
-
-	/// <summary>
-	/// Get player's current score.
-	/// WL_DEF.H:gametype:score
-	/// </summary>
-	public int GetPlayerScore() => Inventory.GetValue("Score");
-
-	/// <summary>
-	/// Get player's current lives.
-	/// WL_DEF.H:gametype:lives
-	/// </summary>
-	public int GetPlayerLives() => Inventory.GetValue("Lives");
-
-	/// <summary>
-	/// Get maximum ammo capacity for an ammo type.
-	/// </summary>
-	public int GetMaxAmmo(string ammoType) => Inventory.GetMax("Ammo");
-
-	/// <summary>
-	/// Check if player has a specific key.
-	/// WL_DEF.H:gametype:keys
-	/// </summary>
-	public bool PlayerHasKey(int keyType) => keyType switch
-	{
-		0 => Inventory.Has("Gold Key"),
-		1 => Inventory.Has("Silver Key"),
-		_ => false
-	};
-
-	/// <summary>
 	/// Check if player has a specific weapon.
 	/// WL_DEF.H:gametype:bestweapon
 	/// </summary>
@@ -2003,13 +2002,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			return Inventory.Has(WeaponCollection.GetInventoryKey(weaponInfo.Number));
 		return false;
 	}
-
-	/// <summary>
-	/// Heal the player (capped at max health).
-	/// WL_AGENT.C:GetBonus health logic
-	/// </summary>
-	public void HealPlayer(int amount) =>
-		Inventory.AddValue("Health", amount);
 
 	/// <summary>
 	/// Damage the player.
@@ -2031,60 +2023,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		// WL_AGENT.C:TakeDamage - check for death
 		if (Inventory.GetValue("Health") <= 0)
 			PlayerDied?.Invoke(new PlayerDiedEvent());
-	}
-
-	/// <summary>
-	/// Give ammo to player (capped at max).
-	/// WL_AGENT.C:GetBonus ammo logic
-	/// </summary>
-	public void GiveAmmo(string ammoType, int amount) =>
-		Inventory.AddValue("Ammo", amount);
-
-	/// <summary>
-	/// Give a key to the player.
-	/// WL_AGENT.C:GetBonus key logic
-	/// </summary>
-	public void GiveKey(int keyType)
-	{
-		string keyName = keyType switch
-		{
-			0 => "Gold Key",
-			1 => "Silver Key",
-			_ => null
-		};
-		if (keyName != null)
-			Inventory.SetValue(keyName, 1);
-	}
-
-	/// <summary>
-	/// Give a weapon to the player.
-	/// WL_AGENT.C:GetBonus weapon logic
-	/// </summary>
-	public void GiveWeapon(string weaponType)
-	{
-		if (weaponCollection != null && weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo))
-			Inventory.SetValue(WeaponCollection.GetInventoryKey(weaponInfo.Number), 1);
-	}
-
-	/// <summary>
-	/// Add to player's score.
-	/// WL_AGENT.C:GetBonus score logic
-	/// </summary>
-	public void AddScore(int points)
-	{
-		Inventory.AddValue("Score", points);
-		// TODO: Check for extra life at score thresholds
-	}
-
-	/// <summary>
-	/// Give player an extra life.
-	/// WL_AGENT.C:GetBonus extra life
-	/// </summary>
-	public void GiveExtraLife()
-	{
-		Inventory.AddValue("Lives", 1);
-		// Also typically fills health
-		Inventory.SetValue("Health", Inventory.GetMax("Health"));
 	}
 
 	/// <summary>
@@ -2134,21 +2072,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			SoundName = soundName
 		});
 	}
-
-	/// <summary>
-	/// Set player health directly (for initialization/save loading).
-	/// </summary>
-	public void SetPlayerHealth(int health) => Inventory.SetValue("Health", health);
-
-	/// <summary>
-	/// Set player score directly (for initialization/save loading).
-	/// </summary>
-	public void SetPlayerScore(int score) => Inventory.SetValue("Score", score);
-
-	/// <summary>
-	/// Set player lives directly (for initialization/save loading).
-	/// </summary>
-	public void SetPlayerLives(int lives) => Inventory.SetValue("Lives", lives);
 
 	/// <summary>
 	/// Load item scripts from game configuration.
@@ -2252,7 +2175,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			return true;
 		}
 
-		logger?.LogDebug("TryPickupItem: Running script '{ScriptName}' for ItemNumber {ItemNumber}", scriptName, item.ItemNumber);
+		//logger?.LogDebug("TryPickupItem: Running script '{ScriptName}' for ItemNumber {ItemNumber}", scriptName, item.ItemNumber);
 
 		// Create script context for this item
 		Lua.ItemScriptContext context = new(
@@ -2261,13 +2184,14 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			itemIndex,
 			rng,
 			gameClock,
-			logger);
-
-		// Wire up sound callbacks - these emit events for the VR layer
-		context.PlayAdLibSoundAction = soundName =>
-			EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: false);
-		context.PlayDigiSoundAction = soundName =>
-			EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true);
+			logger)
+		{
+			// Wire up sound callbacks - these emit events for the VR layer
+			PlayAdLibSoundAction = soundName =>
+					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: false),
+			PlayDigiSoundAction = soundName =>
+					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true)
+		};
 
 		try
 		{

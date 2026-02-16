@@ -1309,11 +1309,13 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="FireMode" type="xs:string" default="semi">
+			<xs:attribute name="RapidFire" type="xs:boolean" default="false">
 				<xs:annotation>
 					<xs:documentation>
-						Fire mode: "semi" = one shot per trigger pull (pistol), "auto" = continuous while held (chaingun).
-						Based on WL_AGENT.C chaingun hold logic.
+						Whether the weapon fires continuously while the trigger is held.
+						false (default): Must release trigger between shots (knife, pistol).
+						true: Continues firing while trigger held (machine gun, chain gun).
+						Based on WL_AGENT.C:T_Attack cases 3 and 4 loop-back logic.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
