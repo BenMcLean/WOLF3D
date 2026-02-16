@@ -332,11 +332,11 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <param name="seconds">Time in seconds</param>
 	/// <returns>Formatted string "MM:SS"</returns>
-	public string FormatTime(double seconds)
+	public static string FormatTime(double seconds)
 	{
-		int totalSeconds = (int)seconds;
-		int minutes = totalSeconds / 60;
-		int secs = totalSeconds % 60;
+		int totalSeconds = (int)seconds,
+			minutes = totalSeconds / 60,
+			secs = totalSeconds % 60;
 		return $"{minutes}:{secs:D2}";
 	}
 	/// <summary>

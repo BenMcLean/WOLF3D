@@ -191,8 +191,12 @@
 			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,184,C_MOUSELBACKPIC)
 			     WL_MENU.C:DrawWindow(MENU_X-8,MENU_Y-3,MENU_W,MENU_H,BKGDCOLOR) = DrawWindow(68,52,178,136,45) -->
 			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" >
+					SetMusicEnabled(not GetMusicEnabled())
+				</Picture>
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+					SetMusicEnabled(not GetMusicEnabled())
+				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
 				<MenuItem Text="New Game">
 					PlayAdLibSound('SHOOTSND')
@@ -222,13 +226,15 @@
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("ViewScores")
 				</MenuItem>
-				<MenuItem Text="Back to Demo" />
+				<MenuItem Text="Back to Demo" >
+					PlayAdLibSound('SHOOTSND')
+					NavigateToMenu("Title")
+				</MenuItem>
 				<MenuItem Text="Quit">
 					PlayAdLibSound('SHOOTSND')
 					Quit()
 				</MenuItem>
 			</Menu>
-
 			<!-- Episode Selection Menu (WL_MENU.H: NE_X=10, NE_Y=23) -->
 			<!-- WL_MENU.C:1587: DrawNewEpisode() function -->
 			<!-- WL_MENU.C:1597: DrawWindow(NE_X-4,NE_Y-4,NE_W+8,NE_H+8) = DrawWindow(6,19,308,162) -->
@@ -296,7 +302,9 @@
 				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged (WL_MENU.C:1675) -->
 				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
 				<Picture Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+					BackToPreviousMenu()
+				</Picture>
 				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
 				<OnSelectionChanged>
 					<![CDATA[
@@ -353,25 +361,47 @@ end
 				<Picture Name="C_FXTITLEPIC" X="100" Y="0" />
 				<Picture Name="C_DIGITITLEPIC" X="100" Y="65" />
 				<Picture Name="C_MUSICTITLEPIC" X="100" Y="130" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+					BackToPreviousMenu()
+				</Picture>
 
 				<!-- Toggle switch pictures - 7 total (WL_MENU.C:1895-1897) -->
 				<!-- Position: (SM_X+24, SM_Y1+i*13+2) = (72, 20+i*13+2) -->
 				<!-- ZIndex=9 to draw above boxes (boxes are ZIndex=7) -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9" />
 				<!-- Item 0: Sound FX None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9" />
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9">
+									SetSoundMode('Off')
+					RefreshMenu()
+				</Picture>
 				<!-- Item 1: Sound FX PC -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9" />
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9">
+					SetSoundMode('PC')
+					RefreshMenu()
+				</Picture>
 				<!-- Item 2: Sound FX AdLib -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9" />
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9">
+					SetSoundMode('AdLib')
+					RefreshMenu()
+				</Picture>
 				<!-- Item 3: Digitized None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9" />
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9">					SetDigiMode('Off')
+					RefreshMenu()
+				</Picture>
 				<!-- Item 4: Digitized SB -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9" />
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9">
+					SetDigiMode('SoundBlaster')
+					RefreshMenu()
+				</Picture>
 				<!-- Item 5: Music None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9" />
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9">
+					SetMusicEnabled(false)
+					RefreshMenu()
+				</Picture>
 				<!-- Item 6: Music AdLib -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9">
+					SetMusicEnabled(true)
+					RefreshMenu()
+				</Picture>
 
 				<!-- OnSelectionChanged: Update all toggle graphics based on current settings (WL_MENU.C:1868-1892) -->
 				<OnSelectionChanged>

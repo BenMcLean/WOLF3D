@@ -559,45 +559,51 @@
 	<xs:element name="Picture">
 		<xs:annotation>
 			<xs:documentation>
-				Decorative picture in a menu (e.g., logos, title graphics).
+				Picture in a menu (e.g., logos, title graphics).
+				Element content is optional inline Lua script to execute when the picture is clicked.
+				If no script is provided, the picture is purely decorative (not clickable).
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:attribute name="Name" type="xs:string" use="required">
-				<xs:annotation>
-					<xs:documentation>Name of the VgaGraph image (e.g., "C_MOUSELBACKPIC")</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="X" type="xs:integer" use="required">
-				<xs:annotation>
-					<xs:documentation>X coordinate for picture placement</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="Y" type="xs:integer" use="required">
-				<xs:annotation>
-					<xs:documentation>Y coordinate for picture placement</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="Stripes" type="xs:boolean">
-				<xs:annotation>
-					<xs:documentation>If true, renders the leftmost column of pixels stretched horizontally across the screen before rendering the normal picture. Used for decorative stripe backgrounds.</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="ZIndex" type="xs:integer">
-				<xs:annotation>
-					<xs:documentation>Z-index for controlling draw order. Default is 5 (below boxes at 7). Use 9 for pictures that should appear above boxes like the difficulty face (WL_MENU.C:1658 - DrawNewGameDiff called AFTER DrawWindow).</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="Frames" type="xs:string">
-				<xs:annotation>
-					<xs:documentation>Comma-separated list of VgaGraph picture names to cycle through for animation (e.g., "L_GUYPIC,L_GUY2PIC" for BJ breathing). If specified, the picture will animate between these frames.</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="FrameInterval" type="xs:decimal">
-				<xs:annotation>
-					<xs:documentation>Time in seconds between animation frames (default 0.5). Only used when Frames is specified.</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="Name" type="xs:string" use="required">
+						<xs:annotation>
+							<xs:documentation>Name of the VgaGraph image (e.g., "C_MOUSELBACKPIC")</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="X" type="xs:integer" use="required">
+						<xs:annotation>
+							<xs:documentation>X coordinate for picture placement</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Y" type="xs:integer" use="required">
+						<xs:annotation>
+							<xs:documentation>Y coordinate for picture placement</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Stripes" type="xs:boolean">
+						<xs:annotation>
+							<xs:documentation>If true, renders the leftmost column of pixels stretched horizontally across the screen before rendering the normal picture. Used for decorative stripe backgrounds.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="ZIndex" type="xs:integer">
+						<xs:annotation>
+							<xs:documentation>Z-index for controlling draw order. Default is 5 (below boxes at 7). Use 9 for pictures that should appear above boxes like the difficulty face (WL_MENU.C:1658 - DrawNewGameDiff called AFTER DrawWindow).</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Frames" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>Comma-separated list of VgaGraph picture names to cycle through for animation (e.g., "L_GUYPIC,L_GUY2PIC" for BJ breathing). If specified, the picture will animate between these frames.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="FrameInterval" type="xs:decimal">
+						<xs:annotation>
+							<xs:documentation>Time in seconds between animation frames (default 0.5). Only used when Frames is specified.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:extension>
+			</xs:simpleContent>
 		</xs:complexType>
 	</xs:element>
 

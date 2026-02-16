@@ -30,6 +30,7 @@ public class MenuManager
 	private string _currentMenuMusic = null;
 	private IMenuPointerProvider _pointerProvider;
 	private Rect2[] _currentMenuItemBounds = [];
+	private ClickablePictureBounds[] _currentClickablePictureBounds = [];
 	private MenuSequence _activeSequence;
 	/// <summary>
 	/// Gets the current menu state.
@@ -280,6 +281,7 @@ public class MenuManager
 		_renderer.RenderMenu(menuDef, _selectedItemIndex);
 		// Update input with menu item bounds for hover detection
 		_currentMenuItemBounds = _renderer.GetMenuItemBounds();
+		_currentClickablePictureBounds = _renderer.GetClickablePictureBounds();
 		_input.SetMenuItemBounds(_currentMenuItemBounds);
 		// Execute OnSelectionChanged script if defined (WL_MENU.C:1518 - HandleMenu callback)
 		ExecuteOnSelectionChanged(menuDef);
@@ -454,6 +456,16 @@ public class MenuManager
 		// Check primary pointer for hover and select
 		if (primary.IsActive)
 		{
+			// Check for clickable picture clicks first
+			if (primary.SelectPressed)
+			{
+				int clickedPicIndex = FindClickedPictureIndex(primary.Position);
+				if (clickedPicIndex >= 0)
+				{
+					ExecutePictureScript(menuDef.Pictures[clickedPicIndex]);
+					return;
+				}
+			}
 			int hoveredIndex = FindHoveredMenuItemIndex(primary.Position);
 			if (hoveredIndex >= 0)
 			{
@@ -476,6 +488,16 @@ public class MenuManager
 		// Check secondary pointer for hover and select
 		if (secondary.IsActive)
 		{
+			// Check for clickable picture clicks first
+			if (secondary.SelectPressed)
+			{
+				int clickedPicIndex = FindClickedPictureIndex(secondary.Position);
+				if (clickedPicIndex >= 0)
+				{
+					ExecutePictureScript(menuDef.Pictures[clickedPicIndex]);
+					return;
+				}
+			}
 			int hoveredIndex = FindHoveredMenuItemIndex(secondary.Position);
 			if (hoveredIndex >= 0)
 			{
@@ -525,6 +547,37 @@ public class MenuManager
 		{
 			GD.PrintErr($"ERROR: Failed to execute menu script for '{item.Text}': {ex.Message}");
 			_logger?.LogError(ex, "Failed to execute menu script for '{text}'", item.Text);
+		}
+	}
+	/// <summary>
+	/// Find the clickable picture index at the given position.
+	/// </summary>
+	/// <param name="position">Position in viewport coordinates (320x200)</param>
+	/// <returns>Index into MenuDefinition.Pictures, or -1 if no clickable picture at position</returns>
+	private int FindClickedPictureIndex(Vector2 position)
+	{
+		for (int i = 0; i < _currentClickablePictureBounds.Length; i++)
+			if (_currentClickablePictureBounds[i].Bounds.HasPoint(position))
+				return _currentClickablePictureBounds[i].PictureIndex;
+		return -1;
+	}
+	/// <summary>
+	/// Execute a picture's inline Lua script.
+	/// Uses DoString to execute script directly (same pattern as ExecuteMenuItemAction).
+	/// </summary>
+	/// <param name="pictureDef">Picture definition containing the script</param>
+	private void ExecutePictureScript(MenuPictureDefinition pictureDef)
+	{
+		if (string.IsNullOrEmpty(pictureDef.Script))
+			return;
+		try
+		{
+			_luaEngine.DoString(pictureDef.Script, _scriptContext);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to execute picture script for '{pictureDef.Name}': {ex.Message}");
+			_logger?.LogError(ex, "Failed to execute picture script for '{name}'", pictureDef.Name);
 		}
 	}
 	/// <summary>

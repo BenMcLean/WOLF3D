@@ -147,6 +147,12 @@ public class MenuPictureDefinition
 	/// </summary>
 	public float FrameInterval { get; set; } = 0.5f;
 	/// <summary>
+	/// Inline Lua script to execute when this picture is clicked.
+	/// Stored as element content in XML, executed via DoString (not pre-cached).
+	/// If null or empty, the picture is not clickable.
+	/// </summary>
+	public string Script { get; set; }
+	/// <summary>
 	/// Creates a MenuPictureDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing picture data (&lt;Picture&gt;)</param>
@@ -159,7 +165,8 @@ public class MenuPictureDefinition
 			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
 			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
 			Stripes = bool.TryParse(element.Attribute("Stripes")?.Value, out bool stripes) && stripes,
-			Frames = element.Attribute("Frames")?.Value
+			Frames = element.Attribute("Frames")?.Value,
+			Script = element.Value?.Trim()
 		};
 		if (int.TryParse(element.Attribute("ZIndex")?.Value, out int zIndex))
 			picture.ZIndex = zIndex;

@@ -17,6 +17,7 @@ public class MenuRenderer
 	private readonly Control _canvas;
 	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
 	private readonly List<Rect2> _menuItemBounds = [];
+	private readonly List<ClickablePictureBounds> _clickablePictureBounds = [];
 	private readonly Dictionary<string, Label> _namedTextLabels = [];
 	private readonly Dictionary<string, Label> _tickerLabels = [];
 	private readonly List<AnimatedPictureState> _animatedPictures = [];
@@ -77,8 +78,9 @@ public class MenuRenderer
 		foreach (AtlasTexture texture in _temporaryAtlasTextures)
 			texture?.Dispose();
 		_temporaryAtlasTextures.Clear();
-		// Clear menu item bounds
+		// Clear menu item bounds and clickable picture bounds
 		_menuItemBounds.Clear();
+		_clickablePictureBounds.Clear();
 		// Clear named text and ticker tracking
 		_namedTextLabels.Clear();
 		_tickerLabels.Clear();
@@ -153,8 +155,9 @@ public class MenuRenderer
 	{
 		if (menuDef.Pictures is null || menuDef.Pictures.Count == 0)
 			return;
-		foreach (MenuPictureDefinition pictureDef in menuDef.Pictures)
+		for (int pictureIndex = 0; pictureIndex < menuDef.Pictures.Count; pictureIndex++)
 		{
+			MenuPictureDefinition pictureDef = menuDef.Pictures[pictureIndex];
 			// Get texture from SharedAssetManager
 			if (!SharedAssetManager.VgaGraph.TryGetValue(pictureDef.Name, out AtlasTexture texture))
 			{
@@ -174,6 +177,11 @@ public class MenuRenderer
 				ZIndex = pictureDef.ZIndex ?? 5, // Default 5 (below boxes), or custom value (e.g., 9 for difficulty pic)
 			};
 			_canvas.AddChild(picture);
+			// Track clickable pictures (those with Lua scripts)
+			if (!string.IsNullOrEmpty(pictureDef.Script))
+				_clickablePictureBounds.Add(new ClickablePictureBounds(
+					new Rect2(new Vector2(pictureDef.X, pictureDef.Y), texture.Region.Size),
+					pictureIndex));
 			// Track animated pictures for frame cycling
 			if (!string.IsNullOrEmpty(pictureDef.Frames))
 			{
@@ -471,6 +479,12 @@ public class MenuRenderer
 	/// <returns>Array of bounding rectangles in viewport coordinates (320x200)</returns>
 	public Rect2[] GetMenuItemBounds() => [.. _menuItemBounds];
 	/// <summary>
+	/// Get bounding rectangles of all clickable pictures (those with Lua scripts).
+	/// Used for click detection - hitboxes match the picture texture size.
+	/// </summary>
+	/// <returns>Array of clickable picture bounds with picture indices</returns>
+	public ClickablePictureBounds[] GetClickablePictureBounds() => [.. _clickablePictureBounds];
+	/// <summary>
 	/// Sets the pointer states for crosshair rendering.
 	/// Call this each frame before Update to provide current pointer positions.
 	/// </summary>
@@ -678,6 +692,18 @@ public class MenuRenderer
 		// Initial update to set positions
 		UpdateCrosshairs();
 	}
+}
+
+/// <summary>
+/// Tracks a clickable picture's bounding rectangle and its index in the menu's Pictures list.
+/// Used for click/hover detection on pictures that have Lua scripts.
+/// </summary>
+public readonly struct ClickablePictureBounds(Rect2 bounds, int pictureIndex)
+{
+	/// <summary>Bounding rectangle in viewport coordinates (320x200).</summary>
+	public Rect2 Bounds { get; } = bounds;
+	/// <summary>Index into MenuDefinition.Pictures list.</summary>
+	public int PictureIndex { get; } = pictureIndex;
 }
 
 /// <summary>
