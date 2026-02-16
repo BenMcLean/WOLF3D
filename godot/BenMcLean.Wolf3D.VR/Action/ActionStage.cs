@@ -380,7 +380,17 @@ void sky() {
 				return;
 			}
 
-			// Weapon switching - number keys map to weapon numbers from XML
+			// Cheat: N skips to next level (like activating the elevator)
+		if (keyEvent.Keycode == Key.N)
+		{
+			Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+			string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
+			byte destinationLevel = MapAnalysis.ElevatorTo;
+			PendingTransition = new LevelTransitionRequest(destinationLevel, savedInventory, savedWeaponType);
+			return;
+		}
+
+		// Weapon switching - number keys map to weapon numbers from XML
 			// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 			int weaponNumber = keyEvent.Keycode switch
 			{
