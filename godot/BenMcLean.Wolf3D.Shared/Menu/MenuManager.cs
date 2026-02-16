@@ -30,6 +30,7 @@ public class MenuManager
 	private string _currentMenuMusic = null;
 	private IMenuPointerProvider _pointerProvider;
 	private Rect2[] _currentMenuItemBounds = [];
+	private MenuSequence _activeSequence;
 	/// <summary>
 	/// Gets the current menu state.
 	/// </summary>
@@ -102,6 +103,8 @@ public class MenuManager
 			// Wire up dynamic content updates (for intermission screen)
 			SetTextAction = SetText,
 			UpdateTickerAction = UpdateTicker,
+			// Wire up ticker definition lookup (for sequence step sound configuration)
+			GetTickerDefinitionFunc = GetTickerDefinition,
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();
@@ -193,8 +196,32 @@ public class MenuManager
 		}
 		// Render the menu
 		RefreshMenu();
+		// Create a sequence for OnShow to queue steps into
+		MenuSequence sequence = new();
+		_scriptContext.ActiveSequence = sequence;
 		// Execute OnShow script if defined (runs once when menu first appears)
+		// OnShow may queue sequence steps (StartTicker, QueueDelay, QueueWaitForInput)
 		ExecuteOnShow(menuDef);
+		_scriptContext.ActiveSequence = null;
+		// Queue Pause elements after OnShow steps (tickers/delays run first, then pauses)
+		if (menuDef.Pauses != null)
+		{
+			foreach (Assets.Gameplay.MenuPauseDefinition pauseDef in menuDef.Pauses)
+			{
+				// Capture pauseDef for the closure
+				Assets.Gameplay.MenuPauseDefinition captured = pauseDef;
+				float? duration = captured.Duration.HasValue
+					? (float)captured.Duration.Value.TotalSeconds
+					: null;
+				sequence.Enqueue(new PauseSequenceStep(duration, () =>
+				{
+					if (!string.IsNullOrEmpty(captured.Script))
+						ExecutePauseScript(captured.Script);
+				}));
+			}
+		}
+		// Activate the sequence if it has steps, otherwise discard
+		_activeSequence = sequence.HasSteps ? sequence : null;
 		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);
 	}
 	/// <summary>
@@ -298,6 +325,23 @@ public class MenuManager
 		}
 	}
 	/// <summary>
+	/// Execute a Pause element's Lua script.
+	/// Called when a PauseSequenceStep completes (button pressed or timeout).
+	/// </summary>
+	/// <param name="script">Lua script to execute</param>
+	private void ExecutePauseScript(string script)
+	{
+		try
+		{
+			_luaEngine.DoString(script, _scriptContext);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to execute Pause script: {ex.Message}");
+			_logger?.LogError(ex, "Failed to execute Pause script");
+		}
+	}
+	/// <summary>
 	/// Update a picture in the current menu's Pictures list.
 	/// Used by OnSelectionChanged scripts to change pictures dynamically (e.g., difficulty faces).
 	/// </summary>
@@ -343,12 +387,31 @@ public class MenuManager
 			_pointerProvider.Update(delta);
 			_renderer.SetPointers(_pointerProvider.PrimaryPointer, _pointerProvider.SecondaryPointer);
 			_renderer.UpdateCrosshairs();
-			// Handle pointer-based hover selection (mouse/VR controller)
-			HandlePointerHover(menuDef);
 		}
 		// Update input
 		_input.Update(delta);
 		MenuInputState inputState = _input.GetState();
+		// Check for "any button" from pointers as well
+		bool anyButtonPressed = inputState.AnyButtonPressed;
+		if (_pointerProvider != null)
+		{
+			Input.PointerState primary = _pointerProvider.PrimaryPointer;
+			Input.PointerState secondary = _pointerProvider.SecondaryPointer;
+			if (primary.SelectPressed || primary.CancelPressed ||
+				secondary.SelectPressed || secondary.CancelPressed)
+				anyButtonPressed = true;
+		}
+		// If a presentation sequence is active, process it instead of normal menu input
+		if (_activeSequence != null && !_activeSequence.IsComplete)
+		{
+			_activeSequence.Update(delta, anyButtonPressed);
+			if (_activeSequence.IsComplete)
+				_activeSequence = null;
+			return;
+		}
+		// Normal interactive menu mode
+		if (_pointerProvider != null)
+			HandlePointerHover(menuDef);
 		// Handle navigation
 		if (inputState.UpPressed && _selectedItemIndex > 0)
 		{
@@ -498,6 +561,25 @@ public class MenuManager
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
 		_renderer.UpdateTicker(name, value, menuDef);
+	}
+	/// <summary>
+	/// Look up a ticker definition by name from the current menu.
+	/// Used by MenuScriptContext to get sound configuration when creating TickerSequenceSteps.
+	/// </summary>
+	/// <param name="name">Ticker name (e.g., "KillRatio")</param>
+	/// <returns>The ticker definition, or null if not found</returns>
+	private MenuTickerDefinition GetTickerDefinition(string name)
+	{
+		if (string.IsNullOrEmpty(_currentMenuName))
+			return null;
+		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+			return null;
+		if (menuDef.Tickers == null)
+			return null;
+		for (int i = 0; i < menuDef.Tickers.Count; i++)
+			if (menuDef.Tickers[i].Name == name)
+				return menuDef.Tickers[i];
+		return null;
 	}
 	#region Sound Playback Implementation
 	/// <summary>

@@ -227,6 +227,43 @@ public class MenuScriptContext(
 	/// <param name="value">New text content</param>
 	public void SetText(string name, string value) => SetTextAction?.Invoke(name, value);
 	#endregion Dynamic Content Updates
+	#region Menu Sequence (Presentation Mode)
+	/// <summary>
+	/// The active menu sequence, set by MenuManager before OnShow executes.
+	/// Lua scripts queue steps onto this sequence via StartTicker, QueueDelay, etc.
+	/// Null when no sequence is available.
+	/// </summary>
+	public MenuSequence ActiveSequence { get; set; }
+	/// <summary>
+	/// Delegate to look up a ticker definition by name from the current menu.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Func<string, MenuTickerDefinition> GetTickerDefinitionFunc { get; set; }
+	/// <summary>
+	/// Queue a delay step in the current menu sequence.
+	/// The sequence pauses for the specified duration before advancing.
+	/// Pressing any button skips the delay.
+	/// </summary>
+	/// <param name="seconds">Duration to wait in seconds</param>
+	public void QueueDelay(double seconds)
+	{
+		ActiveSequence?.Enqueue(new DelaySequenceStep((float)seconds));
+	}
+	/// <summary>
+	/// Set the skip behavior for the current menu sequence.
+	/// "all" = pressing button during ticker skips ALL remaining steps (Wolf3D intermission).
+	/// "current" = pressing button during ticker skips only the current step.
+	/// </summary>
+	/// <param name="behavior">"all" or "current"</param>
+	public void SetSkipBehavior(string behavior)
+	{
+		if (ActiveSequence == null)
+			return;
+		ActiveSequence.SkipBehavior = behavior?.Equals("current", StringComparison.OrdinalIgnoreCase) == true
+			? SequenceSkipBehavior.SkipCurrent
+			: SequenceSkipBehavior.SkipAll;
+	}
+	#endregion Menu Sequence
 	#region Intermission (Level Completion Screen)
 	/// <summary>
 	/// Level completion statistics, set when showing the intermission screen.
@@ -304,14 +341,30 @@ public class MenuScriptContext(
 	}
 	/// <summary>
 	/// Start a ticker animating from 0 to the target value.
-	/// Currently sets the value immediately (animation TODO in future phase).
+	/// If an active sequence exists, queues a TickerSequenceStep for animated counting.
+	/// Otherwise, sets the value immediately.
+	/// WL_INTER.C: Counts from 0 to target at 70Hz, one per RollDelay tick.
 	/// </summary>
 	/// <param name="name">Ticker name (e.g., "KillRatio")</param>
 	/// <param name="targetValue">Target value to display</param>
 	public void StartTicker(string name, int targetValue)
 	{
-		// Phase 1: Set value immediately (animated counting is a future enhancement)
-		UpdateTickerAction?.Invoke(name, targetValue.ToString());
+		if (ActiveSequence != null && UpdateTickerAction != null)
+		{
+			// Look up the ticker definition for sound configuration
+			MenuTickerDefinition tickerDef = GetTickerDefinitionFunc?.Invoke(name);
+			ActiveSequence.Enqueue(new TickerSequenceStep(
+				name,
+				targetValue,
+				tickerDef,
+				UpdateTickerAction,
+				PlayAdLibSoundAction));
+		}
+		else
+		{
+			// No sequence active - set value immediately
+			UpdateTickerAction?.Invoke(name, targetValue.ToString());
+		}
 	}
 	/// <summary>
 	/// Add bonus points to the player's score.

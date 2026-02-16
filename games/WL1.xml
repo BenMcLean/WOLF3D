@@ -485,7 +485,7 @@ end
 				<Text Name="FloorNumber" X="208" Y="16" Font="L"> </Text>
 				<!-- WL_INTER.C:Write(14,7,"bonus     0") = pixel (112,56) -->
 				<Text X="112" Y="56" Font="L">BONUS</Text>
-				<Text Name="BonusValue" X="192" Y="56" Font="L">0</Text>
+				<Text Name="BonusValue" X="208" Y="56" Font="L">0</Text>
 				<!-- WL_INTER.C:Write(16,10,"time") = pixel (128,80) -->
 				<Text X="128" Y="80" Font="L">TIME</Text>
 				<Text Name="TimeValue" X="208" Y="80" Font="L">0:00</Text>
@@ -500,12 +500,12 @@ end
 				<Text X="8" Y="144" Font="L">TREASURE RATIO    %</Text>
 				<!-- Ticker values: RATIOXX=37 → pixel 296, right-aligned -->
 				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" TickInterval="10" />
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" TickInterval="10" />
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" TickInterval="10" />
-				<MenuItem>ContinueToNextLevel()</MenuItem>
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Pause>ContinueToNextLevel()</Pause>
 				<OnShow>
 					<![CDATA[
 					local floor = GetFloor()
@@ -534,10 +534,13 @@ end
 					SetText("BonusValue", tostring(bonus))
 					GivePoints(bonus)
 
-					-- Set ticker values
-					StartTicker("KillRatio", kr)
-					StartTicker("SecretRatio", sr)
-					StartTicker("TreasureRatio", tr)
+					-- Queue intermission sequence (WL_INTER.C flow)
+					-- Tickers count up one at a time, top to bottom
+					-- Pressing any button during counting skips to final values
+					QueueDelay(2)                      -- Pause before counting (~2*TickBase)
+					StartTicker("KillRatio", kr)       -- Kill ratio counts up
+					StartTicker("SecretRatio", sr)     -- Then secret ratio
+					StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 				]]>
 				</OnShow>
 			</Menu>

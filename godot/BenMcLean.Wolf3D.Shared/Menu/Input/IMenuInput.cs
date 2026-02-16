@@ -44,6 +44,12 @@ public struct MenuInputState
 	/// </summary>
 	public bool RightPressed;
 	/// <summary>
+	/// True if any button was just pressed this frame.
+	/// Used by menu sequence system (e.g., "press any button to continue").
+	/// Maps to: any of Select, Cancel, Up, Down, Left, Right
+	/// </summary>
+	public bool AnyButtonPressed;
+	/// <summary>
 	/// Menu item index currently under cursor (for hover).
 	/// -1 if no item is hovered.
 	/// Set by input implementation based on CursorPosition.

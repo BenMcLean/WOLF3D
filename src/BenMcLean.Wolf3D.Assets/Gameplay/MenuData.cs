@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets.Gameplay;
@@ -284,6 +285,11 @@ public class MenuTickerDefinition
 	/// </summary>
 	public string PerfectSound { get; set; }
 	/// <summary>
+	/// Sound name to play when the target value is 0 (e.g., "NOBONUSSND").
+	/// WL_INTER.C: plays NOBONUSSND when ratio is 0%.
+	/// </summary>
+	public string NoBonusSound { get; set; }
+	/// <summary>
 	/// Increment every N% to trigger sound (e.g., 10 means sound plays every 10%).
 	/// </summary>
 	public int TickInterval { get; set; } = 10;
@@ -313,9 +319,50 @@ public class MenuTickerDefinition
 		ticker.TickSound = element.Attribute("TickSound")?.Value;
 		ticker.DoneSound = element.Attribute("DoneSound")?.Value;
 		ticker.PerfectSound = element.Attribute("PerfectSound")?.Value;
+		ticker.NoBonusSound = element.Attribute("NoBonusSound")?.Value;
 		if (int.TryParse(element.Attribute("TickInterval")?.Value, out int tickInterval))
 			ticker.TickInterval = tickInterval;
 		return ticker;
+	}
+}
+
+/// <summary>
+/// Represents a pause step in a menu's presentation sequence.
+/// Maps to a &lt;Pause&gt; element in XML.
+/// Waits for any button press (or optional timeout), then executes its Lua script.
+/// Runs after tickers complete but before interactive MenuItems.
+/// </summary>
+public class MenuPauseDefinition
+{
+	/// <summary>
+	/// Lua script to execute when the pause completes (button pressed or timeout).
+	/// Stored as element text content.
+	/// </summary>
+	public string Script { get; set; }
+	/// <summary>
+	/// Optional timeout duration. If set, the pause auto-completes after this time.
+	/// Any button press also completes the pause before the timeout.
+	/// If null, waits indefinitely for any button press.
+	/// </summary>
+	public TimeSpan? Duration { get; set; }
+	/// <summary>
+	/// Creates a MenuPauseDefinition instance from an XElement.
+	/// </summary>
+	/// <param name="element">The XElement containing pause data (&lt;Pause&gt;)</param>
+	/// <returns>A new MenuPauseDefinition instance</returns>
+	public static MenuPauseDefinition FromXElement(XElement element)
+	{
+		MenuPauseDefinition pause = new()
+		{
+			Script = element.Value?.Trim()
+		};
+		string durationStr = element.Attribute("Duration")?.Value;
+		if (!string.IsNullOrEmpty(durationStr))
+		{
+			if (System.Xml.XmlConvert.ToTimeSpan(durationStr) is TimeSpan ts)
+				pause.Duration = ts;
+		}
+		return pause;
 	}
 }
 
@@ -474,6 +521,11 @@ public class MenuDefinition
 	/// </summary>
 	public List<MenuTickerDefinition> Tickers { get; set; } = [];
 	/// <summary>
+	/// Pause steps that run after tickers complete but before interactive MenuItems.
+	/// Each pause waits for any button press (or optional timeout), then executes its Lua script.
+	/// </summary>
+	public List<MenuPauseDefinition> Pauses { get; set; } = [];
+	/// <summary>
 	/// List of menu items in display order
 	/// </summary>
 	public List<MenuItemDefinition> Items { get; set; } = [];
@@ -543,6 +595,10 @@ public class MenuDefinition
 		IEnumerable<XElement> tickerElements = element.Elements("Ticker");
 		if (tickerElements != null)
 			menu.Tickers = [.. tickerElements.Select(MenuTickerDefinition.FromXElement)];
+		// Parse pause steps
+		IEnumerable<XElement> pauseElements = element.Elements("Pause");
+		if (pauseElements != null)
+			menu.Pauses = [.. pauseElements.Select(MenuPauseDefinition.FromXElement)];
 		// Parse menu items
 		IEnumerable<XElement> menuItemElements = element.Elements("MenuItem");
 		if (menuItemElements != null)

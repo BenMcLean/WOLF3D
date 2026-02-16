@@ -422,8 +422,8 @@ public class MenuRenderer
 	/// <param name="selectedIndex">Currently selected item index</param>
 	private void RenderCursor(MenuDefinition menuDef, int selectedIndex)
 	{
-		// Skip rendering if no cursor picture is specified
-		if (string.IsNullOrEmpty(menuDef.CursorPic))
+		// Skip rendering if no cursor picture is specified or no menu items to select
+		if (string.IsNullOrEmpty(menuDef.CursorPic) || menuDef.Items.Count == 0)
 			return;
 		// Get cursor texture from VgaGraph
 		if (!SharedAssetManager.VgaGraph.TryGetValue(menuDef.CursorPic, out AtlasTexture cursorTexture))

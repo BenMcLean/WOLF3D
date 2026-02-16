@@ -338,6 +338,7 @@
 				<xs:element ref="Picture"/>
 				<xs:element ref="Text"/>
 				<xs:element ref="Ticker"/>
+				<xs:element ref="Pause"/>
 				<xs:element ref="MenuItem"/>
 				<xs:element name="OnSelectionChanged" type="xs:string">
 					<xs:annotation>
@@ -694,11 +695,39 @@
 					<xs:documentation>Sound name to play when value reaches 100% (e.g., "PERCENT100SND")</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="NoBonusSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Sound name to play when target value is 0 (e.g., "NOBONUSSND")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="TickInterval" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>Increment every N% to trigger sound (default 10)</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Pause">
+		<xs:annotation>
+			<xs:documentation>
+				Pauses the menu sequence until any button is pressed, then executes the Lua script content.
+				Runs after tickers complete but before interactive MenuItems.
+				If Duration is specified, the pause auto-completes after that time (or can be skipped by pressing any button).
+				If there are no tickers or OnShow sequence steps, the pause begins immediately.
+				Skipped entirely if the menu has no Pause elements.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="Duration" type="xs:duration">
+						<xs:annotation>
+							<xs:documentation>Optional timeout as an XML duration/TimeSpan (e.g., "PT5S" for 5 seconds, "PT1M30S" for 1 minute 30 seconds). If omitted, waits indefinitely for any button press.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:extension>
+			</xs:simpleContent>
 		</xs:complexType>
 	</xs:element>
 

@@ -16,17 +16,27 @@ public class KeyboardMenuInput : IMenuInput
 	/// Reads keyboard input via Godot's Input singleton.
 	/// </summary>
 	/// <returns>Input state snapshot</returns>
-	public MenuInputState GetState() => new()
+	public MenuInputState GetState()
 	{
-		CursorPosition = Vector2.Zero,
-		SelectPressed = Godot.Input.IsActionJustPressed("ui_accept"),
-		CancelPressed = Godot.Input.IsActionJustPressed("ui_cancel"),
-		UpPressed = Godot.Input.IsActionJustPressed("ui_up"),
-		DownPressed = Godot.Input.IsActionJustPressed("ui_down"),
-		LeftPressed = Godot.Input.IsActionJustPressed("ui_left"),
-		RightPressed = Godot.Input.IsActionJustPressed("ui_right"),
-		HoveredItemIndex = -1
-	};
+		bool select = Godot.Input.IsActionJustPressed("ui_accept");
+		bool cancel = Godot.Input.IsActionJustPressed("ui_cancel");
+		bool up = Godot.Input.IsActionJustPressed("ui_up");
+		bool down = Godot.Input.IsActionJustPressed("ui_down");
+		bool left = Godot.Input.IsActionJustPressed("ui_left");
+		bool right = Godot.Input.IsActionJustPressed("ui_right");
+		return new()
+		{
+			CursorPosition = Vector2.Zero,
+			SelectPressed = select,
+			CancelPressed = cancel,
+			UpPressed = up,
+			DownPressed = down,
+			LeftPressed = left,
+			RightPressed = right,
+			AnyButtonPressed = select || cancel || up || down || left || right,
+			HoveredItemIndex = -1
+		};
+	}
 	/// <summary>
 	/// Update input state (currently no per-frame updates needed for keyboard).
 	/// </summary>
