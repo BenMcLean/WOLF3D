@@ -1,5 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator;
 using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
@@ -207,6 +208,130 @@ public class MenuScriptContext(
 	/// <param name="pictureIndex">Zero-based index of the picture in the menu's Pictures list (defaults to 0)</param>
 	public void SetPicture(string pictureName, int pictureIndex = 0) => SetPictureAction?.Invoke(pictureName, pictureIndex);
 	#endregion Menu Item Selection and Dynamic Content
+	#region Dynamic Content Updates
+	/// <summary>
+	/// Delegate for updating a named text label.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<string, string> SetTextAction { get; set; }
+	/// <summary>
+	/// Delegate for updating a ticker label's displayed value.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<string, string> UpdateTickerAction { get; set; }
+	/// <summary>
+	/// Update a named text label's content.
+	/// Exposed to Lua. Delegates to MenuManager → MenuRenderer.
+	/// </summary>
+	/// <param name="name">The Name attribute of the text element</param>
+	/// <param name="value">New text content</param>
+	public void SetText(string name, string value) => SetTextAction?.Invoke(name, value);
+	#endregion Dynamic Content Updates
+	#region Intermission (Level Completion Screen)
+	/// <summary>
+	/// Level completion statistics, set when showing the intermission screen.
+	/// Null when not in intermission mode.
+	/// </summary>
+	public LevelCompletionStats CompletionStats { get; set; }
+	/// <summary>
+	/// Flag set by Lua when the player dismisses the intermission screen.
+	/// Polled by Root.cs to trigger level transition.
+	/// </summary>
+	public bool ContinueToNextLevelRequested { get; set; }
+	/// <summary>
+	/// Get the floor number for the completed level.
+	/// Exposed to Lua for intermission screen display.
+	/// </summary>
+	/// <returns>Floor number</returns>
+	public int GetFloor() => CompletionStats?.FloorNumber ?? 0;
+	/// <summary>
+	/// Get the number of enemies killed.
+	/// </summary>
+	/// <returns>Kill count</returns>
+	public int GetKillCount() => CompletionStats?.KillCount ?? 0;
+	/// <summary>
+	/// Get the total number of enemies on the level.
+	/// </summary>
+	/// <returns>Total enemy count</returns>
+	public int GetKillTotal() => CompletionStats?.KillTotal ?? 0;
+	/// <summary>
+	/// Get the number of secrets found.
+	/// </summary>
+	/// <returns>Secret count</returns>
+	public int GetSecretCount() => CompletionStats?.SecretCount ?? 0;
+	/// <summary>
+	/// Get the total number of secrets on the level.
+	/// </summary>
+	/// <returns>Total secret count</returns>
+	public int GetSecretTotal() => CompletionStats?.SecretTotal ?? 0;
+	/// <summary>
+	/// Get the number of treasures collected.
+	/// </summary>
+	/// <returns>Treasure count</returns>
+	public int GetTreasureCount() => CompletionStats?.TreasureCount ?? 0;
+	/// <summary>
+	/// Get the total number of treasures on the level.
+	/// </summary>
+	/// <returns>Total treasure count</returns>
+	public int GetTreasureTotal() => CompletionStats?.TreasureTotal ?? 0;
+	/// <summary>
+	/// Get the level completion time in seconds.
+	/// </summary>
+	/// <returns>Time in seconds</returns>
+	public double GetLevelTime()
+	{
+		if (CompletionStats == null) return 0;
+		// TicRate is 70 tics per second (Wolf3D standard)
+		return CompletionStats.ElapsedTics / 70.0;
+	}
+	/// <summary>
+	/// Get the par time in seconds.
+	/// </summary>
+	/// <returns>Par time in seconds</returns>
+	public double GetParTime() => CompletionStats?.ParTime.TotalSeconds ?? 0;
+	/// <summary>
+	/// Format a time in seconds as "MM:SS".
+	/// Exposed to Lua for display formatting.
+	/// </summary>
+	/// <param name="seconds">Time in seconds</param>
+	/// <returns>Formatted string "MM:SS"</returns>
+	public string FormatTime(double seconds)
+	{
+		int totalSeconds = (int)seconds;
+		int minutes = totalSeconds / 60;
+		int secs = totalSeconds % 60;
+		return $"{minutes}:{secs:D2}";
+	}
+	/// <summary>
+	/// Start a ticker animating from 0 to the target value.
+	/// Currently sets the value immediately (animation TODO in future phase).
+	/// </summary>
+	/// <param name="name">Ticker name (e.g., "KillRatio")</param>
+	/// <param name="targetValue">Target value to display</param>
+	public void StartTicker(string name, int targetValue)
+	{
+		// Phase 1: Set value immediately (animated counting is a future enhancement)
+		UpdateTickerAction?.Invoke(name, targetValue.ToString());
+	}
+	/// <summary>
+	/// Add bonus points to the player's score.
+	/// Updates the score in CompletionStats for display.
+	/// </summary>
+	/// <param name="amount">Points to add</param>
+	public void GivePoints(int amount)
+	{
+		// Score bonus is tracked in session state for Root.cs to apply
+		sessionState.BonusPoints += amount;
+	}
+	/// <summary>
+	/// Signal that the player wants to continue to the next level.
+	/// Sets a flag polled by Root.cs.
+	/// </summary>
+	public void ContinueToNextLevel()
+	{
+		ContinueToNextLevelRequested = true;
+	}
+	#endregion Intermission
 	#region UI Control (to be implemented by MenuManager)
 	/// <summary>
 	/// Delegate for showing a confirmation dialog.

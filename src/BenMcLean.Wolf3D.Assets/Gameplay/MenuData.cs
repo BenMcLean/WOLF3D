@@ -135,6 +135,17 @@ public class MenuPictureDefinition
 	/// </summary>
 	public int? ZIndex { get; set; }
 	/// <summary>
+	/// Comma-separated list of VgaGraph picture names to cycle through for animation.
+	/// If null or empty, the picture is static (uses Name only).
+	/// Example: "L_GUYPIC,L_GUY2PIC" for BJ breathing animation.
+	/// </summary>
+	public string Frames { get; set; }
+	/// <summary>
+	/// Time in seconds between animation frames. Default 0.5.
+	/// Only used when Frames is specified.
+	/// </summary>
+	public float FrameInterval { get; set; } = 0.5f;
+	/// <summary>
 	/// Creates a MenuPictureDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing picture data (&lt;Picture&gt;)</param>
@@ -146,10 +157,13 @@ public class MenuPictureDefinition
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Picture element must have a Name attribute"),
 			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
 			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
-			Stripes = bool.TryParse(element.Attribute("Stripes")?.Value, out bool stripes) && stripes
+			Stripes = bool.TryParse(element.Attribute("Stripes")?.Value, out bool stripes) && stripes,
+			Frames = element.Attribute("Frames")?.Value
 		};
 		if (int.TryParse(element.Attribute("ZIndex")?.Value, out int zIndex))
 			picture.ZIndex = zIndex;
+		if (float.TryParse(element.Attribute("FrameInterval")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float frameInterval))
+			picture.FrameInterval = frameInterval;
 		return picture;
 	}
 }
@@ -161,6 +175,11 @@ public class MenuPictureDefinition
 /// </summary>
 public class MenuTextDefinition
 {
+	/// <summary>
+	/// Optional identifier for Lua to update text dynamically.
+	/// When set, the text can be updated via SetText(name, value) from Lua scripts.
+	/// </summary>
+	public string Name { get; set; }
 	/// <summary>
 	/// Text content to display
 	/// </summary>
@@ -209,6 +228,7 @@ public class MenuTextDefinition
 	{
 		MenuTextDefinition text = new()
 		{
+			Name = element.Attribute("Name")?.Value,
 			Content = element.Value?.Trim() ?? string.Empty,
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
@@ -217,6 +237,85 @@ public class MenuTextDefinition
 		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
 			text.Color = color;
 		return text;
+	}
+}
+
+/// <summary>
+/// Represents a percent ticker in a menu that animates counting from 0 to a target value.
+/// Maps to a &lt;Ticker&gt; element in XML.
+/// Used for intermission screen statistics (kill%, secret%, treasure%).
+/// </summary>
+public class MenuTickerDefinition
+{
+	/// <summary>
+	/// Identifier for Lua (e.g., "KillRatio"). Used to start and control the ticker from scripts.
+	/// </summary>
+	public string Name { get; set; }
+	/// <summary>
+	/// X coordinate for ticker placement (supports "Center").
+	/// </summary>
+	public string X { get; set; }
+	/// <summary>
+	/// Y coordinate for ticker placement (supports "Center").
+	/// </summary>
+	public string Y { get; set; }
+	/// <summary>
+	/// Font name override. If not specified, uses menu Font.
+	/// </summary>
+	public string Font { get; set; }
+	/// <summary>
+	/// Color override. If not specified, uses menu TextColor.
+	/// </summary>
+	public byte? Color { get; set; }
+	/// <summary>
+	/// Text alignment ("Right" for right-aligned numbers).
+	/// </summary>
+	public string Align { get; set; }
+	/// <summary>
+	/// Sound name to play per increment (e.g., "ENDBONUS1SND").
+	/// </summary>
+	public string TickSound { get; set; }
+	/// <summary>
+	/// Sound name to play when counting finishes (e.g., "ENDBONUS2SND").
+	/// </summary>
+	public string DoneSound { get; set; }
+	/// <summary>
+	/// Sound name to play when value reaches 100% (e.g., "PERCENT100SND").
+	/// </summary>
+	public string PerfectSound { get; set; }
+	/// <summary>
+	/// Increment every N% to trigger sound (e.g., 10 means sound plays every 10%).
+	/// </summary>
+	public int TickInterval { get; set; } = 10;
+	/// <summary>
+	/// Gets the X coordinate as an integer, or 0 if "Center".
+	/// </summary>
+	public int XValue => int.TryParse(X, out int x) ? x : 0;
+	/// <summary>
+	/// Gets the Y coordinate as an integer, or 0 if "Center".
+	/// </summary>
+	public int YValue => int.TryParse(Y, out int y) ? y : 0;
+	/// <summary>
+	/// Creates a MenuTickerDefinition instance from an XElement.
+	/// </summary>
+	public static MenuTickerDefinition FromXElement(XElement element)
+	{
+		MenuTickerDefinition ticker = new()
+		{
+			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Ticker element must have a Name attribute"),
+			X = element.Attribute("X")?.Value ?? "0",
+			Y = element.Attribute("Y")?.Value ?? "0",
+			Font = element.Attribute("Font")?.Value,
+			Align = element.Attribute("Align")?.Value
+		};
+		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
+			ticker.Color = color;
+		ticker.TickSound = element.Attribute("TickSound")?.Value;
+		ticker.DoneSound = element.Attribute("DoneSound")?.Value;
+		ticker.PerfectSound = element.Attribute("PerfectSound")?.Value;
+		if (int.TryParse(element.Attribute("TickInterval")?.Value, out int tickInterval))
+			ticker.TickInterval = tickInterval;
+		return ticker;
 	}
 }
 
@@ -353,6 +452,11 @@ public class MenuDefinition
 	/// </summary>
 	public string OnSelectionChanged { get; set; }
 	/// <summary>
+	/// Lua script to execute once when the menu first appears.
+	/// Used for intermission screen initialization (setting text values, starting tickers).
+	/// </summary>
+	public string OnShow { get; set; }
+	/// <summary>
 	/// 3D beveled boxes to display (WL_MENU.C:DrawWindow)
 	/// </summary>
 	public List<MenuBoxDefinition> Boxes { get; set; } = [];
@@ -365,6 +469,10 @@ public class MenuDefinition
 	/// WL_MENU.C:1639-1649: US_Print() for non-interactive text
 	/// </summary>
 	public List<MenuTextDefinition> Texts { get; set; } = [];
+	/// <summary>
+	/// Animated percent tickers (e.g., kill%, secret%, treasure% on intermission screen).
+	/// </summary>
+	public List<MenuTickerDefinition> Tickers { get; set; } = [];
 	/// <summary>
 	/// List of menu items in display order
 	/// </summary>
@@ -389,7 +497,8 @@ public class MenuDefinition
 			Music = element.Attribute("Music")?.Value ?? element.Attribute("Song")?.Value,
 			CursorPic = element.Attribute("CursorPic")?.Value,
 			CursorMoveSound = element.Attribute("CursorMoveSound")?.Value,
-			OnSelectionChanged = element.Element("OnSelectionChanged")?.Value?.Trim()
+			OnSelectionChanged = element.Element("OnSelectionChanged")?.Value?.Trim(),
+			OnShow = element.Element("OnShow")?.Value?.Trim()
 		};
 
 		// Parse color attributes using semantic names from WL_MENU.H
@@ -430,6 +539,10 @@ public class MenuDefinition
 		IEnumerable<XElement> textElements = element.Elements("Text");
 		if (textElements != null)
 			menu.Texts = [.. textElements.Select(MenuTextDefinition.FromXElement)];
+		// Parse tickers
+		IEnumerable<XElement> tickerElements = element.Elements("Ticker");
+		if (tickerElements != null)
+			menu.Tickers = [.. tickerElements.Select(MenuTickerDefinition.FromXElement)];
 		// Parse menu items
 		IEnumerable<XElement> menuItemElements = element.Elements("MenuItem");
 		if (menuItemElements != null)

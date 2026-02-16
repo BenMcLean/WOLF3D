@@ -2,6 +2,7 @@ using System;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
+using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.VR.Menu;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
@@ -57,6 +58,25 @@ public partial class MenuRoom : Node3D
 	public int SelectedDifficulty => _menuManager?.SessionState?.SelectedDifficulty ?? 0;
 
 	/// <summary>
+	/// Optional level transition request for intermission mode.
+	/// When set, the MenuRoom shows the "LevelComplete" menu instead of "Main".
+	/// </summary>
+	public ActionStage.LevelTransitionRequest LevelTransition { get; set; }
+
+	/// <summary>
+	/// Optional override for the starting menu name.
+	/// When set, navigates to this menu instead of the collection's default StartMenu.
+	/// Used for intermission screen ("LevelComplete").
+	/// </summary>
+	public string StartMenuOverride { get; set; }
+
+	/// <summary>
+	/// Pending level transition after intermission is dismissed.
+	/// Set by Lua ContinueToNextLevel(), polled by Root._Process().
+	/// </summary>
+	public ActionStage.LevelTransitionRequest PendingLevelTransition { get; private set; }
+
+	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// Must be called after _Ready (when MenuManager exists).
@@ -97,6 +117,16 @@ public partial class MenuRoom : Node3D
 			menuCollection,
 			SharedAssetManager.Config,
 			logger: null);
+
+		// If in intermission mode, override start menu and pass completion stats
+		if (!string.IsNullOrEmpty(StartMenuOverride))
+		{
+			// Pass completion stats to the script context for Lua access
+			if (LevelTransition?.CompletionStats != null)
+				_menuManager.ScriptContext.CompletionStats = LevelTransition.CompletionStats;
+			// Navigate to the override menu (e.g., "LevelComplete") instead of default
+			_menuManager.NavigateToMenu(StartMenuOverride);
+		}
 
 		// Add the menu viewport to the scene tree (required for rendering)
 		AddChild(_menuManager.Renderer.Viewport);
@@ -299,6 +329,12 @@ public partial class MenuRoom : Node3D
 		{
 			_menuManager.ClearCancelAtRoot();
 			PendingResumeGame = true;
+		}
+
+		// Check if intermission screen was dismissed (Lua called ContinueToNextLevel)
+		if (_menuManager?.ScriptContext?.ContinueToNextLevelRequested == true && LevelTransition != null)
+		{
+			PendingLevelTransition = LevelTransition;
 		}
 
 		// In VR mode, position the menu panel once after XR tracking is active

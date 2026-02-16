@@ -733,6 +733,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		pushWall.Action = PushWallAction.Pushing;
 		pushWall.Direction = direction;
 		pushWall.TicCount = (short)(2 * PushWall.PushTics); // 2 tiles × 128 tics/tile = 256 tics
+		pushWall.HasBeenActivated = true; // Track for secret count statistics
 		anyPushWallMoving = true; // Set global lock
 
 		// Play pushwall sound
@@ -1551,6 +1552,60 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		if (slotIndex < 0 || slotIndex >= weaponSlots.Count)
 			return null;
 		return weaponSlots[slotIndex].WeaponType;
+	}
+
+	/// <summary>
+	/// Derives level completion statistics from the current game state.
+	/// Called at level end to capture kill/secret/treasure ratios and time.
+	/// </summary>
+	/// <param name="floorNumber">Floor number for display (1-indexed)</param>
+	/// <param name="isSecretLevel">Whether this is a secret level</param>
+	/// <param name="parTime">Par time for this level</param>
+	public LevelCompletionStats GetCompletionStats(int floorNumber, bool isSecretLevel, TimeSpan parTime)
+	{
+		// KillTotal = number of spawned actors, KillCount = actors with HitPoints <= 0
+		int killTotal = actors.Count;
+		int killCount = 0;
+		for (int i = 0; i < actors.Count; i++)
+			if (actors[i].HitPoints <= 0)
+				killCount++;
+
+		// SecretTotal = number of pushwalls, SecretCount = pushwalls that have been activated
+		int secretTotal = pushWalls.Count;
+		int secretCount = 0;
+		for (int i = 0; i < pushWalls.Count; i++)
+			if (pushWalls[i].HasBeenActivated)
+				secretCount++;
+
+		// TreasureTotal/TreasureCount: count treasure items from initial spawns
+		// Treasure items are identified by IsTreasure flag on ObjectInfo
+		// Collected treasures have ShapeNum == -1 (IsFree) in StatObjList
+		int treasureTotal = 0;
+		int treasureCount = 0;
+		for (int i = 0; i < lastStatObj; i++)
+		{
+			StatObj stat = StatObjList[i];
+			if (mapAnalyzer.Objects.TryGetValue(stat.ItemNumber, out ObjectInfo objInfo)
+				&& objInfo.IsTreasure)
+			{
+				treasureTotal++;
+				if (stat.IsFree)
+					treasureCount++;
+			}
+		}
+
+		return new LevelCompletionStats(
+			floorNumber,
+			isSecretLevel,
+			killCount,
+			killTotal,
+			secretCount,
+			secretTotal,
+			treasureCount,
+			treasureTotal,
+			CurrentTic,
+			parTime,
+			Inventory.GetValue("Score"));
 	}
 
 	/// <summary>

@@ -128,6 +128,21 @@ public class LuaScriptEngine
 		baseEnvironment["print"] = luaScript.Globals["print"];
 		baseEnvironment["os"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("os").Table);
 
+		// Add standard Lua global functions to base environment
+		// These are safe, stateless functions needed by all scripts (menu and action)
+		string[] standardGlobals = [
+			"tostring", "tonumber", "type", "pairs", "ipairs",
+			"select", "error", "pcall", "xpcall", "next",
+			"rawget", "rawset", "rawequal", "rawlen",
+			"setmetatable", "getmetatable", "unpack", "assert"
+		];
+		foreach (string name in standardGlobals)
+		{
+			DynValue val = luaScript.Globals.Get(name);
+			if (val.Type != DataType.Nil)
+				baseEnvironment[name] = val;
+		}
+
 		// Expose all specified context type methods using reflection
 		// These callbacks reference CurrentContext, which is set per-execution
 		foreach (Type contextType in contextTypes)
@@ -426,7 +441,7 @@ public class LuaScriptEngine
 	}
 	/// <summary>
 	/// Execute Lua code directly without pre-compiling (for menu scripts).
-	/// Uses the same sandboxed environment as pre-compiled functions.
+	/// Uses baseEnvironment (not the read-only proxy) since menu scripts don't require determinism.
 	/// Performance: Slower than ExecuteStateFunction due to parsing overhead.
 	/// Use case: Menu actions where code is simple and executed infrequently.
 	/// </summary>
@@ -444,8 +459,9 @@ public class LuaScriptEngine
 			IScriptContext previousContext = CurrentContext;
 			CurrentContext = context;
 
-			// Load and execute with read-only proxy environment (same sandboxing as compiled functions)
-			DynValue compiled = luaScript.LoadString(luaCode, proxyEnvironment);
+			// Load and execute with base environment directly
+			// Menu scripts don't need the read-only proxy restrictions that action scripts use
+			DynValue compiled = luaScript.LoadString(luaCode, baseEnvironment);
 			DynValue result = luaScript.Call(compiled);
 
 			// Restore previous context

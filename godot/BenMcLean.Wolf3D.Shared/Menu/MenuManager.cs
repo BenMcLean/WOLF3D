@@ -35,6 +35,10 @@ public class MenuManager
 	/// </summary>
 	public MenuState SessionState => _sessionState;
 	/// <summary>
+	/// Gets the script context for setting intermission data.
+	/// </summary>
+	public MenuScriptContext ScriptContext => _scriptContext;
+	/// <summary>
 	/// Set when ESC/Cancel is pressed at the root menu (no parent to go back to).
 	/// Consumer must clear via <see cref="ClearCancelAtRoot"/>.
 	/// </summary>
@@ -95,6 +99,9 @@ public class MenuManager
 			PlayAdLibSoundAction = PlayAdLibSoundImpl,
 			PlayMusicAction = PlayMusicImpl,
 			StopMusicAction = StopMusicImpl,
+			// Wire up dynamic content updates (for intermission screen)
+			SetTextAction = SetText,
+			UpdateTickerAction = UpdateTicker,
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();
@@ -186,6 +193,8 @@ public class MenuManager
 		}
 		// Render the menu
 		RefreshMenu();
+		// Execute OnShow script if defined (runs once when menu first appears)
+		ExecuteOnShow(menuDef);
 		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);
 	}
 	/// <summary>
@@ -269,6 +278,26 @@ public class MenuManager
 		}
 	}
 	/// <summary>
+	/// Execute the OnShow Lua script for a menu.
+	/// Runs once when a menu first appears (not on refresh).
+	/// Used by intermission screen to set up initial values and start tickers.
+	/// </summary>
+	/// <param name="menuDef">Menu definition containing OnShow script</param>
+	private void ExecuteOnShow(MenuDefinition menuDef)
+	{
+		if (string.IsNullOrEmpty(menuDef.OnShow))
+			return;
+		try
+		{
+			_luaEngine.DoString(menuDef.OnShow, _scriptContext);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to execute OnShow for menu '{menuDef.Name}': {ex.Message}");
+			_logger?.LogError(ex, "Failed to execute OnShow for menu '{name}'", menuDef.Name);
+		}
+	}
+	/// <summary>
 	/// Update a picture in the current menu's Pictures list.
 	/// Used by OnSelectionChanged scripts to change pictures dynamically (e.g., difficulty faces).
 	/// </summary>
@@ -306,6 +335,8 @@ public class MenuManager
 			return;
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
+		// Update animated pictures (e.g., BJ breathing on intermission screen)
+		_renderer.UpdateAnimations(delta);
 		// Update pointer provider and crosshairs
 		if (_pointerProvider != null)
 		{
@@ -444,6 +475,30 @@ public class MenuManager
 			_scriptContext.PlayAdLibSound(menuDef.CursorMoveSound);
 	}
 
+	/// <summary>
+	/// Update a named text label's content.
+	/// Called from Lua via SetText(name, value).
+	/// </summary>
+	/// <param name="name">The Name attribute of the text element</param>
+	/// <param name="value">New text content</param>
+	private void SetText(string name, string value)
+	{
+		_renderer.UpdateText(name, value);
+	}
+	/// <summary>
+	/// Update a ticker label's displayed value.
+	/// Called from Lua via UpdateTicker(name, value).
+	/// </summary>
+	/// <param name="name">The Name of the ticker element</param>
+	/// <param name="value">New display value</param>
+	private void UpdateTicker(string name, string value)
+	{
+		if (string.IsNullOrEmpty(_currentMenuName))
+			return;
+		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+			return;
+		_renderer.UpdateTicker(name, value, menuDef);
+	}
 	#region Sound Playback Implementation
 	/// <summary>
 	/// Play an AdLib sound effect by name.

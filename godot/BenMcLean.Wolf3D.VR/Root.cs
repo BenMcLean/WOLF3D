@@ -109,12 +109,24 @@ public partial class Root : Node3D
 		if (_transitionState != TransitionState.Idle)
 			return;
 
-		// Poll MenuRoom for game start or resume signal
+		// Poll MenuRoom for game start, resume, or intermission completion
 		if (_currentScene is MenuRoom menuRoom)
 		{
 			if (menuRoom.PendingResumeGame && _suspendedGame != null)
 			{
 				ResumeGame();
+			}
+			else if (menuRoom.PendingLevelTransition is ActionStage.LevelTransitionRequest intermissionRequest)
+			{
+				// Intermission dismissed — continue to next level
+				_suspendedGame = null;
+				ActionStage newStage = new(DisplayMode,
+					savedInventory: intermissionRequest.SavedInventory,
+					savedWeaponType: intermissionRequest.SavedWeaponType)
+				{
+					LevelIndex = intermissionRequest.LevelIndex
+				};
+				TransitionTo(newStage);
 			}
 			else if (menuRoom.ShouldStartGame)
 			{
@@ -138,11 +150,13 @@ public partial class Root : Node3D
 			{
 				// Level transitions discard the suspended game (new level = new state)
 				_suspendedGame = null;
-				ActionStage newStage = new(DisplayMode, savedInventory: request.SavedInventory, savedWeaponType: request.SavedWeaponType)
+				// Route through intermission screen
+				MenuRoom intermissionRoom = new(DisplayMode)
 				{
-					LevelIndex = request.LevelIndex
+					StartMenuOverride = "LevelComplete",
+					LevelTransition = request,
 				};
-				TransitionTo(newStage);
+				TransitionTo(intermissionRoom);
 			}
 		}
 	}

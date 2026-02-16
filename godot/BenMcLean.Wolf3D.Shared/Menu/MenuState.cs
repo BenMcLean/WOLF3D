@@ -48,4 +48,9 @@ public class MenuState
 	/// May be persisted to a separate settings file in the future.
 	/// </summary>
 	public VRMode VRMode { get; set; } = VRMode.Roomscale;
+	/// <summary>
+	/// Accumulated bonus points from the intermission screen.
+	/// Set by Lua GivePoints(), consumed by Root.cs when transitioning to next level.
+	/// </summary>
+	public int BonusPoints { get; set; } = 0;
 }

@@ -327,7 +327,7 @@ end
 			</Menu>
 
 			<!-- Placeholder menus for testing navigation -->
-<!-- Sound Menu (WL_MENU.H: SM_X=48, SM_Y1=20) -->
+			<!-- Sound Menu (WL_MENU.H: SM_X=48, SM_Y1=20) -->
 			<!-- WL_MENU.C:1820-1822: Three DrawWindow boxes for Sound FX, Digitized, Music sections -->
 			<!-- WL_MENU.C:1852-1854: Title pictures at (100, SM_Yn-20) -->
 			<!-- WL_MENU.C:1857-1898: Toggle switches drawn at (SM_X+24, SM_Y1+i*13+2) based on current settings -->
@@ -349,13 +349,20 @@ end
 				<!-- Toggle switch pictures - 7 total (WL_MENU.C:1895-1897) -->
 				<!-- Position: (SM_X+24, SM_Y1+i*13+2) = (72, 20+i*13+2) -->
 				<!-- ZIndex=9 to draw above boxes (boxes are ZIndex=7) -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9" />   <!-- Item 0: Sound FX None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9" />   <!-- Item 1: Sound FX PC -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9" />   <!-- Item 2: Sound FX AdLib -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9" />   <!-- Item 3: Digitized None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9" />  <!-- Item 4: Digitized SB -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9" />  <!-- Item 5: Music None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9" />  <!-- Item 6: Music AdLib -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9" />
+				<!-- Item 0: Sound FX None -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9" />
+				<!-- Item 1: Sound FX PC -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9" />
+				<!-- Item 2: Sound FX AdLib -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9" />
+				<!-- Item 3: Digitized None -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9" />
+				<!-- Item 4: Digitized SB -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9" />
+				<!-- Item 5: Music None -->
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9" />
+				<!-- Item 6: Music AdLib -->
 
 				<!-- OnSelectionChanged: Update all toggle graphics based on current settings (WL_MENU.C:1868-1892) -->
 				<OnSelectionChanged>
@@ -464,6 +471,75 @@ end
 			<Menu Name="ViewScores" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
 				<MenuItem Text="No scores yet" Action="BackToPreviousMenu" />
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			</Menu>
+			<Menu Name="LevelComplete" Font="L" BorderColor="127" Music="ENDLEVEL_MUS"
+				  X="112" Y="168" Indent="0" Spacing="13">
+				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
+				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC" FrameInterval="0.5" />
+				<!-- WL_INTER.C:Write(14,2,"floor\ncompleted") = pixel (112,16) -->
+				<Text X="112" Y="16" Font="L">
+					FLOOR
+					COMPLETED
+				</Text>
+				<!-- Floor number displayed by Lua SetText -->
+				<Text Name="FloorNumber" X="208" Y="16" Font="L"> </Text>
+				<!-- WL_INTER.C:Write(14,7,"bonus     0") = pixel (112,56) -->
+				<Text X="112" Y="56" Font="L">BONUS</Text>
+				<Text Name="BonusValue" X="192" Y="56" Font="L">0</Text>
+				<!-- WL_INTER.C:Write(16,10,"time") = pixel (128,80) -->
+				<Text X="128" Y="80" Font="L">TIME</Text>
+				<Text Name="TimeValue" X="208" Y="80" Font="L">0:00</Text>
+				<!-- WL_INTER.C:Write(16,12," par") = pixel (128,96) -->
+				<Text X="128" Y="96" Font="L"> PAR</Text>
+				<Text Name="ParValue" X="208" Y="96" Font="L">0:00</Text>
+				<!-- WL_INTER.C:Write(9,14,"kill ratio    %") = pixel (72,112) -->
+				<Text X="72" Y="112" Font="L">KILL RATIO    %</Text>
+				<!-- WL_INTER.C:Write(5,16,"secret ratio    %") = pixel (40,128) -->
+				<Text X="40" Y="128" Font="L">SECRET RATIO    %</Text>
+				<!-- WL_INTER.C:Write(1,18,"treasure ratio    %") = pixel (8,144) -->
+				<Text X="8" Y="144" Font="L">TREASURE RATIO    %</Text>
+				<!-- Ticker values: RATIOXX=37 → pixel 296, right-aligned -->
+				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right"
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" TickInterval="10" />
+				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right"
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" TickInterval="10" />
+				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right"
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" TickInterval="10" />
+				<MenuItem>ContinueToNextLevel()</MenuItem>
+				<OnShow>
+					<![CDATA[
+					local floor = GetFloor()
+					SetText("FloorNumber", tostring(floor))
+					SetText("ParValue", FormatTime(GetParTime()))
+					SetText("TimeValue", FormatTime(GetLevelTime()))
+
+					-- Calculate ratios
+					local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal()) or 0
+					local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
+					local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
+
+					-- Calculate time bonus (500 points per second under par)
+					local parSec = GetParTime()
+					local levelSec = GetLevelTime()
+					local timeBonus = 0
+					if parSec > 0 and levelSec < parSec then
+						timeBonus = math.floor((parSec - levelSec) * 500)
+					end
+
+					-- Calculate total bonus
+					local bonus = timeBonus
+					if kr == 100 then bonus = bonus + 10000 end
+					if sr == 100 then bonus = bonus + 10000 end
+					if tr == 100 then bonus = bonus + 10000 end
+					SetText("BonusValue", tostring(bonus))
+					GivePoints(bonus)
+
+					-- Set ticker values
+					StartTicker("KillRatio", kr)
+					StartTicker("SecretRatio", sr)
+					StartTicker("TreasureRatio", tr)
+				]]>
+				</OnShow>
 			</Menu>
 		</Menus>
 	</VgaGraph>
@@ -663,34 +739,42 @@ end
 			<!-- Door types: Tile is base (even), Tile+1 (odd) implied -->
 			<!-- Doors with no script open freely. Doors with scripts return true to open, false to stay locked. -->
 			<Door Tile="90" Name="normal" Page="0" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+				<![CDATA[
 if Has("Gold Key") then
 	return true
 end
 PlayLocalDigiSound("NOWAYSND")
 return false
-]]></Door>
-			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+]]>
+			</Door>
+			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+				<![CDATA[
 if Has("Silver Key") then
 	return true
 end
 PlayLocalDigiSound("NOWAYSND")
 return false
-]]></Door>
-			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+]]>
+			</Door>
+			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+				<![CDATA[
 if Has("Gold Key") then
 	return true
 end
 PlayLocalDigiSound("NOWAYSND")
 return false
-]]></Door>
-			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND"><![CDATA[
+]]>
+			</Door>
+			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+				<![CDATA[
 if Has("Silver Key") then
 	return true
 end
 PlayLocalDigiSound("NOWAYSND")
 return false
-]]></Door>
+]]>
+			</Door>
 			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 		</WallPlane>
 		<SpritePlane>
@@ -898,7 +982,8 @@ return false
 		</SoundPlane>
 		<StatInfo>
 			<!-- Bonus pickup scripts -->
-			<BonusScript Name="health_small"><![CDATA[
+			<BonusScript Name="health_small">
+				<![CDATA[
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 4)
 	PlayAdLibSound("HEALTH1SND")
@@ -906,8 +991,10 @@ if GetValue("Health") < GetMax("Health") then
 	return true
 end
 return false
-]]></BonusScript>
-			<BonusScript Name="health_medium"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="health_medium">
+				<![CDATA[
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 10)
 	PlayAdLibSound("HEALTH1SND")
@@ -915,8 +1002,10 @@ if GetValue("Health") < GetMax("Health") then
 	return true
 end
 return false
-]]></BonusScript>
-			<BonusScript Name="health_large"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="health_large">
+				<![CDATA[
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 25)
 	PlayAdLibSound("HEALTH2SND")
@@ -924,8 +1013,10 @@ if GetValue("Health") < GetMax("Health") then
 	return true
 end
 return false
-]]></BonusScript>
-			<BonusScript Name="health_desperate"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="health_desperate">
+				<![CDATA[
 if GetValue("Health") < 12 then
 	AddValue("Health", 1)
 	PlayLocalDigiSound("SLURPIESND")
@@ -933,20 +1024,26 @@ if GetValue("Health") < 12 then
 	return true
 end
 return false
-]]></BonusScript>
-			<BonusScript Name="key_gold"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="key_gold">
+				<![CDATA[
 SetValue("Gold Key", 1)
 PlayAdLibSound("GETKEYSND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="key_silver"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="key_silver">
+				<![CDATA[
 SetValue("Silver Key", 1)
 PlayAdLibSound("GETKEYSND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="ammo_clip"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="ammo_clip">
+				<![CDATA[
 if GetValue("Ammo") < GetMax("Ammo") then
 	AddValue("Ammo", 8)
 	PlayAdLibSound("GETAMMOSND")
@@ -954,8 +1051,10 @@ if GetValue("Ammo") < GetMax("Ammo") then
 	return true
 end
 return false
-]]></BonusScript>
-			<BonusScript Name="ammo_clip_small"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="ammo_clip_small">
+				<![CDATA[
 if GetValue("Ammo") < GetMax("Ammo") then
 	AddValue("Ammo", 4)
 	PlayAdLibSound("GETAMMOSND")
@@ -963,53 +1062,68 @@ if GetValue("Ammo") < GetMax("Ammo") then
 	return true
 end
 return false
-]]></BonusScript>
-			<BonusScript Name="weapon_machinegun"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="weapon_machinegun">
+				<![CDATA[
 SetValue("Weapon2", 1)
 AddValue("Ammo", 6)
 PlayAdLibSound("GETMACHINESND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="weapon_chaingun"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="weapon_chaingun">
+				<![CDATA[
 SetValue("Weapon3", 1)
 AddValue("Ammo", 6)
 PlayAdLibSound("GETGATLINGSND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="treasure_cross"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="treasure_cross">
+				<![CDATA[
 AddValue("Score", 100)
 PlayAdLibSound("BONUS1SND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="treasure_chalice"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="treasure_chalice">
+				<![CDATA[
 AddValue("Score", 500)
 PlayAdLibSound("BONUS2SND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="treasure_chest"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="treasure_chest">
+				<![CDATA[
 AddValue("Score", 1000)
 PlayAdLibSound("BONUS3SND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="treasure_crown"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="treasure_crown">
+				<![CDATA[
 AddValue("Score", 5000)
 PlayAdLibSound("BONUS4SND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
-			<BonusScript Name="extra_life"><![CDATA[
+]]>
+			</BonusScript>
+			<BonusScript Name="extra_life">
+				<![CDATA[
 AddValue("Lives", 1)
 SetValue("Health", GetMax("Health"))
 AddValue("Ammo", 25)
 PlayAdLibSound("BONUS1UPSND")
 FlashScreen(0xFFF800)
 return true
-]]></BonusScript>
+]]>
+			</BonusScript>
 
 			<ObjectType Number="19" ObClass="playerobj" Direction="E" Name="Player Start East" />
 			<ObjectType Number="20" ObClass="playerobj" Direction="N" Name="Player Start North" />

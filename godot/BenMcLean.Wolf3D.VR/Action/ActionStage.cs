@@ -27,12 +27,14 @@ public partial class ActionStage : Node3D
 		public int LevelIndex { get; }
 		public Dictionary<string, int> SavedInventory { get; }
 		public string SavedWeaponType { get; }
+		public LevelCompletionStats CompletionStats { get; }
 
-		public LevelTransitionRequest(int levelIndex, Dictionary<string, int> savedInventory, string savedWeaponType)
+		public LevelTransitionRequest(int levelIndex, Dictionary<string, int> savedInventory, string savedWeaponType, LevelCompletionStats completionStats = null)
 		{
 			LevelIndex = levelIndex;
 			SavedInventory = savedInventory;
 			SavedWeaponType = savedWeaponType;
+			CompletionStats = completionStats;
 		}
 	}
 
@@ -386,7 +388,9 @@ void sky() {
 			Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
 			string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 			byte destinationLevel = MapAnalysis.ElevatorTo;
-			PendingTransition = new LevelTransitionRequest(destinationLevel, savedInventory, savedWeaponType);
+			LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
+				LevelIndex + 1, false, MapAnalysis.Par);
+			PendingTransition = new LevelTransitionRequest(destinationLevel, savedInventory, savedWeaponType, stats);
 			return;
 		}
 
@@ -659,6 +663,12 @@ void sky() {
 		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
 		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 
-		PendingTransition = new LevelTransitionRequest(e.DestinationLevel, savedInventory, savedWeaponType);
+		// Capture level completion stats for intermission screen
+		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
+			LevelIndex + 1,               // Floor number (1-based for display)
+			e.IsAltElevator,               // Secret level flag
+			MapAnalysis.Par);           // Par time from map data
+
+		PendingTransition = new LevelTransitionRequest(e.DestinationLevel, savedInventory, savedWeaponType, stats);
 	}
 }

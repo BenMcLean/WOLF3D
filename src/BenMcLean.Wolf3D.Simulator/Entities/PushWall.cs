@@ -70,6 +70,13 @@ public class PushWall : IStateSavable<PushWallSnapshot>
 	public short TicCount { get; set; }
 
 	/// <summary>
+	/// Whether this pushwall has ever been activated (pushed).
+	/// Used for statistics tracking (secret count).
+	/// A pushwall pushed multiple times still counts as only one secret found.
+	/// </summary>
+	public bool HasBeenActivated { get; set; }
+
+	/// <summary>
 	/// Creates a new PushWall instance at its initial position.
 	/// </summary>
 	/// <param name="shape">Wall texture number (VSWAP page)</param>

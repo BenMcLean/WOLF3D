@@ -191,6 +191,7 @@ public class MapAnalyzer
 				Facing = facing,
 				Patrol = obj.IsTrue("Patrol"),
 				Ambush = obj.IsTrue("Ambush"),
+				IsTreasure = obj.IsTrue("Treasure"),
 				IsEnemy = objectClass == ObClass.actor,  // Actors are enemies
 				IsActive = objectClass == ObClass.actor,  // Actors are active objects
 				State = initialState,
@@ -714,6 +715,11 @@ public record ObjectInfo
 	public string Script { get; init; }
 	// WL_GAME.C:ScanInfoPlane - minimum difficulty level for spawning (gd_baby=0..gd_hard=3)
 	public byte Difficulty { get; init; }
+	/// <summary>
+	/// Whether this object counts toward treasure percentage (cross, chalice, chest, crown, extra life).
+	/// Parsed from XML Treasure="true" attribute on ObjectType elements.
+	/// </summary>
+	public bool IsTreasure { get; init; }
 }
 
 /// <summary>

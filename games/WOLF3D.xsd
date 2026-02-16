@@ -337,6 +337,7 @@
 				<xs:element ref="Box"/>
 				<xs:element ref="Picture"/>
 				<xs:element ref="Text"/>
+				<xs:element ref="Ticker"/>
 				<xs:element ref="MenuItem"/>
 				<xs:element name="OnSelectionChanged" type="xs:string">
 					<xs:annotation>
@@ -344,6 +345,15 @@
 							Lua script to execute when menu selection changes (including initial menu construction).
 							Similar to original Wolf3D's DrawNewGameDiff callback in HandleMenu (WL_MENU.C:1518).
 							The script can call GetSelectedIndex() to query current selection and SetPicture() to update pictures dynamically.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="OnShow" type="xs:string">
+					<xs:annotation>
+						<xs:documentation>
+							Lua script to execute once when the menu first appears.
+							Used by intermission screen to set up initial values, calculate bonuses, and start tickers.
+							Not re-executed on refresh or selection change.
 						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
@@ -577,6 +587,16 @@
 					<xs:documentation>Z-index for controlling draw order. Default is 5 (below boxes at 7). Use 9 for pictures that should appear above boxes like the difficulty face (WL_MENU.C:1658 - DrawNewGameDiff called AFTER DrawWindow).</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="Frames" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Comma-separated list of VgaGraph picture names to cycle through for animation (e.g., "L_GUYPIC,L_GUY2PIC" for BJ breathing). If specified, the picture will animate between these frames.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FrameInterval" type="xs:decimal">
+				<xs:annotation>
+					<xs:documentation>Time in seconds between animation frames (default 0.5). Only used when Frames is specified.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -611,8 +631,74 @@
 							<xs:documentation>Text color index (VGA palette 0-255). If not specified, uses menu TextColor, then default TextColor. Example: READHCOLOR = 0x47 (71) for yellow text.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
+					<xs:attribute name="Name" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(name, value). Used by intermission screen for floor number, time, par time, bonus values.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 				</xs:extension>
 			</xs:simpleContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Ticker">
+		<xs:annotation>
+			<xs:documentation>
+				Animated percent counter for intermission screen.
+				Displays a number that can be animated from 0 to a target value by Lua via StartTicker(name, target).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>Identifier for Lua to start and control the ticker (e.g., "KillRatio")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="X" type="CoordinateOrCenter" use="required">
+				<xs:annotation>
+					<xs:documentation>X coordinate for ticker placement</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Y" type="CoordinateOrCenter" use="required">
+				<xs:annotation>
+					<xs:documentation>Y coordinate for ticker placement</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Font" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Font name override. If not specified, uses menu Font.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Color" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Color override (VGA palette 0-255). If not specified, uses menu TextColor.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Align" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Text alignment ("Right" for right-aligned numbers, default is left-aligned)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="TickSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Sound name to play per increment (e.g., "ENDBONUS1SND")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="DoneSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Sound name to play when counting finishes (e.g., "ENDBONUS2SND")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="PerfectSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Sound name to play when value reaches 100% (e.g., "PERCENT100SND")</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="TickInterval" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>Increment every N% to trigger sound (default 10)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

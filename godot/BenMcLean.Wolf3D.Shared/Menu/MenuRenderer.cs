@@ -17,6 +17,9 @@ public class MenuRenderer
 	private readonly Control _canvas;
 	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
 	private readonly List<Rect2> _menuItemBounds = [];
+	private readonly Dictionary<string, Label> _namedTextLabels = [];
+	private readonly Dictionary<string, Label> _tickerLabels = [];
+	private readonly List<AnimatedPictureState> _animatedPictures = [];
 	private Color _currentBorderColor = Colors.Black;
 	private Input.PointerState _primaryPointer;
 	private Input.PointerState _secondaryPointer;
@@ -76,6 +79,10 @@ public class MenuRenderer
 		_temporaryAtlasTextures.Clear();
 		// Clear menu item bounds
 		_menuItemBounds.Clear();
+		// Clear named text and ticker tracking
+		_namedTextLabels.Clear();
+		_tickerLabels.Clear();
+		_animatedPictures.Clear();
 	}
 	/// <summary>
 	/// Render a menu definition to the canvas.
@@ -106,6 +113,8 @@ public class MenuRenderer
 		RenderMenuBoxes(menuDef);
 		// Render text labels (WL_MENU.C:US_Print - "How tough are you?")
 		RenderTexts(menuDef);
+		// Render tickers (intermission screen percent counters)
+		RenderTickers(menuDef);
 		// Render menu items
 		RenderMenuItems(menuDef, selectedIndex);
 		// Render cursor (WL_MENU.C:DrawMenuGun)
@@ -165,6 +174,22 @@ public class MenuRenderer
 				ZIndex = pictureDef.ZIndex ?? 5, // Default 5 (below boxes), or custom value (e.g., 9 for difficulty pic)
 			};
 			_canvas.AddChild(picture);
+			// Track animated pictures for frame cycling
+			if (!string.IsNullOrEmpty(pictureDef.Frames))
+			{
+				string[] frameNames = pictureDef.Frames.Split(',');
+				if (frameNames.Length > 1)
+				{
+					_animatedPictures.Add(new AnimatedPictureState
+					{
+						TextureRect = picture,
+						FrameNames = frameNames,
+						FrameInterval = pictureDef.FrameInterval,
+						CurrentFrame = 0,
+						Elapsed = 0f
+					});
+				}
+			}
 		}
 	}
 	/// <summary>
@@ -318,6 +343,9 @@ public class MenuRenderer
 			// Set final position
 			label.Position = new Vector2(x, y);
 			label.PivotOffset = Vector2.Zero;
+			// Track named text labels for dynamic updates from Lua
+			if (!string.IsNullOrEmpty(textDef.Name))
+				_namedTextLabels[textDef.Name] = label;
 		}
 	}
 	/// <summary>
@@ -489,6 +517,126 @@ public class MenuRenderer
 		}
 	}
 	/// <summary>
+	/// Render ticker labels (for intermission screen percent counters).
+	/// Tickers display as text labels that can be updated dynamically from Lua.
+	/// </summary>
+	/// <param name="menuDef">Menu definition containing ticker definitions</param>
+	private void RenderTickers(MenuDefinition menuDef)
+	{
+		if (menuDef.Tickers is null || menuDef.Tickers.Count == 0)
+			return;
+		foreach (MenuTickerDefinition tickerDef in menuDef.Tickers)
+		{
+			// Determine font: tickerDef.Font > menuDef.Font > "BIG" (default)
+			string fontName = tickerDef.Font ?? menuDef.Font ?? "BIG";
+			if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
+			{
+				GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager");
+				continue;
+			}
+			// Determine color: tickerDef.Color > menuDef.TextColor > 0x17
+			byte colorIndex = tickerDef.Color ?? menuDef.TextColor ?? 0x17;
+			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
+			Label label = new()
+			{
+				Text = "0", // Start at 0, updated by Lua via UpdateTicker
+				Theme = theme,
+				ZIndex = 8,
+				LabelSettings = new LabelSettings
+				{
+					LineSpacing = theme.DefaultFontSize,
+					FontColor = textColor
+				}
+			};
+			_canvas.AddChild(label);
+			// Position the ticker
+			float x = tickerDef.XValue;
+			float y = tickerDef.YValue;
+			// Right-align: position is the right edge, offset left by text width
+			if (tickerDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true)
+			{
+				Font font = theme.DefaultFont;
+				float textWidth = font.GetStringSize(label.Text, fontSize: theme.DefaultFontSize).X;
+				label.Position = new Vector2(x - textWidth, y);
+			}
+			else
+			{
+				label.Position = new Vector2(x, y);
+			}
+			// Track by name for dynamic updates
+			_tickerLabels[tickerDef.Name] = label;
+		}
+	}
+	/// <summary>
+	/// Updates a named text label's content dynamically.
+	/// Called from Lua via SetText(name, value).
+	/// </summary>
+	/// <param name="name">The Name attribute of the text element</param>
+	/// <param name="value">New text content</param>
+	public void UpdateText(string name, string value)
+	{
+		if (_namedTextLabels.TryGetValue(name, out Label label))
+			label.Text = value;
+	}
+	/// <summary>
+	/// Updates a ticker label's displayed value.
+	/// Called from the ticker animation system.
+	/// </summary>
+	/// <param name="name">The Name of the ticker element</param>
+	/// <param name="value">New display value (e.g., "75")</param>
+	/// <param name="menuDef">Menu definition for layout recalculation</param>
+	public void UpdateTicker(string name, string value, MenuDefinition menuDef)
+	{
+		if (!_tickerLabels.TryGetValue(name, out Label label))
+			return;
+		label.Text = value;
+		// Find the ticker definition for alignment info
+		MenuTickerDefinition tickerDef = null;
+		if (menuDef?.Tickers != null)
+		{
+			for (int i = 0; i < menuDef.Tickers.Count; i++)
+			{
+				if (menuDef.Tickers[i].Name == name)
+				{
+					tickerDef = menuDef.Tickers[i];
+					break;
+				}
+			}
+		}
+		// Recalculate position for right-aligned tickers
+		if (tickerDef?.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true)
+		{
+			string fontName = tickerDef.Font ?? menuDef?.Font ?? "BIG";
+			if (SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
+			{
+				Font font = theme.DefaultFont;
+				float textWidth = font.GetStringSize(value, fontSize: theme.DefaultFontSize).X;
+				label.Position = new Vector2(tickerDef.XValue - textWidth, label.Position.Y);
+			}
+		}
+	}
+	/// <summary>
+	/// Updates animated pictures by cycling frames based on elapsed time.
+	/// Called each frame from MenuManager.
+	/// </summary>
+	/// <param name="delta">Time elapsed since last frame in seconds</param>
+	public void UpdateAnimations(float delta)
+	{
+		for (int i = 0; i < _animatedPictures.Count; i++)
+		{
+			AnimatedPictureState state = _animatedPictures[i];
+			state.Elapsed += delta;
+			if (state.Elapsed >= state.FrameInterval)
+			{
+				state.Elapsed -= state.FrameInterval;
+				state.CurrentFrame = (state.CurrentFrame + 1) % state.FrameNames.Length;
+				string frameName = state.FrameNames[state.CurrentFrame];
+				if (SharedAssetManager.VgaGraph.TryGetValue(frameName, out AtlasTexture texture))
+					state.TextureRect.Texture = texture;
+			}
+		}
+	}
+	/// <summary>
 	/// Checks if a position is within the visible screen area.
 	/// </summary>
 	/// <param name="position">Position in viewport coordinates (320x200).</param>
@@ -530,4 +678,22 @@ public class MenuRenderer
 		// Initial update to set positions
 		UpdateCrosshairs();
 	}
+}
+
+/// <summary>
+/// Tracks state for an animated picture that cycles through multiple VgaGraph frames.
+/// Used for BJ breathing animation on the intermission screen.
+/// </summary>
+internal class AnimatedPictureState
+{
+	/// <summary>The TextureRect node being animated.</summary>
+	public TextureRect TextureRect { get; set; }
+	/// <summary>Array of VgaGraph picture names to cycle through.</summary>
+	public string[] FrameNames { get; set; }
+	/// <summary>Time in seconds between frame changes.</summary>
+	public float FrameInterval { get; set; }
+	/// <summary>Index of the currently displayed frame.</summary>
+	public int CurrentFrame { get; set; }
+	/// <summary>Time elapsed since last frame change.</summary>
+	public float Elapsed { get; set; }
 }
