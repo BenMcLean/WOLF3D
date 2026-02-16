@@ -82,6 +82,7 @@ void sky() {
 	};
 
 	private readonly IDisplayMode _displayMode;
+	private readonly int _difficulty;
 	private readonly Dictionary<string, int> _savedInventory;
 	private readonly string _savedWeaponType;
 	private readonly Simulator.Simulator _existingSimulator;
@@ -106,11 +107,15 @@ void sky() {
 	/// Creates a new ActionStage with the specified display mode.
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
+	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedWeaponType">Optional saved weapon type from level transition (null for new game).</param>
-	public ActionStage(IDisplayMode displayMode, Dictionary<string, int> savedInventory = null, string savedWeaponType = null)
+	public ActionStage(IDisplayMode displayMode, int difficulty = 2, Dictionary<string, int> savedInventory = null, string savedWeaponType = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
+		_difficulty = savedInventory != null && savedInventory.TryGetValue("Difficulty", out int savedDifficulty)
+			? savedDifficulty
+			: difficulty;
 		_savedInventory = savedInventory;
 		_savedWeaponType = savedWeaponType;
 	}
@@ -266,7 +271,10 @@ void sky() {
 				_weapons,
 				Shared.SharedAssetManager.CurrentGame.StateCollection,
 				Shared.SharedAssetManager.CurrentGame.WeaponCollection,
-				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));
+				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()),
+				SharedAssetManager.StatusBar,
+				_difficulty,
+				_savedInventory);
 		}
 
 		// Wire up hit detection callback for weapon state machine
@@ -285,31 +293,6 @@ void sky() {
 
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
-
-		// Initialize inventory (skip for resumed games - simulator already has state)
-		if (_existingSimulator == null && SharedAssetManager.StatusBar != null)
-		{
-			_simulatorController.Simulator.Inventory.InitializeFromDefinition(SharedAssetManager.StatusBar);
-
-			// If this is a level transition (saved state exists), restore player state
-			if (_savedInventory != null)
-			{
-				// Restore inventory values (ammo, health, score, lives, weapons)
-				_simulatorController.Simulator.Inventory.LoadState(_savedInventory);
-				// Reset only level-specific values (keys)
-				_simulatorController.Simulator.Inventory.OnLevelChange();
-			}
-
-			// Equip starting weapon from inventory (SelectedWeapon0 is set by XML Init or restored state)
-			// Must happen after inventory initialization so SelectedWeapon0 has its value
-			WeaponCollection weaponCollection = _simulatorController.Simulator.WeaponCollection;
-			if (weaponCollection != null)
-			{
-				int startingWeaponNumber = _simulatorController.Simulator.Inventory.GetValue("SelectedWeapon0");
-				if (weaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
-					_simulatorController.Simulator.EquipWeapon(0, startWeapon.Name);
-			}
-		}
 
 		// Subscribe to display mode button events for shooting and using objects
 		// Left click (flatscreen) or right trigger (VR) = shoot

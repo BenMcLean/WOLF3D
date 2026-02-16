@@ -123,8 +123,7 @@ public partial class Root : Node3D
 				// Get selected episode and difficulty from menu
 				int episode = menuRoom.SelectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
-				// TODO: Use episode and difficulty when creating ActionStage
-				ActionStage actionStage = new(DisplayMode) { LevelIndex = CurrentLevelIndex };
+				ActionStage actionStage = new(DisplayMode, difficulty: difficulty) { LevelIndex = CurrentLevelIndex };
 				TransitionTo(actionStage);
 			}
 		}
@@ -139,7 +138,7 @@ public partial class Root : Node3D
 			{
 				// Level transitions discard the suspended game (new level = new state)
 				_suspendedGame = null;
-				ActionStage newStage = new(DisplayMode, request.SavedInventory, request.SavedWeaponType)
+				ActionStage newStage = new(DisplayMode, savedInventory: request.SavedInventory, savedWeaponType: request.SavedWeaponType)
 				{
 					LevelIndex = request.LevelIndex
 				};

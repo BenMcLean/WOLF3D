@@ -1117,6 +1117,42 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	}
 	#endregion
 	/// <summary>
+	/// Initialize inventory from StatusBar definition and apply game settings.
+	/// Must be called before LoadActorsFromMapAnalysis (difficulty filtering depends on inventory).
+	/// For new games: pass difficulty from menu, savedInventory=null.
+	/// For level transitions: pass savedInventory with difficulty included.
+	/// </summary>
+	/// <param name="statusBar">StatusBar definition from XML (defines initial values)</param>
+	/// <param name="difficulty">Difficulty level (0-3) from menu selection</param>
+	/// <param name="slotCount">Number of weapon slots (1 for traditional, 2 for VR dual-wield)</param>
+	/// <param name="weapons">Weapon definitions loaded from XML</param>
+	/// <param name="savedInventory">Saved inventory from level transition (null for new game)</param>
+	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, Dictionary<string, int> savedInventory = null)
+	{
+		Inventory.InitializeFromDefinition(statusBar);
+		if (savedInventory != null)
+		{
+			Inventory.LoadState(savedInventory);
+			Inventory.OnLevelChange();
+		}
+		// Set difficulty (for new games this overrides the StatusBar Init default;
+		// for level transitions this confirms the saved value)
+		Inventory.SetValue("Difficulty", difficulty);
+
+		// Initialize weapon slots before equipping (creates slot objects)
+		if (weapons != null)
+			InitializeWeaponSlots(slotCount, weapons);
+
+		// Equip starting weapon from inventory (SelectedWeapon0 is set by XML Init or restored state)
+		if (WeaponCollection != null)
+		{
+			int startingWeaponNumber = Inventory.GetValue("SelectedWeapon0");
+			if (WeaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
+				EquipWeapon(0, startWeapon.Name);
+		}
+	}
+
+	/// <summary>
 	/// Initialize doors from MapAnalyzer data.
 	/// Stores MapAnalyzer reference for looking up door metadata (sounds, etc.).
 	/// </summary>
@@ -1296,6 +1332,10 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		int actorIndex = 0;
 		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
 		{
+			// WL_GAME.C:ScanInfoPlane - skip enemies above current difficulty
+			if (difficulty < spawn.Difficulty)
+				continue;
+
 			// Use initial state from spawn data (from ObjectType XML)
 			string initialStateName = spawn.InitialState;
 

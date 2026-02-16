@@ -57,7 +57,10 @@ public partial class SimulatorController : Node3D
 		Weapons weaponsNode,
 		StateCollection stateCollection,
 		WeaponCollection weaponCollection,
-		Func<(int X, int Y)> getPlayerPosition)
+		Func<(int X, int Y)> getPlayerPosition,
+		StatusBarDefinition statusBar,
+		int difficulty,
+		Dictionary<string, int> savedInventory = null)
 	{
 		// TODO: Load stateCollection from WL1.xml or game data file
 		// For now, create a placeholder if none provided
@@ -105,6 +108,11 @@ public partial class SimulatorController : Node3D
 		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
 		simulator.ScreenFlash += _screenFlashHandler;
 
+		// Initialize inventory and weapon slots before loading actors
+		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
+		if (statusBar != null)
+			simulator.InitializeInventory(statusBar, difficulty, 1, weaponCollection, savedInventory);
+
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
 		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis, mapAnalysis.Doors);
@@ -121,10 +129,6 @@ public partial class SimulatorController : Node3D
 		// VR layer receives these events and displays bonuses
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
 
-		// Set difficulty before loading actors (HP selection depends on it)
-		// TODO: Load from game settings / save file instead of hardcoding
-		simulator.Inventory.SetValue("Difficulty", 3); // Death Incarnate
-
 		// VR uses pixel-perfect aiming - disable distance-based miss chance
 		simulator.UseAccuracyFalloff = false;
 
@@ -133,19 +137,8 @@ public partial class SimulatorController : Node3D
 		// HP and initial states are now read from ActorDefinition in XML
 		simulator.LoadActorsFromMapAnalysis(mapAnalysis);
 
-		// Initialize weapon slots - 1 for traditional FPS view (bottom of screen)
-		// Later: use 2 for VR dual-wielding
-		if (weaponCollection != null && weaponCollection.Weapons.Count > 0)
-		{
-			simulator.InitializeWeaponSlots(1, weaponCollection);
-
-			// Set initial ammo (original Wolf3D starts with 8)
-			simulator.SetAmmo("bullets", 8);
-		}
-		else
-		{
+		if (weaponCollection == null || weaponCollection.Weapons.Count == 0)
 			GD.PrintErr("WARNING: No WeaponCollection provided - weapons will not function");
-		}
 	}
 
 	/// <summary>

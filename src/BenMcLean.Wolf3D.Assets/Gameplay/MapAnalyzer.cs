@@ -194,7 +194,8 @@ public class MapAnalyzer
 				IsEnemy = objectClass == ObClass.actor,  // Actors are enemies
 				IsActive = objectClass == ObClass.actor,  // Actors are active objects
 				State = initialState,
-				Script = scriptRef  // Now stores script NAME, not code
+				Script = scriptRef,  // Now stores script NAME, not code
+				Difficulty = byte.TryParse(obj.Attribute("Difficulty")?.Value, out byte diff) ? diff : (byte)0
 			};
 			Objects[number] = info;
 		}
@@ -360,7 +361,7 @@ public class MapAnalyzer
 
 		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
 		// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
-		public readonly record struct ActorSpawn(string ActorType, ushort Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol, string InitialState);
+		public readonly record struct ActorSpawn(string ActorType, ushort Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol, string InitialState, byte Difficulty);
 		public ReadOnlyCollection<ActorSpawn> ActorSpawns { get; private set; }
 
 		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
@@ -505,7 +506,8 @@ public class MapAnalyzer
 							objInfo.Facing.Value,
 							objInfo.Ambush,
 							objInfo.Patrol,
-							objInfo.State));
+							objInfo.State,
+							objInfo.Difficulty));
 					}
 					else
 					{
@@ -710,6 +712,8 @@ public record ObjectInfo
 	/// Script returns true to consume the item, false to leave it.
 	/// </summary>
 	public string Script { get; init; }
+	// WL_GAME.C:ScanInfoPlane - minimum difficulty level for spawning (gd_baby=0..gd_hard=3)
+	public byte Difficulty { get; init; }
 }
 
 /// <summary>

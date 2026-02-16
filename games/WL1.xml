@@ -305,18 +305,22 @@ end
 					]]>
 				</OnSelectionChanged>
 				<MenuItem Text="Can I play, Daddy?">
+					PlayAdLibSound('SHOOTDOORSND')
 					SetDifficulty(0)
 					SetStartGame(true)
 				</MenuItem>
 				<MenuItem Text="Don't hurt me.">
+					PlayAdLibSound('SHOOTDOORSND')
 					SetDifficulty(1)
 					SetStartGame(true)
 				</MenuItem>
 				<MenuItem Text="Bring 'em on!">
+					PlayAdLibSound('SHOOTDOORSND')
 					SetDifficulty(2)
 					SetStartGame(true)
 				</MenuItem>
 				<MenuItem Text="I am Death incarnate!">
+					PlayAdLibSound('SHOOTDOORSND')
 					SetDifficulty(3)
 					SetStartGame(true)
 				</MenuItem>
@@ -1072,63 +1076,63 @@ return true
 			<Turn Number="97" Direction="SE" Name="Turn SE" />
 			<Pushwall Number="98" DigiSound="PUSHWALLSND" Name="Secret Door" />
 			<Trigger Number="99" Name="End Game Trigger" />
-			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="1" State="s_grdstand" />
-			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="1" State="s_grdstand" />
-			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="1" State="s_grdstand" />
-			<ObjectType Number="111" ObClass="actor" Actor="Guard" Direction="S" Difficulty="1" State="s_grdstand" />
-			<ObjectType Number="112" ObClass="actor" Actor="Guard" Direction="E" Difficulty="1" State="s_grdpath1" />
-			<ObjectType Number="113" ObClass="actor" Actor="Guard" Direction="N" Difficulty="1" State="s_grdpath1" />
-			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="1" State="s_grdpath1" />
-			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="1" State="s_grdpath1" />
+			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdstand" />
+			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdstand" />
+			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdstand" />
+			<ObjectType Number="111" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0" State="s_grdstand" />
+			<ObjectType Number="112" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdpath1" />
+			<ObjectType Number="113" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdpath1" />
+			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdpath1" />
+			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0" State="s_grdpath1" />
 			<ObjectType Number="124" ObClass="dressing" Page="201" Name="Dead Guard" />
-			<ObjectType Number="126" ObClass="actor" Actor="SS" Direction="E" Difficulty="1" State="s_ssstand" />
-			<ObjectType Number="127" ObClass="actor" Actor="SS" Direction="N" Difficulty="1" State="s_ssstand" />
-			<ObjectType Number="128" ObClass="actor" Actor="SS" Direction="W" Difficulty="1" State="s_ssstand" />
-			<ObjectType Number="129" ObClass="actor" Actor="SS" Direction="S" Difficulty="1" State="s_ssstand" />
-			<ObjectType Number="130" ObClass="actor" Actor="SS" Direction="E" Difficulty="1" State="s_sspath1" />
-			<ObjectType Number="131" ObClass="actor" Actor="SS" Direction="N" Difficulty="1" State="s_sspath1" />
-			<ObjectType Number="132" ObClass="actor" Actor="SS" Direction="W" Difficulty="1" State="s_sspath1" />
-			<ObjectType Number="133" ObClass="actor" Actor="SS" Direction="S" Difficulty="1" State="s_sspath1" />
-			<ObjectType Number="138" ObClass="actor" Actor="Dog" Direction="E" Difficulty="1" State="s_dogpath1" />
-			<ObjectType Number="139" ObClass="actor" Actor="Dog" Direction="N" Difficulty="1" State="s_dogpath1" />
-			<ObjectType Number="140" ObClass="actor" Actor="Dog" Direction="W" Difficulty="1" State="s_dogpath1" />
-			<ObjectType Number="141" ObClass="actor" Actor="Dog" Direction="S" Difficulty="1" State="s_dogpath1" />
-			<ObjectType Number="144" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="145" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="146" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="147" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="148" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdpath1" />
-			<ObjectType Number="149" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdpath1" />
-			<ObjectType Number="150" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdpath1" />
-			<ObjectType Number="151" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdpath1" />
-			<ObjectType Number="162" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="163" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="164" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="165" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="166" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="167" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="168" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="169" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="174" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="175" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="176" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="177" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="180" ObClass="actor" Actor="Guard" Direction="E" Difficulty="4" State="s_grdstand" />
-			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="4" State="s_grdstand" />
-			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="4" State="s_grdstand" />
-			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="4" State="s_grdstand" />
-			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="4" State="s_ssstand" />
-			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="4" State="s_ssstand" />
-			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="4" State="s_ssstand" />
-			<ObjectType Number="201" ObClass="actor" Actor="SS" Direction="S" Difficulty="4" State="s_ssstand" />
-			<ObjectType Number="202" ObClass="actor" Actor="SS" Direction="E" Difficulty="4" State="s_sspath1" />
-			<ObjectType Number="203" ObClass="actor" Actor="SS" Direction="N" Difficulty="4" State="s_sspath1" />
-			<ObjectType Number="204" ObClass="actor" Actor="SS" Direction="W" Difficulty="4" State="s_sspath1" />
-			<ObjectType Number="205" ObClass="actor" Actor="SS" Direction="S" Difficulty="4" State="s_sspath1" />
-			<ObjectType Number="210" ObClass="actor" Actor="Dog" Direction="E" Difficulty="4" State="s_dogpath1" />
-			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="4" State="s_dogpath1" />
-			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="4" State="s_dogpath1" />
-			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="4" State="s_dogpath1" />
+			<ObjectType Number="126" ObClass="actor" Actor="SS" Direction="E" Difficulty="0" State="s_ssstand" />
+			<ObjectType Number="127" ObClass="actor" Actor="SS" Direction="N" Difficulty="0" State="s_ssstand" />
+			<ObjectType Number="128" ObClass="actor" Actor="SS" Direction="W" Difficulty="0" State="s_ssstand" />
+			<ObjectType Number="129" ObClass="actor" Actor="SS" Direction="S" Difficulty="0" State="s_ssstand" />
+			<ObjectType Number="130" ObClass="actor" Actor="SS" Direction="E" Difficulty="0" State="s_sspath1" />
+			<ObjectType Number="131" ObClass="actor" Actor="SS" Direction="N" Difficulty="0" State="s_sspath1" />
+			<ObjectType Number="132" ObClass="actor" Actor="SS" Direction="W" Difficulty="0" State="s_sspath1" />
+			<ObjectType Number="133" ObClass="actor" Actor="SS" Direction="S" Difficulty="0" State="s_sspath1" />
+			<ObjectType Number="138" ObClass="actor" Actor="Dog" Direction="E" Difficulty="0" State="s_dogpath1" />
+			<ObjectType Number="139" ObClass="actor" Actor="Dog" Direction="N" Difficulty="0" State="s_dogpath1" />
+			<ObjectType Number="140" ObClass="actor" Actor="Dog" Direction="W" Difficulty="0" State="s_dogpath1" />
+			<ObjectType Number="141" ObClass="actor" Actor="Dog" Direction="S" Difficulty="0" State="s_dogpath1" />
+			<ObjectType Number="144" ObClass="actor" Actor="Guard" Direction="E" Difficulty="2" State="s_grdstand" />
+			<ObjectType Number="145" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2" State="s_grdstand" />
+			<ObjectType Number="146" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2" State="s_grdstand" />
+			<ObjectType Number="147" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2" State="s_grdstand" />
+			<ObjectType Number="148" ObClass="actor" Actor="Guard" Direction="E" Difficulty="2" State="s_grdpath1" />
+			<ObjectType Number="149" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2" State="s_grdpath1" />
+			<ObjectType Number="150" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2" State="s_grdpath1" />
+			<ObjectType Number="151" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2" State="s_grdpath1" />
+			<ObjectType Number="162" ObClass="actor" Actor="SS" Direction="E" Difficulty="2" State="s_ssstand" />
+			<ObjectType Number="163" ObClass="actor" Actor="SS" Direction="N" Difficulty="2" State="s_ssstand" />
+			<ObjectType Number="164" ObClass="actor" Actor="SS" Direction="W" Difficulty="2" State="s_ssstand" />
+			<ObjectType Number="165" ObClass="actor" Actor="SS" Direction="S" Difficulty="2" State="s_ssstand" />
+			<ObjectType Number="166" ObClass="actor" Actor="SS" Direction="E" Difficulty="2" State="s_sspath1" />
+			<ObjectType Number="167" ObClass="actor" Actor="SS" Direction="N" Difficulty="2" State="s_sspath1" />
+			<ObjectType Number="168" ObClass="actor" Actor="SS" Direction="W" Difficulty="2" State="s_sspath1" />
+			<ObjectType Number="169" ObClass="actor" Actor="SS" Direction="S" Difficulty="2" State="s_sspath1" />
+			<ObjectType Number="174" ObClass="actor" Actor="Dog" Direction="E" Difficulty="2" State="s_dogpath1" />
+			<ObjectType Number="175" ObClass="actor" Actor="Dog" Direction="N" Difficulty="2" State="s_dogpath1" />
+			<ObjectType Number="176" ObClass="actor" Actor="Dog" Direction="W" Difficulty="2" State="s_dogpath1" />
+			<ObjectType Number="177" ObClass="actor" Actor="Dog" Direction="S" Difficulty="2" State="s_dogpath1" />
+			<ObjectType Number="180" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="201" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_ssstand" />
+			<ObjectType Number="202" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="203" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="204" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="205" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="210" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
 			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1" />
 			<!-- State Functions (Lua implementations of Think/Action) -->
