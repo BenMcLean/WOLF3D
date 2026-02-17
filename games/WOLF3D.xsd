@@ -230,6 +230,15 @@
 				<xs:element ref="Number"/>
 				<xs:element ref="Face"/>
 				<xs:element ref="Weapons"/>
+				<xs:element name="OnDeath" type="xs:string" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>
+							Lua script executed when the player dies (health reaches 0).
+							WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
+							Return "restart" to restart the current level, or "gameover" to return to menu.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
 			</xs:choice>
 			<xs:attribute name="Pic" type="xs:string"/>
 			<xs:attribute name="Font" type="xs:string"/>

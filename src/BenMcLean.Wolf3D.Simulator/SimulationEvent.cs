@@ -398,7 +398,14 @@ public struct ScreenFlashEvent
 /// WL_AGENT.C:TakeDamage death check.
 /// Presentation layer handles death sequence and restart.
 /// </summary>
-public struct PlayerDiedEvent { }
+public struct PlayerDiedEvent
+{
+	/// <summary>
+	/// Result from OnDeath script: "restart" (lives remaining) or "gameover" (no lives).
+	/// WL_GAME.C:Died() determines outcome based on remaining lives.
+	/// </summary>
+	public string Result { get; set; }
+}
 
 /// <summary>
 /// An item script requested navigation to a named menu screen.

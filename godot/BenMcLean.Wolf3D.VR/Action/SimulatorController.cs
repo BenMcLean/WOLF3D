@@ -33,6 +33,7 @@ public partial class SimulatorController : Node3D
 	private Action<PlayerStateChangedEvent> _playerStateHandler;
 	private Action<ScreenFlashEvent> _screenFlashHandler;
 	private Action<NavigateToMenuEvent> _navigateToMenuHandler;
+	private Action<PlayerDiedEvent> _playerDiedHandler;
 
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
@@ -114,6 +115,10 @@ public partial class SimulatorController : Node3D
 		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
 		simulator.NavigateToMenu += _navigateToMenuHandler;
 
+		// Forward player death events
+		_playerDiedHandler = e => PlayerDied?.Invoke(e);
+		simulator.PlayerDied += _playerDiedHandler;
+
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar != null)
@@ -188,6 +193,8 @@ public partial class SimulatorController : Node3D
 		simulator.ScreenFlash += _screenFlashHandler;
 		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
 		simulator.NavigateToMenu += _navigateToMenuHandler;
+		_playerDiedHandler = e => PlayerDied?.Invoke(e);
+		simulator.PlayerDied += _playerDiedHandler;
 
 		// Replay current state to newly subscribed presentation layers
 		simulator.EmitAllEntityState();
@@ -205,6 +212,8 @@ public partial class SimulatorController : Node3D
 				simulator.ScreenFlash -= _screenFlashHandler;
 			if (_navigateToMenuHandler != null)
 				simulator.NavigateToMenu -= _navigateToMenuHandler;
+			if (_playerDiedHandler != null)
+				simulator.PlayerDied -= _playerDiedHandler;
 		}
 	}
 
@@ -432,4 +441,10 @@ public partial class SimulatorController : Node3D
 	/// Generic mechanism for VictoryTile, Bible quiz, or any menu-triggering item.
 	/// </summary>
 	public event Action<NavigateToMenuEvent> NavigateToMenu;
+
+	/// <summary>
+	/// Event fired when the player dies (health reaches zero).
+	/// WL_AGENT.C:TakeDamage death check → WL_GAME.C:Died().
+	/// </summary>
+	public event Action<PlayerDiedEvent> PlayerDied;
 }

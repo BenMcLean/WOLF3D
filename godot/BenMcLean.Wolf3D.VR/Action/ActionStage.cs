@@ -68,6 +68,18 @@ public partial class ActionStage : Node3D
 	public bool PendingReturnToMenu { get; private set; }
 
 	/// <summary>
+	/// Set when the player dies with lives remaining. Root polls this to restart the level.
+	/// WL_GAME.C:Died() with lives > 0 → restart same level.
+	/// </summary>
+	public bool PendingDeath { get; private set; }
+
+	/// <summary>
+	/// Set when the player dies with no lives remaining. Root polls this to return to menu.
+	/// WL_GAME.C:Died() with lives exhausted → game over.
+	/// </summary>
+	public bool PendingGameOver { get; private set; }
+
+	/// <summary>
 	/// The level index for this stage, set once at construction time.
 	/// After simulator initialization, this is also stored as "MapOn" in the inventory.
 	/// WL_DEF.H:gamestate.mapon
@@ -352,6 +364,9 @@ void sky() {
 
 		// Subscribe to menu navigation events (VictoryTile, quiz triggers, etc.)
 		_simulatorController.NavigateToMenu += OnNavigateToMenu;
+
+		// Subscribe to player death events
+		_simulatorController.PlayerDied += OnPlayerDied;
 
 		// Subscribe to display mode button events for shooting and using objects
 		// Left click (flatscreen) or right trigger (VR) = shoot
@@ -696,6 +711,7 @@ void sky() {
 		{
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
 			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
+			_simulatorController.PlayerDied -= OnPlayerDied;
 		}
 
 		// Clear HitDetection delegate (points at this ActionStage's method)
@@ -736,6 +752,19 @@ void sky() {
 		PendingTransition = new LevelTransitionRequest(
 			e.DestinationLevel, savedInventory, stats,
 			allLevelStats: _simulatorController?.Simulator?.LevelRatios);
+	}
+
+	/// <summary>
+	/// Handles player death event from OnDeath script.
+	/// Sets PendingDeath or PendingGameOver for Root to poll.
+	/// WL_GAME.C:Died() → restart level or game over.
+	/// </summary>
+	private void OnPlayerDied(PlayerDiedEvent e)
+	{
+		if (e.Result == "restart")
+			PendingDeath = true;
+		else
+			PendingGameOver = true;
 	}
 
 	/// <summary>

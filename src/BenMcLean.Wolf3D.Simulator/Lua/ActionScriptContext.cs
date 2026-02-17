@@ -61,6 +61,15 @@ public abstract class ActionScriptContext : BaseScriptContext, IActionScriptCont
 	public int GetMax(string name) => simulator.Inventory.GetMax(name);
 
 	/// <summary>
+	/// Get the initial value for any inventory item.
+	/// Used by OnDeath script to reset values to their starting state.
+	/// Examples: GetInit("Health") returns 100, GetInit("Ammo") returns 8
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <returns>Initial value, or 0 if not defined</returns>
+	public int GetInit(string name) => simulator.Inventory.GetInit(name);
+
+	/// <summary>
 	/// Check if player has an inventory item (value > 0).
 	/// Examples: Has("Gold Key"), Has("Weapon2"), Has("Ammo")
 	/// </summary>

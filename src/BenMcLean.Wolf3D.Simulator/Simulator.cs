@@ -61,6 +61,8 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	private readonly GameClock gameClock;
 	// Logger for debug output
 	private readonly Microsoft.Extensions.Logging.ILogger logger;
+	// OnDeath Lua script from StatusBar definition (WL_GAME.C:Died)
+	private string onDeathScript;
 	// Map analyzer for accessing door metadata (sounds, etc.)
 	private MapAnalyzer mapAnalyzer;
 	// Map analysis for line-of-sight calculations and navigation
@@ -102,6 +104,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// WL_PLAY.C:godmode
 	/// </summary>
 	public bool GodMode { get; set; } = false;
+	/// <summary>
+	/// True after player health reaches zero.
+	/// Guards DamagePlayer (no duplicate deaths) and ProcessTic (stops simulation).
+	/// WL_AGENT.C:TakeDamage → playstate = ex_died
+	/// </summary>
+	public bool IsDead { get; private set; }
 	/// <summary>
 	/// When true, applies original Wolf3D distance-based miss chance on top of hit detection.
 	/// VR sets this to false (pixel-perfect aiming handles accuracy).
@@ -347,6 +355,9 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	public void QueueAction(PlayerAction action) => pendingActions.Add(action);
 	private void ProcessTic()
 	{
+		// WL_AGENT.C:TakeDamage → playstate = ex_died stops all simulation
+		if (IsDead)
+			return;
 		// Process queued player actions
 		foreach (PlayerAction action in pendingActions)
 			ProcessAction(action);
@@ -1147,6 +1158,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, Dictionary<string, int> savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		Inventory.InitializeFromDefinition(statusBar);
+		onDeathScript = statusBar.OnDeathScript;
 		// Restore accumulated level stats from previous levels (carries across level transitions)
 		if (savedLevelStats != null)
 		{
@@ -2169,6 +2181,9 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	public void DamagePlayer(int amount)
 	{
+		// WL_AGENT.C:TakeDamage - can't die twice
+		if (IsDead)
+			return;
 		// WL_AGENT.C:TakeDamage - god mode check
 		if (GodMode)
 			return;
@@ -2182,7 +2197,29 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		EmitScreenFlash(0xFF0000, (short)Math.Min(amount, 60));
 		// WL_AGENT.C:TakeDamage - check for death
 		if (Inventory.GetValue("Health") <= 0)
-			PlayerDied?.Invoke(new PlayerDiedEvent());
+		{
+			IsDead = true;
+			string deathResult = "gameover";
+			// Execute OnDeath Lua script (WL_GAME.C:Died)
+			if (!string.IsNullOrEmpty(onDeathScript))
+			{
+				Lua.BonusScriptContext context = new(this, rng, gameClock, PlayerTileX, PlayerTileY, logger)
+				{
+					PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+				};
+				try
+				{
+					MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(onDeathScript, context);
+					if (result.Type == MoonSharp.Interpreter.DataType.String)
+						deathResult = result.String;
+				}
+				catch (Exception ex)
+				{
+					logger?.LogError(ex, "Error executing OnDeath script");
+				}
+			}
+			PlayerDied?.Invoke(new PlayerDiedEvent { Result = deathResult });
+		}
 	}
 
 	/// <summary>

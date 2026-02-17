@@ -197,6 +197,12 @@ public class StatusBarDefinition
 	/// </summary>
 	public StatusBarWeaponsDefinition Weapons { get; set; }
 	/// <summary>
+	/// Lua script to execute when the player dies (health reaches 0).
+	/// WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
+	/// Returns "restart" or "gameover".
+	/// </summary>
+	public string OnDeathScript { get; set; }
+	/// <summary>
 	/// Gets a number definition by name.
 	/// </summary>
 	/// <param name="name">The name of the number (e.g., "Health", "Ammo")</param>
@@ -222,6 +228,7 @@ public class StatusBarDefinition
 		XElement weaponsElement = element.Element("Weapons");
 		if (weaponsElement != null)
 			statusBar.Weapons = StatusBarWeaponsDefinition.FromXElement(weaponsElement);
+		statusBar.OnDeathScript = element.Element("OnDeath")?.Value;
 		return statusBar;
 	}
 }

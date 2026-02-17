@@ -81,6 +81,15 @@ public class Inventory : IStateSavable<Dictionary<string, int>>
 		_maxValues.TryGetValue(name, out int max) ? max : int.MaxValue;
 
 	/// <summary>
+	/// Gets the initial value for a named inventory item.
+	/// Used by OnDeath script to reset values to their starting state.
+	/// </summary>
+	/// <param name="name">The name of the value</param>
+	/// <returns>The initial value, or 0 if not defined</returns>
+	public int GetInit(string name) =>
+		_initValues.TryGetValue(name, out int init) ? init : 0;
+
+	/// <summary>
 	/// Sets the maximum value for a named inventory item.
 	/// If current value exceeds new max, it will be clamped on next SetValue call.
 	/// </summary>

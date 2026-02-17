@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.State;
@@ -148,7 +149,27 @@ public partial class Root : Node3D
 		// Poll ActionStage for level transition or return-to-menu requests
 		else if (_currentScene is ActionStage actionStage)
 		{
-			if (actionStage.PendingReturnToMenu)
+			if (actionStage.PendingDeath)
+			{
+				// WL_GAME.C:Died() with lives remaining — restart same level
+				// OnDeath script has already reset inventory (health, ammo, keys, weapons)
+				Dictionary<string, int> savedInventory = actionStage.SimulatorController.Simulator.Inventory.SaveState();
+				int currentLevel = actionStage.SimulatorController.Simulator.Inventory.GetValue("MapOn");
+				int difficulty = actionStage.SimulatorController.Simulator.Inventory.GetValue("Difficulty");
+				_suspendedGame = null;
+				ActionStage newStage = new(DisplayMode,
+					levelIndex: currentLevel,
+					difficulty: difficulty,
+					savedInventory: savedInventory);
+				TransitionTo(newStage);
+			}
+			else if (actionStage.PendingGameOver)
+			{
+				// WL_GAME.C:Died() with no lives — game over, return to menu
+				_suspendedGame = null;
+				TransitionTo(new MenuRoom(DisplayMode));
+			}
+			else if (actionStage.PendingReturnToMenu)
 			{
 				SuspendToMenu(actionStage);
 			}
