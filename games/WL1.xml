@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1">
+<Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1">
 	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC">
 		<Sizes Chunk="0" StartFont="1" StartPic="3" />
 		<Font Number="0" Name="SMALL" />
@@ -176,7 +176,7 @@
 			</Weapons>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Start="Title" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS">
+		<Menus Start="Title" Pause="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS">
 			<Menu Name="Title" BorderColor="0" Music="NAZI_NOR_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
 				<Pause Duration="00:00:03">NavigateToMenu("Credits")</Pause>
@@ -492,13 +492,59 @@ end
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="[Empty Slot]" Action="BackToPreviousMenu" />
-				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+				<Picture Name="C_LOADGAMEPIC" X="96" Y="0" />
+				<Box X="68" Y="52" W="178" H="136" />
+				<OnShow>
+					<![CDATA[
+					for i = 0, 9 do
+						local name = GetSaveSlotName(i)
+						if name == "" then
+							SetItemText(i, "- empty -")
+						else
+							SetItemText(i, name)
+						end
+					end
+				]]>
+				</OnShow>
+				<MenuItem Text="- empty -">LoadGame(0)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(1)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(2)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(3)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(4)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(5)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(6)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(7)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(8)</MenuItem>
+				<MenuItem Text="- empty -">LoadGame(9)</MenuItem>
+				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="[Empty Slot]" Action="BackToPreviousMenu" />
-				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+				<Picture Name="C_SAVEGAMEPIC" X="96" Y="0" />
+				<Box X="68" Y="52" W="178" H="136" />
+				<OnShow>
+					<![CDATA[
+					for i = 0, 9 do
+						local name = GetSaveSlotName(i)
+						if name == "" then
+							SetItemText(i, "- empty -")
+						else
+							SetItemText(i, name)
+						end
+					end
+				]]>
+				</OnShow>
+				<MenuItem Text="- empty -">SaveGame(0)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(1)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(2)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(3)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(4)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(5)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(6)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(7)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(8)</MenuItem>
+				<MenuItem Text="- empty -">SaveGame(9)</MenuItem>
+				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
 			</Menu>
 
 			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">

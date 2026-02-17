@@ -6,6 +6,7 @@ using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.Entities;
+using BenMcLean.Wolf3D.Simulator.State;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -26,7 +27,6 @@ public partial class ActionStage : Node3D
 	{
 		public int LevelIndex { get; }
 		public Dictionary<string, int> SavedInventory { get; }
-		public string SavedWeaponType { get; }
 		public LevelCompletionStats CompletionStats { get; }
 
 		/// <summary>
@@ -37,25 +37,23 @@ public partial class ActionStage : Node3D
 
 		/// <summary>
 		/// Accumulated stats from all completed levels in this episode.
-		/// Grows as the player progresses through levels.
+		/// Read from Simulator.LevelRatios at transition time.
 		/// Used by Victory screen to display averaged stats.
 		/// </summary>
-		public List<LevelCompletionStats> AllLevelStats { get; }
+		public IReadOnlyList<LevelCompletionStats> AllLevelStats { get; }
 
 		public LevelTransitionRequest(
 			int levelIndex,
 			Dictionary<string, int> savedInventory,
-			string savedWeaponType,
 			LevelCompletionStats completionStats = null,
 			string menuName = "LevelComplete",
-			List<LevelCompletionStats> allLevelStats = null)
+			IReadOnlyList<LevelCompletionStats> allLevelStats = null)
 		{
 			LevelIndex = levelIndex;
 			SavedInventory = savedInventory;
-			SavedWeaponType = savedWeaponType;
 			CompletionStats = completionStats;
 			MenuName = menuName;
-			AllLevelStats = allLevelStats ?? new List<LevelCompletionStats>();
+			AllLevelStats = allLevelStats ?? (IReadOnlyList<LevelCompletionStats>)Array.Empty<LevelCompletionStats>();
 		}
 	}
 
@@ -69,8 +67,12 @@ public partial class ActionStage : Node3D
 	/// </summary>
 	public bool PendingReturnToMenu { get; private set; }
 
-	[Export]
-	public int LevelIndex { get; set; } = 0;
+	/// <summary>
+	/// The level index for this stage, set once at construction time.
+	/// After simulator initialization, this is also stored as "MapOn" in the inventory.
+	/// WL_DEF.H:gamestate.mapon
+	/// </summary>
+	private readonly int _initialLevelIndex;
 
 	// Public accessors for level components - used by systems like PixelPerfectAiming
 	public MapAnalyzer.MapAnalysis MapAnalysis { get; private set; }
@@ -107,11 +109,9 @@ void sky() {
 	private readonly IDisplayMode _displayMode;
 	private readonly int _difficulty;
 	private readonly Dictionary<string, int> _savedInventory;
-	private readonly string _savedWeaponType;
-	private readonly List<LevelCompletionStats> _allLevelStats;
+	private readonly IReadOnlyList<LevelCompletionStats> _savedLevelStats;
 	private readonly Simulator.Simulator _existingSimulator;
-	private readonly Vector3? _resumePosition;
-	private readonly float? _resumeYRotation;
+	private readonly SimulatorSnapshot _loadSnapshot;
 	private Walls _walls;
 	private DebugMarkers _debugMarkers;
 	private Fixtures _fixtures;
@@ -133,34 +133,48 @@ void sky() {
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
-	/// <param name="savedWeaponType">Optional saved weapon type from level transition (null for new game).</param>
-	public ActionStage(IDisplayMode displayMode, int difficulty = 2, Dictionary<string, int> savedInventory = null, string savedWeaponType = null, List<LevelCompletionStats> allLevelStats = null)
+	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
+	public ActionStage(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, Dictionary<string, int> savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
+		_initialLevelIndex = levelIndex;
 		_difficulty = savedInventory != null && savedInventory.TryGetValue("Difficulty", out int savedDifficulty)
 			? savedDifficulty
 			: difficulty;
 		_savedInventory = savedInventory;
-		_savedWeaponType = savedWeaponType;
-		_allLevelStats = allLevelStats ?? new List<LevelCompletionStats>();
+		_savedLevelStats = savedLevelStats;
 	}
 
 	/// <summary>
 	/// Creates a new ActionStage that resumes from an existing simulator state.
 	/// Used when returning from the menu to a suspended game.
+	/// Player position and angle are restored from the Simulator's PlayerX/PlayerY/PlayerAngle.
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	/// <param name="levelIndex">The level index to display.</param>
-	/// <param name="resumePosition">Player position to restore.</param>
-	/// <param name="resumeYRotation">Player Y rotation to restore.</param>
-	public ActionStage(IDisplayMode displayMode, Simulator.Simulator existingSimulator, int levelIndex, Vector3 resumePosition, float resumeYRotation)
+	public ActionStage(IDisplayMode displayMode, Simulator.Simulator existingSimulator)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
-		LevelIndex = levelIndex;
-		_resumePosition = resumePosition;
-		_resumeYRotation = resumeYRotation;
+		_initialLevelIndex = existingSimulator.Inventory.GetValue("MapOn");
+	}
+
+	/// <summary>
+	/// Creates a new ActionStage from a saved game snapshot.
+	/// Creates a fresh simulator, loads the level, then applies the saved state via LoadState.
+	/// Used when loading a saved game from the menu.
+	/// </summary>
+	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
+	/// <param name="snapshot">The saved simulator state to restore.</param>
+	public ActionStage(IDisplayMode displayMode, SimulatorSnapshot snapshot)
+	{
+		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
+		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+		// Level index and difficulty are stored in the snapshot's inventory
+		_initialLevelIndex = snapshot.InventoryValues != null
+			&& snapshot.InventoryValues.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
+		_difficulty = snapshot.InventoryValues != null
+			&& snapshot.InventoryValues.TryGetValue("Difficulty", out int d) ? d : 2;
 	}
 
 	public override void _Ready()
@@ -168,7 +182,7 @@ void sky() {
 		try
 		{
 			// Get current level analysis
-			MapAnalysis = Shared.SharedAssetManager.CurrentGame.MapAnalyses[LevelIndex];
+			MapAnalysis = Shared.SharedAssetManager.CurrentGame.MapAnalyses[_initialLevelIndex];
 
 		// Play level music
 		if (!string.IsNullOrWhiteSpace(MapAnalysis.Music))
@@ -180,41 +194,8 @@ void sky() {
 		// Initialize display mode camera rig
 		_displayMode.Initialize(this);
 
-		// Position camera at player start or resume position
-		Vector3 cameraPosition;
-		float cameraRotationY = 0f;
-		if (_resumePosition.HasValue)
-		{
-			// Resuming from suspended game - restore exact position/rotation
-			cameraPosition = _resumePosition.Value;
-			cameraRotationY = _resumeYRotation ?? 0f;
-		}
-		else if (MapAnalysis.PlayerStart.HasValue)
-		{
-			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
-			// Center of the player's starting grid square
-			cameraPosition = new Vector3(
-				playerStart.X.ToMetersCentered(),
-				Constants.HalfTileHeight,
-				playerStart.Y.ToMetersCentered()
-			);
-			// Convert Direction enum to Godot rotation using ToAngle extension method
-			// Handles Wolf3D coordinate system → Godot coordinate system conversion
-			cameraRotationY = playerStart.Facing.ToAngle();
-		}
-		else
-		{
-			// Fallback to origin if no player start found
-			cameraPosition = new Vector3(0, Constants.HalfTileHeight, 0);
-			GD.PrintErr("Warning: No player start found in map!");
-		}
-
-		// Position the display mode's origin (XROrigin or CameraHolder) at player start
-		if (_displayMode.Origin != null)
-		{
-			_displayMode.Origin.Position = cameraPosition;
-			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
-		}
+		// Camera positioning is deferred until after simulator initialization
+		// so that LoadState/resume can override the spawn position
 
 		// Create walls for the current level and add to scene
 		_walls = new Walls(
@@ -281,11 +262,11 @@ void sky() {
 				_bonuses,
 				_actors,
 				_weapons,
-				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()));
+				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()));
 		}
 		else
 		{
-			// New game or level transition - create fresh simulator
+			// New game, level transition, or loading saved game - create fresh simulator
 			_simulatorController.Initialize(
 				Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
 				MapAnalysis,
@@ -296,11 +277,62 @@ void sky() {
 				_weapons,
 				Shared.SharedAssetManager.CurrentGame.StateCollection,
 				Shared.SharedAssetManager.CurrentGame.WeaponCollection,
-				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint()),
+				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()),
 				SharedAssetManager.StatusBar,
 				_difficulty,
-				_savedInventory);
+				_savedInventory,
+				_savedLevelStats);
+
+			// If loading from a saved game, apply the snapshot on top of fresh state
+			// then re-emit all entity state so presentation layer syncs with restored state
+			if (_loadSnapshot != null)
+			{
+				_simulatorController.Simulator.LoadState(_loadSnapshot);
+				_simulatorController.Simulator.EmitAllEntityState();
+			}
 		}
+
+		// Position camera: use restored state (load/resume) or map spawn point
+		Vector3 cameraPosition;
+		float cameraRotationY = 0f;
+		if (_existingSimulator != null || _loadSnapshot != null)
+		{
+			// Restore position/angle from simulator (which has been loaded/resumed)
+			cameraPosition = new Vector3(
+				_simulatorController.Simulator.PlayerX.ToMeters(),
+				Constants.HalfTileHeight,
+				_simulatorController.Simulator.PlayerY.ToMeters());
+			cameraRotationY = _simulatorController.Simulator.PlayerAngle.ToGodotYRotation();
+		}
+		else if (MapAnalysis.PlayerStart.HasValue)
+		{
+			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
+			// Center of the player's starting grid square
+			cameraPosition = new Vector3(
+				playerStart.X.ToMetersCentered(),
+				Constants.HalfTileHeight,
+				playerStart.Y.ToMetersCentered());
+			// Convert Direction enum to Godot rotation using ToAngle extension method
+			// Handles Wolf3D coordinate system → Godot coordinate system conversion
+			cameraRotationY = playerStart.Facing.ToAngle();
+		}
+		else
+		{
+			// Fallback to origin if no player start found
+			cameraPosition = new Vector3(0, Constants.HalfTileHeight, 0);
+			GD.PrintErr("Warning: No player start found in map!");
+		}
+
+		// Position the display mode's origin (XROrigin or CameraHolder) at player start
+		if (_displayMode.Origin != null)
+		{
+			_displayMode.Origin.Position = cameraPosition;
+			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
+		}
+
+		// Store level index in inventory so save/load can determine which level to restore
+		// WL_DEF.H:gamestate.mapon
+		_simulatorController.Simulator.Inventory.SetValue("MapOn", _initialLevelIndex);
 
 		// Wire up hit detection callback for weapon state machine
 		// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
@@ -388,7 +420,7 @@ void sky() {
 			_statusBarCanvas.AddChild(statusBarDisplay);
 
 			// Set floor number (not part of Inventory as it's level metadata, not player state)
-			_statusBarState.SetValue("Floor", LevelIndex + 1);
+			_statusBarState.SetValue("Floor", _initialLevelIndex + 1);
 		}
 		}
 		catch (Exception ex)
@@ -412,15 +444,13 @@ void sky() {
 		if (keyEvent.Keycode == Key.N)
 		{
 			Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
-			string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 			byte destinationLevel = MapAnalysis.ElevatorTo;
 			LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
-				LevelIndex + 1, false, MapAnalysis.Par);
-			List<LevelCompletionStats> allStats = new(_allLevelStats);
-			if (stats != null) allStats.Add(stats);
+				_initialLevelIndex + 1, false, MapAnalysis.Par);
+			_simulatorController?.Simulator?.AddCompletionStats(stats);
 			PendingTransition = new LevelTransitionRequest(
-				destinationLevel, savedInventory, savedWeaponType, stats,
-				allLevelStats: allStats);
+				destinationLevel, savedInventory, stats,
+				allLevelStats: _simulatorController?.Simulator?.LevelRatios);
 			return;
 		}
 
@@ -694,22 +724,19 @@ void sky() {
 
 		// Capture player inventory state before transition
 		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
-		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 
 		// Capture level completion stats for intermission screen
 		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
-			LevelIndex + 1,               // Floor number (1-based for display)
+			_initialLevelIndex + 1,        // Floor number (1-based for display)
 			e.IsAltElevator,               // Secret level flag
 			MapAnalysis.Par);           // Par time from map data
 
-		// Accumulate stats across levels for Victory screen
-		List<LevelCompletionStats> allStats = new(_allLevelStats);
-		if (stats != null)
-			allStats.Add(stats);
+		// Record current level stats in Simulator's accumulated list
+		_simulatorController?.Simulator?.AddCompletionStats(stats);
 
 		PendingTransition = new LevelTransitionRequest(
-			e.DestinationLevel, savedInventory, savedWeaponType, stats,
-			allLevelStats: allStats);
+			e.DestinationLevel, savedInventory, stats,
+			allLevelStats: _simulatorController?.Simulator?.LevelRatios);
 	}
 
 	/// <summary>
@@ -721,20 +748,17 @@ void sky() {
 	{
 		// Capture player inventory state
 		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
-		string savedWeaponType = _simulatorController?.Simulator?.GetEquippedWeaponType(0);
 
 		// Capture level completion stats
 		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
-			LevelIndex + 1, false, MapAnalysis.Par);
+			_initialLevelIndex + 1, false, MapAnalysis.Par);
 
-		// Accumulate stats across levels
-		List<LevelCompletionStats> allStats = new(_allLevelStats);
-		if (stats != null)
-			allStats.Add(stats);
+		// Record current level stats in Simulator's accumulated list
+		_simulatorController?.Simulator?.AddCompletionStats(stats);
 
 		PendingTransition = new LevelTransitionRequest(
-			0, savedInventory, savedWeaponType, stats,
+			0, savedInventory, stats,
 			menuName: e.MenuName,
-			allLevelStats: allStats);
+			allLevelStats: _simulatorController?.Simulator?.LevelRatios);
 	}
 }

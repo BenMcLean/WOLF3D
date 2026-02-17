@@ -639,6 +639,11 @@ public class MenuCollection
 	/// </summary>
 	public string StartMenu { get; set; }
 	/// <summary>
+	/// Name of the menu to show when pausing during gameplay (e.g., "Main").
+	/// If null, falls back to StartMenu.
+	/// </summary>
+	public string PauseMenu { get; set; }
+	/// <summary>
 	/// Default text color for menus (WL_MENU.H:TEXTCOLOR = 0x17 / 23)
 	/// </summary>
 	public byte? DefaultTextColor { get; set; }
@@ -797,6 +802,7 @@ public class MenuCollection
 		MenuCollection collection = new()
 		{
 			StartMenu = menusElement.Attribute("Start")?.Value,
+			PauseMenu = menusElement.Attribute("Pause")?.Value,
 			DefaultCursorMoveSound = menusElement.Attribute("CursorMoveSound")?.Value,
 			DefaultMusic = menusElement.Attribute("Music")?.Value,
 			DefaultCursorPic = menusElement.Attribute("CursorPic")?.Value,

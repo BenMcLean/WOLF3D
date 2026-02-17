@@ -1,5 +1,7 @@
 using System;
+using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Simulator;
+using BenMcLean.Wolf3D.Simulator.State;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -28,12 +30,10 @@ public partial class Root : Node3D
 	/// <summary>
 	/// Captures the state needed to resume a suspended game.
 	/// The Simulator is a pure C# object (no Godot dependencies) and survives ActionStage destruction.
+	/// Player position and angle are stored in the Simulator's PlayerX/PlayerY/PlayerAngle.
 	/// </summary>
 	private record SuspendedGameState(
-		Simulator.Simulator Simulator,
-		int LevelIndex,
-		Vector3 PlayerPosition,
-		float PlayerYRotation);
+		Simulator.Simulator Simulator);
 
 	private Node _currentScene;
 	private Node _pendingScene;
@@ -116,7 +116,11 @@ public partial class Root : Node3D
 		// Poll MenuRoom for game start, resume, or intermission completion
 		if (_currentScene is MenuRoom menuRoom)
 		{
-			if (menuRoom.PendingResumeGame && _suspendedGame != null)
+			if (menuRoom.PendingLoadGame is int loadSlot)
+			{
+				LoadSavedGame(loadSlot);
+			}
+			else if (menuRoom.PendingResumeGame && _suspendedGame != null)
 			{
 				ResumeGame();
 			}
@@ -125,12 +129,9 @@ public partial class Root : Node3D
 				// Intermission dismissed — continue to next level
 				_suspendedGame = null;
 				ActionStage newStage = new(DisplayMode,
+					levelIndex: intermissionRequest.LevelIndex,
 					savedInventory: intermissionRequest.SavedInventory,
-					savedWeaponType: intermissionRequest.SavedWeaponType,
-					allLevelStats: intermissionRequest.AllLevelStats)
-				{
-					LevelIndex = intermissionRequest.LevelIndex
-				};
+					savedLevelStats: intermissionRequest.AllLevelStats);
 				TransitionTo(newStage);
 			}
 			else if (menuRoom.ShouldStartGame)
@@ -140,7 +141,7 @@ public partial class Root : Node3D
 				// Get selected episode and difficulty from menu
 				int episode = menuRoom.SelectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
-				ActionStage actionStage = new(DisplayMode, difficulty: difficulty) { LevelIndex = CurrentLevelIndex };
+				ActionStage actionStage = new(DisplayMode, levelIndex: CurrentLevelIndex, difficulty: difficulty);
 				TransitionTo(actionStage);
 			}
 		}
@@ -173,13 +174,17 @@ public partial class Root : Node3D
 	private void SuspendToMenu(ActionStage actionStage)
 	{
 		// Capture state before ActionStage is destroyed
+		// Player position/angle are already in the Simulator (updated each frame)
 		_suspendedGame = new SuspendedGameState(
-			actionStage.SimulatorController.Simulator,
-			actionStage.LevelIndex,
-			DisplayMode.ViewerPosition,
-			DisplayMode.ViewerYRotation);
+			actionStage.SimulatorController.Simulator);
 
-		MenuRoom menuRoom = new(DisplayMode) { HasSuspendedGame = true };
+		MenuRoom menuRoom = new(DisplayMode)
+		{
+			HasSuspendedGame = true,
+			StartMenuOverride = SharedAssetManager.CurrentGame?.MenuCollection?.PauseMenu,
+			SuspendedSimulator = _suspendedGame.Simulator,
+			SuspendedLevelIndex = _suspendedGame.Simulator.Inventory.GetValue("MapOn"),
+		};
 		_pendingScene = menuRoom;
 		StartFade(() =>
 		{
@@ -210,12 +215,32 @@ public partial class Root : Node3D
 		SuspendedGameState state = _suspendedGame;
 		ActionStage actionStage = new(
 			DisplayMode,
-			state.Simulator,
-			state.LevelIndex,
-			state.PlayerPosition,
-			state.PlayerYRotation);
+			state.Simulator);
 
 		_suspendedGame = null;
+		TransitionTo(actionStage);
+	}
+
+	/// <summary>
+	/// Loads a saved game from a slot and transitions to an ActionStage.
+	/// Creates a fresh simulator, loads the level, then applies the saved state.
+	/// </summary>
+	/// <param name="slot">Save game slot index (0-9)</param>
+	private void LoadSavedGame(int slot)
+	{
+		SaveGameFile saveFile = SaveGameManager.Load(slot);
+		if (saveFile?.Snapshot == null)
+		{
+			GD.PrintErr($"ERROR: Failed to load save game from slot {slot}");
+			return;
+		}
+
+		// Discard any suspended game
+		_suspendedGame = null;
+
+		// Create new ActionStage with the saved snapshot
+		// Level index is read from the snapshot's MapOn inventory value
+		ActionStage actionStage = new(DisplayMode, saveFile.Snapshot);
 		TransitionTo(actionStage);
 	}
 

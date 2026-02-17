@@ -53,4 +53,9 @@ public class MenuState
 	/// Set by Lua GivePoints(), consumed by Root.cs when transitioning to next level.
 	/// </summary>
 	public int BonusPoints { get; set; } = 0;
+	/// <summary>
+	/// Pending load game slot index. Null when no load is pending.
+	/// Set by Lua LoadGame(slot), polled by Root.cs to transition to loaded game.
+	/// </summary>
+	public int? LoadGameSlot { get; set; }
 }

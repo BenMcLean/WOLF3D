@@ -130,6 +130,9 @@ public partial class Bonuses : Node3D
 	/// </summary>
 	private void ShowBonusInternal(int statObjIndex, ushort shape, ushort tileX, ushort tileY)
 	{
+		// If bonus already has a render mapping (e.g., re-emitting after LoadState), hide old one first
+		if (_simulatorToRenderMap.ContainsKey(statObjIndex))
+			HideBonus(statObjIndex);
 		// Ensure we have a list for this sprite type
 		if (!MeshInstances.TryGetValue(shape, out List<MultiMeshInstance3D> instances))
 		{

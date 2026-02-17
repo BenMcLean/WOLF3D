@@ -66,6 +66,12 @@ public record SimulatorSnapshot
 	public int PlayerY { get; init; }
 
 	/// <summary>
+	/// Player angle in degrees (0-359).
+	/// WL_DEF.H:player->angle
+	/// </summary>
+	public short PlayerAngle { get; init; }
+
+	/// <summary>
 	/// Whether noclip cheat is active.
 	/// Based on original Wolf3D "MLI" debug command.
 	/// </summary>
@@ -129,6 +135,12 @@ public record SimulatorSnapshot
 	/// All player inventory values (health, score, lives, keys, ammo, weapons, MapOn).
 	/// </summary>
 	public Dictionary<string, int> InventoryValues { get; init; }
+
+	/// <summary>
+	/// Accumulated level completion stats across the episode.
+	/// Grows as the player progresses through levels; used by Victory screen.
+	/// </summary>
+	public LevelCompletionStats[] CompletedLevelStats { get; init; }
 
 	/// <summary>
 	/// RNG state A (part of TangleRNG two-state PRNG).

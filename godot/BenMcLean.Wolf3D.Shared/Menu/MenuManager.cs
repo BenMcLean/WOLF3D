@@ -52,6 +52,17 @@ public class MenuManager
 	/// </summary>
 	public Action<Action> FadeTransitionCallback { get; set; }
 	/// <summary>
+	/// Delegate that returns the current Simulator for saving.
+	/// Set by consumer (MenuRoom/Root) when a game is suspended.
+	/// Returns null if no game is in progress.
+	/// </summary>
+	public Func<Simulator.Simulator> SaveSimulatorFunc { get; set; }
+	/// <summary>
+	/// Delegate that returns the current map name for save display.
+	/// Set by consumer (MenuRoom/Root).
+	/// </summary>
+	public Func<string> GetMapNameFunc { get; set; }
+	/// <summary>
 	/// Gets the menu renderer.
 	/// </summary>
 	public MenuRenderer Renderer => _renderer;
@@ -106,6 +117,12 @@ public class MenuManager
 			UpdateTickerAction = UpdateTicker,
 			// Wire up ticker definition lookup (for sequence step sound configuration)
 			GetTickerDefinitionFunc = GetTickerDefinition,
+			// Wire up menu item text updates (for save/load slot names)
+			SetItemTextAction = SetItemText,
+			// Wire up save/load game delegates
+			SaveGameAction = SaveGameImpl,
+			LoadGameAction = LoadGameImpl,
+			GetSaveSlotNameFunc = GetSaveSlotNameImpl,
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();
@@ -677,6 +694,87 @@ public class MenuManager
 		EventBus.Emit(GameEvent.StopMusic);
 	}
 	#endregion Sound Playback Implementation
+
+	#region Menu Item Text Updates
+	/// <summary>
+	/// Updates a menu item's display text by index and re-renders.
+	/// Called from Lua via SetItemText(index, text).
+	/// </summary>
+	/// <param name="index">Zero-based menu item index</param>
+	/// <param name="text">New display text</param>
+	private void SetItemText(int index, string text)
+	{
+		if (string.IsNullOrEmpty(_currentMenuName))
+			return;
+		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+			return;
+		if (index < 0 || index >= menuDef.Items.Count)
+			return;
+		menuDef.Items[index].Text = text;
+		// Re-render to show updated text
+		_renderer.RenderMenu(menuDef, _selectedItemIndex);
+	}
+	#endregion Menu Item Text Updates
+
+	#region Save/Load Game
+	/// <summary>
+	/// Saves the current game to a slot.
+	/// Gets the Simulator from SaveSimulatorFunc delegate and map name from GetMapNameFunc.
+	/// </summary>
+	/// <param name="slot">Slot index (0-9)</param>
+	private void SaveGameImpl(int slot)
+	{
+		Simulator.Simulator sim = SaveSimulatorFunc?.Invoke();
+		if (sim == null)
+		{
+			GD.PrintErr("ERROR: No simulator available for saving");
+			return;
+		}
+		string mapName = GetMapNameFunc?.Invoke() ?? "Unknown";
+		SaveGameManager.Save(slot, sim.SaveState(), mapName);
+		// Refresh the menu to update slot display names
+		RefreshSaveSlotNames();
+	}
+
+	/// <summary>
+	/// Loads a game from a slot.
+	/// Sets the LoadGameSlot on MenuState for Root.cs to poll.
+	/// </summary>
+	/// <param name="slot">Slot index (0-9)</param>
+	private void LoadGameImpl(int slot)
+	{
+		string path = SaveGameManager.GetSaveFilePath(slot);
+		if (path == null || !System.IO.File.Exists(path))
+			return;
+		_sessionState.LoadGameSlot = slot;
+	}
+
+	/// <summary>
+	/// Gets the display name for a save slot.
+	/// Returns empty string if slot is empty.
+	/// </summary>
+	/// <param name="slot">Slot index (0-9)</param>
+	/// <returns>Display name or empty string</returns>
+	private string GetSaveSlotNameImpl(int slot)
+	{
+		return SaveGameManager.GetSlotDisplayName(slot) ?? "";
+	}
+
+	/// <summary>
+	/// Refreshes save slot names in the current menu by re-executing its OnShow script.
+	/// Called after a save completes to update the displayed slot names.
+	/// </summary>
+	private void RefreshSaveSlotNames()
+	{
+		if (string.IsNullOrEmpty(_currentMenuName))
+			return;
+		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+			return;
+		// Re-execute OnShow to repopulate slot names
+		ExecuteOnShow(menuDef);
+		RefreshMenu();
+	}
+	#endregion Save/Load Game
 
 	#region UI Dialog Helpers
 	/// <summary>

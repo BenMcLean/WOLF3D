@@ -77,6 +77,24 @@ public partial class MenuRoom : Node3D
 	public ActionStage.LevelTransitionRequest PendingLevelTransition { get; private set; }
 
 	/// <summary>
+	/// Pending load game slot. Null when no load is pending.
+	/// Set by Lua LoadGame(slot), polled by Root._Process().
+	/// </summary>
+	public int? PendingLoadGame => _menuManager?.SessionState?.LoadGameSlot;
+
+	/// <summary>
+	/// The suspended simulator instance, set by Root when a game is suspended.
+	/// Used by SaveGameManager to capture the simulator state for saving.
+	/// </summary>
+	public Simulator.Simulator SuspendedSimulator { get; set; }
+
+	/// <summary>
+	/// The level index of the suspended game.
+	/// Used by SaveGameManager to determine the map name for display.
+	/// </summary>
+	public int SuspendedLevelIndex { get; set; }
+
+	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// Must be called after _Ready (when MenuManager exists).
@@ -117,6 +135,18 @@ public partial class MenuRoom : Node3D
 			menuCollection,
 			SharedAssetManager.Config,
 			logger: null);
+
+		// Wire up save/load game delegates
+		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;
+		_menuManager.GetMapNameFunc = () =>
+		{
+			if (SuspendedSimulator == null)
+				return "Unknown";
+			int levelIndex = SuspendedLevelIndex;
+			if (levelIndex >= 0 && levelIndex < SharedAssetManager.CurrentGame.Maps.Length)
+				return SharedAssetManager.CurrentGame.Maps[levelIndex]?.Name ?? $"Level {levelIndex + 1}";
+			return $"Level {levelIndex + 1}";
+		};
 
 		// If in intermission mode, override start menu and pass completion stats
 		if (!string.IsNullOrEmpty(StartMenuOverride))

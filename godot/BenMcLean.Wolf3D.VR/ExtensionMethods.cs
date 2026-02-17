@@ -127,6 +127,42 @@ public static class ExtensionMethods
 	/// <returns>Godot Y rotation in radians</returns>
 	public static float ToAngle(this Direction direction) =>
 		-(byte)direction * Constants.QuarterPi;
+	/// <summary>
+	/// Converts Godot camera Y rotation (radians) to a Wolf3D angle (0-359).
+	/// Wolf3D angle 90 = North, Godot Y rotation 0 = North(-Z).
+	/// Uses same coordinate mapping as ToCardinalDirection.
+	/// WL_DEF.H:player->angle
+	/// </summary>
+	/// <param name="godotYRotation">Godot Y rotation in radians</param>
+	/// <returns>Wolf3D angle (0-359)</returns>
+	public static short ToWolf3DAngle(this float godotYRotation)
+	{
+		// Godot Y rotation: 0=North, π/2=West, π=South, 3π/2=East
+		// Wolf3D angle: 0=East, 90=North, 180=West, 270=South
+		// Mapping: wolf3dAngle = 90 - godotDegrees
+		float degrees = Mathf.RadToDeg(godotYRotation);
+		float wolf3d = 90f - degrees;
+		// Normalize to [0, 360)
+		wolf3d = ((wolf3d % 360f) + 360f) % 360f;
+		return (short)Mathf.RoundToInt(wolf3d) switch
+		{
+			360 => (short)0,
+			var a => (short)a,
+		};
+	}
+	/// <summary>
+	/// Converts a Wolf3D angle (0-359) to Godot Y rotation (radians).
+	/// Inverse of ToWolf3DAngle.
+	/// WL_DEF.H:player->angle
+	/// </summary>
+	/// <param name="wolf3DAngle">Wolf3D angle (0-359)</param>
+	/// <returns>Godot Y rotation in radians</returns>
+	public static float ToGodotYRotation(this short wolf3DAngle)
+	{
+		// Inverse: godotDegrees = 90 - wolf3dAngle
+		float degrees = 90f - wolf3DAngle;
+		return Mathf.DegToRad(degrees);
+	}
 	public static Vector2 Vector2(this Vector3 vector3) => new(vector3.X, vector3.Z);
 	public static Vector3 Vector3(this Vector2 vector2) => new(vector2.X, 0f, vector2.Y);
 	public static Vector3 Axis(this Vector3.Axis axis) => axis switch

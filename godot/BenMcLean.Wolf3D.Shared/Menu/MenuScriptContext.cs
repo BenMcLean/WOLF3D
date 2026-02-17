@@ -226,7 +226,56 @@ public class MenuScriptContext(
 	/// <param name="name">The Name attribute of the text element</param>
 	/// <param name="value">New text content</param>
 	public void SetText(string name, string value) => SetTextAction?.Invoke(name, value);
+	/// <summary>
+	/// Delegate for updating a menu item's text by index.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<int, string> SetItemTextAction { get; set; }
+	/// <summary>
+	/// Update a menu item's display text by index.
+	/// Exposed to Lua. Delegates to MenuManager.
+	/// Used by OnShow scripts to populate save slot names dynamically.
+	/// </summary>
+	/// <param name="index">Zero-based menu item index</param>
+	/// <param name="text">New display text</param>
+	public void SetItemText(int index, string text) => SetItemTextAction?.Invoke(index, text);
 	#endregion Dynamic Content Updates
+	#region Save/Load Game
+	/// <summary>
+	/// Delegate for saving the game to a slot.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<int> SaveGameAction { get; set; }
+	/// <summary>
+	/// Delegate for loading a game from a slot.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<int> LoadGameAction { get; set; }
+	/// <summary>
+	/// Delegate for getting the display name of a save slot.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Func<int, string> GetSaveSlotNameFunc { get; set; }
+	/// <summary>
+	/// Save the current game to a slot.
+	/// Exposed to Lua. Delegates to MenuManager.
+	/// </summary>
+	/// <param name="slot">Slot index (0-9)</param>
+	public void SaveGame(int slot) => SaveGameAction?.Invoke(slot);
+	/// <summary>
+	/// Load a game from a slot.
+	/// Exposed to Lua. Delegates to MenuManager.
+	/// </summary>
+	/// <param name="slot">Slot index (0-9)</param>
+	public void LoadGame(int slot) => LoadGameAction?.Invoke(slot);
+	/// <summary>
+	/// Get the display name for a save slot.
+	/// Exposed to Lua. Returns empty string if slot is empty.
+	/// </summary>
+	/// <param name="slot">Slot index (0-9)</param>
+	/// <returns>Display name or empty string</returns>
+	public string GetSaveSlotName(int slot) => GetSaveSlotNameFunc?.Invoke(slot) ?? "";
+	#endregion Save/Load Game
 	#region Menu Sequence (Presentation Mode)
 	/// <summary>
 	/// The active menu sequence, set by MenuManager before OnShow executes.
@@ -391,7 +440,7 @@ public class MenuScriptContext(
 	/// Set when showing the Victory screen.
 	/// Null when not in victory mode.
 	/// </summary>
-	public System.Collections.Generic.List<LevelCompletionStats> AllLevelStats { get; set; }
+	public System.Collections.Generic.IReadOnlyList<LevelCompletionStats> AllLevelStats { get; set; }
 	/// <summary>
 	/// Get the average kill ratio across all completed levels.
 	/// WL_INTER.C:Victory averaged stats display.

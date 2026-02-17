@@ -67,6 +67,15 @@ public partial class Actors : Node3D
 	/// </summary>
 	private void ShowActor(int actorIndex, ushort shape, bool isRotated, ushort tileX, ushort tileY, Direction? facing)
 	{
+		// If actor already has a node (e.g., re-emitting after LoadState), remove old one
+		if (_actorNodes.TryGetValue(actorIndex, out MeshInstance3D existingNode))
+		{
+			RemoveChild(existingNode);
+			existingNode.QueueFree();
+			_actorNodes.Remove(actorIndex);
+			_actorSpeakers.Remove(actorIndex);
+			_actorData.Remove(actorIndex);
+		}
 		// Calculate world position at tile center
 		Vector3 position = new(
 			tileX.ToMetersCentered(),
@@ -197,6 +206,9 @@ public partial class Actors : Node3D
 	/// </summary>
 	private static ushort CalculateDirectionalSprite(Vector3 actorPosition, ushort baseShape, Vector3 viewerPosition, Direction? actorFacing = 0)
 	{
+		// Dead actors may have null facing - return base shape (front-facing)
+		if (!actorFacing.HasValue)
+			return baseShape;
 		// Calculate viewing angle from viewer to actor
 		Vector3 toActor = actorPosition - viewerPosition;
 		float viewAngle = Mathf.Atan2(toActor.Z, toActor.X);  // Angle in radians

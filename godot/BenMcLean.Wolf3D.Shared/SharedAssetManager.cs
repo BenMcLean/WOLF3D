@@ -31,6 +31,11 @@ public static class SharedAssetManager
 	/// </summary>
 	private static string _configPath;
 	/// <summary>
+	/// Path to the game's XML definition file.
+	/// Stored for save game file path derivation.
+	/// </summary>
+	public static string XmlPath { get; private set; }
+	/// <summary>
 	/// The master texture atlas containing all VSwap pages, VgaGraph Pics, and Font characters.
 	/// </summary>
 	public static Godot.ImageTexture AtlasTexture { get; private set; }
@@ -540,6 +545,7 @@ public static class SharedAssetManager
 			builder.AddProvider(new GodotLoggerProvider());
 			builder.SetMinimumLevel(LogLevel.Warning);  // Only show warnings and errors
 		});
+		XmlPath = System.IO.Path.GetFullPath(xmlPath);
 		CurrentGame = Assets.AssetManager.Load(xmlPath, _loggerFactory);
 		BuildAtlas();
 		BuildDigiSounds();
@@ -562,6 +568,7 @@ public static class SharedAssetManager
 		SaveConfig();
 		Config = null;
 		_configPath = null;
+		XmlPath = null;
 		if (_digiSounds is not null)
 			foreach (Godot.AudioStreamWav sound in _digiSounds.Values)
 				sound?.Dispose();

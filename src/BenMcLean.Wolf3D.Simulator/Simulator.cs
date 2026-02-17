@@ -85,10 +85,12 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 									 // WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
 									 // Current simulation time in tics
 	public long CurrentTic { get; private set; }
-	// Player position (updated each Update call by presentation layer)
+	// Player position and angle (updated each Update call by presentation layer)
 	// WL_DEF.H:player->x, player->y (16.16 fixed-point)
 	public int PlayerX { get; private set; }
 	public int PlayerY { get; private set; }
+	// WL_DEF.H:player->angle (0-359)
+	public short PlayerAngle { get; private set; }
 	/// <summary>
 	/// When true, player movement bypasses all collision checks.
 	/// Based on original Wolf3D "MLI" debug/cheat command.
@@ -307,15 +309,17 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// <param name="deltaTime">Elapsed real time in seconds</param>
 	/// <param name="playerX">Player X position in 16.16 fixed-point (from HMD tracking)</param>
 	/// <param name="playerY">Player Y position in 16.16 fixed-point (from HMD tracking)</param>
-	public void Update(double deltaTime, int playerX, int playerY)
+	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
+	public void Update(double deltaTime, int playerX, int playerY, short playerAngle)
 	{
 		// Store previous position before update
 		int prevX = PlayerX;
 		int prevY = PlayerY;
 
-		// Update player position from presentation layer
+		// Update player position and angle from presentation layer
 		PlayerX = playerX;
 		PlayerY = playerY;
+		PlayerAngle = playerAngle;
 
 		// Check for item pickups when player position changes
 		// WL_AGENT.C:ClipMove checks for bonus collision
@@ -1140,9 +1144,15 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// <param name="slotCount">Number of weapon slots (1 for traditional, 2 for VR dual-wield)</param>
 	/// <param name="weapons">Weapon definitions loaded from XML</param>
 	/// <param name="savedInventory">Saved inventory from level transition (null for new game)</param>
-	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, Dictionary<string, int> savedInventory = null)
+	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, Dictionary<string, int> savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		Inventory.InitializeFromDefinition(statusBar);
+		// Restore accumulated level stats from previous levels (carries across level transitions)
+		if (savedLevelStats != null)
+		{
+			LevelRatios.Clear();
+			LevelRatios.AddRange(savedLevelStats);
+		}
 		if (savedInventory != null)
 		{
 			Inventory.LoadState(savedInventory);
@@ -1618,6 +1628,16 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			CurrentTic,
 			parTime,
 			Inventory.GetValue("Score"));
+	}
+
+	/// <summary>
+	/// Appends a level's completion stats to the accumulated list.
+	/// Called when the player completes a level (elevator, victory, or cheat skip).
+	/// </summary>
+	public void AddCompletionStats(LevelCompletionStats stats)
+	{
+		if (stats != null)
+			LevelRatios.Add(stats);
 	}
 
 	/// <summary>
@@ -2864,6 +2884,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			AccumulatedTime = accumulatedTime,
 			PlayerX = PlayerX,
 			PlayerY = PlayerY,
+			PlayerAngle = PlayerAngle,
 			NoClip = NoClip,
 			GodMode = GodMode,
 			Doors = doorSnapshots,
@@ -2875,6 +2896,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			LastStatObj = lastStatObj,
 			PatrolDirectionAtTile = patrolDirs,
 			InventoryValues = Inventory.SaveState(),
+			CompletedLevelStats = LevelRatios.ToArray(),
 			RngStateA = rng.StateA,
 			RngStateB = rng.StateB,
 			GameClock = gameClock.SaveState()
@@ -2915,9 +2937,10 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		CurrentTic = snapshot.CurrentTic;
 		accumulatedTime = snapshot.AccumulatedTime;
 
-		// Restore player position
+		// Restore player position and angle
 		PlayerX = snapshot.PlayerX;
 		PlayerY = snapshot.PlayerY;
+		PlayerAngle = snapshot.PlayerAngle;
 		NoClip = snapshot.NoClip;
 		GodMode = snapshot.GodMode;
 
@@ -3002,6 +3025,11 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		// Restore inventory
 		if (snapshot.InventoryValues != null)
 			Inventory.LoadState(snapshot.InventoryValues);
+
+		// Restore accumulated level completion stats
+		LevelRatios.Clear();
+		if (snapshot.CompletedLevelStats != null)
+			LevelRatios.AddRange(snapshot.CompletedLevelStats);
 
 		// Restore RNG state
 		rng.StateA = snapshot.RngStateA;

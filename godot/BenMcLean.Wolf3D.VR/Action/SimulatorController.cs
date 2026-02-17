@@ -26,7 +26,7 @@ public partial class SimulatorController : Node3D
 	private Bonuses bonuses;
 	private Actors actors;
 	private Weapons weapons;
-	private Func<(int X, int Y)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates
+	private Func<(int X, int Y, short Angle)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates and angle (0-359)
 
 	// Named event handlers for cleanup in _ExitTree
 	private Action<ElevatorActivatedEvent> _elevatorHandler;
@@ -47,7 +47,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="weaponsNode">The Weapons node that will render player weapons</param>
 	/// <param name="stateCollection">State collection loaded from game XML (e.g., WL1.xml)</param>
 	/// <param name="weaponCollection">Weapon collection loaded from game XML (e.g., WL1.xml)</param>
-	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y)</param>
+	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y) and angle (0-359)</param>
 	public void Initialize(
 		MapAnalyzer mapAnalyzer,
 		MapAnalyzer.MapAnalysis mapAnalysis,
@@ -58,10 +58,11 @@ public partial class SimulatorController : Node3D
 		Weapons weaponsNode,
 		StateCollection stateCollection,
 		WeaponCollection weaponCollection,
-		Func<(int X, int Y)> getPlayerPosition,
+		Func<(int X, int Y, short Angle)> getPlayerPosition,
 		StatusBarDefinition statusBar,
 		int difficulty,
-		Dictionary<string, int> savedInventory = null)
+		Dictionary<string, int> savedInventory = null,
+		IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		// TODO: Load stateCollection from WL1.xml or game data file
 		// For now, create a placeholder if none provided
@@ -116,7 +117,7 @@ public partial class SimulatorController : Node3D
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar != null)
-			simulator.InitializeInventory(statusBar, difficulty, 1, weaponCollection, savedInventory);
+			simulator.InitializeInventory(statusBar, difficulty, 1, weaponCollection, savedInventory, savedLevelStats);
 
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
@@ -158,7 +159,7 @@ public partial class SimulatorController : Node3D
 		Bonuses bonusesNode,
 		Actors actorsNode,
 		Weapons weaponsNode,
-		Func<(int X, int Y)> getPlayerPosition)
+		Func<(int X, int Y, short Angle)> getPlayerPosition)
 	{
 		// Simulation pauses during fade transitions while presentation layer keeps rendering
 		ProcessMode = ProcessModeEnum.Pausable;
@@ -216,12 +217,12 @@ public partial class SimulatorController : Node3D
 		if (simulator == null || getPlayerPosition == null)
 			return;
 
-		// Get player position from delegate (Wolf3D 16.16 fixed-point coordinates)
-		(int playerX, int playerY) = getPlayerPosition();
+		// Get player position and angle from delegate (Wolf3D 16.16 fixed-point coordinates, 0-359 angle)
+		(int playerX, int playerY, short playerAngle) = getPlayerPosition();
 
-		// Update simulator with elapsed time and player position
+		// Update simulator with elapsed time, player position, and angle
 		// Events are automatically dispatched to subscribers (Doors, Bonuses, etc.)
-		simulator.Update(delta, playerX, playerY);
+		simulator.Update(delta, playerX, playerY, playerAngle);
 	}
 
 	/// <summary>
