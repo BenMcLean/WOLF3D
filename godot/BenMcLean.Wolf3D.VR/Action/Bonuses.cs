@@ -36,8 +36,6 @@ public partial class Bonuses : Node3D
 	private Func<float> _getCameraYRotation;
 
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
-	// Digi sound library from SharedAssetManager
-	private readonly IReadOnlyDictionary<string, AudioStreamWav> _digiSounds;
 
 	// Simulator reference for event subscription
 	private Simulator.Simulator _simulator;
@@ -79,15 +77,12 @@ public partial class Bonuses : Node3D
 	/// All slots start hidden (scaled to zero) until BonusSpawnedEvent fires.
 	/// </summary>
 	/// <param name="spriteMaterials">Dictionary of sprite materials from GodotResources.SpriteMaterials</param>
-	/// <param name="digiSounds">Dictionary of digi sounds from SharedAssetManager</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
 	public Bonuses(
 		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
-		IReadOnlyDictionary<string, AudioStreamWav> digiSounds,
 		Func<float> getCameraYRotation)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
-		_digiSounds = digiSounds ?? throw new ArgumentNullException(nameof(digiSounds));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
 
 		// Initialize with empty lists - MultiMeshes will be created on-demand as bonuses spawn
@@ -405,50 +400,13 @@ public partial class Bonuses : Node3D
 	}
 
 	/// <summary>
-	/// Handles BonusPlaySoundEvent - plays a sound at the bonus's position.
-	/// DigiSounds: Creates temporary positional AudioStreamPlayer3D.
-	/// AdLib sounds: Routes through EventBus for global playback via SoundBlaster.
+	/// Handles BonusPlaySoundEvent - plays pickup sound non-positionally.
+	/// Original Wolf3D used SD_PlaySound (non-positional) for all pickup sounds.
 	/// WL_AGENT.C:GetBonus sound playback
 	/// </summary>
 	private void OnBonusPlaySound(BenMcLean.Wolf3D.Simulator.BonusPlaySoundEvent evt)
 	{
-		// AdLib sounds go through EventBus -> SoundBlaster (non-positional)
-		// Original Wolf3D pickup sounds were global (not positional)
-		if (!evt.IsDigiSound)
-		{
-			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
-			return;
-		}
-
-		// DigiSounds use positional audio
-		if (!_digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
-		{
-			// Fall back to EventBus for DigiSounds not in library
-			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
-			return;
-		}
-
-		// Calculate world position at tile center
-		Vector3 position = new(
-			evt.TileX.ToMetersCentered(),
-			Constants.HalfTileHeight,
-			evt.TileY.ToMetersCentered()
-		);
-
-		// Create a temporary AudioStreamPlayer3D for this sound
-		AudioStreamPlayer3D speaker = new()
-		{
-			Name = $"BonusSound_{evt.StatObjIndex}",
-			Position = position,
-			Stream = sound,
-			Bus = "DigiSounds",
-			Autoplay = true,
-		};
-
-		// Auto-remove when sound finishes playing
-		speaker.Finished += () => speaker.QueueFree();
-
-		AddChild(speaker);
+		EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
 	}
 
 	/// <summary>

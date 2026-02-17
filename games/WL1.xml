@@ -1152,7 +1152,7 @@ return false
 				<![CDATA[
 if GetValue("Health") < 12 then
 	AddValue("Health", 1)
-	PlayLocalDigiSound("SLURPIESND")
+	PlayDigiSound("SLURPIESND")
 	FlashScreen(0xFFF800)
 	return true
 end

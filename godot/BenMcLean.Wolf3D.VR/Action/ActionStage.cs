@@ -219,7 +219,6 @@ void sky() {
 		// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
 		_bonuses = new Bonuses(
 			VRAssetManager.SpriteMaterials,
-			Shared.SharedAssetManager.DigiSounds,      // Digi sounds for pickup sounds
 			() => _displayMode.ViewerYRotation);  // Delegate returns camera Y rotation for billboard effect
 		AddChild(_bonuses);
 
