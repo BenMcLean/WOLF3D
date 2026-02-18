@@ -142,6 +142,13 @@ public partial class MenuRoom : Node3D
 			logger: null);
 		// Wire up in-game state so menu items with InGame conditions show/hide correctly
 		_menuManager.ScriptContext.IsGameInProgressFunc = () => HasSuspendedGame;
+		// Wire up ResumeGame so "Back to Game" menu item signals Root to resume
+		_menuManager.ScriptContext.CloseAllMenusAction = () =>
+		{
+			_menuManager.CloseAllMenus();
+			if (HasSuspendedGame)
+				PendingResumeGame = true;
+		};
 
 		// Wire up save/load game delegates
 		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;

@@ -254,7 +254,7 @@ return "Title"
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("ViewScores")
 				</MenuItem>
-				<MenuItem Text="Back to Demo">
+				<MenuItem Text="Back to Demo" InGame="false">
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("Title")
 				</MenuItem>
