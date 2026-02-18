@@ -396,16 +396,10 @@ public struct ScreenFlashEvent
 /// <summary>
 /// Player health reached zero.
 /// WL_AGENT.C:TakeDamage death check.
-/// Presentation layer handles death sequence and restart.
+/// Presentation layer handles death fadeout, then calls Simulator.ExecuteOnDeathScript()
+/// to determine restart vs game over while the screen is fully black.
 /// </summary>
-public struct PlayerDiedEvent
-{
-	/// <summary>
-	/// Result from OnDeath script: "restart" (lives remaining) or "gameover" (no lives).
-	/// WL_GAME.C:Died() determines outcome based on remaining lives.
-	/// </summary>
-	public string Result { get; set; }
-}
+public struct PlayerDiedEvent { }
 
 /// <summary>
 /// An item script requested navigation to a named menu screen.

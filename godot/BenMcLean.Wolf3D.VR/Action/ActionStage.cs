@@ -68,16 +68,12 @@ public partial class ActionStage : Node3D
 	public bool PendingReturnToMenu { get; private set; }
 
 	/// <summary>
-	/// Set when the player dies with lives remaining. Root polls this to restart the level.
-	/// WL_GAME.C:Died() with lives > 0 → restart same level.
+	/// Set when the player dies. Root polls this to initiate the death fadeout.
+	/// OnDeath script runs after fadeout completes (while screen is black)
+	/// to determine restart vs game over.
+	/// WL_GAME.C:Died() → fade out → reset inventory → restart or game over.
 	/// </summary>
-	public bool PendingDeath { get; private set; }
-
-	/// <summary>
-	/// Set when the player dies with no lives remaining. Root polls this to return to menu.
-	/// WL_GAME.C:Died() with lives exhausted → game over.
-	/// </summary>
-	public bool PendingGameOver { get; private set; }
+	public bool PendingDeathFadeOut { get; private set; }
 
 	/// <summary>
 	/// The level index for this stage, set once at construction time.
@@ -761,10 +757,11 @@ void sky() {
 	/// </summary>
 	private void OnPlayerDied(PlayerDiedEvent e)
 	{
-		if (e.Result == "restart")
-			PendingDeath = true;
-		else
-			PendingGameOver = true;
+		// Freeze status bar so it stays showing health=0 during death fadeout.
+		// OnDeath script (which resets inventory) runs later after fade completes.
+		if (_statusBarState != null)
+			_statusBarState.Frozen = true;
+		PendingDeathFadeOut = true;
 	}
 
 	/// <summary>

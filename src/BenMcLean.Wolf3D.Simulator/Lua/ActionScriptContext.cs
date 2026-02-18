@@ -8,7 +8,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// Extends BaseScriptContext with deterministic RNG/GameClock and generic inventory API.
 /// All player state (health, ammo, keys, weapons, score, lives) is accessed via the Inventory.
 /// </summary>
-public abstract class ActionScriptContext : BaseScriptContext, IActionScriptContext
+public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 {
 	protected readonly Simulator simulator;
 	protected readonly RNG rng;
@@ -17,7 +17,7 @@ public abstract class ActionScriptContext : BaseScriptContext, IActionScriptCont
 	public RNG RNG => rng;
 	public GameClock GameClock => gameClock;
 
-	protected ActionScriptContext(Simulator simulator, RNG rng, GameClock gameClock, ILogger logger = null)
+	public ActionScriptContext(Simulator simulator, RNG rng, GameClock gameClock, ILogger logger = null)
 		: base(logger)
 	{
 		this.simulator = simulator;
@@ -113,12 +113,6 @@ public abstract class ActionScriptContext : BaseScriptContext, IActionScriptCont
 
 	#endregion
 
-	#region Actor API (to be implemented by derived classes)
-
-	public abstract void SpawnActor(int type, int x, int y);
-	public abstract void DespawnActor(int actorId);
-
-	#endregion
 }
 
 /// <summary>
@@ -139,8 +133,4 @@ public class BonusScriptContext : EntityScriptContext
 		: base(simulator, rng, gameClock, bonusX, bonusY, logger)
 	{
 	}
-
-	// Actor API stubs (not used by bonuses)
-	public override void SpawnActor(int type, int x, int y) { }
-	public override void DespawnActor(int actorId) { }
 }

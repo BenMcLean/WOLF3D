@@ -176,8 +176,8 @@
 			</Weapons>
 			<!-- WL_GAME.C:Died() — decrement lives, reset to pistol/init ammo/no keys, restart or game over -->
 			<OnDeath><![CDATA[
-AddValue("Lives", -1)
-if GetValue("Lives") >= 0 then
+if GetValue("Lives") > 0 then
+	AddValue("Lives", -1)
 	SetValue("Health", GetInit("Health"))
 	SetValue("Ammo", GetInit("Ammo"))
 	SetValue("Gold Key", 0)
@@ -191,7 +191,7 @@ if GetValue("Lives") >= 0 then
 	return "restart"
 end
 PlayAdLibSound("PLAYERDEATHSND")
-return "gameover"
+return "Title"
 ]]></OnDeath>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->

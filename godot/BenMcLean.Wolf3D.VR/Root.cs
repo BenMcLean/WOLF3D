@@ -149,25 +149,48 @@ public partial class Root : Node3D
 		// Poll ActionStage for level transition or return-to-menu requests
 		else if (_currentScene is ActionStage actionStage)
 		{
-			if (actionStage.PendingDeath)
+			if (actionStage.PendingDeathFadeOut)
 			{
-				// WL_GAME.C:Died() with lives remaining — restart same level
-				// OnDeath script has already reset inventory (health, ammo, keys, weapons)
-				Dictionary<string, int> savedInventory = actionStage.SimulatorController.Simulator.Inventory.SaveState();
-				int currentLevel = actionStage.SimulatorController.Simulator.Inventory.GetValue("MapOn");
-				int difficulty = actionStage.SimulatorController.Simulator.Inventory.GetValue("Difficulty");
+				// WL_GAME.C:Died() — fade to black first, then run OnDeath script
+				// so player sees health=0 during fadeout, not the reset values
+				Simulator.Simulator sim = actionStage.SimulatorController.Simulator;
 				_suspendedGame = null;
-				ActionStage newStage = new(DisplayMode,
-					levelIndex: currentLevel,
-					difficulty: difficulty,
-					savedInventory: savedInventory);
-				TransitionTo(newStage);
-			}
-			else if (actionStage.PendingGameOver)
-			{
-				// WL_GAME.C:Died() with no lives — game over, return to menu
-				_suspendedGame = null;
-				TransitionTo(new MenuRoom(DisplayMode));
+				StartFade(() =>
+				{
+					// Screen is now fully black — run OnDeath script to reset inventory
+					string deathResult = sim.ExecuteOnDeathScript();
+					// Swap to appropriate scene based on script result
+					if (_currentScene != null)
+					{
+						RemoveChild(_currentScene);
+						_currentScene.QueueFree();
+					}
+					if (deathResult == "restart")
+					{
+						// WL_GAME.C:Died() with lives remaining — restart same level
+						Dictionary<string, int> savedInventory = sim.Inventory.SaveState();
+						int currentLevel = sim.Inventory.GetValue("MapOn");
+						int difficulty = sim.Inventory.GetValue("Difficulty");
+						ActionStage newStage = new(DisplayMode,
+							levelIndex: currentLevel,
+							difficulty: difficulty,
+							savedInventory: savedInventory);
+						_currentScene = newStage;
+						_pendingScene = null;
+						AddChild(newStage);
+					}
+					else
+					{
+						// WL_GAME.C:Died() with no lives — game over, return to menu
+						MenuRoom gameOverRoom = new(DisplayMode);
+						if (!string.IsNullOrEmpty(deathResult) && deathResult != "gameover")
+							gameOverRoom.StartMenuOverride = deathResult;
+						_currentScene = gameOverRoom;
+						_pendingScene = null;
+						AddChild(gameOverRoom);
+						gameOverRoom.SetFadeTransitionHandler(StartMenuFade);
+					}
+				});
 			}
 			else if (actionStage.PendingReturnToMenu)
 			{

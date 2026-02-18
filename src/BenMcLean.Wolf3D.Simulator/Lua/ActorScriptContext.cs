@@ -831,13 +831,13 @@ public class ActorScriptContext : EntityScriptContext
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
 	public override void PlayLocalDigiSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
 
-	// Actor API stubs (actors can spawn other actors in some mods)
-	public override void SpawnActor(int type, int x, int y)
+	// Actor API (actors can spawn other actors in some mods)
+	public void SpawnActor(int type, int x, int y)
 	{
 		// TODO: Implement actor spawning from scripts
 	}
 
-	public override void DespawnActor(int actorId)
+	public void DespawnActor(int actorId)
 	{
 		// TODO: Implement actor despawning
 	}

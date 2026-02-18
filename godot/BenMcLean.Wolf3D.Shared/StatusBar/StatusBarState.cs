@@ -22,6 +22,12 @@ public class StatusBarState
 	/// </summary>
 	public event Action<string, int> ValueChanged;
 	/// <summary>
+	/// When true, inventory change events are ignored.
+	/// Used to freeze the status bar display during death fadeout so the player
+	/// doesn't see inventory reset values while the death animation plays.
+	/// </summary>
+	public bool Frozen { get; set; }
+	/// <summary>
 	/// Current weapon slot (0-3)
 	/// </summary>
 	public int CurrentWeapon { get; set; }
@@ -136,6 +142,8 @@ public class StatusBarState
 		_subscribedInventory = inventory;
 		_inventoryHandler = (name, value) =>
 		{
+			if (Frozen)
+				return;
 			SetValue(name, value);
 			if (name == "StatusBarWeapon")
 				CurrentWeapon = value;

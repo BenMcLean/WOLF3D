@@ -2199,27 +2199,39 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		if (Inventory.GetValue("Health") <= 0)
 		{
 			IsDead = true;
-			string deathResult = "gameover";
-			// Execute OnDeath Lua script (WL_GAME.C:Died)
-			if (!string.IsNullOrEmpty(onDeathScript))
-			{
-				Lua.BonusScriptContext context = new(this, rng, gameClock, PlayerTileX, PlayerTileY, logger)
-				{
-					PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
-				};
-				try
-				{
-					MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(onDeathScript, context);
-					if (result.Type == MoonSharp.Interpreter.DataType.String)
-						deathResult = result.String;
-				}
-				catch (Exception ex)
-				{
-					logger?.LogError(ex, "Error executing OnDeath script");
-				}
-			}
-			PlayerDied?.Invoke(new PlayerDiedEvent { Result = deathResult });
+			// Signal death to presentation layer — OnDeath script runs later
+			// after fadeout completes, so player sees health=0 during death fade
+			PlayerDied?.Invoke(new PlayerDiedEvent());
 		}
+	}
+
+	/// <summary>
+	/// Executes the OnDeath Lua script (WL_GAME.C:Died).
+	/// Called by the presentation layer after the death fadeout completes,
+	/// so that inventory resets (health, ammo, keys, weapons) happen while
+	/// the screen is fully black and the player can't see the status bar change.
+	/// </summary>
+	/// <returns>Script result: "restart" if lives remain, or a menu name (e.g., "Title") for game over</returns>
+	public string ExecuteOnDeathScript()
+	{
+		if (!string.IsNullOrEmpty(onDeathScript))
+		{
+			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+			{
+				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+			};
+			try
+			{
+				MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(onDeathScript, context);
+				if (result.Type == MoonSharp.Interpreter.DataType.String)
+					return result.String;
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError(ex, "Error executing OnDeath script");
+			}
+		}
+		return "gameover";
 	}
 
 	/// <summary>

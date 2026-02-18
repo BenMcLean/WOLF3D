@@ -77,8 +77,4 @@ public class ItemScriptContext : EntityScriptContext
 		this.item = item;
 		this.itemIndex = itemIndex;
 	}
-
-	// Actor API stubs (not used by items)
-	public override void SpawnActor(int type, int x, int y) { }
-	public override void DespawnActor(int actorId) { }
 }
