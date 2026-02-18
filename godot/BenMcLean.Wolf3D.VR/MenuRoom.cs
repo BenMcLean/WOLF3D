@@ -46,6 +46,11 @@ public partial class MenuRoom : Node3D
 	/// Polled by Root._Process(); Root is responsible for acting on this.
 	/// </summary>
 	public bool PendingResumeGame { get; private set; }
+	/// <summary>
+	/// Set when the user confirmed the End Game dialog.
+	/// Polled by Root._Process(); Root discards the suspended game and transitions to a fresh menu.
+	/// </summary>
+	public bool PendingEndGame { get; private set; }
 
 	/// <summary>
 	/// Selected episode from menu.
@@ -135,6 +140,8 @@ public partial class MenuRoom : Node3D
 			menuCollection,
 			SharedAssetManager.Config,
 			logger: null);
+		// Wire up in-game state so menu items with InGame conditions show/hide correctly
+		_menuManager.ScriptContext.IsGameInProgressFunc = () => HasSuspendedGame;
 
 		// Wire up save/load game delegates
 		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;
@@ -357,11 +364,28 @@ public partial class MenuRoom : Node3D
 		// Update menu manager
 		_menuManager?.Update((float)delta);
 
-		// Check if ESC was pressed at root menu with a suspended game
-		if (_menuManager?.CancelAtRootRequested == true && HasSuspendedGame)
+		// Quit: user confirmed quit dialog
+		if (_menuManager?.PendingQuit == true)
+		{
+			GetTree().Quit();
+			return;
+		}
+		// End game: user confirmed end-game dialog
+		if (_menuManager?.PendingEndGame == true)
+		{
+			_menuManager.ClearPendingEndGame();
+			PendingEndGame = true;
+		}
+		// ESC at root menu:
+		//   - If a game is suspended → resume it
+		//   - Otherwise → show quit confirmation dialog (original Wolf3D behavior)
+		if (_menuManager?.CancelAtRootRequested == true)
 		{
 			_menuManager.ClearCancelAtRoot();
-			PendingResumeGame = true;
+			if (HasSuspendedGame)
+				PendingResumeGame = true;
+			else
+				_menuManager.ScriptContext.RequestQuit();
 		}
 
 		// Check if intermission screen was dismissed (Lua called ContinueToNextLevel)

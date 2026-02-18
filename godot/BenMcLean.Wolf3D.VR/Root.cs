@@ -117,7 +117,14 @@ public partial class Root : Node3D
 		// Poll MenuRoom for game start, resume, or intermission completion
 		if (_currentScene is MenuRoom menuRoom)
 		{
-			if (menuRoom.PendingLoadGame is int loadSlot)
+			if (menuRoom.PendingEndGame)
+			{
+				// User confirmed "End Game" — discard suspended game and go to main menu
+				_suspendedGame = null;
+				MenuRoom freshMenu = new(DisplayMode);
+				TransitionTo(freshMenu);
+			}
+			else if (menuRoom.PendingLoadGame is int loadSlot)
 			{
 				LoadSavedGame(loadSlot);
 			}

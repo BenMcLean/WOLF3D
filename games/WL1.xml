@@ -195,7 +195,16 @@ return "Title"
 ]]></OnDeath>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Start="Title" Pause="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS">
+		<Menus Start="Title" Pause="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBorder2Color="0">
+			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
+			<EndString>Chickening out...&#10;already?</EndString>
+			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
+			<EndString>So, you think you can&#10;quit this easily, huh?</EndString>
+			<EndString>Press N to save the world.&#10;Press Y to abandon it in&#10;its hour of need.</EndString>
+			<EndString>Press N if you are brave.&#10;Press Y to cower in shame.</EndString>
+			<EndString>Heroes, press N.&#10;Wimps, press Y.</EndString>
+			<EndString>You are at an intersection.&#10;A sign says, 'Press Y to quit.'&#10;&gt;</EndString>
+			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
 			<Menu Name="Title" BorderColor="0" Music="NAZI_NOR_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
 				<Pause Duration="00:00:03">NavigateToMenu("Credits")</Pause>
@@ -233,7 +242,7 @@ return "Title"
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("LoadGame")
 				</MenuItem>
-				<MenuItem Text="Save Game">
+				<MenuItem Text="Save Game" InGame="true">
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("SaveGame")
 				</MenuItem>
@@ -245,13 +254,21 @@ return "Title"
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("ViewScores")
 				</MenuItem>
-				<MenuItem Text="Back to Demo" >
+				<MenuItem Text="Back to Demo">
 					PlayAdLibSound('SHOOTSND')
 					NavigateToMenu("Title")
 				</MenuItem>
+				<MenuItem Text="Back to Game" InGame="true">
+					PlayAdLibSound('SHOOTSND')
+					ResumeGame()
+				</MenuItem>
+				<MenuItem Text="End Game" InGame="true">
+					PlayAdLibSound('SHOOTSND')
+					RequestEndGame()
+				</MenuItem>
 				<MenuItem Text="Quit">
 					PlayAdLibSound('SHOOTSND')
-					Quit()
+					RequestQuit()
 				</MenuItem>
 			</Menu>
 			<!-- Episode Selection Menu (WL_MENU.H: NE_X=10, NE_Y=23) -->

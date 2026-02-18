@@ -76,6 +76,31 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <returns>True if game is running, false if at title screen</returns>
 	public bool IsGameInProgress() => IsGameInProgressFunc?.Invoke() ?? false;
+	/// <summary>
+	/// Request to quit the application, showing a confirmation dialog.
+	/// Exposed to Lua. MenuManager intercepts this flag in Update() and shows a modal.
+	/// WL_MENU.C:CP_Quit - shows confirm dialog then calls Quit(NULL)
+	/// </summary>
+	public void RequestQuit() => QuitRequested = true;
+	/// <summary>
+	/// Set by RequestQuit(). Cleared by MenuManager after showing the modal.
+	/// </summary>
+	public bool QuitRequested { get; set; }
+	/// <summary>
+	/// Request to end the current game, showing a confirmation dialog.
+	/// Exposed to Lua. MenuManager intercepts this flag in Update() and shows a modal.
+	/// WL_MENU.C:CP_EndGame - shows confirm dialog then sets playstate = ex_died
+	/// </summary>
+	public void RequestEndGame() => EndGameRequested = true;
+	/// <summary>
+	/// Set by RequestEndGame(). Cleared by MenuManager after showing the modal.
+	/// </summary>
+	public bool EndGameRequested { get; set; }
+	/// <summary>
+	/// Resume the suspended game (return to gameplay).
+	/// Exposed to Lua. Delegates to CloseAllMenusAction which signals MenuRoom.
+	/// </summary>
+	public void ResumeGame() => CloseAllMenusAction?.Invoke();
 	#endregion Navigation
 	#region Session State (Episode/Difficulty Selection)
 	/// <summary>

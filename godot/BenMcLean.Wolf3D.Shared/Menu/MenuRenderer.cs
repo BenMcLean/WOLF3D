@@ -91,11 +91,18 @@ public class MenuRenderer
 	/// Phase 1 basic implementation: background + text items.
 	/// </summary>
 	/// <param name="menuDef">Menu definition from AssetManager.Menus</param>
-	/// <param name="selectedIndex">Currently selected item index</param>
-	public void RenderMenu(MenuDefinition menuDef, int selectedIndex)
+	/// <param name="selectedIndex">Currently selected item index (into visibleItems)</param>
+	/// <param name="visibleItems">Pre-filtered list of visible menu items. If null, uses all items in menuDef.</param>
+	/// <param name="modal">Optional active modal dialog to render over the menu.</param>
+	public void RenderMenu(
+		MenuDefinition menuDef,
+		int selectedIndex,
+		System.Collections.Generic.List<MenuItemDefinition> visibleItems = null,
+		ModalDialog modal = null)
 	{
 		// Clear previous frame
 		Clear();
+		visibleItems ??= menuDef.Items;
 		// Render background color if specified, otherwise use black
 		if (menuDef.BorderColor.HasValue)
 			RenderBackgroundColor(menuDef.BorderColor.Value);
@@ -117,12 +124,15 @@ public class MenuRenderer
 		RenderTexts(menuDef);
 		// Render tickers (intermission screen percent counters)
 		RenderTickers(menuDef);
-		// Render menu items
-		RenderMenuItems(menuDef, selectedIndex);
+		// Render menu items (visible items only)
+		RenderMenuItems(menuDef, selectedIndex, visibleItems);
 		// Render cursor (WL_MENU.C:DrawMenuGun)
-		RenderCursor(menuDef, selectedIndex);
+		RenderCursor(menuDef, selectedIndex, visibleItems);
 		// Render pointer crosshairs (VR controllers / mouse)
 		RenderCrosshairs();
+		// Render modal overlay if active (on top of everything except crosshairs)
+		if (modal != null && modal.IsPending)
+			RenderModal(modal, menuDef);
 	}
 	/// <summary>
 	/// Render a solid background color.
@@ -361,10 +371,11 @@ public class MenuRenderer
 	/// Uses layout coordinates from menuDef (matching original Wolf3D layout).
 	/// </summary>
 	/// <param name="menuDef">Menu definition containing layout info</param>
-	/// <param name="selectedIndex">Currently selected item index</param>
-	private void RenderMenuItems(MenuDefinition menuDef, int selectedIndex)
+	/// <param name="selectedIndex">Currently selected item index (into visibleItems)</param>
+	/// <param name="visibleItems">Pre-filtered list of visible menu items to render.</param>
+	private void RenderMenuItems(MenuDefinition menuDef, int selectedIndex, List<MenuItemDefinition> visibleItems)
 	{
-		List<MenuItemDefinition> items = menuDef.Items;
+		List<MenuItemDefinition> items = visibleItems;
 		string fontName = menuDef.Font ?? "BIG";
 		// Get theme from SharedAssetManager
 		if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
@@ -427,11 +438,12 @@ public class MenuRenderer
 	/// WL_MENU.C:DrawMenuGun - draws cursor at x, y+curpos*13-2
 	/// </summary>
 	/// <param name="menuDef">Menu definition containing layout info</param>
-	/// <param name="selectedIndex">Currently selected item index</param>
-	private void RenderCursor(MenuDefinition menuDef, int selectedIndex)
+	/// <param name="selectedIndex">Currently selected item index (into visibleItems)</param>
+	/// <param name="visibleItems">Pre-filtered list of visible menu items.</param>
+	private void RenderCursor(MenuDefinition menuDef, int selectedIndex, List<MenuItemDefinition> visibleItems)
 	{
 		// Skip rendering if no cursor picture is specified or no menu items to select
-		if (string.IsNullOrEmpty(menuDef.CursorPic) || menuDef.Items.Count == 0)
+		if (string.IsNullOrEmpty(menuDef.CursorPic) || visibleItems.Count == 0)
 			return;
 		// Get cursor texture from VgaGraph
 		if (!SharedAssetManager.VgaGraph.TryGetValue(menuDef.CursorPic, out AtlasTexture cursorTexture))
@@ -445,9 +457,9 @@ public class MenuRenderer
 			spacing = menuDef.Spacing ?? 13; // Original uses 13
 		float currentY = menuDef.Y ?? 55; // Start Y position
 		// Accumulate Y position up to selectedIndex (same as RenderMenuItems)
-		for (int i = 0; i < selectedIndex && i < menuDef.Items.Count; i++)
+		for (int i = 0; i < selectedIndex && i < visibleItems.Count; i++)
 		{
-			MenuItemDefinition item = menuDef.Items[i];
+			MenuItemDefinition item = visibleItems[i];
 			// Check for ExtraSpacing custom property
 			if (item.CustomProperties.TryGetValue("ExtraSpacing", out string extraSpacingStr) &&
 				int.TryParse(extraSpacingStr, out int extraSpacing))
@@ -455,8 +467,8 @@ public class MenuRenderer
 			currentY += spacing;
 		}
 		// Add ExtraSpacing for the selected item itself
-		if (selectedIndex < menuDef.Items.Count &&
-			menuDef.Items[selectedIndex].CustomProperties.TryGetValue("ExtraSpacing", out string selectedExtraSpacing) &&
+		if (selectedIndex < visibleItems.Count &&
+			visibleItems[selectedIndex].CustomProperties.TryGetValue("ExtraSpacing", out string selectedExtraSpacing) &&
 			int.TryParse(selectedExtraSpacing, out int selectedExtra))
 			currentY += selectedExtra;
 		// WL_MENU.C:DrawMenuGun - cursor is at y-2 (2 pixels above the item)
@@ -649,6 +661,167 @@ public class MenuRenderer
 					state.TextureRect.Texture = texture;
 			}
 		}
+	}
+	/// <summary>
+	/// Render a modal confirmation dialog over the current menu.
+	/// Draws a beveled box with the message text and Yes/No buttons.
+	/// Also sets YesButtonBounds and NoButtonBounds on the dialog for pointer hit-testing.
+	/// WL_MENU.C:Confirm() - draws Message box, then waits for Y/N/Escape.
+	/// </summary>
+	/// <param name="modal">The modal dialog to render.</param>
+	/// <param name="menuDef">Current menu definition (for font/color lookup).</param>
+	private void RenderModal(ModalDialog modal, MenuDefinition menuDef)
+	{
+		string fontName = menuDef.Font ?? "BIG";
+		if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
+			return;
+		Font font = theme.DefaultFont;
+		float fontSize = theme.DefaultFontSize;
+		float lineHeight = fontSize;
+
+		// Modal-specific colors from XML (PixelRect: Color/NWColor/SEColor/TextColor)
+		// Each has a dedicated ModalXxx attribute; falls back to menu default if absent.
+		Assets.Gameplay.MenuCollection menuCollection = SharedAssetManager.CurrentGame?.MenuCollection;
+		// PixelRect.Color — box fill
+		byte bgColorIndex = menuCollection?.DefaultModalColor ?? 0x17;
+		// PixelRect text label color
+		byte textColorIndex = menuCollection?.DefaultModalTextColor ?? 0;
+		// PixelRect.NWColor — top/left bevel (lighter, old BordColor)
+		byte nwColorIndex = menuCollection?.DefaultModalHighlight ?? menuCollection?.DefaultHighlight ?? 0x13;
+		// PixelRect.SEColor — bottom/right bevel (darker, old Bord2Color)
+		byte seColorIndex = menuCollection?.DefaultModalBorder2Color ?? menuCollection?.DefaultBorder2Color ?? 0;
+		Color bgColor = SharedAssetManager.GetPaletteColor(bgColorIndex);
+		Color textColor = SharedAssetManager.GetPaletteColor(textColorIndex);
+		Color colorNW = SharedAssetManager.GetPaletteColor(nwColorIndex);
+		Color colorSE = SharedAssetManager.GetPaletteColor(seColorIndex);
+
+		// Compute message text dimensions
+		string[] lines = modal.Message.Split('\n');
+		float maxLineWidth = 0f;
+		for (int i = 0; i < lines.Length; i++)
+		{
+			float w = font.GetStringSize(lines[i], fontSize: (int)fontSize).X;
+			if (w > maxLineWidth)
+				maxLineWidth = w;
+		}
+		float textHeight = lines.Length * lineHeight;
+
+		// Size and position the message box (contains only text, no buttons inside)
+		const float boxPad = 8f;   // inner padding for message box
+		const float btnPad = 4f;   // inner padding for Yes/No boxes
+		float msgBoxW = maxLineWidth + boxPad * 2f;
+		float msgBoxH = textHeight + boxPad * 2f;
+
+		// Size the Yes/No button boxes
+		float yesW = font.GetStringSize("Yes", fontSize: (int)fontSize).X;
+		float noW = font.GetStringSize("No", fontSize: (int)fontSize).X;
+		float yesBoxW = yesW + btnPad * 2f;
+		float noBoxW = noW + btnPad * 2f;
+		float btnBoxH = lineHeight + btnPad * 2f;
+
+		// Center the whole group (message box + buttons) vertically on 320x200
+		// Buttons sit flush against the bottom of the message box (outside it)
+		float totalH = msgBoxH + btnBoxH;
+		float msgBoxY = Mathf.Round((200f - totalH) / 2f);
+		float msgBoxX = Mathf.Round((320f - msgBoxW) / 2f);
+		float btnBoxY = msgBoxY + msgBoxH + 1f;
+
+		// Yes is left-aligned with the message box; No is right-aligned
+		float yesBoxX = msgBoxX;
+		float noBoxX = msgBoxX + msgBoxW - noBoxW;
+
+		// Semi-transparent dark overlay to dim the menu behind the dialog
+		_canvas.AddChild(new ColorRect
+		{
+			Color = new Color(0f, 0f, 0f, 0.5f),
+			Position = Vector2.Zero,
+			Size = new Vector2(320f, 200f),
+			ZIndex = 48,
+		});
+
+		// Message box: fill + single PixelRect-style bevel (NWColor top/left, SEColor bottom/right)
+		DrawBevelledBox(msgBoxX, msgBoxY, msgBoxW, msgBoxH, bgColor, colorNW, colorSE, 50, 51);
+
+		// Message text
+		_canvas.AddChild(new Label
+		{
+			Text = modal.Message,
+			Theme = theme,
+			Position = new Vector2(msgBoxX + boxPad, msgBoxY + boxPad),
+			ZIndex = 60,
+			LabelSettings = new LabelSettings
+			{
+				LineSpacing = fontSize,
+				FontColor = textColor,
+			}
+		});
+
+		// "Yes" box — outside/below the message box, left-aligned with it
+		DrawBevelledBox(yesBoxX, btnBoxY, yesBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
+		_canvas.AddChild(new Label
+		{
+			Text = "Yes",
+			Theme = theme,
+			Position = new Vector2(yesBoxX + btnPad, btnBoxY + btnPad),
+			ZIndex = 60,
+			LabelSettings = new LabelSettings { FontColor = textColor }
+		});
+
+		// "No" box — outside/below the message box, right-aligned with it
+		DrawBevelledBox(noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
+		_canvas.AddChild(new Label
+		{
+			Text = "No",
+			Theme = theme,
+			Position = new Vector2(noBoxX + btnPad, btnBoxY + btnPad),
+			ZIndex = 60,
+			LabelSettings = new LabelSettings { FontColor = textColor }
+		});
+
+		// Set button bounds for pointer hit-testing
+		const float hitExtra = 2f;
+		modal.YesButtonBounds = new Rect2(
+			yesBoxX - hitExtra, btnBoxY - hitExtra,
+			yesBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
+		modal.NoButtonBounds = new Rect2(
+			noBoxX - hitExtra, btnBoxY - hitExtra,
+			noBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
+	}
+
+	/// <summary>
+	/// Draws a filled rectangle with a PixelRect-style bevelled border.
+	/// Used by RenderModal for the dialog box and Yes/No button boxes.
+	/// colorNW = top/left bevel (lighter); colorSE = bottom/right bevel (darker).
+	/// </summary>
+	private void DrawBevelledBox(float x, float y, float w, float h,
+		Color bgColor, Color colorNW, Color colorSE,
+		int bgZIndex, int borderZIndex)
+	{
+		_canvas.AddChild(new ColorRect
+		{
+			Color = bgColor,
+			Position = new Vector2(x, y),
+			Size = new Vector2(w, h),
+			ZIndex = bgZIndex,
+		});
+		AddOutline(x, y, w, h, colorNW, colorSE, borderZIndex);
+	}
+
+	/// <summary>
+	/// Draws a bevelled outline (WL_MENU.C:DrawOutline / PixelRect bevel).
+	/// topLeft is used for top and left edges; bottomRight for bottom and right edges.
+	/// </summary>
+	private void AddOutline(float x, float y, float w, float h,
+		Color topLeft, Color bottomRight, int zIndex)
+	{
+		// Top edge (topLeft color, WL_MENU.C:VWB_Hlin top)
+		_canvas.AddChild(new ColorRect { Color = topLeft, Position = new Vector2(x, y), Size = new Vector2(w + 1f, 1f), ZIndex = zIndex });
+		// Left edge (topLeft color, WL_MENU.C:VWB_Vlin left)
+		_canvas.AddChild(new ColorRect { Color = topLeft, Position = new Vector2(x, y), Size = new Vector2(1f, h + 1f), ZIndex = zIndex });
+		// Bottom edge (bottomRight color, WL_MENU.C:VWB_Hlin bottom)
+		_canvas.AddChild(new ColorRect { Color = bottomRight, Position = new Vector2(x, y + h), Size = new Vector2(w + 1f, 1f), ZIndex = zIndex });
+		// Right edge (bottomRight color, WL_MENU.C:VWB_Vlin right)
+		_canvas.AddChild(new ColorRect { Color = bottomRight, Position = new Vector2(x + w, y), Size = new Vector2(1f, h + 1f), ZIndex = zIndex });
 	}
 	/// <summary>
 	/// Checks if a position is within the visible screen area.

@@ -151,7 +151,7 @@
 			<Number Name="Blue Key" X="256" Y="20" Have="SILVERKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
 			<Number Name="Fruit" X="296" Y="16" Digits="2" Init="0" />
 		</StatusBar>
-		<Menus BordColor="197" Bord2Color="0" Color="204" TextColor="0" Font="1" ModalFont="1" >
+		<Menus BordColor="197" Bord2Color="0" Color="204" TextColor="0" Font="1" ModalFont="1" ModalColor="204" ModalTextColor="0" ModalHighlight="197" ModalBorder2Color="0">
 			<!-- Classic game end strings -->
 			<EndString>Are you sure you're&#10;ready to quit?.&#10;Press Y to Quit.</EndString>
 			<EndString>What? Quitting already?&#10;Press Y to Quit.</EndString>

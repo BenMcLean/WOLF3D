@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
 using BenMcLean.Wolf3D.Simulator.Lua;
 using Godot;
@@ -32,6 +33,10 @@ public class MenuManager
 	private Rect2[] _currentMenuItemBounds = [];
 	private ClickablePictureBounds[] _currentClickablePictureBounds = [];
 	private MenuSequence _activeSequence;
+	private ModalDialog _activeModal;
+	private List<MenuItemDefinition> _currentVisibleItems = [];
+	// Independent RNG so menu randomization does not affect game state
+	private readonly Random _menuRng = new();
 	/// <summary>
 	/// Gets the current menu state.
 	/// </summary>
@@ -45,6 +50,21 @@ public class MenuManager
 	/// Consumer must clear via <see cref="ClearCancelAtRoot"/>.
 	/// </summary>
 	public bool CancelAtRootRequested { get; private set; }
+	/// <summary>
+	/// Set when the user confirmed the quit dialog.
+	/// Consumer (MenuRoom) polls this and calls GetTree().Quit().
+	/// </summary>
+	public bool PendingQuit { get; private set; }
+	/// <summary>
+	/// Set when the user confirmed the end-game dialog.
+	/// Consumer (MenuRoom → Root) polls this to discard the suspended game and return to menu.
+	/// Clear with <see cref="ClearPendingEndGame"/> after acting on it.
+	/// </summary>
+	public bool PendingEndGame { get; private set; }
+	/// <summary>
+	/// Clears the <see cref="PendingEndGame"/> flag after the consumer has acted on it.
+	/// </summary>
+	public void ClearPendingEndGame() => PendingEndGame = false;
 	/// <summary>
 	/// Optional callback to wrap menu navigations in a fade transition.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
@@ -101,7 +121,7 @@ public class MenuManager
 			NavigateToMenuAction = NavigateToMenu,
 			BackToPreviousMenuAction = BackToPreviousMenu,
 			CloseAllMenusAction = CloseAllMenus,
-			IsGameInProgressFunc = () => false, // TODO: Wire up to actual game state
+			// IsGameInProgressFunc is wired up by MenuRoom after construction
 			ShowConfirmFunc = ShowConfirm,
 			ShowMessageAction = ShowMessage,
 			RefreshMenuAction = RefreshMenu,
@@ -295,13 +315,41 @@ public class MenuManager
 			return;
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
-		_renderer.RenderMenu(menuDef, _selectedItemIndex);
+		_currentVisibleItems = GetVisibleItems(menuDef);
+		// Clamp selected index to visible item count
+		if (_currentVisibleItems.Count > 0 && _selectedItemIndex >= _currentVisibleItems.Count)
+			_selectedItemIndex = _currentVisibleItems.Count - 1;
+		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
 		// Update input with menu item bounds for hover detection
 		_currentMenuItemBounds = _renderer.GetMenuItemBounds();
 		_currentClickablePictureBounds = _renderer.GetClickablePictureBounds();
 		_input.SetMenuItemBounds(_currentMenuItemBounds);
 		// Execute OnSelectionChanged script if defined (WL_MENU.C:1518 - HandleMenu callback)
 		ExecuteOnSelectionChanged(menuDef);
+	}
+	/// <summary>
+	/// Returns the subset of a menu's items that are currently visible based on game state.
+	/// Items with Condition="true" (from InGame="true") show only when a game is in progress.
+	/// Items with Condition="false" show only when no game is in progress.
+	/// Items with no Condition are always visible.
+	/// </summary>
+	private List<MenuItemDefinition> GetVisibleItems(MenuDefinition menuDef)
+	{
+		bool inGame = _scriptContext.IsGameInProgress();
+		return [.. menuDef.Items.Where(item => IsItemVisible(item, inGame))];
+	}
+	/// <summary>
+	/// Returns true if the item should be shown given the current in-game state.
+	/// </summary>
+	private static bool IsItemVisible(MenuItemDefinition item, bool inGame)
+	{
+		if (string.IsNullOrEmpty(item.Condition))
+			return true;
+		if (item.Condition.Equals("true", StringComparison.OrdinalIgnoreCase))
+			return inGame;
+		if (item.Condition.Equals("false", StringComparison.OrdinalIgnoreCase))
+			return !inGame;
+		return true; // Unknown condition value = always show
 	}
 	/// <summary>
 	/// Execute the OnSelectionChanged Lua script for a menu.
@@ -380,7 +428,7 @@ public class MenuManager
 		// Update the picture definition
 		menuDef.Pictures[pictureIndex].Name = pictureName;
 		// Re-render the menu to show the updated picture
-		_renderer.RenderMenu(menuDef, _selectedItemIndex);
+		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
 	}
 	/// <summary>
 	/// Update menu system (called each frame).
@@ -430,28 +478,98 @@ public class MenuManager
 				_activeSequence = null;
 			return;
 		}
+		// Check for modal requests from Lua scripts (RequestQuit / RequestEndGame)
+		if (_activeModal == null)
+		{
+			if (_scriptContext.QuitRequested)
+			{
+				_scriptContext.QuitRequested = false;
+				ShowModal(GetRandomQuitMessage(), ModalDialog.ModalKind.Quit);
+				return;
+			}
+			if (_scriptContext.EndGameRequested)
+			{
+				_scriptContext.EndGameRequested = false;
+				// WL_MENU.C:ENDGAMESTR
+				ShowModal("Are you sure you want\nto end the game you\nare playing?", ModalDialog.ModalKind.EndGame);
+				return;
+			}
+		}
+
+		// Handle active modal (blocks normal menu input while pending)
+		if (_activeModal != null && _activeModal.IsPending)
+		{
+			Input.PointerState primary = _pointerProvider?.PrimaryPointer ?? default;
+			Input.PointerState secondary = _pointerProvider?.SecondaryPointer ?? default;
+			_activeModal.HandleInput(inputState, primary, secondary);
+			if (!_activeModal.IsPending)
+				ResolveModal();
+			return;
+		}
+
 		// Normal interactive menu mode
 		if (_pointerProvider != null)
 			HandlePointerHover(menuDef);
-		// Handle navigation
+		// Handle navigation (use _currentVisibleItems so invisible items are skipped)
 		if (inputState.UpPressed && _selectedItemIndex > 0)
 		{
 			_selectedItemIndex--;
 			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
-		else if (inputState.DownPressed && _selectedItemIndex < menuDef.Items.Count - 1)
+		else if (inputState.DownPressed && _selectedItemIndex < _currentVisibleItems.Count - 1)
 		{
 			_selectedItemIndex++;
 			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
 		// Handle selection
-		if (inputState.SelectPressed && menuDef.Items.Count > 0)
-			ExecuteMenuItemAction(menuDef.Items[_selectedItemIndex]);
+		if (inputState.SelectPressed && _currentVisibleItems.Count > 0)
+			ExecuteMenuItemAction(_currentVisibleItems[_selectedItemIndex]);
 		// Handle cancel/back
 		if (inputState.CancelPressed)
 			BackToPreviousMenu();
+	}
+	/// <summary>
+	/// Activates a modal dialog over the current menu.
+	/// Renders the modal immediately, then subsequent Update() calls process modal input.
+	/// WL_MENU.C:Confirm() equivalent.
+	/// </summary>
+	/// <param name="message">Message to display.</param>
+	/// <param name="kind">What action is being confirmed (Quit or EndGame).</param>
+	private void ShowModal(string message, ModalDialog.ModalKind kind)
+	{
+		_activeModal = new ModalDialog(message, kind);
+		RefreshMenu(); // Re-render with modal overlay
+	}
+	/// <summary>
+	/// Called when the modal dialog is resolved (user pressed Y/N or clicked a button).
+	/// Clears the modal, re-renders the menu, and sets the appropriate pending flag.
+	/// </summary>
+	private void ResolveModal()
+	{
+		bool confirmed = _activeModal.Result == ModalDialog.ModalResult.Confirmed;
+		ModalDialog.ModalKind kind = _activeModal.Kind;
+		_activeModal = null;
+		RefreshMenu(); // Re-render without modal overlay
+		if (!confirmed)
+			return;
+		if (kind == ModalDialog.ModalKind.Quit)
+			PendingQuit = true;
+		else if (kind == ModalDialog.ModalKind.EndGame)
+			PendingEndGame = true;
+	}
+	/// <summary>
+	/// Picks a random quit message from the collection's EndStrings.
+	/// WL_MENU.C:endStrings[US_RndT()&0x7+(US_RndT()&1)] — random index, biased toward 0-7.
+	/// Falls back to a classic message if no EndStrings are defined.
+	/// </summary>
+	private string GetRandomQuitMessage()
+	{
+		if (_menuCollection.EndStrings?.Count > 0)
+			return _menuCollection.EndStrings[_menuRng.Next(0, _menuCollection.EndStrings.Count)];
+		// WL_MENU.C:FOREIGN.H:QUITSUR fallback
+		return "Are you sure you want\nto quit this great game?";
 	}
 	/// <summary>
 	/// Handle pointer-based hover selection and button presses.
@@ -498,7 +616,7 @@ public class MenuManager
 				// Handle select only if pointer is over an item
 				if (primary.SelectPressed)
 				{
-					ExecuteMenuItemAction(menuDef.Items[hoveredIndex]);
+					ExecuteMenuItemAction(_currentVisibleItems[hoveredIndex]);
 					return;
 				}
 			}
@@ -530,7 +648,7 @@ public class MenuManager
 				// Handle select only if pointer is over an item
 				if (secondary.SelectPressed)
 				{
-					ExecuteMenuItemAction(menuDef.Items[hoveredIndex]);
+					ExecuteMenuItemAction(_currentVisibleItems[hoveredIndex]);
 					return;
 				}
 			}
@@ -712,7 +830,7 @@ public class MenuManager
 			return;
 		menuDef.Items[index].Text = text;
 		// Re-render to show updated text
-		_renderer.RenderMenu(menuDef, _selectedItemIndex);
+		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
 	}
 	#endregion Menu Item Text Updates
 

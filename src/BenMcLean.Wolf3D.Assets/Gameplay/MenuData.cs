@@ -668,6 +668,30 @@ public class MenuCollection
 	/// </summary>
 	public byte? DefaultBorder2Color { get; set; }
 	/// <summary>
+	/// Background fill color for modal dialog boxes (WL_MENU.C:Message DrawWindow wcolor).
+	/// Separate from DefaultTextColor — other games may use different colors for each.
+	/// WL1.xml: ModalColor="23" (TEXTCOLOR grey, 0x17)
+	/// </summary>
+	public byte? DefaultModalColor { get; set; }
+	/// <summary>
+	/// Text color inside modal dialog boxes (WL_MENU.C:SETFONTCOLOR foreground).
+	/// In original Wolf3D: always palette 0 (black). Other games may differ.
+	/// WL1.xml: ModalTextColor="0"
+	/// </summary>
+	public byte? DefaultModalTextColor { get; set; }
+	/// <summary>
+	/// Top/left bevel color for modal boxes (PixelRect.NWColor = NorthWest bevel).
+	/// Corresponds to old BordColor attribute. Separate from DefaultHighlight.
+	/// WL1.xml: ModalHighlight="19"
+	/// </summary>
+	public byte? DefaultModalHighlight { get; set; }
+	/// <summary>
+	/// Bottom/right bevel color for modal boxes (PixelRect.SEColor = SouthEast bevel).
+	/// Corresponds to old Bord2Color attribute. Separate from DefaultBorder2Color.
+	/// WL1.xml: ModalBorder2Color="0"
+	/// </summary>
+	public byte? DefaultModalBorder2Color { get; set; }
+	/// <summary>
 	/// Default sound to play when cursor moves to different menu item (e.g., "MOVEGUN2SND")
 	/// </summary>
 	public string DefaultCursorMoveSound { get; set; }
@@ -689,6 +713,12 @@ public class MenuCollection
 	/// Individual menus can override this with their Spacing attribute
 	/// </summary>
 	public int? DefaultSpacing { get; set; }
+	/// <summary>
+	/// Quit confirmation messages, randomly selected when user chooses to quit.
+	/// WL_MENU.C:endStrings[] - randomly picked with US_RndT()
+	/// Defined as &lt;EndString&gt; children of &lt;Menus&gt; in XML.
+	/// </summary>
+	public List<string> EndStrings { get; set; } = [];
 	/// <summary>
 	/// Adds a menu function to the collection.
 	/// </summary>
@@ -822,10 +852,22 @@ public class MenuCollection
 			collection.DefaultDeactive = deactive;
 		if (byte.TryParse(menusElement.Attribute("Border2Color")?.Value, out byte border2))
 			collection.DefaultBorder2Color = border2;
+		if (byte.TryParse(menusElement.Attribute("ModalColor")?.Value, out byte modalColor))
+			collection.DefaultModalColor = modalColor;
+		if (byte.TryParse(menusElement.Attribute("ModalTextColor")?.Value, out byte modalTextColor))
+			collection.DefaultModalTextColor = modalTextColor;
+		if (byte.TryParse(menusElement.Attribute("ModalHighlight")?.Value, out byte modalHighlight))
+			collection.DefaultModalHighlight = modalHighlight;
+		if (byte.TryParse(menusElement.Attribute("ModalBorder2Color")?.Value, out byte modalBorder2))
+			collection.DefaultModalBorder2Color = modalBorder2;
 
 		// Parse default spacing
 		if (int.TryParse(menusElement.Attribute("Spacing")?.Value, out int spacing))
 			collection.DefaultSpacing = spacing;
+		// Load quit end strings (WL_MENU.C:endStrings[])
+		collection.EndStrings = [.. menusElement.Elements("EndString")
+			.Select(e => e.Value?.Trim())
+			.Where(s => !string.IsNullOrEmpty(s))];
 		// Load menu functions first
 		IEnumerable<XElement> functionElements = menusElement.Elements("MenuFunction");
 		collection.LoadFunctionsFromXml(functionElements);
