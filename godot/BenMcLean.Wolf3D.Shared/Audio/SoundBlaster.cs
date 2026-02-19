@@ -17,7 +17,7 @@ public partial class SoundBlaster : Node
 {
 	#region Audio Players
 	public readonly ImfSignaller ImfSignaller = new();
-	public readonly IdAdlSignaller IdAdlSignaller = new();
+	public readonly AdlSignaller IdAdlSignaller = new();
 	public readonly MidiSignaller MidiSignaller = new();
 	public readonly OplPlayer OplPlayer = new()
 	{
@@ -191,7 +191,7 @@ public partial class SoundBlaster : Node
 		// Fallback to AdLib (FM synthesis beeps)
 		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds is not null &&
 			SharedAssetManager.CurrentGame.AudioT.Sounds.TryGetValue(soundName, out Adl adlSound))
-			IdAdlSignaller.IdAdlQueue.Enqueue(adlSound);
+			AdlSignaller.IdAdlQueue.Enqueue(adlSound);
 		else
 			GD.PrintErr($"ERROR: Sound '{soundName}' not found");
 	}

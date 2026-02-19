@@ -18,10 +18,10 @@ public class StatusBarRenderer
 	private readonly StatusBarDefinition _definition;
 	private readonly Dictionary<string, Label> _numberLabels = [];
 	private readonly Dictionary<string, TextureRect> _keyTextures = [];
-	private TextureRect _faceTexture;
-	private TextureRect _weaponTexture;
-	private int _lastFaceFrame = -1;
-	private int _lastWeapon = -1;
+	private TextureRect _faceTexture,
+		_weaponTexture;
+	private int _lastFaceFrame = -1,
+		_lastWeapon = -1;
 	/// <summary>
 	/// Creates a new StatusBarRenderer with a 320x40 virtual canvas.
 	/// </summary>
@@ -184,7 +184,7 @@ public class StatusBarRenderer
 	/// </summary>
 	private void RenderFace()
 	{
-		if (_definition.Face == null)
+		if (_definition.Face is null)
 			return;
 		string facePicName = GetFacePicName();
 		if (!SharedAssetManager.VgaGraph.TryGetValue(facePicName, out AtlasTexture texture))
@@ -208,7 +208,7 @@ public class StatusBarRenderer
 	/// </summary>
 	private void RenderWeapon()
 	{
-		if (_definition.Weapons == null)
+		if (_definition.Weapons is null)
 			return;
 		StatusBarWeaponDefinition weaponDef = null;
 		foreach (StatusBarWeaponDefinition w in _definition.Weapons.Weapons)
@@ -217,7 +217,7 @@ public class StatusBarRenderer
 				weaponDef = w;
 				break;
 			}
-		if (weaponDef == null || string.IsNullOrEmpty(weaponDef.Pic))
+		if (string.IsNullOrEmpty(weaponDef?.Pic))
 			return;
 		if (!SharedAssetManager.VgaGraph.TryGetValue(weaponDef.Pic, out AtlasTexture texture))
 		{
@@ -258,14 +258,14 @@ public class StatusBarRenderer
 		if (_numberLabels.TryGetValue(name, out Label label))
 		{
 			StatusBarNumberDefinition numberDef = _definition.GetNumber(name);
-			if (numberDef != null)
+			if (numberDef is not null)
 				label.Text = FormatNumber(newValue, numberDef.Digits);
 		}
 		// Update key texture if exists
 		if (_keyTextures.TryGetValue(name, out TextureRect keyTexture))
 		{
 			StatusBarNumberDefinition numberDef = _definition.GetNumber(name);
-			if (numberDef != null)
+			if (numberDef is not null)
 			{
 				string picName = newValue > 0 ? numberDef.Have : numberDef.Empty;
 				if (!string.IsNullOrEmpty(picName) && SharedAssetManager.VgaGraph.TryGetValue(picName, out AtlasTexture texture))
@@ -281,7 +281,7 @@ public class StatusBarRenderer
 	/// </summary>
 	private void UpdateFace()
 	{
-		if (_faceTexture == null || _definition.Face == null)
+		if (_faceTexture is null || _definition.Face is null)
 			return;
 		string facePicName = GetFacePicName();
 		if (SharedAssetManager.VgaGraph.TryGetValue(facePicName, out AtlasTexture texture))
@@ -296,7 +296,7 @@ public class StatusBarRenderer
 	/// </summary>
 	private void UpdateWeapon()
 	{
-		if (_weaponTexture == null || _definition.Weapons == null)
+		if (_weaponTexture is null || _definition.Weapons is null)
 			return;
 		StatusBarWeaponDefinition weaponDef = null;
 		foreach (StatusBarWeaponDefinition w in _definition.Weapons.Weapons)
@@ -324,14 +324,13 @@ public class StatusBarRenderer
 			return "FACE8APIC";
 		// Calculate face level (1-7) based on health percentage
 		// Level 1 = highest health (80-100%), Level 7 = lowest (1-14%)
-		int level;
-		if (health >= 80) level = 1;
-		else if (health >= 67) level = 2;
-		else if (health >= 53) level = 3;
-		else if (health >= 40) level = 4;
-		else if (health >= 27) level = 5;
-		else if (health >= 14) level = 6;
-		else level = 7;
+		int level = health >= 80 ? 1
+			: health >= 67 ? 2
+			: health >= 53 ? 3
+			: health >= 40 ? 4
+			: health >= 27 ? 5
+			: health >= 14 ? 6
+			: 7;
 		// Frame A, B, or C based on FaceFrame (0, 1, 2)
 		char frame = (char)('A' + (_state.FaceFrame % 3));
 		return $"FACE{level}{frame}PIC";

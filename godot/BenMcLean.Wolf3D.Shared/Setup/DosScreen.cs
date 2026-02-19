@@ -70,17 +70,16 @@ namespace BenMcLean.Wolf3D.Shared
 				return this;
 			}
 
-			public const ushort Height = 25;
-			public const ushort Width = 80;
+			public const byte Height = 25, Width = 80;
 			public const float BlinkRate = 0.25f;
 			private float Blink { get; set; } = 0f;
 
 			public bool ShowCursor
 			{
-				get => Cursor == null ? false : Cursor.Visible;
+				get => Cursor is not null && Cursor.Visible;
 				set
 				{
-					if (Cursor != null)
+					if (Cursor is not null)
 						Cursor.Visible = value;
 				}
 			}
@@ -109,9 +108,9 @@ namespace BenMcLean.Wolf3D.Shared
 				foreach (string line in Wrap(value).Split('\n'))
 					lines.Enqueue(line);
 				if (Height > 0)
-					while (lines.Count() > Height)
+					while (lines.Count > Height)
 						lines.Dequeue();
-				if (Label != null)
+				if (Label is not null)
 					Label.Text = Text;
 				SetCursor();
 				return this;
@@ -156,22 +155,22 @@ namespace BenMcLean.Wolf3D.Shared
 				Size = Viewport.Size,
 			});
 			FontFile font = BiosFont.GetFont();
-			Label label = new Label()
+			Label label = new()
 			{
 				Theme = new Theme()
 				{
 					DefaultFont = font,
 				},
-				Position = new Vector2(0, 0),
+				Position = new Vector2(0f, 0f),
 			};
 			label.Set("custom_constants/line_spacing", 0);
 			label.Set("custom_colors/font_color", Color.Color8(170, 170, 170, 255));
 			Viewport.AddChild(label);
 			Screen.Label = label;
-			ColorRect cursor = new ColorRect
+			ColorRect cursor = new()
 			{
 				Color = Color.Color8(170, 170, 170, 255),
-				Size = new Vector2(9, 2),
+				Size = new Vector2(9f, 2f),
 			};
 			Viewport.AddChild(cursor);
 			Screen.Cursor = cursor;

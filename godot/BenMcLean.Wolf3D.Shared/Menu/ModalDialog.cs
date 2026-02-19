@@ -7,7 +7,12 @@ namespace BenMcLean.Wolf3D.Shared.Menu;
 /// Shown over the menu when the user tries to quit or end the current game.
 /// WL_MENU.C:Confirm() — draws a message box and waits for Y or N keypress.
 /// </summary>
-public class ModalDialog
+/// <remarks>
+/// Creates a new modal dialog with the given message and kind.
+/// </remarks>
+/// <param name="message">Message to display. May contain newlines.</param>
+/// <param name="kind">The action being confirmed (Quit or EndGame).</param>
+public class ModalDialog(string message, ModalDialog.ModalKind kind)
 {
 	/// <summary>
 	/// Possible outcomes of a modal dialog.
@@ -23,12 +28,12 @@ public class ModalDialog
 	/// <summary>
 	/// Message text to display in the dialog. May contain newlines.
 	/// </summary>
-	public string Message { get; }
+	public string Message { get; } = message;
 
 	/// <summary>
 	/// What action this modal is confirming.
 	/// </summary>
-	public ModalKind Kind { get; }
+	public ModalKind Kind { get; } = kind;
 
 	/// <summary>
 	/// Current result of the dialog.
@@ -52,17 +57,6 @@ public class ModalDialog
 	/// Set by MenuRenderer after laying out the dialog. Used for pointer hit-testing.
 	/// </summary>
 	public Godot.Rect2 NoButtonBounds { get; set; }
-
-	/// <summary>
-	/// Creates a new modal dialog with the given message and kind.
-	/// </summary>
-	/// <param name="message">Message to display. May contain newlines.</param>
-	/// <param name="kind">The action being confirmed (Quit or EndGame).</param>
-	public ModalDialog(string message, ModalKind kind)
-	{
-		Message = message;
-		Kind = kind;
-	}
 
 	/// <summary>
 	/// Confirm the dialog (user pressed Y or clicked Yes).

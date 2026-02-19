@@ -135,8 +135,7 @@ public class StatusBarState
 	/// <param name="inventory">The Inventory to subscribe to</param>
 	public void SubscribeToInventory(Inventory inventory)
 	{
-		if (inventory == null)
-			throw new ArgumentNullException(nameof(inventory));
+		ArgumentNullException.ThrowIfNull(inventory);
 		// Unsubscribe from previous inventory if any
 		UnsubscribeFromInventory();
 		_subscribedInventory = inventory;
@@ -156,7 +155,7 @@ public class StatusBarState
 	/// </summary>
 	public void UnsubscribeFromInventory()
 	{
-		if (_subscribedInventory != null && _inventoryHandler != null)
+		if (_subscribedInventory is not null && _inventoryHandler is not null)
 		{
 			_subscribedInventory.ValueChanged -= _inventoryHandler;
 			_subscribedInventory = null;

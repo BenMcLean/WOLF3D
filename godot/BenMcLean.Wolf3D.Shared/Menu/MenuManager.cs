@@ -6,7 +6,6 @@ using BenMcLean.Wolf3D.Simulator.Lua;
 using Godot;
 using Microsoft.Extensions.Logging;
 using BenMcLean.Wolf3D.Assets.Gameplay;
-using BenMcLean.Wolf3D.Assets.Sound;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
@@ -17,6 +16,7 @@ namespace BenMcLean.Wolf3D.Shared.Menu;
 /// </summary>
 public class MenuManager
 {
+	#region Data
 	private readonly MenuCollection _menuCollection;
 	private readonly MenuState _sessionState;
 	private readonly Config _config;
@@ -37,6 +37,7 @@ public class MenuManager
 	private List<MenuItemDefinition> _currentVisibleItems = [];
 	// Independent RNG so menu randomization does not affect game state
 	private readonly Random _menuRng = new();
+	#endregion Data
 	/// <summary>
 	/// Gets the current menu state.
 	/// </summary>
@@ -45,6 +46,7 @@ public class MenuManager
 	/// Gets the script context for setting intermission data.
 	/// </summary>
 	public MenuScriptContext ScriptContext => _scriptContext;
+	#region Flags
 	/// <summary>
 	/// Set when ESC/Cancel is pressed at the root menu (no parent to go back to).
 	/// Consumer must clear via <see cref="ClearCancelAtRoot"/>.
@@ -65,12 +67,16 @@ public class MenuManager
 	/// Clears the <see cref="PendingEndGame"/> flag after the consumer has acted on it.
 	/// </summary>
 	public void ClearPendingEndGame() => PendingEndGame = false;
+	#endregion Flags
+	#region Events
 	/// <summary>
 	/// Optional callback to wrap menu navigations in a fade transition.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// If null, navigations happen immediately without fading.
 	/// </summary>
 	public Action<Action> FadeTransitionCallback { get; set; }
+	#endregion Events
+	#region Delegates
 	/// <summary>
 	/// Delegate that returns the current Simulator for saving.
 	/// Set by consumer (MenuRoom/Root) when a game is suspended.
@@ -82,6 +88,7 @@ public class MenuManager
 	/// Set by consumer (MenuRoom/Root).
 	/// </summary>
 	public Func<string> GetMapNameFunc { get; set; }
+	#endregion Delegates
 	/// <summary>
 	/// Gets the menu renderer.
 	/// </summary>
@@ -90,10 +97,7 @@ public class MenuManager
 	/// Sets the pointer provider for crosshair display.
 	/// </summary>
 	/// <param name="provider">The pointer provider to use, or null to disable crosshairs.</param>
-	public void SetPointerProvider(IMenuPointerProvider provider)
-	{
-		_pointerProvider = provider;
-	}
+	public void SetPointerProvider(IMenuPointerProvider provider) => _pointerProvider = provider;
 	/// <summary>
 	/// Creates a new MenuManager.
 	/// </summary>
@@ -217,10 +221,9 @@ public class MenuManager
 		// Set new current menu
 		_currentMenuName = menuName;
 		_selectedItemIndex = 0; // Reset to first item
-		// Handle menu music
-		// null = no music attribute (do nothing), "" = explicit stop, otherwise play
+								// Handle menu music
+								// null = no music attribute (do nothing), "" = explicit stop, otherwise play
 		if (menuDef.Music != null)
-		{
 			if (menuDef.Music == "")
 			{
 				_currentMenuMusic = null;
@@ -231,7 +234,6 @@ public class MenuManager
 				_currentMenuMusic = menuDef.Music;
 				_scriptContext.PlayMusic(menuDef.Music);
 			}
-		}
 		// Render the menu
 		RefreshMenu();
 		// Create a sequence for OnShow to queue steps into
@@ -243,11 +245,10 @@ public class MenuManager
 		_scriptContext.ActiveSequence = null;
 		// Queue Pause elements after OnShow steps (tickers/delays run first, then pauses)
 		if (menuDef.Pauses != null)
-		{
-			foreach (Assets.Gameplay.MenuPauseDefinition pauseDef in menuDef.Pauses)
+			foreach (MenuPauseDefinition pauseDef in menuDef.Pauses)
 			{
 				// Capture pauseDef for the closure
-				Assets.Gameplay.MenuPauseDefinition captured = pauseDef;
+				MenuPauseDefinition captured = pauseDef;
 				float? duration = captured.Duration.HasValue
 					? (float)captured.Duration.Value.TotalSeconds
 					: null;
@@ -257,7 +258,6 @@ public class MenuManager
 						ExecutePauseScript(captured.Script);
 				}));
 			}
-		}
 		// Activate the sequence if it has steps, otherwise discard
 		_activeSequence = sequence.HasSteps ? sequence : null;
 		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);
@@ -274,7 +274,7 @@ public class MenuManager
 			CancelAtRootRequested = true;
 			return;
 		}
-		if (FadeTransitionCallback != null)
+		if (FadeTransitionCallback is not null)
 		{
 			FadeTransitionCallback(BackToPreviousMenuImmediate);
 			return;
@@ -302,7 +302,7 @@ public class MenuManager
 		_menuStack.Clear();
 		_currentMenuName = null;
 		_logger?.LogDebug("Closed all menus");
-		// TODO: Signal to Root.cs or game manager that menus are closed
+		// TODO: Signal to Root.cs or game manager that menus are closed?
 	}
 	/// <summary>
 	/// Refresh the current menu display.
@@ -333,16 +333,13 @@ public class MenuManager
 	/// Items with Condition="false" show only when no game is in progress.
 	/// Items with no Condition are always visible.
 	/// </summary>
-	private List<MenuItemDefinition> GetVisibleItems(MenuDefinition menuDef)
-	{
-		bool inGame = _scriptContext.IsGameInProgress();
-		return [.. menuDef.Items.Where(item => IsItemVisible(item, inGame))];
-	}
+	private List<MenuItemDefinition> GetVisibleItems(MenuDefinition menuDef) => [.. menuDef.Items
+		.Where(item => IsItemVisible(item, _scriptContext.IsGameInProgress()))];
 	/// <summary>
 	/// Returns true if the item should be shown given the current in-game state.
 	/// </summary>
 	private static bool IsItemVisible(MenuItemDefinition item, bool inGame)
-	{
+	{//TODO This should probably be a one-liner, probably a statement rather than a method body
 		if (string.IsNullOrEmpty(item.Condition))
 			return true;
 		if (item.Condition.Equals("true", StringComparison.OrdinalIgnoreCase))
@@ -439,7 +436,6 @@ public class MenuManager
 	/// Clears the <see cref="CancelAtRootRequested"/> flag after the consumer has acted on it.
 	/// </summary>
 	public void ClearCancelAtRoot() => CancelAtRootRequested = false;
-
 	public void Update(float delta)
 	{
 		if (string.IsNullOrEmpty(_currentMenuName))
@@ -460,26 +456,26 @@ public class MenuManager
 		MenuInputState inputState = _input.GetState();
 		// Check for "any button" from pointers as well
 		bool anyButtonPressed = inputState.AnyButtonPressed;
-		if (_pointerProvider != null)
+		if (_pointerProvider is not null)
 		{
-			Input.PointerState primary = _pointerProvider.PrimaryPointer;
-			Input.PointerState secondary = _pointerProvider.SecondaryPointer;
+			Input.PointerState primary = _pointerProvider.PrimaryPointer,
+				secondary = _pointerProvider.SecondaryPointer;
 			if (primary.SelectPressed || primary.CancelPressed ||
 				secondary.SelectPressed || secondary.CancelPressed)
 				anyButtonPressed = true;
 		}
 		// If a presentation sequence is active, process it instead of normal menu input
-		if (_activeSequence != null && !_activeSequence.IsComplete)
+		if (_activeSequence is not null && !_activeSequence.IsComplete)
 		{
 			_activeSequence.Update(delta, anyButtonPressed);
 			// Sequence callback (e.g., Pause script) may navigate to a new menu,
 			// which replaces _activeSequence. Null-check before accessing.
-			if (_activeSequence != null && _activeSequence.IsComplete)
+			if (_activeSequence is not null && _activeSequence.IsComplete)
 				_activeSequence = null;
 			return;
 		}
 		// Check for modal requests from Lua scripts (RequestQuit / RequestEndGame)
-		if (_activeModal == null)
+		if (_activeModal is null)
 		{
 			if (_scriptContext.QuitRequested)
 			{
@@ -497,10 +493,10 @@ public class MenuManager
 		}
 
 		// Handle active modal (blocks normal menu input while pending)
-		if (_activeModal != null && _activeModal.IsPending)
+		if (_activeModal is not null && _activeModal.IsPending)
 		{
-			Input.PointerState primary = _pointerProvider?.PrimaryPointer ?? default;
-			Input.PointerState secondary = _pointerProvider?.SecondaryPointer ?? default;
+			Input.PointerState primary = _pointerProvider?.PrimaryPointer ?? default,
+				secondary = _pointerProvider?.SecondaryPointer ?? default;
 			_activeModal.HandleInput(inputState, primary, secondary);
 			if (!_activeModal.IsPending)
 				ResolveModal();
@@ -508,7 +504,7 @@ public class MenuManager
 		}
 
 		// Normal interactive menu mode
-		if (_pointerProvider != null)
+		if (_pointerProvider is not null)
 			HandlePointerHover(menuDef);
 		// Handle navigation (use _currentVisibleItems so invisible items are skipped)
 		if (inputState.UpPressed && _selectedItemIndex > 0)
@@ -564,13 +560,11 @@ public class MenuManager
 	/// WL_MENU.C:endStrings[US_RndT()&0x7+(US_RndT()&1)] — random index, biased toward 0-7.
 	/// Falls back to a classic message if no EndStrings are defined.
 	/// </summary>
-	private string GetRandomQuitMessage()
-	{
-		if (_menuCollection.EndStrings?.Count > 0)
-			return _menuCollection.EndStrings[_menuRng.Next(0, _menuCollection.EndStrings.Count)];
-		// WL_MENU.C:FOREIGN.H:QUITSUR fallback
-		return "Are you sure you want\nto quit this great game?";
-	}
+	private string GetRandomQuitMessage() =>
+		_menuCollection.EndStrings?.Count > 0
+			? _menuCollection.EndStrings[_menuRng.Next(0, _menuCollection.EndStrings.Count)]
+			// WL_MENU.C:FOREIGN.H:QUITSUR fallback
+			: "Are you sure you want\nto quit this great game?";
 	/// <summary>
 	/// Handle pointer-based hover selection and button presses.
 	/// Updates selection when a pointer is over a different menu item than currently selected.
@@ -580,8 +574,8 @@ public class MenuManager
 	/// <param name="menuDef">Current menu definition</param>
 	private void HandlePointerHover(MenuDefinition menuDef)
 	{
-		Input.PointerState primary = _pointerProvider.PrimaryPointer;
-		Input.PointerState secondary = _pointerProvider.SecondaryPointer;
+		Input.PointerState primary = _pointerProvider.PrimaryPointer,
+			secondary = _pointerProvider.SecondaryPointer;
 
 		// Check for cancel from either pointer (works regardless of position)
 		if (primary.CancelPressed || secondary.CancelPressed)
@@ -675,7 +669,6 @@ public class MenuManager
 	{
 		if (string.IsNullOrEmpty(item.Script))
 			return;
-
 		try
 		{
 			_luaEngine.DoString(item.Script, _scriptContext);
@@ -727,17 +720,13 @@ public class MenuManager
 		if (!string.IsNullOrEmpty(menuDef.CursorMoveSound))
 			_scriptContext.PlayAdLibSound(menuDef.CursorMoveSound);
 	}
-
 	/// <summary>
 	/// Update a named text label's content.
 	/// Called from Lua via SetText(name, value).
 	/// </summary>
 	/// <param name="name">The Name attribute of the text element</param>
 	/// <param name="value">New text content</param>
-	private void SetText(string name, string value)
-	{
-		_renderer.UpdateText(name, value);
-	}
+	private void SetText(string name, string value) => _renderer.UpdateText(name, value);
 	/// <summary>
 	/// Update a ticker label's displayed value.
 	/// Called from Lua via UpdateTicker(name, value).
@@ -746,11 +735,9 @@ public class MenuManager
 	/// <param name="value">New display value</param>
 	private void UpdateTicker(string name, string value)
 	{
-		if (string.IsNullOrEmpty(_currentMenuName))
-			return;
-		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
-			return;
-		_renderer.UpdateTicker(name, value, menuDef);
+		if (!string.IsNullOrEmpty(_currentMenuName) &&
+			_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+			_renderer.UpdateTicker(name, value, menuDef);
 	}
 	/// <summary>
 	/// Look up a ticker definition by name from the current menu.
@@ -760,11 +747,9 @@ public class MenuManager
 	/// <returns>The ticker definition, or null if not found</returns>
 	private MenuTickerDefinition GetTickerDefinition(string name)
 	{
-		if (string.IsNullOrEmpty(_currentMenuName))
-			return null;
-		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
-			return null;
-		if (menuDef.Tickers == null)
+		if (string.IsNullOrEmpty(_currentMenuName) ||
+			!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef) ||
+			menuDef.Tickers is null)
 			return null;
 		for (int i = 0; i < menuDef.Tickers.Count; i++)
 			if (menuDef.Tickers[i].Name == name)
@@ -779,30 +764,26 @@ public class MenuManager
 	/// <param name="soundName">Name of the AdLib sound (e.g., "MOVEGUN2SND")</param>
 	private void PlayAdLibSoundImpl(string soundName)
 	{
-		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds == null)
+		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds is null)
 		{
 			_logger?.LogWarning("Cannot play AdLib sound '{soundName}' - no AudioT loaded", soundName);
 			return;
 		}
-
 		EventBus.Emit(GameEvent.PlaySound, soundName);
 	}
-
 	/// <summary>
 	/// Play background music by name.
 	/// </summary>
 	/// <param name="musicName">Name of the music track</param>
 	private void PlayMusicImpl(string musicName)
 	{
-		if (SharedAssetManager.CurrentGame?.AudioT?.Songs == null)
+		if (SharedAssetManager.CurrentGame?.AudioT?.Songs is null)
 		{
 			_logger?.LogWarning("Cannot play music '{musicName}' - no AudioT loaded", musicName);
 			return;
 		}
-
 		EventBus.Emit(GameEvent.PlayMusic, musicName);
 	}
-
 	/// <summary>
 	/// Stop currently playing music.
 	/// </summary>
@@ -812,7 +793,6 @@ public class MenuManager
 		EventBus.Emit(GameEvent.StopMusic);
 	}
 	#endregion Sound Playback Implementation
-
 	#region Menu Item Text Updates
 	/// <summary>
 	/// Updates a menu item's display text by index and re-renders.
@@ -822,18 +802,16 @@ public class MenuManager
 	/// <param name="text">New display text</param>
 	private void SetItemText(int index, string text)
 	{
-		if (string.IsNullOrEmpty(_currentMenuName))
-			return;
-		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
-			return;
-		if (index < 0 || index >= menuDef.Items.Count)
+		if (string.IsNullOrEmpty(_currentMenuName) ||
+			!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef) ||
+			index < 0 ||
+			index >= menuDef.Items.Count)
 			return;
 		menuDef.Items[index].Text = text;
 		// Re-render to show updated text
 		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
 	}
 	#endregion Menu Item Text Updates
-
 	#region Save/Load Game
 	/// <summary>
 	/// Saves the current game to a slot.
@@ -843,7 +821,7 @@ public class MenuManager
 	private void SaveGameImpl(int slot)
 	{
 		Simulator.Simulator sim = SaveSimulatorFunc?.Invoke();
-		if (sim == null)
+		if (sim is null)
 		{
 			GD.PrintErr("ERROR: No simulator available for saving");
 			return;
@@ -862,38 +840,31 @@ public class MenuManager
 	private void LoadGameImpl(int slot)
 	{
 		string path = SaveGameManager.GetSaveFilePath(slot);
-		if (path == null || !System.IO.File.Exists(path))
+		if (path is null || !System.IO.File.Exists(path))
 			return;
 		_sessionState.LoadGameSlot = slot;
 	}
-
 	/// <summary>
 	/// Gets the display name for a save slot.
 	/// Returns empty string if slot is empty.
 	/// </summary>
 	/// <param name="slot">Slot index (0-9)</param>
 	/// <returns>Display name or empty string</returns>
-	private string GetSaveSlotNameImpl(int slot)
-	{
-		return SaveGameManager.GetSlotDisplayName(slot) ?? "";
-	}
-
+	private string GetSaveSlotNameImpl(int slot) => SaveGameManager.GetSlotDisplayName(slot) ?? "";
 	/// <summary>
 	/// Refreshes save slot names in the current menu by re-executing its OnShow script.
 	/// Called after a save completes to update the displayed slot names.
 	/// </summary>
 	private void RefreshSaveSlotNames()
 	{
-		if (string.IsNullOrEmpty(_currentMenuName))
-			return;
-		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+		if (string.IsNullOrEmpty(_currentMenuName) ||
+			!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
 		// Re-execute OnShow to repopulate slot names
 		ExecuteOnShow(menuDef);
 		RefreshMenu();
 	}
 	#endregion Save/Load Game
-
 	#region UI Dialog Helpers
 	/// <summary>
 	/// Show a confirmation dialog (Yes/No).
@@ -903,7 +874,7 @@ public class MenuManager
 	/// <returns>True if user confirmed, false if cancelled</returns>
 	private bool ShowConfirm(string message)
 	{
-		// TODO: Implement actual confirmation dialog
+		// TODO: Implement actual confirmation dialog using ModalDialog
 		_logger?.LogDebug("ShowConfirm: {message} (TODO: implement)", message);
 		return true; // Placeholder: always confirm
 	}
@@ -914,7 +885,7 @@ public class MenuManager
 	/// <param name="message">Message to display</param>
 	private void ShowMessage(string message)
 	{
-		// TODO: Implement actual message dialog
+		// TODO: Implement actual message dialog using ModalDialog
 		_logger?.LogDebug("ShowMessage: {message} (TODO: implement)", message);
 	}
 	#endregion UI Dialog Helpers

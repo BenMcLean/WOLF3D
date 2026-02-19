@@ -13,6 +13,7 @@ namespace BenMcLean.Wolf3D.Shared.Menu;
 /// </summary>
 public class MenuRenderer
 {
+	#region Data
 	private readonly SubViewport _viewport;
 	private readonly Control _canvas;
 	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
@@ -26,11 +27,14 @@ public class MenuRenderer
 	private Input.PointerState _secondaryPointer;
 	private TextureRect _primaryCrosshair;
 	private TextureRect _secondaryCrosshair;
+	#endregion Data
+	#region Events
 	/// <summary>
 	/// Event fired when the border color changes.
 	/// Allows presentation layer to update margins to match border color.
 	/// </summary>
 	public event Action<Color> BorderColorChanged;
+	#endregion Events
 	/// <summary>
 	/// Gets the current border color.
 	/// This is the color used for the menu background/border (SVGA mode 13h border color).
@@ -197,7 +201,6 @@ public class MenuRenderer
 			{
 				string[] frameNames = pictureDef.Frames.Split(',');
 				if (frameNames.Length > 1)
-				{
 					_animatedPictures.Add(new AnimatedPictureState
 					{
 						TextureRect = picture,
@@ -206,7 +209,6 @@ public class MenuRenderer
 						CurrentFrame = 0,
 						Elapsed = 0f
 					});
-				}
 			}
 		}
 	}
@@ -240,7 +242,7 @@ public class MenuRenderer
 			Position = new Vector2(0, y),
 			Size = new Vector2(320, region.Size.Y),
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			ZIndex = 4 // Draw stripes below the picture itself
+			ZIndex = 4, // Draw stripes below the picture itself
 		};
 		_canvas.AddChild(stripes);
 	}
@@ -251,7 +253,7 @@ public class MenuRenderer
 	/// </summary>
 	/// <param name="menuDef">Menu definition containing box list</param>
 	private void RenderMenuBoxes(MenuDefinition menuDef)
-	{
+	{//TODO check whether a dedicated PixelRect class would take care of both this AND the ModalDialogue class's pixel box drawing needs to keep box drawing DRY
 		if (menuDef.Boxes is null || menuDef.Boxes.Count == 0)
 			return;
 		foreach (MenuBoxDefinition boxDef in menuDef.Boxes)
@@ -342,24 +344,22 @@ public class MenuRenderer
 				Text = textDef.Content,
 				Theme = theme,
 				ZIndex = 8, // Draw text labels below menu items but above boxes
-				// LabelSettings takes priority over theme, so set both LineSpacing and FontColor here
-				// LineSpacing is the total line height - set to font size for tight spacing
+							// LabelSettings takes priority over theme, so set both LineSpacing and FontColor here
+							// LineSpacing is the total line height - set to font size for tight spacing
 				LabelSettings = new LabelSettings
 				{
 					LineSpacing = theme.DefaultFontSize,
-					FontColor = textColor
+					FontColor = textColor,
 				}
 			};
 			// Calculate position (with centering if specified)
 			// Add to canvas first so we can get the text size
 			_canvas.AddChild(label);
 			Vector2 textSize = label.Size;
-			// Calculate X position
-			float x = textDef.CenterX ? (320 - textSize.X) / 2 : textDef.XValue;
-			// Calculate Y position
-			float y = textDef.CenterY ? (200 - textSize.Y) / 2 : textDef.YValue;
 			// Set final position
-			label.Position = new Vector2(x, y);
+			label.Position = new Vector2(
+				x: textDef.CenterX ? (320f - textSize.X) / 2f : textDef.XValue,
+				y: textDef.CenterY ? (200f - textSize.Y) / 2f : textDef.YValue);
 			label.PivotOffset = Vector2.Zero;
 			// Track named text labels for dynamic updates from Lua
 			if (!string.IsNullOrEmpty(textDef.Name))
@@ -387,9 +387,9 @@ public class MenuRenderer
 		// Defaults match original MainItems if not specified
 		float x = menuDef.X ?? 76, // MENU_X from WL_MENU.H
 			indent = menuDef.Indent ?? 24, // MainItems.indent
-			spacing = menuDef.Spacing ?? 13; // Original uses 13 (DrawMenu: PrintY=item_i->y+i*13)
-		// Use accumulated Y position to support per-item spacing via ExtraSpacing custom property
-		float currentY = menuDef.Y ?? 55; // MENU_Y from WL_MENU.H
+			spacing = menuDef.Spacing ?? 13, // Original uses 13 (DrawMenu: PrintY=item_i->y+i*13)
+											 // Use accumulated Y position to support per-item spacing via ExtraSpacing custom property
+			currentY = menuDef.Y ?? 55; // MENU_Y from WL_MENU.H
 		for (int i = 0; i < items.Count; i++)
 		{
 			MenuItemDefinition item = items[i];
@@ -418,7 +418,7 @@ public class MenuRenderer
 				LabelSettings = new LabelSettings
 				{
 					LineSpacing = theme.DefaultFontSize,
-					FontColor = textColor
+					FontColor = textColor,
 				}
 			};
 			_canvas.AddChild(label);
@@ -454,9 +454,9 @@ public class MenuRenderer
 		// Layout coordinates (matching original DrawMenuGun)
 		// Calculate cursor Y position using accumulated spacing (same logic as RenderMenuItems)
 		float x = menuDef.X ?? 76, // MENU_X from WL_MENU.H
-			spacing = menuDef.Spacing ?? 13; // Original uses 13
-		float currentY = menuDef.Y ?? 55; // Start Y position
-		// Accumulate Y position up to selectedIndex (same as RenderMenuItems)
+			spacing = menuDef.Spacing ?? 13, // Original uses 13
+			currentY = menuDef.Y ?? 55; // Start Y position
+										// Accumulate Y position up to selectedIndex (same as RenderMenuItems)
 		for (int i = 0; i < selectedIndex && i < visibleItems.Count; i++)
 		{
 			MenuItemDefinition item = visibleItems[i];
@@ -523,13 +523,10 @@ public class MenuRenderer
 				_primaryCrosshair.Position = _primaryPointer.Position - _primaryCrosshair.Size / 2;
 			}
 			else
-			{
 				_primaryCrosshair.Visible = false;
-			}
 		}
 		// Update secondary crosshair
-		if (_secondaryCrosshair != null)
-		{
+		if (_secondaryCrosshair is not null)
 			if (_secondaryPointer.IsActive && IsPositionOnScreen(_secondaryPointer.Position))
 			{
 				_secondaryCrosshair.Visible = true;
@@ -537,10 +534,7 @@ public class MenuRenderer
 				_secondaryCrosshair.Position = _secondaryPointer.Position - _secondaryCrosshair.Size / 2;
 			}
 			else
-			{
 				_secondaryCrosshair.Visible = false;
-			}
-		}
 	}
 	/// <summary>
 	/// Render ticker labels (for intermission screen percent counters).
@@ -572,14 +566,14 @@ public class MenuRenderer
 				{
 					LineSpacing = theme.DefaultFontSize,
 					FontColor = textColor
-				}
+				},
 			};
 			_canvas.AddChild(label);
 			// Position the ticker
-			float x = tickerDef.XValue;
-			float y = tickerDef.YValue;
+			float x = tickerDef.XValue,
+				y = tickerDef.YValue;
 			// Right-align: position is the right edge, offset left by text width
-			if (tickerDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true)
+			if (tickerDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) ?? false)
 			{
 				Font font = theme.DefaultFont;
 				float textWidth = font.GetStringSize(label.Text, fontSize: theme.DefaultFontSize).X;
@@ -618,17 +612,13 @@ public class MenuRenderer
 		label.Text = value;
 		// Find the ticker definition for alignment info
 		MenuTickerDefinition tickerDef = null;
-		if (menuDef?.Tickers != null)
-		{
+		if (menuDef?.Tickers is not null)
 			for (int i = 0; i < menuDef.Tickers.Count; i++)
-			{
 				if (menuDef.Tickers[i].Name == name)
 				{
 					tickerDef = menuDef.Tickers[i];
 					break;
 				}
-			}
-		}
 		// Recalculate position for right-aligned tickers
 		if (tickerDef?.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true)
 		{
@@ -676,25 +666,24 @@ public class MenuRenderer
 		if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
 			return;
 		Font font = theme.DefaultFont;
-		float fontSize = theme.DefaultFontSize;
-		float lineHeight = fontSize;
+		float fontSize = theme.DefaultFontSize,
+			lineHeight = fontSize;
 
 		// Modal-specific colors from XML (PixelRect: Color/NWColor/SEColor/TextColor)
 		// Each has a dedicated ModalXxx attribute; falls back to menu default if absent.
 		Assets.Gameplay.MenuCollection menuCollection = SharedAssetManager.CurrentGame?.MenuCollection;
 		// PixelRect.Color — box fill
-		byte bgColorIndex = menuCollection?.DefaultModalColor ?? 0x17;
-		// PixelRect text label color
-		byte textColorIndex = menuCollection?.DefaultModalTextColor ?? 0;
-		// PixelRect.NWColor — top/left bevel (lighter, old BordColor)
-		byte nwColorIndex = menuCollection?.DefaultModalHighlight ?? menuCollection?.DefaultHighlight ?? 0x13;
-		// PixelRect.SEColor — bottom/right bevel (darker, old Bord2Color)
-		byte seColorIndex = menuCollection?.DefaultModalBorder2Color ?? menuCollection?.DefaultBorder2Color ?? 0;
-		Color bgColor = SharedAssetManager.GetPaletteColor(bgColorIndex);
-		Color textColor = SharedAssetManager.GetPaletteColor(textColorIndex);
-		Color colorNW = SharedAssetManager.GetPaletteColor(nwColorIndex);
-		Color colorSE = SharedAssetManager.GetPaletteColor(seColorIndex);
-
+		byte bgColorIndex = menuCollection?.DefaultModalColor ?? 0x17,
+			// PixelRect text label color
+			textColorIndex = menuCollection?.DefaultModalTextColor ?? 0,
+			// PixelRect.NWColor — top/left bevel (lighter, old BordColor)
+			nwColorIndex = menuCollection?.DefaultModalHighlight ?? menuCollection?.DefaultHighlight ?? 0x13,
+			// PixelRect.SEColor — bottom/right bevel (darker, old Bord2Color)
+			seColorIndex = menuCollection?.DefaultModalBorder2Color ?? menuCollection?.DefaultBorder2Color ?? 0;
+		Color bgColor = SharedAssetManager.GetPaletteColor(bgColorIndex),
+			textColor = SharedAssetManager.GetPaletteColor(textColorIndex),
+			colorNW = SharedAssetManager.GetPaletteColor(nwColorIndex),
+			colorSE = SharedAssetManager.GetPaletteColor(seColorIndex);
 		// Compute message text dimensions
 		string[] lines = modal.Message.Split('\n');
 		float maxLineWidth = 0f;
@@ -707,29 +696,25 @@ public class MenuRenderer
 		float textHeight = lines.Length * lineHeight;
 
 		// Size and position the message box (contains only text, no buttons inside)
-		const float boxPad = 8f;   // inner padding for message box
-		const float btnPad = 4f;   // inner padding for Yes/No boxes
-		float msgBoxW = maxLineWidth + boxPad * 2f;
-		float msgBoxH = textHeight + boxPad * 2f;
-
+		const float boxPad = 8f,   // inner padding for message box
+			btnPad = 4f;   // inner padding for Yes/No boxes
+		float msgBoxW = maxLineWidth + boxPad * 2f,
+			msgBoxH = textHeight + boxPad * 2f,
 		// Size the Yes/No button boxes
-		float yesW = font.GetStringSize("Yes", fontSize: (int)fontSize).X;
-		float noW = font.GetStringSize("No", fontSize: (int)fontSize).X;
-		float yesBoxW = yesW + btnPad * 2f;
-		float noBoxW = noW + btnPad * 2f;
-		float btnBoxH = lineHeight + btnPad * 2f;
-
+			yesW = font.GetStringSize("Yes", fontSize: (int)fontSize).X,
+			noW = font.GetStringSize("No", fontSize: (int)fontSize).X,
+			yesBoxW = yesW + btnPad * 2f,
+			noBoxW = noW + btnPad * 2f,
+			btnBoxH = lineHeight + btnPad * 2f,
 		// Center the whole group (message box + buttons) vertically on 320x200
 		// Buttons sit flush against the bottom of the message box (outside it)
-		float totalH = msgBoxH + btnBoxH;
-		float msgBoxY = Mathf.Round((200f - totalH) / 2f);
-		float msgBoxX = Mathf.Round((320f - msgBoxW) / 2f);
-		float btnBoxY = msgBoxY + msgBoxH + 1f;
-
+			totalH = msgBoxH + btnBoxH,
+			msgBoxY = Mathf.Round((200f - totalH) / 2f),
+			msgBoxX = Mathf.Round((320f - msgBoxW) / 2f),
+			btnBoxY = msgBoxY + msgBoxH + 1f,
 		// Yes is left-aligned with the message box; No is right-aligned
-		float yesBoxX = msgBoxX;
-		float noBoxX = msgBoxX + msgBoxW - noBoxW;
-
+			yesBoxX = msgBoxX,
+			noBoxX = msgBoxX + msgBoxW - noBoxW;
 		// Semi-transparent dark overlay to dim the menu behind the dialog
 		_canvas.AddChild(new ColorRect
 		{
@@ -738,10 +723,8 @@ public class MenuRenderer
 			Size = new Vector2(320f, 200f),
 			ZIndex = 48,
 		});
-
 		// Message box: fill + single PixelRect-style bevel (NWColor top/left, SEColor bottom/right)
 		DrawBevelledBox(msgBoxX, msgBoxY, msgBoxW, msgBoxH, bgColor, colorNW, colorSE, 50, 51);
-
 		// Message text
 		_canvas.AddChild(new Label
 		{
@@ -755,7 +738,6 @@ public class MenuRenderer
 				FontColor = textColor,
 			}
 		});
-
 		// "Yes" box — outside/below the message box, left-aligned with it
 		DrawBevelledBox(yesBoxX, btnBoxY, yesBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
 		_canvas.AddChild(new Label
@@ -764,9 +746,8 @@ public class MenuRenderer
 			Theme = theme,
 			Position = new Vector2(yesBoxX + btnPad, btnBoxY + btnPad),
 			ZIndex = 60,
-			LabelSettings = new LabelSettings { FontColor = textColor }
+			LabelSettings = new LabelSettings { FontColor = textColor },
 		});
-
 		// "No" box — outside/below the message box, right-aligned with it
 		DrawBevelledBox(noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
 		_canvas.AddChild(new Label
@@ -775,9 +756,8 @@ public class MenuRenderer
 			Theme = theme,
 			Position = new Vector2(noBoxX + btnPad, btnBoxY + btnPad),
 			ZIndex = 60,
-			LabelSettings = new LabelSettings { FontColor = textColor }
+			LabelSettings = new LabelSettings { FontColor = textColor },
 		});
-
 		// Set button bounds for pointer hit-testing
 		const float hitExtra = 2f;
 		modal.YesButtonBounds = new Rect2(
@@ -787,7 +767,6 @@ public class MenuRenderer
 			noBoxX - hitExtra, btnBoxY - hitExtra,
 			noBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
 	}
-
 	/// <summary>
 	/// Draws a filled rectangle with a PixelRect-style bevelled border.
 	/// Used by RenderModal for the dialog box and Yes/No button boxes.
@@ -806,7 +785,6 @@ public class MenuRenderer
 		});
 		AddOutline(x, y, w, h, colorNW, colorSE, borderZIndex);
 	}
-
 	/// <summary>
 	/// Draws a bevelled outline (WL_MENU.C:DrawOutline / PixelRect bevel).
 	/// topLeft is used for top and left edges; bottomRight for bottom and right edges.
@@ -837,8 +815,7 @@ public class MenuRenderer
 	private void RenderCrosshairs()
 	{
 		// Get the crosshair texture from SharedAssetManager
-		AtlasTexture crosshairTexture = SharedAssetManager.Crosshair;
-		if (crosshairTexture == null)
+		if (SharedAssetManager.Crosshair is not AtlasTexture crosshairTexture)
 			return;
 		// Create primary crosshair (always created, visibility controlled in UpdateCrosshairs)
 		_primaryCrosshair = new TextureRect

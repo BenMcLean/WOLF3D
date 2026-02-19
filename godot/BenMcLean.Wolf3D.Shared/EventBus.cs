@@ -32,7 +32,7 @@ public static class EventBus
 	/// <summary>
 	/// Registered event handlers for each event type.
 	/// </summary>
-	private static readonly Dictionary<GameEvent, List<Action<object>>> _handlers = new();
+	private static readonly Dictionary<GameEvent, List<Action<object>>> _handlers = [];
 	/// <summary>
 	/// Subscribes to an event type.
 	/// </summary>
@@ -41,7 +41,7 @@ public static class EventBus
 	public static void Subscribe(GameEvent eventType, Action<object> handler)
 	{
 		if (!_handlers.ContainsKey(eventType))
-			_handlers[eventType] = new List<Action<object>>();
+			_handlers[eventType] = [];
 		if (!_handlers[eventType].Contains(handler))
 			_handlers[eventType].Add(handler);
 	}
@@ -65,7 +65,7 @@ public static class EventBus
 		if (!_handlers.ContainsKey(eventType))
 			return;
 		// Create a copy to avoid issues if handlers modify the list during iteration
-		List<Action<object>> handlersCopy = new(_handlers[eventType]);
+		List<Action<object>> handlersCopy = [.. _handlers[eventType]];
 		foreach (Action<object> handler in handlersCopy)
 		{
 			try

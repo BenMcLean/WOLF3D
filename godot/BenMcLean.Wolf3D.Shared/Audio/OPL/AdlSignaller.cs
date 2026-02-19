@@ -7,12 +7,12 @@ namespace BenMcLean.Wolf3D.Shared.Audio.OPL;
 /// <summary>
 /// id Software Adlib Sound Effect Player by Ben McLean mclean.ben@gmail.com
 /// </summary>
-public class IdAdlSignaller : IAdlibSignaller
+public class AdlSignaller : IAdlibSignaller
 {
 	public void Init(IOpl opl) => opl?.WriteReg(1, 32); // go to OPL2 mode
 	public void Silence(IOpl opl) => SetNote(false, opl);
 	public bool Note { get; private set; }
-	public IdAdlSignaller SetNote(bool value, IOpl opl)
+	public AdlSignaller SetNote(bool value, IOpl opl)
 	{
 		if (Note = value)
 			opl?.WriteReg(Adl.OctavePort, (byte)(Adl.Block | Adl.KeyFlag));
@@ -20,7 +20,7 @@ public class IdAdlSignaller : IAdlibSignaller
 			opl?.WriteReg(Adl.OctavePort, 0);
 		return this;
 	}
-	public IdAdlSignaller SetInstrument(IOpl opl)
+	public AdlSignaller SetInstrument(IOpl opl)
 	{
 		opl.WriteReg(1, 32); // go to OPL2 mode
 		for (int i = 0; i < Adl.InstrumentPorts.Count; i++)

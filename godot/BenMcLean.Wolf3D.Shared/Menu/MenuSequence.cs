@@ -53,6 +53,7 @@ public interface ISequenceStep
 /// </summary>
 public class TickerSequenceStep : ISequenceStep
 {
+	#region Data
 	private readonly string _tickerName;
 	private readonly int _targetValue;
 	private readonly MenuTickerDefinition _tickerDef;
@@ -60,14 +61,15 @@ public class TickerSequenceStep : ISequenceStep
 	private readonly Action<string> _playSoundAction;
 	private int _currentValue;
 	private float _elapsed;
-	private bool _isComplete;
-	private bool _doneHandled;
-
+	private bool _isComplete,
+		_doneHandled;
+	#endregion Data
 	/// <summary>
 	/// Effective tick rate for ticker animation.
 	/// WL_INTER.C's loop calls VW_UpdateScreen (vsync) + RollDelay (waits for TimeCount),
 	/// making the effective rate roughly half of TickBase=70, i.e., ~35 increments/second.
 	/// </summary>
+	//TODO Use Constants.TicsPerSecond and make it a double to match Godot 4's time
 	private const float TickInterval = 1.0f / 35.0f;
 
 	public bool IsComplete => _isComplete;
@@ -124,12 +126,10 @@ public class TickerSequenceStep : ISequenceStep
 			_updateTickerAction?.Invoke(_tickerName, _currentValue.ToString());
 
 			// Play tick sound at configured intervals (e.g., every 10%)
-			if (_tickerDef?.TickSound != null &&
+			if (_tickerDef?.TickSound is not null &&
 				_tickerDef.TickInterval > 0 &&
 				_currentValue % _tickerDef.TickInterval == 0)
-			{
 				_playSoundAction?.Invoke(_tickerDef.TickSound);
-			}
 		}
 
 		// Check if counting finished naturally
@@ -155,12 +155,11 @@ public class TickerSequenceStep : ISequenceStep
 	{
 		_doneHandled = true;
 		_isComplete = true;
-
-		if (_targetValue == 100 && _tickerDef?.PerfectSound != null)
+		if (_targetValue == 100 && _tickerDef?.PerfectSound is not null)
 			_playSoundAction?.Invoke(_tickerDef.PerfectSound);
-		else if (_targetValue == 0 && _tickerDef?.NoBonusSound != null)
+		else if (_targetValue == 0 && _tickerDef?.NoBonusSound is not null)
 			_playSoundAction?.Invoke(_tickerDef.NoBonusSound);
-		else if (_tickerDef?.DoneSound != null)
+		else if (_tickerDef?.DoneSound is not null)
 			_playSoundAction?.Invoke(_tickerDef.DoneSound);
 	}
 }
@@ -169,45 +168,29 @@ public class TickerSequenceStep : ISequenceStep
 /// Waits for a specified duration. Skippable by pressing any button.
 /// Matches WL_INTER.C's timed pauses (e.g., 2*TickBase between phases).
 /// </summary>
-public class DelaySequenceStep : ISequenceStep
+/// <remarks>
+/// Creates a new DelaySequenceStep.
+/// </remarks>
+/// <param name="Seconds">Duration to wait in seconds</param>
+public class DelaySequenceStep(float Seconds) : ISequenceStep
 {
-	private readonly float _duration;
-	private float _elapsed;
-
+	private float _elapsed = 0f;
 	public bool IsComplete { get; private set; }
-
-	/// <summary>
-	/// Creates a new DelaySequenceStep.
-	/// </summary>
-	/// <param name="seconds">Duration to wait in seconds</param>
-	public DelaySequenceStep(float seconds)
-	{
-		_duration = seconds;
-		_elapsed = 0f;
-	}
-
 	public bool Update(float delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
 	{
 		if (IsComplete)
 			return false;
-
 		if (anyButtonPressed)
 		{
 			Complete();
 			return false;
 		}
-
 		_elapsed += delta;
-		if (_elapsed >= _duration)
+		if (_elapsed >= Seconds)
 			Complete();
-
 		return false;
 	}
-
-	public void Complete()
-	{
-		IsComplete = true;
-	}
+	public void Complete() => IsComplete = true;
 }
 
 /// <summary>
@@ -215,54 +198,40 @@ public class DelaySequenceStep : ISequenceStep
 /// Used for &lt;Pause&gt; elements that run Lua scripts on completion.
 /// Runs after tickers complete but before interactive MenuItems.
 /// </summary>
-public class PauseSequenceStep : ISequenceStep
+/// <remarks>
+/// Creates a new PauseSequenceStep.
+/// </remarks>
+/// <param name="Duration">Optional timeout in seconds. If null or &lt;= 0, waits indefinitely for input.</param>
+/// <param name="OnComplete">Callback to execute when the pause completes (e.g., Lua script execution).</param>
+public class PauseSequenceStep(float? Duration, Action OnComplete) : ISequenceStep
 {
-	private readonly float _duration;
-	private readonly bool _hasTimeout;
-	private readonly Action _onComplete;
+	private readonly float _duration = Duration ?? 0f;
+	private readonly bool _hasTimeout = Duration.HasValue && Duration.Value > 0f;
 	private float _elapsed;
-
 	public bool IsComplete { get; private set; }
-
-	/// <summary>
-	/// Creates a new PauseSequenceStep.
-	/// </summary>
-	/// <param name="duration">Optional timeout in seconds. If null or &lt;= 0, waits indefinitely for input.</param>
-	/// <param name="onComplete">Callback to execute when the pause completes (e.g., Lua script execution).</param>
-	public PauseSequenceStep(float? duration, Action onComplete)
-	{
-		_duration = duration ?? 0f;
-		_hasTimeout = duration.HasValue && duration.Value > 0f;
-		_onComplete = onComplete;
-	}
-
 	public bool Update(float delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
 	{
 		if (IsComplete)
 			return false;
-
 		if (anyButtonPressed)
 		{
 			Complete();
 			return false;
 		}
-
 		if (_hasTimeout)
 		{
 			_elapsed += delta;
 			if (_elapsed >= _duration)
 				Complete();
 		}
-
 		return false;
 	}
-
 	public void Complete()
 	{
 		if (IsComplete)
 			return;
 		IsComplete = true;
-		_onComplete?.Invoke();
+		OnComplete?.Invoke();
 	}
 }
 
@@ -296,10 +265,7 @@ public class MenuSequence
 	/// Add a step to the end of the sequence.
 	/// </summary>
 	/// <param name="step">The step to enqueue</param>
-	public void Enqueue(ISequenceStep step)
-	{
-		_steps.Enqueue(step);
-	}
+	public void Enqueue(ISequenceStep step) => _steps.Enqueue(step);
 
 	/// <summary>
 	/// Process the current step. Called each frame by MenuManager.
@@ -309,8 +275,7 @@ public class MenuSequence
 	public void Update(float delta, bool anyButtonPressed)
 	{
 		// Advance to next step if needed
-		if (_currentStep == null || _currentStep.IsComplete)
-		{
+		if (_currentStep is null || _currentStep.IsComplete)
 			if (_steps.Count > 0)
 				_currentStep = _steps.Dequeue();
 			else
@@ -318,17 +283,13 @@ public class MenuSequence
 				_currentStep = null;
 				return;
 			}
-		}
-
 		// Update current step
 		bool skipAll = _currentStep.Update(delta, anyButtonPressed, SkipBehavior);
-
 		if (skipAll)
 		{
 			CompleteAll();
 			return;
 		}
-
 		// If current step finished, try to advance immediately
 		if (_currentStep.IsComplete && _steps.Count > 0)
 			_currentStep = _steps.Dequeue();
@@ -344,10 +305,9 @@ public class MenuSequence
 	public void CompleteAll()
 	{
 		// Complete current step
-		if (_currentStep != null && !_currentStep.IsComplete)
+		if (_currentStep is not null && !_currentStep.IsComplete)
 			_currentStep.Complete();
 		_currentStep = null;
-
 		// Complete all queued steps
 		while (_steps.Count > 0)
 		{

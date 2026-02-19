@@ -331,9 +331,9 @@ public class MenuScriptContext(
 	/// <param name="behavior">"all" or "current"</param>
 	public void SetSkipBehavior(string behavior)
 	{
-		if (ActiveSequence == null)
+		if (ActiveSequence is null)
 			return;
-		ActiveSequence.SkipBehavior = behavior?.Equals("current", StringComparison.OrdinalIgnoreCase) == true
+		ActiveSequence.SkipBehavior = behavior?.Equals("current", StringComparison.OrdinalIgnoreCase) ?? false
 			? SequenceSkipBehavior.SkipCurrent
 			: SequenceSkipBehavior.SkipAll;
 	}
@@ -389,12 +389,9 @@ public class MenuScriptContext(
 	/// Get the level completion time in seconds.
 	/// </summary>
 	/// <returns>Time in seconds</returns>
-	public double GetLevelTime()
-	{
-		if (CompletionStats == null) return 0;
-		// TicRate is 70 tics per second (Wolf3D standard)
-		return CompletionStats.ElapsedTics / 70.0;
-	}
+	public double GetLevelTime() => CompletionStats is null
+		? 0
+		: CompletionStats.ElapsedTics / Constants.TicsPerSecond;
 	/// <summary>
 	/// Get the par time in seconds.
 	/// </summary>
@@ -435,29 +432,22 @@ public class MenuScriptContext(
 				PlayAdLibSoundAction));
 		}
 		else
-		{
 			// No sequence active - set value immediately
 			UpdateTickerAction?.Invoke(name, targetValue.ToString());
-		}
 	}
 	/// <summary>
 	/// Add bonus points to the player's score.
 	/// Updates the score in CompletionStats for display.
 	/// </summary>
 	/// <param name="amount">Points to add</param>
-	public void GivePoints(int amount)
-	{
+	public void GivePoints(int amount) =>
 		// Score bonus is tracked in session state for Root.cs to apply
 		sessionState.BonusPoints += amount;
-	}
 	/// <summary>
 	/// Signal that the player wants to continue to the next level.
 	/// Sets a flag polled by Root.cs.
 	/// </summary>
-	public void ContinueToNextLevel()
-	{
-		ContinueToNextLevelRequested = true;
-	}
+	public void ContinueToNextLevel() => ContinueToNextLevelRequested = true;
 	#endregion Intermission
 	#region Accumulated Stats (Victory Screen)
 	/// <summary>
@@ -473,10 +463,11 @@ public class MenuScriptContext(
 	/// <returns>Average kill percentage (0-100)</returns>
 	public int GetAverageKillRatio()
 	{
-		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		if (AllLevelStats is null || AllLevelStats.Count == 0)
+			return 0;
 		int sum = 0;
 		for (int i = 0; i < AllLevelStats.Count; i++)
-		{
+		{//TODO Use LINQ?
 			LevelCompletionStats s = AllLevelStats[i];
 			sum += s.KillTotal > 0 ? (int)(s.KillCount * 100L / s.KillTotal) : 0;
 		}
@@ -488,10 +479,11 @@ public class MenuScriptContext(
 	/// <returns>Average secret percentage (0-100)</returns>
 	public int GetAverageSecretRatio()
 	{
-		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		if (AllLevelStats is null || AllLevelStats.Count == 0)
+			return 0;
 		int sum = 0;
 		for (int i = 0; i < AllLevelStats.Count; i++)
-		{
+		{//TODO Use LINQ?
 			LevelCompletionStats s = AllLevelStats[i];
 			sum += s.SecretTotal > 0 ? (int)(s.SecretCount * 100L / s.SecretTotal) : 0;
 		}
@@ -503,10 +495,11 @@ public class MenuScriptContext(
 	/// <returns>Average treasure percentage (0-100)</returns>
 	public int GetAverageTreasureRatio()
 	{
-		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+		if (AllLevelStats is null || AllLevelStats.Count == 0)
+			return 0;
 		int sum = 0;
 		for (int i = 0; i < AllLevelStats.Count; i++)
-		{
+		{//TODO Use LINQ?
 			LevelCompletionStats s = AllLevelStats[i];
 			sum += s.TreasureTotal > 0 ? (int)(s.TreasureCount * 100L / s.TreasureTotal) : 0;
 		}
@@ -518,12 +511,13 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <returns>Total time in seconds</returns>
 	public double GetTotalTime()
-	{
-		if (AllLevelStats == null || AllLevelStats.Count == 0) return 0;
+	{//TODO Use LINQ?
+		if (AllLevelStats is null || AllLevelStats.Count == 0)
+			return 0;
 		long totalTics = 0;
 		for (int i = 0; i < AllLevelStats.Count; i++)
 			totalTics += AllLevelStats[i].ElapsedTics;
-		return totalTics / 70.0;
+		return totalTics / Constants.TicsPerSecond;
 	}
 	#endregion Accumulated Stats
 	#region UI Control (to be implemented by MenuManager)

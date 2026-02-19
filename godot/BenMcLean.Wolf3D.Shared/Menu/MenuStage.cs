@@ -66,8 +66,8 @@ public partial class MenuStage : Node
 		// SVGA Mode 13h is 320x200, which is 4:3 aspect ratio (with square pixels)
 		const float menuAspectRatio = 4.0f / 3.0f;
 		float windowAspectRatio = (float)windowSize.X / windowSize.Y;
-		Vector2 menuSize;
-		Vector2 menuPosition;
+		Vector2 menuSize,
+			menuPosition;
 		if (windowAspectRatio > menuAspectRatio)
 		{
 			// Window is wider than 4:3 (widescreen) - fit to height with pillarbox margins
@@ -104,7 +104,7 @@ public partial class MenuStage : Node
 	/// <param name="color">New border color from the menu</param>
 	private void OnBorderColorChanged(Color color)
 	{
-		if (_marginBackground != null)
+		if (_marginBackground is not null)
 			_marginBackground.Color = color;
 	}
 	/// <summary>
