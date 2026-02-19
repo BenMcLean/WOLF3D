@@ -12,7 +12,6 @@ public interface IActionScriptContext : IScriptContext
 	/// Ensures reproducible simulation behavior.
 	/// </summary>
 	RNG RNG { get; }
-
 	/// <summary>
 	/// Deterministic game clock for action stage scripts.
 	/// Ensures reproducible simulation timing.

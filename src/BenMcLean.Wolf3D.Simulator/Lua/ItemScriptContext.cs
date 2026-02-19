@@ -40,41 +40,28 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// return false
 /// </code>
 /// </summary>
-public class ItemScriptContext : EntityScriptContext
+public class ItemScriptContext(
+	Simulator simulator,
+	StatObj item,
+	int itemIndex,
+	RNG rng,
+	GameClock gameClock,
+	ILogger logger = null) : EntityScriptContext(simulator, rng, gameClock, item.TileX, item.TileY, logger)
 {
-	private readonly StatObj item;
-	private readonly int itemIndex;
-
 	/// <summary>
 	/// Tile X coordinate of the item (exposed to Lua).
 	/// </summary>
 	public int ItemTileX => item.TileX;
-
 	/// <summary>
 	/// Tile Y coordinate of the item (exposed to Lua).
 	/// </summary>
 	public int ItemTileY => item.TileY;
-
 	/// <summary>
 	/// Item number/type (e.g., bo_food, bo_clip - exposed to Lua).
 	/// </summary>
 	public int ItemNumber => item.ItemNumber;
-
 	/// <summary>
 	/// Shape number of the item sprite (exposed to Lua).
 	/// </summary>
 	public int ItemShape => item.ShapeNum;
-
-	public ItemScriptContext(
-		Simulator simulator,
-		StatObj item,
-		int itemIndex,
-		RNG rng,
-		GameClock gameClock,
-		ILogger logger = null)
-		: base(simulator, rng, gameClock, item.TileX, item.TileY, logger)
-	{
-		this.item = item;
-		this.itemIndex = itemIndex;
-	}
 }

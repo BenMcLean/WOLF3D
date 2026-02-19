@@ -12,18 +12,15 @@ public interface IScriptContext
 	/// Non-local (global) - plays in player's "headphones" without spatial positioning.
 	/// </summary>
 	void PlayDigiSound(string soundName);
-
 	/// <summary>
 	/// Play an AdLib sound effect by name.
 	/// AdLib sounds have no spatial positioning.
 	/// </summary>
 	void PlayAdLibSound(string soundName);
-
 	/// <summary>
 	/// Play background music by name.
 	/// </summary>
 	void PlayMusic(string musicName);
-
 	/// <summary>
 	/// Stop currently playing music.
 	/// </summary>

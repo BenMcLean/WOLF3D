@@ -11,7 +11,6 @@ public enum LuaEngineMode
 	/// Used for menu scripts where determinism is not required.
 	/// </summary>
 	Permissive,
-
 	/// <summary>
 	/// Strict mode: Sandboxed environment, deterministic RNG/clock, no global variables.
 	/// Used for action stage scripts where determinism is critical for simulation.

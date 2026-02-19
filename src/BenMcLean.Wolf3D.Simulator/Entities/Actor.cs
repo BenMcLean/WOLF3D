@@ -159,13 +159,13 @@ public class Actor : IStateSavable<ActorSnapshot>
 		TileY = TileY,
 		X = X,
 		Y = Y,
-		Facing = Facing.HasValue ? (byte?)((byte)Facing.Value) : null,
+		Facing = Facing.HasValue ? (byte)Facing.Value : null,
 		HitPoints = HitPoints,
 		Speed = Speed,
 		ShapeNum = ShapeNum,
 		Flags = (int)Flags,
 		Distance = Distance,
-		ReactionTimer = ReactionTimer
+		ReactionTimer = ReactionTimer,
 	};
 
 	/// <summary>

@@ -9,29 +9,16 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// Provides API for weapon scripts to play sounds, consume ammo, check button state, and control state flow.
 /// Used when executing weapon state Action scripts (WL_AGENT.C:T_Attack equivalent).
 /// </summary>
-public class WeaponScriptContext : ActionScriptContext
+public class WeaponScriptContext(
+	Simulator simulator,
+	WeaponSlot weaponSlot,
+	int slotIndex,
+	WeaponInfo weaponInfo,
+	RNG rng,
+	GameClock gameClock,
+	ILogger logger = null) : ActionScriptContext(simulator, rng, gameClock, logger)
 {
-	private readonly WeaponSlot weaponSlot;
-	private readonly int slotIndex;
-	private readonly WeaponInfo weaponInfo;
-	private string nextStateOverride; // For rapid fire looping
-
-	public WeaponScriptContext(
-		Simulator simulator,
-		WeaponSlot weaponSlot,
-		int slotIndex,
-		WeaponInfo weaponInfo,
-		RNG rng,
-		GameClock gameClock,
-		ILogger logger = null)
-		: base(simulator, rng, gameClock, logger)
-	{
-		this.weaponSlot = weaponSlot;
-		this.slotIndex = slotIndex;
-		this.weaponInfo = weaponInfo;
-		this.nextStateOverride = null;
-	}
-
+	private string nextStateOverride = null; // For rapid fire looping
 	#region Logging
 	/// <summary>
 	/// Log a debug message from Lua script.
@@ -39,38 +26,32 @@ public class WeaponScriptContext : ActionScriptContext
 	/// </summary>
 	public void Log(string message) => _logger?.LogDebug("Lua Weapon: {message}", message);
 	#endregion Logging
-
 	#region Weapon Property Accessors
 	/// <summary>
 	/// Get weapon type identifier (e.g., "knife", "pistol", "machinegun", "chaingun").
 	/// </summary>
 	public string GetWeaponType() => weaponSlot.WeaponType;
-
 	/// <summary>
 	/// Get weapon slot index (0 = primary/left, 1 = secondary/right).
 	/// </summary>
 	public int GetSlotIndex() => slotIndex;
-
 	/// <summary>
 	/// Get current state name.
 	/// Used by A_RapidFire to determine which weapon is firing.
 	/// </summary>
 	public string GetCurrentStateName() => weaponSlot.CurrentState?.Name;
-
 	/// <summary>
 	/// Get weapon property from WeaponInfo.
 	/// Generic accessor for any weapon property defined in XML.
 	/// </summary>
 	/// <param name="propertyName">Property name (e.g., "BaseDamage", "MaxRange")</param>
 	/// <returns>Property value as string, or null if not found</returns>
-	public string GetWeaponProperty(string propertyName)
-	{
+	public string GetWeaponProperty(string propertyName) =>
 		// Use reflection to get property value from weaponInfo
-		var property = typeof(WeaponInfo).GetProperty(propertyName);
-		return property?.GetValue(weaponInfo)?.ToString();
-	}
+		typeof(WeaponInfo).GetProperty(propertyName)
+			?.GetValue(weaponInfo)
+			?.ToString();
 	#endregion Weapon Property Accessors
-
 	#region Sound Playback
 	/// <summary>
 	/// Play a weapon sound effect globally (non-positional).
@@ -84,7 +65,6 @@ public class WeaponScriptContext : ActionScriptContext
 		_logger?.LogDebug("WeaponScriptContext: PlaySound({soundName}) for slot {slotIndex}",
 			soundName, slotIndex);
 	}
-
 	/// <summary>
 	/// Play the weapon's configured fire sound.
 	/// Convenience method that uses WeaponInfo.FireSound.
@@ -92,12 +72,9 @@ public class WeaponScriptContext : ActionScriptContext
 	public void PlayWeaponSound()
 	{
 		if (!string.IsNullOrEmpty(weaponInfo.FireSound))
-		{
 			PlaySound(weaponInfo.FireSound);
-		}
 	}
 	#endregion Sound Playback
-
 	#region Ammo Management
 	/// <summary>
 	/// Check if player has enough ammo for this weapon.
@@ -109,14 +86,11 @@ public class WeaponScriptContext : ActionScriptContext
 	public bool HasAmmo(int? amount = null)
 	{
 		int required = amount ?? weaponInfo.AmmoPerShot;
-
 		// Weapons that don't require ammo always return true
-		if (required <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
-			return true;
-
-		return GetValue("Ammo") >= required;
+		return required <= 0 ||
+			string.IsNullOrEmpty(weaponInfo.AmmoType) ||
+			GetValue("Ammo") >= required;
 	}
-
 	/// <summary>
 	/// Consume ammo for this weapon.
 	/// WL_AGENT.C:gamestate.ammo-- equivalent.
@@ -126,30 +100,19 @@ public class WeaponScriptContext : ActionScriptContext
 	public void ConsumeAmmo(int? amount = null)
 	{
 		int toConsume = amount ?? weaponInfo.AmmoPerShot;
-
 		if (toConsume <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
 			return;
-
 		AddValue("Ammo", -toConsume);
-
 		_logger?.LogDebug("WeaponScriptContext: ConsumeAmmo({amount}) for {weaponType}, remaining: {remaining}",
 			toConsume, weaponSlot.WeaponType, GetValue("Ammo"));
 	}
-
 	/// <summary>
 	/// Get current ammo count for this weapon's ammo type.
 	/// Uses generic inventory API: GetValue("Ammo")
 	/// </summary>
 	/// <returns>Current ammo count (0 if weapon doesn't use ammo)</returns>
-	public int GetAmmoCount()
-	{
-		if (string.IsNullOrEmpty(weaponInfo.AmmoType))
-			return 0;
-
-		return GetValue("Ammo");
-	}
+	public int GetAmmoCount() => string.IsNullOrEmpty(weaponInfo.AmmoType) ? 0 : GetValue("Ammo");
 	#endregion Ammo Management
-
 	#region Input State
 	/// <summary>
 	/// Check if attack button is currently held down.
@@ -165,11 +128,9 @@ public class WeaponScriptContext : ActionScriptContext
 		{
 			return weaponSlot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld);
 		}
-
 		return false;
 	}
 	#endregion Input State
-
 	#region State Flow Control
 	/// <summary>
 	/// Override the next state for this weapon slot.
@@ -183,21 +144,18 @@ public class WeaponScriptContext : ActionScriptContext
 		_logger?.LogDebug("WeaponScriptContext: SetNextState({stateName}) for slot {slotIndex}",
 			stateName, slotIndex);
 	}
-
 	/// <summary>
 	/// Get the overridden next state (if any).
 	/// Called by Simulator after script execution to check if state flow was changed.
 	/// </summary>
 	/// <returns>Next state name, or null if no override</returns>
 	public string GetNextStateOverride() => nextStateOverride;
-
 	/// <summary>
 	/// Clear the next state override.
 	/// Called by Simulator after processing the override.
 	/// </summary>
 	public void ClearNextStateOverride() => nextStateOverride = null;
 	#endregion State Flow Control
-
 	#region Attack Requests
 	/// <summary>
 	/// Request a hitscan attack (raycast).
@@ -212,7 +170,6 @@ public class WeaponScriptContext : ActionScriptContext
 		_logger?.LogDebug("WeaponScriptContext: RequestHitScan() for {weaponType} (not yet implemented)",
 			weaponSlot.WeaponType);
 	}
-
 	/// <summary>
 	/// Request a melee attack (close range).
 	/// Presentation layer will check for nearby enemies and return hit results.
@@ -227,7 +184,6 @@ public class WeaponScriptContext : ActionScriptContext
 			weaponSlot.WeaponType);
 	}
 	#endregion Attack Requests
-
 	#region Weapon Switching
 	/// <summary>
 	/// Switch to the lowest-numbered weapon (out of ammo fallback).
@@ -254,5 +210,4 @@ public class WeaponScriptContext : ActionScriptContext
 		}
 	}
 	#endregion Weapon Switching
-
 }

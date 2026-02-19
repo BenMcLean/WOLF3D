@@ -21,28 +21,20 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// return false
 /// </code>
 /// </summary>
-public class DoorScriptContext : EntityScriptContext
+public class DoorScriptContext(
+	Simulator simulator,
+	RNG rng,
+	GameClock gameClock,
+	int doorTileX,
+	int doorTileY,
+	ILogger logger = null) : EntityScriptContext(simulator, rng, gameClock, doorTileX, doorTileY, logger)
 {
 	/// <summary>
 	/// Tile X coordinate of the door (exposed to Lua).
 	/// </summary>
-	public int DoorTileX { get; }
-
+	public int DoorTileX { get; } = doorTileX;
 	/// <summary>
 	/// Tile Y coordinate of the door (exposed to Lua).
 	/// </summary>
-	public int DoorTileY { get; }
-
-	public DoorScriptContext(
-		Simulator simulator,
-		RNG rng,
-		GameClock gameClock,
-		int doorTileX,
-		int doorTileY,
-		ILogger logger = null)
-		: base(simulator, rng, gameClock, doorTileX, doorTileY, logger)
-	{
-		DoorTileX = doorTileX;
-		DoorTileY = doorTileY;
-	}
+	public int DoorTileY { get; } = doorTileY;
 }

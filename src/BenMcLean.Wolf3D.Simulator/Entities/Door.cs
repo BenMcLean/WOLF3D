@@ -6,20 +6,26 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Door state in the simulation. Mutable.
 /// Based on WL_DEF.H:doorstruct (lines 964-975) and related door logic in WL_ACT1.C.
 /// </summary>
-public class Door : IStateSavable<DoorSnapshot>
+public class Door(
+	ushort tileX,
+	ushort tileY,
+	bool facesEastWest,
+	ushort tileNumber,
+	short area1 = -1,
+	short area2 = -1) : IStateSavable<DoorSnapshot>
 {
 	// Static properties (from MapAnalysis.DoorSpawn - not serialized, loaded from map)
 	// WL_DEF.H:doorstruct:tilex (original: byte)
 	// Intentional extension: Using ushort to support maps > 64×64
-	public ushort TileX { get; }
+	public ushort TileX { get; } = tileX;
 
 	// WL_DEF.H:doorstruct:tiley (original: byte)
 	// Intentional extension: Using ushort to support maps > 64×64
-	public ushort TileY { get; }
+	public ushort TileY { get; } = tileY;
 
 	// WL_DEF.H:doorstruct:vertical
 	// Renamed to FacesEastWest for semantic clarity
-	public bool FacesEastWest { get; }
+	public bool FacesEastWest { get; } = facesEastWest;
 
 	// WL_DEF.H:doorstruct:lock (byte in original)
 	// Extended to string for modding: null = unlocked, "gold key" = requires gold key, etc.
@@ -27,41 +33,28 @@ public class Door : IStateSavable<DoorSnapshot>
 	public string Lock { get; }
 
 	// Door type identifier for looking up metadata (sounds, etc.) from MapAnalyzer.Doors
-	public ushort TileNumber { get; }
+	public ushort TileNumber { get; } = tileNumber;
 
 	// WL_ACT1.C:DoorOpening lines 715-728 - area connectivity for hearing propagation
 	// These are the two area numbers (floor codes) this door connects
 	// For FacesEastWest doors: Area1 is left (X-1), Area2 is right (X+1)
 	// For horizontal doors: Area1 is above (Y-1), Area2 is below (Y+1)
 	// -1 indicates no valid area on that side
-	public short Area1 { get; }
-	public short Area2 { get; }
+	public short Area1 { get; } = area1;
+	public short Area2 { get; } = area2;
 	// Dynamic state (serialized for save games)
 
 	// WL_DEF.H:doorstruct:action
 	// Current door state: dr_open, dr_closed, dr_opening, dr_closing
-	public DoorAction Action { get; set; }
+	public DoorAction Action { get; set; } = DoorAction.Closed;
 
 	// WL_ACT1.C:doorposition[MAXDOORS] (unsigned)
 	// 0 = closed, 0xFFFF = fully open
-	public ushort Position { get; set; }
+	public ushort Position { get; set; } = 0;
 
 	// WL_DEF.H:doorstruct:ticcount (int = 16-bit signed)
 	// Used for auto-close timer when door is open
-	public short TicCount { get; set; }
-
-	public Door(ushort tileX, ushort tileY, bool facesEastWest, ushort tileNumber, short area1 = -1, short area2 = -1)
-	{
-		TileX = tileX;
-		TileY = tileY;
-		FacesEastWest = facesEastWest;
-		TileNumber = tileNumber;
-		Area1 = area1;
-		Area2 = area2;
-		Action = DoorAction.Closed;
-		Position = 0;
-		TicCount = 0;
-	}
+	public short TicCount { get; set; } = 0;
 
 	/// <summary>
 	/// Captures only dynamic door state. Static properties (TileX, TileY, FacesEastWest,

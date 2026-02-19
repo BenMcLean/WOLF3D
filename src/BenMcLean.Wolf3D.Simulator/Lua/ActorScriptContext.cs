@@ -11,26 +11,15 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// Extends EntityScriptContext with actor-specific API for AI, movement, combat, and state transitions.
 /// Inherits PlayLocalDigiSound for positional audio at actor's location.
 /// </summary>
-public class ActorScriptContext : EntityScriptContext
+public class ActorScriptContext(
+	Simulator simulator,
+	Actor actor,
+	int actorIndex,
+	RNG rng,
+	GameClock gameClock,
+	MapAnalysis mapAnalysis,
+	ILogger logger = null) : EntityScriptContext(simulator, rng, gameClock, actor.TileX, actor.TileY, logger)
 {
-	private readonly Actor actor;
-	private readonly int actorIndex;
-	private readonly MapAnalysis mapAnalysis;
-
-	public ActorScriptContext(
-		Simulator simulator,
-		Actor actor,
-		int actorIndex,
-		RNG rng,
-		GameClock gameClock,
-		MapAnalysis mapAnalysis,
-		ILogger logger = null)
-		: base(simulator, rng, gameClock, actor.TileX, actor.TileY, logger)
-	{
-		this.actor = actor;
-		this.actorIndex = actorIndex;
-		this.mapAnalysis = mapAnalysis;
-	}
 	#region Logging
 	/// <summary>
 	/// Log a debug message from Lua script.
@@ -47,45 +36,31 @@ public class ActorScriptContext : EntityScriptContext
 	public string GetActorType() => actor.ActorType;
 	/// <summary>Get actor's current tile X coordinate</summary>
 	public int GetTileX() => actor.TileX;
-
 	/// <summary>Get actor's current tile Y coordinate</summary>
 	public int GetTileY() => actor.TileY;
-
 	/// <summary>Get actor's fixed-point X coordinate</summary>
 	public int GetX() => actor.X;
-
 	/// <summary>Get actor's fixed-point Y coordinate</summary>
 	public int GetY() => actor.Y;
-
 	/// <summary>Get actor's current hit points</summary>
 	public int GetHitPoints() => actor.HitPoints;
-
 	/// <summary>Get actor's current facing direction (0-7)</summary>
 	public int GetFacing() => (int)actor.Facing;
-
 	/// <summary>Get actor's current speed</summary>
 	public int GetSpeed() => actor.Speed;
-
 	/// <summary>
-	/// Calculate distance to player using tile coordinates.
+	/// Calculate Chebyshev distance to player using tile coordinates.
 	/// Original Wolf3D calculates this on-demand in AI functions, not stored.
 	/// </summary>
-	public int CalculateDistanceToPlayer()
-	{
-		int dx = System.Math.Abs(simulator.PlayerTileX - actor.TileX);
-		int dy = System.Math.Abs(simulator.PlayerTileY - actor.TileY);
-		return System.Math.Max(dx, dy); // Chebyshev distance (matching original)
-	}
-
+	public int CalculateDistanceToPlayer() => System.Math.Max(
+		System.Math.Abs(simulator.PlayerTileX - actor.TileX),
+		System.Math.Abs(simulator.PlayerTileY - actor.TileY));
 	/// <summary>WL_STATE.C: Get actor reaction timer (ob->temp2)</summary>
 	public int GetReactionTimer() => actor.ReactionTimer;
-
 	/// <summary>Check if actor has a specific flag set</summary>
 	public bool HasFlag(int flagValue) => (actor.Flags & (ActorFlags)flagValue) != 0;
-
 	/// <summary>Get current distance to next tile (ob->distance)</summary>
 	public int GetDistance() => actor.Distance;
-
 	/// <summary>
 	/// Check if actor has a valid direction (not nodir/null).
 	/// For Lua scripts to check ob->dir != nodir.
@@ -106,15 +81,12 @@ public class ActorScriptContext : EntityScriptContext
 		actor.TileX = (ushort)(x >> 16);
 		actor.TileY = (ushort)(y >> 16);
 	}
-
 	/// <summary>WL_STATE.C: Set actor reaction timer (ob->temp2)</summary>
 	public void SetReactionTimer(int value) => actor.ReactionTimer = (short)value;
-
 	/// <summary>Set a flag on the actor</summary>
 	public void SetFlag(int flagValue) => actor.Flags |= (ActorFlags)flagValue;
 	/// <summary>Clear a flag on the actor</summary>
 	public void ClearFlag(int flagValue) => actor.Flags &= ~(ActorFlags)flagValue;
-
 	/// <summary>
 	/// Change the actor's current state.
 	/// Triggers state transition with Action function execution.
@@ -201,7 +173,7 @@ public class ActorScriptContext : EntityScriptContext
 	public void MoveObj(int move)
 	{
 		// Can't move if no direction (nodir)
-		if (actor.Facing == null)
+		if (actor.Facing is null)
 			return;
 		// WL_STATE.C:727-763 - Apply movement to fixed-point coordinates
 		switch (actor.Facing.Value)
@@ -223,35 +195,15 @@ public class ActorScriptContext : EntityScriptContext
 	/// <summary>Set distance to next tile (ob->distance)</summary>
 	public void SetDistance(int distance) => actor.Distance = distance;
 	/// <summary>
-	/// Turn actor to face a specific point.
-	/// </summary>
-	/// <param name="targetX">Target X coordinate (fixed-point)</param>
-	/// <param name="targetY">Target Y coordinate (fixed-point)</param>
-	public void TurnToward(int targetX, int targetY)
-	{
-		// Calculate direction from actor to target
-		int dx = targetX - actor.X,
-			dy = targetY - actor.Y;
-		// TODO: Calculate 8-way direction from dx/dy and set actor.Facing
-	}
-	/// <summary>
 	/// Damage the actor.
 	/// </summary>
 	/// <param name="amount">Damage amount</param>
-	public void TakeDamage(int amount)
-	{
-		actor.HitPoints -= (short)amount;
-		// TODO: Check for death, trigger death state transition
-	}
+	public void TakeDamage(int amount) => actor.HitPoints -= (short)amount;
 	/// <summary>
 	/// Heal the actor.
 	/// </summary>
 	/// <param name="amount">Healing amount</param>
-	public void Heal(int amount)
-	{
-		actor.HitPoints += (short)amount;
-		// TODO: Clamp to max health
-	}
+	public void Heal(int amount) => actor.HitPoints += (short)amount;// TODO: Clamp to max health
 	/// <summary>
 	/// Move actor forward in its current facing direction.
 	/// Based on WL_ACT2.C movement logic.
@@ -261,8 +213,9 @@ public class ActorScriptContext : EntityScriptContext
 	{
 		// Calculate target position based on facing and speed
 		// Speed is in fixed-point, so we need to apply it correctly
-		int speed = actor.Speed;
-		int dx = 0, dy = 0;
+		int speed = actor.Speed,
+			dx = 0,
+			dy = 0;
 		// Convert facing direction to dx/dy delta
 		switch (actor.Facing)
 		{
@@ -452,14 +405,14 @@ public class ActorScriptContext : EntityScriptContext
 	/// Called by CheckSight after FOV verification, and by T_Shoot to verify shot clearance.
 	/// The actor can shoot even if not perfectly facing the player (chase already turned them).
 	/// </summary>
-	public bool CheckLine()
-	{
-		if (mapAnalysis is null)
-			return CalculateDistanceToPlayer() < 20;
-		return simulator.HasLineOfSight(
-			actor.TileX, actor.TileY,
-			simulator.PlayerTileX, simulator.PlayerTileY);
-	}
+	public bool CheckLine() =>
+		mapAnalysis is null
+		? CalculateDistanceToPlayer() < 20
+		: simulator.HasLineOfSight(
+			fromX: actor.TileX,
+			fromY: actor.TileY,
+			toX: simulator.PlayerTileX,
+			toY: simulator.PlayerTileY);
 	#endregion Line of Sight
 	#region Pathfinding & Navigation
 	/// <summary>
@@ -547,16 +500,14 @@ public class ActorScriptContext : EntityScriptContext
 		}
 		// WL_STATE.C:274-355 - CHECKDIAG for diagonal movements
 		// Check adjacent tiles to prevent corner-cutting
-		if (isDiagonal)
+		if (isDiagonal && (
+			!simulator.IsTileNavigable(checkX1, checkY1) ||
+			!simulator.IsTileNavigable(checkX2, checkY2)))
 		{
-			if (!simulator.IsTileNavigable(checkX1, checkY1) ||
-				!simulator.IsTileNavigable(checkX2, checkY2))
-			{
-				// Blocked by adjacent tile
-				actor.TileX = oldTileX;
-				actor.TileY = oldTileY;
-				return false;
-			}
+			// Blocked by adjacent tile
+			actor.TileX = oldTileX;
+			actor.TileY = oldTileY;
+			return false;
 		}
 		// WL_STATE.C:260-346 - Dogs use CHECKDIAG (no doors), others use CHECKSIDE (handles doors)
 		if (!isDiagonal && canOpenDoors)
@@ -830,17 +781,14 @@ public class ActorScriptContext : EntityScriptContext
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
 	public override void PlayLocalDigiSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
-
 	// Actor API (actors can spawn other actors in some mods)
 	public void SpawnActor(int type, int x, int y)
 	{
 		// TODO: Implement actor spawning from scripts
 	}
-
 	public void DespawnActor(int actorId)
 	{
 		// TODO: Implement actor despawning
 	}
-
 	#endregion ActionScriptContext Abstract Method Implementations
 }

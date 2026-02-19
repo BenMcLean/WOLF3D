@@ -8,25 +8,18 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// Extends BaseScriptContext with deterministic RNG/GameClock and generic inventory API.
 /// All player state (health, ammo, keys, weapons, score, lives) is accessed via the Inventory.
 /// </summary>
-public class ActionScriptContext : BaseScriptContext, IActionScriptContext
+public class ActionScriptContext(
+	Simulator simulator,
+	RNG rng,
+	GameClock gameClock,
+	ILogger logger = null) : BaseScriptContext(logger), IActionScriptContext
 {
-	protected readonly Simulator simulator;
-	protected readonly RNG rng;
-	protected readonly GameClock gameClock;
-
+	protected readonly Simulator simulator = simulator;
+	protected readonly RNG rng = rng;
+	protected readonly GameClock gameClock = gameClock;
 	public RNG RNG => rng;
 	public GameClock GameClock => gameClock;
-
-	public ActionScriptContext(Simulator simulator, RNG rng, GameClock gameClock, ILogger logger = null)
-		: base(logger)
-	{
-		this.simulator = simulator;
-		this.rng = rng;
-		this.gameClock = gameClock;
-	}
-
 	#region Generic Inventory API (exposed to Lua)
-
 	/// <summary>
 	/// Get the value of any inventory item.
 	/// Examples: GetValue("Health"), GetValue("Ammo"), GetValue("Gold Key"), GetValue("Weapon2")
@@ -34,7 +27,6 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// <param name="name">The inventory item name</param>
 	/// <returns>Current value, or 0 if not found</returns>
 	public int GetValue(string name) => simulator.Inventory.GetValue(name);
-
 	/// <summary>
 	/// Set the value of any inventory item.
 	/// Value is clamped to [0, Max] if a maximum is defined.
@@ -43,7 +35,6 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// <param name="name">The inventory item name</param>
 	/// <param name="value">The new value</param>
 	public void SetValue(string name, int value) => simulator.Inventory.SetValue(name, value);
-
 	/// <summary>
 	/// Add to any inventory item value.
 	/// Examples: AddValue("Health", 10), AddValue("Ammo", -1), AddValue("Score", 500)
@@ -51,7 +42,6 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// <param name="name">The inventory item name</param>
 	/// <param name="delta">Amount to add (can be negative)</param>
 	public void AddValue(string name, int delta) => simulator.Inventory.AddValue(name, delta);
-
 	/// <summary>
 	/// Get the maximum value for any inventory item.
 	/// Examples: GetMax("Health") returns 100, GetMax("Ammo") returns 99
@@ -59,7 +49,6 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// <param name="name">The inventory item name</param>
 	/// <returns>Maximum value, or int.MaxValue if no max defined</returns>
 	public int GetMax(string name) => simulator.Inventory.GetMax(name);
-
 	/// <summary>
 	/// Get the initial value for any inventory item.
 	/// Used by OnDeath script to reset values to their starting state.
@@ -68,7 +57,6 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// <param name="name">The inventory item name</param>
 	/// <returns>Initial value, or 0 if not defined</returns>
 	public int GetInit(string name) => simulator.Inventory.GetInit(name);
-
 	/// <summary>
 	/// Check if player has an inventory item (value > 0).
 	/// Examples: Has("Gold Key"), Has("Weapon2"), Has("Ammo")
@@ -76,33 +64,23 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// <param name="name">The inventory item name</param>
 	/// <returns>True if value > 0</returns>
 	public bool Has(string name) => simulator.Inventory.Has(name);
-
 	#endregion
-
 	#region Screen Flash API (exposed to Lua)
-
 	/// <summary>
 	/// Triggers a full-screen color flash effect.
 	/// WL_PLAY.C: Bonus flash (white/yellow), damage flash (red).
 	/// </summary>
 	/// <param name="color">24-bit RGB color (e.g., 0xFF0000 for red, 0xFFFF00 for yellow)</param>
 	/// <param name="duration">Duration in tics (default 18 = ~257ms, matching original Wolf3D bonus flash)</param>
-	public void FlashScreen(int color, int duration = 18)
-	{
-		simulator.EmitScreenFlash((uint)color, (short)duration);
-	}
-
+	public void FlashScreen(int color, int duration = 18) => simulator.EmitScreenFlash((uint)color, (short)duration);
 	#endregion
-
 	#region Menu Navigation API (exposed to Lua)
-
 	/// <summary>
 	/// Delegate for navigating to a named menu screen.
 	/// Wired by Simulator when creating item script contexts.
 	/// Generic mechanism — any BonusScript can trigger any menu.
 	/// </summary>
 	public Action<string> NavigateToMenuAction { get; set; }
-
 	/// <summary>
 	/// Navigate to a named menu screen.
 	/// Exposed to Lua. Used by VictoryTile, Bible quiz triggers, etc.
@@ -110,27 +88,5 @@ public class ActionScriptContext : BaseScriptContext, IActionScriptContext
 	/// </summary>
 	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
-
 	#endregion
-
-}
-
-/// <summary>
-/// Script context for bonus objects (pickups).
-/// Extends EntityScriptContext with bonus-specific API.
-/// Inherits PlayLocalDigiSound for positional audio at bonus location.
-/// Uses generic inventory API from ActionScriptContext.
-/// </summary>
-public class BonusScriptContext : EntityScriptContext
-{
-	public BonusScriptContext(
-		Simulator simulator,
-		RNG rng,
-		GameClock gameClock,
-		int bonusX,
-		int bonusY,
-		Microsoft.Extensions.Logging.ILogger logger = null)
-		: base(simulator, rng, gameClock, bonusX, bonusY, logger)
-	{
-	}
 }

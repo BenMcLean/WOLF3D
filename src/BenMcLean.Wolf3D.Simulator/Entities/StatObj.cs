@@ -13,7 +13,7 @@ public class StatObj : IStateSavable<StatObj>
 	/// Maximum number of static objects (bonus items) per level.
 	/// WL_DEF.H:MAXSTATS = 400 (or 200 for Noah3D)
 	/// </summary>
-	public const int MAXSTATS = 400;
+	public const ushort MAXSTATS = 400;
 
 	// WL_DEF.H:statstruct:tilex (original: byte)
 	// Intentional extension: Using ushort to support maps > 64×64
@@ -50,10 +50,7 @@ public class StatObj : IStateSavable<StatObj>
 	/// Creates an empty/removed static object slot.
 	/// ShapeNum = -1 indicates a free slot.
 	/// </summary>
-	public StatObj()
-	{
-		ShapeNum = -1;
-	}
+	public StatObj() => ShapeNum = -1;
 
 	/// <summary>
 	/// Check if this slot is free (object has been removed).

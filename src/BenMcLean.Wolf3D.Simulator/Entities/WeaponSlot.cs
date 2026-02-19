@@ -1,5 +1,4 @@
 using System;
-using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.State;
 using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
@@ -11,27 +10,32 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// and WL_AGENT.C:attackinfo structure.
 /// Each slot runs an independent state machine for weapon animations.
 /// </summary>
-public class WeaponSlot : IStateSavable<WeaponSlotSnapshot>
+/// <remarks>
+/// Creates a new weapon slot.
+/// Slot starts empty (no weapon equipped).
+/// </remarks>
+/// <param name="slotIndex">Slot identifier (0-based index)</param>
+public class WeaponSlot(int slotIndex) : IStateSavable<WeaponSlotSnapshot>
 {
 	/// <summary>
 	/// Slot index (0 = left hand VR / primary traditional, 1 = right hand VR, etc.)
 	/// Identifies which slot this is for multi-weapon configurations.
 	/// </summary>
-	public int SlotIndex { get; }
+	public int SlotIndex { get; } = slotIndex;
 
 	/// <summary>
 	/// Currently equipped weapon type identifier (e.g., "knife", "pistol", "chaingun").
 	/// Null if slot is empty or weapon is holstered.
 	/// Maps to WeaponInfo.Name in WeaponCollection.
 	/// </summary>
-	public string WeaponType { get; set; }
+	public string WeaponType { get; set; } = null;
 
 	/// <summary>
 	/// Current state in the weapon's state machine.
 	/// Based on WL_DEF.H:objstruct:state pattern (same as actors).
 	/// Determines sprite, duration, and behavior functions.
 	/// </summary>
-	public GameplayState CurrentState { get; set; }
+	public GameplayState CurrentState { get; set; } = null;
 
 	/// <summary>
 	/// WL_AGENT.C:attackcount (original: int = 16-bit signed)
@@ -39,7 +43,7 @@ public class WeaponSlot : IStateSavable<WeaponSlotSnapshot>
 	/// When this reaches 0, transition to CurrentState.Next.
 	/// Decremented each simulation tic (70Hz).
 	/// </summary>
-	public short TicCount { get; set; }
+	public short TicCount { get; set; } = 0;
 
 	/// <summary>
 	/// Current sprite/shape number being displayed.
@@ -47,7 +51,7 @@ public class WeaponSlot : IStateSavable<WeaponSlotSnapshot>
 	/// -1 indicates no sprite (slot empty or weapon holstered).
 	/// Based on WL_AGENT.C:weaponframe (original: int)
 	/// </summary>
-	public short ShapeNum { get; set; }
+	public short ShapeNum { get; set; } = -1;
 
 	/// <summary>
 	/// WL_AGENT.C:attackframe (original: int = 16-bit signed)
@@ -55,29 +59,13 @@ public class WeaponSlot : IStateSavable<WeaponSlotSnapshot>
 	/// Used to coordinate animation timing with damage application.
 	/// Incremented as weapon progresses through fire animation states.
 	/// </summary>
-	public short AttackFrame { get; set; }
+	public short AttackFrame { get; set; } = 0;
 
 	/// <summary>
 	/// Weapon slot state flags (ready to fire, trigger held, attacking, etc.)
 	/// Used for fire mode logic (semi-auto vs full-auto).
 	/// </summary>
-	public WeaponSlotFlags Flags { get; set; }
-
-	/// <summary>
-	/// Creates a new weapon slot.
-	/// Slot starts empty (no weapon equipped).
-	/// </summary>
-	/// <param name="slotIndex">Slot identifier (0-based index)</param>
-	public WeaponSlot(int slotIndex)
-	{
-		SlotIndex = slotIndex;
-		WeaponType = null;
-		CurrentState = null;
-		TicCount = 0;
-		ShapeNum = -1;
-		AttackFrame = 0;
-		Flags = WeaponSlotFlags.None;
-	}
+	public WeaponSlotFlags Flags { get; set; } = WeaponSlotFlags.None;
 
 	/// <summary>
 	/// Captures all mutable weapon slot state. CurrentState is stored as its Name string;

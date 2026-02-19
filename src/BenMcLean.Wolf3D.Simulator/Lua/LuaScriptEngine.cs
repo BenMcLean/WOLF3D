@@ -24,7 +24,6 @@ public class LuaScriptEngine
 	/// Current execution context (injected before each script call)
 	/// </summary>
 	public IScriptContext CurrentContext { get; set; }
-
 	/// <summary>
 	/// Creates a new LuaScriptEngine with default action stage context support.
 	/// Includes ActorScriptContext, ActionScriptContext, and ItemScriptContext.
@@ -38,9 +37,7 @@ public class LuaScriptEngine
 	/// </remarks>
 	public LuaScriptEngine(ILogger logger = null)
 		: this([typeof(ActionScriptContext), typeof(ActorScriptContext), typeof(ItemScriptContext)], logger)
-	{
-	}
-
+	{ }
 	/// <summary>
 	/// Creates a new LuaScriptEngine with support for the specified context type(s).
 	/// </summary>
@@ -50,16 +47,13 @@ public class LuaScriptEngine
 	{
 		this.logger = logger;
 		this.contextTypes = contextTypes ?? throw new ArgumentNullException(nameof(contextTypes));
-
 		if (contextTypes.Length == 0)
 			throw new ArgumentException("At least one context type must be specified", nameof(contextTypes));
-
 		// Register C# types for MoonSharp UserData
 		foreach (Type contextType in contextTypes)
 		{
 			if (!typeof(IScriptContext).IsAssignableFrom(contextType))
 				throw new ArgumentException($"Context type {contextType.Name} must implement IScriptContext", nameof(contextTypes));
-
 			UserData.RegisterType(contextType);
 		}
 		// Create MoonSharp script instance
@@ -87,15 +81,12 @@ public class LuaScriptEngine
 		osTable["time"] = DynValue.NewCallback(OsTime);
 		osTable["clock"] = DynValue.NewCallback(OsClock);
 		osTable["date"] = DynValue.NewCallback(OsDate);
-
 		// Create read-only proxy environment
 		// Use standard Lua metatable approach: __index points to base table directly
 		proxyEnvironment = new Table(luaScript);
-		Table proxyMeta = new Table(luaScript);
-
+		Table proxyMeta = new(luaScript);
 		// NOTE: We'll set __index after baseEnvironment is created
 		// For now, just set up __newindex to catch write attempts
-
 		// Forbid writes - environment is read-only
 		proxyMeta["__newindex"] = DynValue.NewCallback((ctx, args) =>
 		{
@@ -104,22 +95,17 @@ public class LuaScriptEngine
 			{
 				string key = args[0].String;
 				if (!string.IsNullOrEmpty(key))
-				{
 					throw new ScriptRuntimeException(
 						$"Cannot set global variable '{key}'. " +
 						$"Use 'local {key} = ...' instead. " +
 						"Global variables are forbidden for determinism.");
-				}
 			}
 			return DynValue.Nil;
 		});
-
 		proxyEnvironment.MetaTable = proxyMeta;
-
 		// Initialize base environment early (before compilation)
 		// We'll add compiled functions to it later in CompileAllStateFunctions
 		baseEnvironment = new Table(luaScript);
-
 		// Add standard library references as READ-ONLY proxies
 		// This prevents scripts from modifying stdlib tables (e.g., overriding math.random)
 		baseEnvironment["math"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("math").Table);
@@ -127,7 +113,6 @@ public class LuaScriptEngine
 		baseEnvironment["table"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("table").Table);
 		baseEnvironment["print"] = luaScript.Globals["print"];
 		baseEnvironment["os"] = CreateReadOnlyTableProxy(luaScript.Globals.Get("os").Table);
-
 		// Add standard Lua global functions to base environment
 		// These are safe, stateless functions needed by all scripts (menu and action)
 		string[] standardGlobals = [
@@ -142,18 +127,13 @@ public class LuaScriptEngine
 			if (val.Type != DataType.Nil)
 				baseEnvironment[name] = val;
 		}
-
 		// Expose all specified context type methods using reflection
 		// These callbacks reference CurrentContext, which is set per-execution
 		foreach (Type contextType in contextTypes)
-		{
 			ExposeContextMethodsInEnvironment(baseEnvironment, contextType);
-		}
-
 		// Now set proxy's __index to baseEnvironment (standard Lua inheritance)
 		proxyMeta["__index"] = baseEnvironment;
 	}
-
 	/// <summary>
 	/// Add compiled state functions to the base environment.
 	/// Called after CompileAllStateFunctions to make functions available to each other.
@@ -165,7 +145,6 @@ public class LuaScriptEngine
 			if (kvp.Value.Type != DataType.Nil)
 				baseEnvironment[kvp.Key] = kvp.Value;
 	}
-
 	/// <summary>
 	/// Creates a read-only proxy for a standard library table.
 	/// Allows reads but prevents modifications that could break determinism.
@@ -174,12 +153,10 @@ public class LuaScriptEngine
 	/// <returns>A DynValue wrapping the read-only proxy table</returns>
 	private DynValue CreateReadOnlyTableProxy(Table sourceTable)
 	{
-		Table proxy = new Table(luaScript);
-		Table meta = new Table(luaScript);
-
+		Table proxy = new(luaScript);
+		Table meta = new(luaScript);
 		// Allow reads from source table (standard Lua pattern)
 		meta["__index"] = sourceTable;
-
 		// Forbid writes - prevent scripts from undoing deterministic overrides
 		meta["__newindex"] = DynValue.NewCallback((ctx, args) =>
 		{
@@ -187,20 +164,16 @@ public class LuaScriptEngine
 			{
 				string key = args[0].String;
 				if (!string.IsNullOrEmpty(key))
-				{
 					throw new ScriptRuntimeException(
 						$"Cannot modify standard library table. " +
 						$"Attempt to set '{key}' is forbidden for determinism. " +
 						"Standard library tables are read-only.");
-				}
 			}
 			return DynValue.Nil;
 		});
-
 		proxy.MetaTable = meta;
 		return DynValue.NewTable(proxy);
 	}
-
 	/// <summary>
 	/// Expose script context methods in the given environment using reflection.
 	/// Callbacks invoke methods on CurrentContext (set per-execution).
@@ -209,25 +182,20 @@ public class LuaScriptEngine
 	{
 		MethodInfo[] methods = contextType.GetMethods(
 			BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-
 		foreach (MethodInfo method in methods)
 		{
 			// Skip property getters/setters and special methods
 			if (method.IsSpecialName)
 				continue;
-
 			// Skip methods from System.Object (GetType, Equals, GetHashCode, ToString)
 			if (method.DeclaringType == typeof(object))
 				continue;
-
 			string methodName = method.Name;
-
 			// Skip if already registered (avoid duplicates from multiple context types)
 			if (env.Get(methodName).Type != DataType.Nil)
 				continue;
 			ParameterInfo[] parameters = method.GetParameters();
 			Type returnType = method.ReturnType;
-
 			// Create a callback that invokes the method on CurrentContext
 			// Capture method info for the closure
 			MethodInfo methodToInvoke = method;
@@ -235,21 +203,17 @@ public class LuaScriptEngine
 			env[methodName] = DynValue.NewCallback((c, args) =>
 			{
 				// For instance methods, check if context is compatible
-				if (!isStatic)
-				{
-					if (CurrentContext == null || !contextType.IsInstanceOfType(CurrentContext))
-						return DynValue.Nil;
-				}
-
+				if (!isStatic && (
+					CurrentContext is null ||
+					!contextType.IsInstanceOfType(CurrentContext)))
+					return DynValue.Nil;
 				// Convert Lua arguments to C# types
 				object[] invokeArgs = new object[parameters.Length];
 				for (int i = 0; i < parameters.Length; i++)
-				{
 					if (i < args.Count)
 					{
 						DynValue luaArg = args[i];
 						Type paramType = parameters[i].ParameterType;
-
 						// Convert based on parameter type
 						if (paramType == typeof(int))
 							invokeArgs[i] = (int)luaArg.Number;
@@ -263,29 +227,24 @@ public class LuaScriptEngine
 							invokeArgs[i] = luaArg.ToObject();
 					}
 					else if (parameters[i].HasDefaultValue)
-					{
 						invokeArgs[i] = parameters[i].DefaultValue;
-					}
-				}
-
 				// Invoke the method (static methods use null as instance)
 				object result = methodToInvoke.Invoke(isStatic ? null : CurrentContext, invokeArgs);
-
 				// Convert return value to Lua type
-				if (returnType == typeof(void))
-					return DynValue.Nil;
-				else if (returnType == typeof(int) || returnType == typeof(short) || returnType == typeof(ushort))
-					return DynValue.NewNumber(Convert.ToDouble(result));
-				else if (returnType == typeof(bool))
-					return DynValue.NewBoolean((bool)result);
-				else if (returnType == typeof(string))
-					return DynValue.NewString((string)result);
-				else
-					return DynValue.FromObject(luaScript, result);
+				return returnType == typeof(void)
+					? DynValue.Nil
+					: returnType == typeof(int) ||
+						returnType == typeof(short) ||
+						returnType == typeof(ushort)
+					? DynValue.NewNumber(Convert.ToDouble(result))
+					: returnType == typeof(bool)
+					? DynValue.NewBoolean((bool)result)
+					: returnType == typeof(string)
+					? DynValue.NewString((string)result)
+					: DynValue.FromObject(luaScript, result);
 			});
 		}
 	}
-
 	#region Deterministic Standard Library Overrides
 	/// <summary>
 	/// Lua print() function - routes to Microsoft.Extensions.Logging
@@ -294,7 +253,7 @@ public class LuaScriptEngine
 	{
 		if (args.Count == 0)
 		{
-			this.logger?.LogInformation("");
+			logger?.LogInformation("");
 			return DynValue.Nil;
 		}
 		// Concatenate all arguments with tabs (Lua print behavior)
@@ -305,7 +264,7 @@ public class LuaScriptEngine
 			parts[i] = arg.Type == DataType.Nil ? "nil" : arg.ToString();
 		}
 		string message = string.Join("\t", parts);
-		this.logger?.LogInformation("{LuaOutput}", message);
+		logger?.LogInformation("{LuaOutput}", message);
 		return DynValue.Nil;
 	}
 	private DynValue MathRandom(ScriptExecutionContext ctx, CallbackArguments args)
@@ -388,10 +347,7 @@ public class LuaScriptEngine
 	{
 		compiledStateFunctions.Clear();
 		foreach (StateFunction function in stateCollection.Functions.Values)
-		{
 			CompileStateFunction(function.Name, function.Code);
-		}
-
 		// Add compiled functions to base environment so they can call each other
 		AddCompiledFunctionsToBaseEnvironment();
 	}
@@ -415,13 +371,11 @@ public class LuaScriptEngine
 			// Compile with read-only proxy environment
 			// Proxy allows reads from baseEnvironment but forbids writes (throws error)
 			DynValue compiled = luaScript.LoadString(luaCode, proxyEnvironment, functionName);
-
 			// Validate that the function has no upvalues (persistent state)
 			if (compiled.Type == DataType.Function)
 			{
 				Closure closure = compiled.Function;
 				Closure.UpvaluesType upvaluesType = closure.GetUpvaluesType();
-
 				if (upvaluesType == Closure.UpvaluesType.Closure)
 				{
 					int upvalueCount = closure.GetUpvaluesCount();
@@ -431,7 +385,6 @@ public class LuaScriptEngine
 						"Remove top-level 'local' variables - all state must come from C# via the context API.");
 				}
 			}
-
 			compiledStateFunctions[functionName] = compiled;
 		}
 		catch (Exception ex)
@@ -452,21 +405,17 @@ public class LuaScriptEngine
 	{
 		if (string.IsNullOrWhiteSpace(luaCode))
 			return DynValue.Nil;
-
 		try
 		{
 			// Set context for this execution
 			IScriptContext previousContext = CurrentContext;
 			CurrentContext = context;
-
 			// Load and execute with base environment directly
 			// Menu scripts don't need the read-only proxy restrictions that action scripts use
 			DynValue compiled = luaScript.LoadString(luaCode, baseEnvironment);
 			DynValue result = luaScript.Call(compiled);
-
 			// Restore previous context
 			CurrentContext = previousContext;
-
 			return result;
 		}
 		catch (Exception ex)
@@ -474,7 +423,6 @@ public class LuaScriptEngine
 			throw new InvalidOperationException($"Error executing Lua code: {ex.Message}", ex);
 		}
 	}
-
 	/// <summary>
 	/// Executes a pre-compiled state function with the given context.
 	/// Functions are compiled with a read-only proxy environment that:
@@ -491,30 +439,22 @@ public class LuaScriptEngine
 		// For now, silently skip missing functions to allow testing with incomplete function sets.
 		// Final behavior should be:
 		//   throw new InvalidOperationException($"State function '{functionName}' not compiled. Did you call CompileAllStateFunctions?");
-
 		if (!compiledStateFunctions.TryGetValue(functionName, out DynValue compiled))
-		{
 			// TODO: Restore hard error for final release (see method summary)
 			return DynValue.Nil; // Silently skip missing function for testing
-		}
 		if (compiled.Type == DataType.Nil)
-		{
 			// Empty function - nothing to execute
 			return DynValue.Nil;
-		}
 		try
 		{
 			// Set context for this execution (context methods read from CurrentContext)
 			IScriptContext previousContext = CurrentContext;
 			CurrentContext = context;
-
 			// Execute the function (compiled with read-only proxy environment)
 			// Zero allocations - just pointer swap + function call
 			DynValue result = luaScript.Call(compiled);
-
 			// Restore previous context
 			CurrentContext = previousContext;
-
 			return result;
 		}
 		catch (Exception ex)

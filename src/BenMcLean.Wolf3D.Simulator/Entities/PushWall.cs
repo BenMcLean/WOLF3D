@@ -124,7 +124,7 @@ public class PushWall : IStateSavable<PushWallSnapshot>
 		Direction = (byte)Direction,
 		X = X,
 		Y = Y,
-		TicCount = TicCount
+		TicCount = TicCount,
 	};
 
 	/// <summary>
