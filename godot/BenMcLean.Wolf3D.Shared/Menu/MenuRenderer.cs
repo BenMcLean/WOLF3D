@@ -344,11 +344,14 @@ public class MenuRenderer
 				Text = textDef.Content,
 				Theme = theme,
 				ZIndex = 8, // Draw text labels below menu items but above boxes
-							// LabelSettings takes priority over theme, so set both LineSpacing and FontColor here
-							// LineSpacing is the total line height - set to font size for tight spacing
+							// Explicitly set Font and FontSize so LabelSettings never falls back to the
+							// project's default dynamic font (which would be blurry/wrong for bitmap fonts).
+							// LineSpacing is extra inter-line spacing; 0 gives tight single-line spacing.
 				LabelSettings = new LabelSettings
 				{
-					LineSpacing = theme.DefaultFontSize,
+					Font = theme.DefaultFont,
+					FontSize = theme.DefaultFontSize,
+					LineSpacing = 0,
 					FontColor = textColor,
 				}
 			};
@@ -413,11 +416,14 @@ public class MenuRenderer
 				PivotOffset = Vector2.Zero,
 				Theme = theme,
 				ZIndex = 10,
-				// LabelSettings takes priority over theme, so set both LineSpacing and FontColor here
-				// LineSpacing is the total line height - set to font size for tight spacing
+				// Explicitly set Font and FontSize so LabelSettings never falls back to the
+				// project's default dynamic font (which would be blurry/wrong for bitmap fonts).
+				// LineSpacing is extra inter-line spacing; 0 gives tight single-line spacing.
 				LabelSettings = new LabelSettings
 				{
-					LineSpacing = theme.DefaultFontSize,
+					Font = theme.DefaultFont,
+					FontSize = theme.DefaultFontSize,
+					LineSpacing = 0,
 					FontColor = textColor,
 				}
 			};
@@ -564,7 +570,9 @@ public class MenuRenderer
 				ZIndex = 8,
 				LabelSettings = new LabelSettings
 				{
-					LineSpacing = theme.DefaultFontSize,
+					Font = theme.DefaultFont,
+					FontSize = theme.DefaultFontSize,
+					LineSpacing = 0,
 					FontColor = textColor
 				},
 			};
@@ -734,7 +742,9 @@ public class MenuRenderer
 			ZIndex = 60,
 			LabelSettings = new LabelSettings
 			{
-				LineSpacing = fontSize,
+				Font = font,
+				FontSize = (int)fontSize,
+				LineSpacing = 0,
 				FontColor = textColor,
 			}
 		});
@@ -746,7 +756,7 @@ public class MenuRenderer
 			Theme = theme,
 			Position = new Vector2(yesBoxX + btnPad, btnBoxY + btnPad),
 			ZIndex = 60,
-			LabelSettings = new LabelSettings { FontColor = textColor },
+			LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
 		});
 		// "No" box — outside/below the message box, right-aligned with it
 		DrawBevelledBox(noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
@@ -756,7 +766,7 @@ public class MenuRenderer
 			Theme = theme,
 			Position = new Vector2(noBoxX + btnPad, btnBoxY + btnPad),
 			ZIndex = 60,
-			LabelSettings = new LabelSettings { FontColor = textColor },
+			LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
 		});
 		// Set button bounds for pointer hit-testing
 		const float hitExtra = 2f;

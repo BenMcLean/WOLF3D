@@ -147,6 +147,8 @@ public class MenuManager
 			SaveGameAction = SaveGameImpl,
 			LoadGameAction = LoadGameImpl,
 			GetSaveSlotNameFunc = GetSaveSlotNameImpl,
+			// Wire up config save for high score persistence
+			SaveConfigAction = SharedAssetManager.SaveConfig,
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();

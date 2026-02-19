@@ -1,6 +1,11 @@
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
 /// <summary>
+/// Holds the final score data pending a high score check.
+/// Set by Root.cs before creating the post-game MenuRoom.
+/// </summary>
+public record PendingHighScoreData(int Score, ushort Completed, ushort Episode);
+/// <summary>
 /// VR mode options for menu settings.
 /// This is a new setting not present in the original Wolfenstein 3D CONFIG file format.
 /// </summary>
@@ -58,4 +63,11 @@ public class MenuState
 	/// Set by Lua LoadGame(slot), polled by Root.cs to transition to loaded game.
 	/// </summary>
 	public int? LoadGameSlot { get; set; }
+	/// <summary>Score data waiting to be checked against the high score table.</summary>
+	public PendingHighScoreData PendingHighScore { get; set; }
+	/// <summary>
+	/// Rank (0-based index) of the newly added high score entry, or -1 if not added.
+	/// Set by CheckAndAddHighScore(); read by IsNewHighScore() / GetNewHighScoreIndex().
+	/// </summary>
+	public int LastAddedHighScoreIndex { get; set; } = -1;
 }

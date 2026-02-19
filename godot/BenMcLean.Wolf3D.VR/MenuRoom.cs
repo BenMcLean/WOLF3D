@@ -100,6 +100,19 @@ public partial class MenuRoom : Node3D
 	public int SuspendedLevelIndex { get; set; }
 
 	/// <summary>
+	/// The final score to check against the high score table after this menu session.
+	/// Null when not coming from a completed game.
+	/// </summary>
+	public int? PendingHighScoreScore { get; set; }
+	/// <summary>
+	/// The level number the player reached, for the high score entry.
+	/// </summary>
+	public ushort PendingHighScoreCompleted { get; set; }
+	/// <summary>
+	/// The episode (0-indexed) the player was on, for the high score entry.
+	/// </summary>
+	public ushort PendingHighScoreEpisode { get; set; }
+	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// Must be called after _Ready (when MenuManager exists).
@@ -149,6 +162,17 @@ public partial class MenuRoom : Node3D
 			if (HasSuspendedGame)
 				PendingResumeGame = true;
 		};
+
+		// Wire player name for high score entries ("VR Player 2026-02-18 3:45 PM")
+		_menuManager.ScriptContext.GetPlayerNameFunc = () =>
+			"VR Player " + DateTime.Now.ToString("yyyy-MM-dd h:mm tt");
+
+		// Pass pending high score data to session state
+		if (PendingHighScoreScore.HasValue)
+			_menuManager.SessionState.PendingHighScore = new PendingHighScoreData(
+				PendingHighScoreScore.Value,
+				PendingHighScoreCompleted,
+				PendingHighScoreEpisode);
 
 		// Wire up save/load game delegates
 		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;

@@ -188,10 +188,20 @@ public partial class Root : Node3D
 					}
 					else
 					{
-						// WL_GAME.C:Died() with no lives — game over, return to menu
-						MenuRoom gameOverRoom = new(DisplayMode);
-						if (!string.IsNullOrEmpty(deathResult) && deathResult != "gameover")
-							gameOverRoom.StartMenuOverride = deathResult;
+						// WL_GAME.C:Died() with no lives — game over, show high scores then menu
+						// Extract final score before sim is discarded
+						int finalScore = sim.Inventory.GetValue("Score");
+						ushort completedLevel = (ushort)sim.Inventory.GetValue("MapOn");
+						// Inventory stores episode 1-indexed; HighScoreEntry uses 0-indexed (matches original)
+						ushort episode = (ushort)Math.Max(0, sim.Inventory.GetValue("Episode") - 1);
+						MenuRoom gameOverRoom = new(DisplayMode)
+						{
+							StartMenuOverride = !string.IsNullOrEmpty(deathResult) && deathResult != "gameover"
+								? deathResult : null,
+							PendingHighScoreScore = finalScore,
+							PendingHighScoreCompleted = completedLevel,
+							PendingHighScoreEpisode = episode,
+						};
 						_currentScene = gameOverRoom;
 						_pendingScene = null;
 						AddChild(gameOverRoom);
@@ -213,6 +223,18 @@ public partial class Root : Node3D
 					StartMenuOverride = request.MenuName ?? "LevelComplete",
 					LevelTransition = request,
 				};
+				// For Victory (episode complete), pass final score for high score check
+				if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
+				{
+					Simulator.LevelCompletionStats lastStats =
+						request.AllLevelStats[request.AllLevelStats.Count - 1];
+					ushort ep = (ushort)Math.Max(0,
+						(request.SavedInventory?.TryGetValue("Episode", out int episodeVal) == true
+							? episodeVal : 1) - 1);
+					intermissionRoom.PendingHighScoreScore = lastStats.Score;
+					intermissionRoom.PendingHighScoreCompleted = (ushort)lastStats.FloorNumber;
+					intermissionRoom.PendingHighScoreEpisode = ep;
+				}
 				TransitionTo(intermissionRoom);
 			}
 		}

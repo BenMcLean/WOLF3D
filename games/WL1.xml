@@ -191,7 +191,7 @@ if GetValue("Lives") > 0 then
 	return "restart"
 end
 PlayAdLibSound("PLAYERDEATHSND")
-return "Title"
+return "HighScores"
 ]]></OnDeath>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
@@ -589,9 +589,45 @@ end
 				<MenuItem Text="Back" Action="BackToPreviousMenu" />
 			</Menu>
 
-			<Menu Name="ViewScores" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="No scores yet" Action="BackToPreviousMenu" />
-				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
+			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
+			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BorderColor="41"
+				  X="0" Y="0" Indent="0" Spacing="0">
+				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
+				<Picture Name="C_LEVELPIC" X="160" Y="68" />
+				<Picture Name="C_SCOREPIC" X="224" Y="68" />
+				<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+				<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+				<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+				<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+				<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+				<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+				<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+				<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
+				<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
+				<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+				<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
+				<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
+				<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+				<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
+				<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
+				<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+				<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
+				<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
+				<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
+				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Pause>BackToPreviousMenu()</Pause>
+				<OnShow><![CDATA[
+					for i = 0, GetHighScoreCount() - 1 do
+						local ep = GetHighScoreEpisode(i) + 1
+						local lvl = GetHighScoreCompleted(i)
+						SetText("Name"  .. i, GetHighScoreName(i))
+						SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
+						SetText("Score" .. i, tostring(GetHighScoreScore(i)))
+					end
+				]]></OnShow>
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BorderColor="127" Music="ENDLEVEL_MUS"
 				  X="112" Y="168" Indent="0" Spacing="13">
@@ -665,6 +701,55 @@ end
 				]]>
 				</OnShow>
 			</Menu>
+		<!-- High scores screen: WL_HSCOR.C:CheckHighScore / DrawHighScores -->
+		<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
+		<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
+		<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
+		<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BorderColor="41"
+			  X="0" Y="0" Indent="0" Spacing="0">
+			<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
+			<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+			<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
+			<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
+			<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
+			<Picture Name="C_LEVELPIC" X="160" Y="68" />
+			<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
+			<Picture Name="C_SCOREPIC" X="224" Y="68" />
+			<!-- 7 rows at PrintY = 76 + 16*i -->
+			<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+			<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+			<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+			<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+			<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+			<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+			<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+			<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
+			<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
+			<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+			<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
+			<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
+			<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+			<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
+			<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
+			<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+			<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
+			<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
+			<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+			<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
+			<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+			<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
+			<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
+			<OnShow><![CDATA[
+				CheckAndAddHighScore()
+				for i = 0, GetHighScoreCount() - 1 do
+					local ep = GetHighScoreEpisode(i) + 1
+					local lvl = GetHighScoreCompleted(i)
+					SetText("Name"  .. i, GetHighScoreName(i))
+					SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
+					SetText("Score" .. i, tostring(GetHighScoreScore(i)))
+				end
+			]]></OnShow>
+		</Menu>
 		<!-- Victory screen: WL_INTER.C:Victory -->
 		<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
 		<Menu Name="Victory" Font="L" BorderColor="127" Music="URAHERO_MUS"
@@ -692,7 +777,7 @@ end
 					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 			<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right"
 					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-			<Pause>NavigateToMenu("Main")</Pause>
+			<Pause>NavigateToMenu("HighScores")</Pause>
 			<OnShow>
 				<![CDATA[
 				SetText("TotalTimeValue", FormatTime(GetTotalTime()))

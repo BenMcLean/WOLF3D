@@ -520,6 +520,99 @@ public class MenuScriptContext(
 		return totalTics / Constants.TicsPerSecond;
 	}
 	#endregion Accumulated Stats
+	#region High Scores
+	/// <summary>
+	/// Get the total number of high score entries.
+	/// Always returns Config.MaxScores (7).
+	/// </summary>
+	public int GetHighScoreCount() => Config.MaxScores;
+	/// <summary>
+	/// Get the name for a high score entry.
+	/// </summary>
+	/// <param name="index">Zero-based entry index (0-6)</param>
+	public string GetHighScoreName(int index) => config.Scores[index].Name;
+	/// <summary>
+	/// Get the score value for a high score entry.
+	/// </summary>
+	/// <param name="index">Zero-based entry index (0-6)</param>
+	public int GetHighScoreScore(int index) => config.Scores[index].Score;
+	/// <summary>
+	/// Get the level completed for a high score entry.
+	/// </summary>
+	/// <param name="index">Zero-based entry index (0-6)</param>
+	public int GetHighScoreCompleted(int index) => (int)config.Scores[index].Completed;
+	/// <summary>
+	/// Get the episode (0-based) for a high score entry.
+	/// Add 1 in Lua when displaying to the player.
+	/// </summary>
+	/// <param name="index">Zero-based entry index (0-6)</param>
+	public int GetHighScoreEpisode(int index) => (int)config.Scores[index].Episode;
+	/// <summary>
+	/// Get the score from the pending high score data, or 0 if none.
+	/// </summary>
+	public int GetPendingScore() => sessionState.PendingHighScore?.Score ?? 0;
+	/// <summary>
+	/// Get the level completed from the pending high score data, or 0 if none.
+	/// </summary>
+	public int GetPendingCompleted() => (int)(sessionState.PendingHighScore?.Completed ?? 0);
+	/// <summary>
+	/// Get the episode (0-based) from the pending high score data, or 0 if none.
+	/// </summary>
+	public int GetPendingEpisode() => (int)(sessionState.PendingHighScore?.Episode ?? 0);
+	/// <summary>
+	/// Check the pending score against the high score table and add it if it qualifies.
+	/// Clears PendingHighScore to prevent double-add.
+	/// Saves the config to disk if a new entry was added.
+	/// WL_HSCOR.C:CheckHighScore
+	/// </summary>
+	public void CheckAndAddHighScore()
+	{
+		if (sessionState.PendingHighScore is null)
+			return;
+		PendingHighScoreData pending = sessionState.PendingHighScore;
+		sessionState.PendingHighScore = null; // prevent double-add
+		Config.HighScoreEntry entry = new()
+		{
+			Name = GetPlayerName(),
+			Score = pending.Score,
+			Completed = pending.Completed,
+			Episode = pending.Episode,
+		};
+		int rank = config.AddScore(entry);
+		sessionState.LastAddedHighScoreIndex = rank;
+		if (rank >= 0)
+			SaveHighScores();
+	}
+	/// <summary>
+	/// Returns true if the last CheckAndAddHighScore() call added a new entry.
+	/// </summary>
+	public bool IsNewHighScore() => sessionState.LastAddedHighScoreIndex >= 0;
+	/// <summary>
+	/// Returns the 0-based rank of the newly added high score, or -1 if none was added.
+	/// </summary>
+	public int GetNewHighScoreIndex() => sessionState.LastAddedHighScoreIndex;
+	/// <summary>
+	/// Delegate for saving the config (high scores) to disk.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action SaveConfigAction { get; set; }
+	/// <summary>
+	/// Save the high score table to disk.
+	/// Delegates to SaveConfigAction (wired to SharedAssetManager.SaveConfig).
+	/// </summary>
+	public void SaveHighScores() => SaveConfigAction?.Invoke();
+	/// <summary>
+	/// Delegate for generating the player name for new high score entries.
+	/// Set by the presentation layer (e.g., MenuRoom._Ready in VR).
+	/// Default: returns "Player".
+	/// </summary>
+	public Func<string> GetPlayerNameFunc { get; set; }
+	/// <summary>
+	/// Get the player name for a new high score entry.
+	/// Calls GetPlayerNameFunc if set, otherwise returns "Player".
+	/// </summary>
+	public string GetPlayerName() => GetPlayerNameFunc?.Invoke() ?? "Player";
+	#endregion High Scores
 	#region UI Control (to be implemented by MenuManager)
 	/// <summary>
 	/// Delegate for showing a confirmation dialog.
