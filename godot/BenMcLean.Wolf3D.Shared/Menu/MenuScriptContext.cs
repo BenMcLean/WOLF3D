@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator;
 using Microsoft.Extensions.Logging;
@@ -461,64 +462,38 @@ public class MenuScriptContext(
 	/// WL_INTER.C:Victory averaged stats display.
 	/// </summary>
 	/// <returns>Average kill percentage (0-100)</returns>
-	public int GetAverageKillRatio()
-	{
-		if (AllLevelStats is null || AllLevelStats.Count == 0)
-			return 0;
-		int sum = 0;
-		for (int i = 0; i < AllLevelStats.Count; i++)
-		{//TODO Use LINQ?
-			LevelCompletionStats s = AllLevelStats[i];
-			sum += s.KillTotal > 0 ? (int)(s.KillCount * 100L / s.KillTotal) : 0;
-		}
-		return sum / AllLevelStats.Count;
-	}
+	public int GetAverageKillRatio() =>
+		AllLevelStats is null || !AllLevelStats.Any()
+			? 0
+			: (int)AllLevelStats.Average(s => s.KillTotal > 0
+				? (s.KillCount * 100L / s.KillTotal)
+				: 0);
 	/// <summary>
 	/// Get the average secret ratio across all completed levels.
 	/// </summary>
 	/// <returns>Average secret percentage (0-100)</returns>
-	public int GetAverageSecretRatio()
-	{
-		if (AllLevelStats is null || AllLevelStats.Count == 0)
-			return 0;
-		int sum = 0;
-		for (int i = 0; i < AllLevelStats.Count; i++)
-		{//TODO Use LINQ?
-			LevelCompletionStats s = AllLevelStats[i];
-			sum += s.SecretTotal > 0 ? (int)(s.SecretCount * 100L / s.SecretTotal) : 0;
-		}
-		return sum / AllLevelStats.Count;
-	}
+	public int GetAverageSecretRatio() =>
+		AllLevelStats is null || !AllLevelStats.Any()
+			? 0
+			: (int)AllLevelStats.Average(s => s.SecretTotal > 0
+				? s.SecretCount * 100L / s.SecretTotal
+				: 0);
 	/// <summary>
 	/// Get the average treasure ratio across all completed levels.
 	/// </summary>
 	/// <returns>Average treasure percentage (0-100)</returns>
-	public int GetAverageTreasureRatio()
-	{
-		if (AllLevelStats is null || AllLevelStats.Count == 0)
-			return 0;
-		int sum = 0;
-		for (int i = 0; i < AllLevelStats.Count; i++)
-		{//TODO Use LINQ?
-			LevelCompletionStats s = AllLevelStats[i];
-			sum += s.TreasureTotal > 0 ? (int)(s.TreasureCount * 100L / s.TreasureTotal) : 0;
-		}
-		return sum / AllLevelStats.Count;
-	}
+	public int GetAverageTreasureRatio() =>
+		AllLevelStats is null || !AllLevelStats.Any()
+			? 0
+			: (int)AllLevelStats.Average(s => s.TreasureTotal > 0
+				? s.TreasureCount * 100L / s.TreasureTotal
+				: 0);
 	/// <summary>
 	/// Get the total time across all completed levels in seconds.
 	/// WL_INTER.C:Victory total time display.
 	/// </summary>
 	/// <returns>Total time in seconds</returns>
-	public double GetTotalTime()
-	{//TODO Use LINQ?
-		if (AllLevelStats is null || AllLevelStats.Count == 0)
-			return 0;
-		long totalTics = 0;
-		for (int i = 0; i < AllLevelStats.Count; i++)
-			totalTics += AllLevelStats[i].ElapsedTics;
-		return totalTics / Constants.TicsPerSecond;
-	}
+	public double GetTotalTime() => AllLevelStats?.Sum(s => s.ElapsedTics) / Constants.TicsPerSecond ?? 0;
 	#endregion Accumulated Stats
 	#region High Scores
 	/// <summary>
