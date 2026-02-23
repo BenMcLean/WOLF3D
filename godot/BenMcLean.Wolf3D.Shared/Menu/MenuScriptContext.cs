@@ -78,6 +78,18 @@ public class MenuScriptContext(
 	/// <returns>True if game is running, false if at title screen</returns>
 	public bool IsGameInProgress() => IsGameInProgressFunc?.Invoke() ?? false;
 	/// <summary>
+	/// Delegate for selecting a game by its XML definition path.
+	/// Set by the presentation layer (MenuRoom) when hosting a game selection menu.
+	/// </summary>
+	public Action<string> SelectGameAction { get; set; }
+	/// <summary>
+	/// Select a game to load by its XML definition file path.
+	/// Exposed to Lua. Called by game selection menu item scripts.
+	/// Root polls MenuRoom.SelectedGameXmlPath and transitions to SetupRoom.
+	/// </summary>
+	/// <param name="xmlPath">Absolute path (forward slashes) to the game's XML file</param>
+	public void SelectGame(string xmlPath) => SelectGameAction?.Invoke(xmlPath);
+	/// <summary>
 	/// Request to quit the application, showing a confirmation dialog.
 	/// Exposed to Lua. MenuManager intercepts this flag in Update() and shows a modal.
 	/// WL_MENU.C:CP_Quit - shows confirm dialog then calls Quit(NULL)

@@ -1,241 +1,184 @@
-using Godot;
 using System;
-using System.Linq;
 using BenMcLean.Wolf3D.Shared;
+using BenMcLean.Wolf3D.VR.VR;
+using Godot;
 
-namespace BenMcLean.Wolf3D.VR
+namespace BenMcLean.Wolf3D.VR;
+
+/// <summary>
+/// Loading room that shows a DosScreen progress log while synchronously loading game assets.
+/// Used for the initial shareware load (isInitialLoad=true) and for loading any selected game
+/// (isInitialLoad=false). Root polls IsComplete and transitions accordingly.
+///
+/// Two-phase approach: Phase 1 writes the "Loading..." message and renders one frame so the
+/// user sees feedback before Phase 2 performs the blocking SharedAssetManager.LoadGame() call.
+///
+/// Display:
+///   VR mode      — DosScreen quad attached to the camera (head-locked), 1.5 m forward
+///   Flatscreen   — DosScreen in a CanvasLayer scaled to the largest 4:3 area in the window
+/// </summary>
+public partial class SetupRoom : Node3D
 {
-	public partial class SetupRoom : Node3D
+	private enum Phase { NotStarted, ShowingMessage, Loading, Done }
+
+	private readonly IDisplayMode _displayMode;
+	private readonly string _xmlPath;
+	private DosScreen _dosScreen;
+	private Phase _phase = Phase.NotStarted;
+
+	/// <summary>
+	/// True when this is the first load (WL1 shareware). After completion Root shows the
+	/// game selection menu. False for subsequent loads; after completion Root starts the game.
+	/// </summary>
+	public bool IsInitialLoad { get; }
+
+	/// <summary>
+	/// Polled by Root._Process(). True once the asset load completed successfully.
+	/// </summary>
+	public bool IsComplete => _phase == Phase.Done;
+
+	/// <param name="displayMode">Display mode initialized by Root (VR or flatscreen).</param>
+	/// <param name="xmlPath">Path to the game XML definition file to load.</param>
+	/// <param name="isInitialLoad">
+	/// True for the initial WL1 shareware load; false for the user-selected game load.
+	/// </param>
+	public SetupRoom(IDisplayMode displayMode, string xmlPath, bool isInitialLoad)
 	{
-		#region Data members
-		// TODO: Load path should come from application configuration/settings
-		public static string Load = null;
-		private DosScreen DosScreen;
-		private XROrigin3D XROrigin;
-		private XRCamera3D XRCamera;
-		private XRController3D LeftController;
-		private XRController3D RightController;
+		_displayMode = displayMode;
+		_xmlPath = xmlPath;
+		IsInitialLoad = isInitialLoad;
+		Name = "SetupRoom";
+		// Always process so the loading sequence runs even during fade transitions
+		ProcessMode = ProcessModeEnum.Always;
+	}
 
-		public enum LoadingState
+	public override void _Ready()
+	{
+		_displayMode.Initialize(this);
+
+		_dosScreen = new DosScreen();
+		AddChild(_dosScreen);
+
+		if (_displayMode.IsVRActive)
+			SetupVRDosScreen();
+		else
+			SetupFlatscreenDosScreen();
+
+		_dosScreen.WriteLine("Wolfenstein 3-D VR Engine");
+		_dosScreen.WriteLine("=========================");
+		_dosScreen.WriteLine("");
+	}
+
+	/// <summary>
+	/// Attaches the DosScreen as a quad to the camera so it is always visible (head-locked).
+	/// Size matches an 8-foot-wide screen at 5 feet distance (typical VR desktop experience).
+	/// </summary>
+	private void SetupVRDosScreen()
+	{
+		if (_displayMode.Camera is null)
+			return;
+
+		MeshInstance3D quad = new MeshInstance3D()
 		{
-			READY,
-			ASK_PERMISSION,
-			GET_SHAREWARE,
-			LOAD_ASSETS,
-			EXCEPTION
+			Mesh = new QuadMesh()
+			{
+				Size = new Vector2(2.4384f, 1.8288f), // 8ft × 6ft in metres
+			},
+			MaterialOverride = new StandardMaterial3D()
+			{
+				AlbedoTexture = _dosScreen.GetViewport().GetTexture(),
+				ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+				DisableReceiveShadows = true,
+				DisableAmbientLight = true,
+				CullMode = BaseMaterial3D.CullModeEnum.Back,
+				Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
+			},
+			Position = Vector3.Forward * 1.5f,
+		};
+		_displayMode.Camera.AddChild(quad);
+	}
+
+	/// <summary>
+	/// Displays the DosScreen as a 2D overlay scaled to the largest 4:3 area in the window,
+	/// with a black letterbox/pillarbox background.
+	/// </summary>
+	private void SetupFlatscreenDosScreen()
+	{
+		CanvasLayer canvasLayer = new() { Layer = 1 };
+		AddChild(canvasLayer);
+
+		Vector2I windowSize = DisplayServer.WindowGetSize();
+
+		ColorRect background = new()
+		{
+			Color = Colors.Black,
+			Size = windowSize,
+		};
+		canvasLayer.AddChild(background);
+
+		// Scale to the largest 4:3 rectangle that fits in the window (720:400 aspect)
+		const float dosAspect = 720f / 400f;
+		float windowAspect = (float)windowSize.X / windowSize.Y;
+		Vector2 dosSize, dosPosition;
+
+		if (windowAspect > dosAspect)
+		{
+			// Widescreen window — pillarbox
+			dosSize = new Vector2(windowSize.Y * dosAspect, windowSize.Y);
+			dosPosition = new Vector2((windowSize.X - dosSize.X) / 2f, 0f);
+		}
+		else
+		{
+			// Taller window — letterbox
+			dosSize = new Vector2(windowSize.X, windowSize.X / dosAspect);
+			dosPosition = new Vector2(0f, (windowSize.Y - dosSize.Y) / 2f);
 		}
 
-		private LoadingState state = LoadingState.READY;
-		public LoadingState State
+		TextureRect textureRect = new()
 		{
-			get => state;
-			set
-			{
-				state = value;
-				switch (State)
+			Texture = _dosScreen.GetViewport().GetTexture(),
+			Size = dosSize,
+			Position = dosPosition,
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.Scale,
+			TextureFilter = Control.TextureFilterEnum.Nearest,
+		};
+		canvasLayer.AddChild(textureRect);
+	}
+
+	public override void _Process(double delta)
+	{
+		_displayMode.Update(delta);
+
+		switch (_phase)
+		{
+			case Phase.NotStarted:
+				// Write the "Loading..." message and let one frame render before blocking
+				_dosScreen.WriteLine($"Loading: {System.IO.Path.GetFileNameWithoutExtension(_xmlPath)}...");
+				_phase = Phase.ShowingMessage;
+				break;
+
+			case Phase.ShowingMessage:
+				_phase = Phase.Loading;
+				try
 				{
-					case LoadingState.ASK_PERMISSION:
-						WriteLine("This application requires permission to both read and write to your device's")
-							.WriteLine("external storage.")
-							.WriteLine("Press any button to continue.");
-						break;
-					case LoadingState.GET_SHAREWARE:
-						// TODO: Implement command line argument parsing
-						// if (OS.GetCmdlineArgs()
-						//     ?.Where(e => !e.StartsWith("-") && System.IO.File.Exists(e))
-						//     ?.FirstOrDefault() is string load)
-						//     Load = load;
-						WriteLine("Installing Wolfenstein 3-D Shareware!");
-						try
-						{
-							Shareware();
-						}
-						catch (Exception ex)
-						{
-							WriteLine(ex.GetType().Name + ": " + ex.Message + "\n" + ex.StackTrace);
-							break;
-						}
-						State = LoadingState.LOAD_ASSETS;
-						break;
-					case LoadingState.LOAD_ASSETS:
-						LoadAssets();
-						break;
+					// For non-initial loads, release the current game's VR 3D materials
+					// before SharedAssetManager.LoadGame() disposes the atlas textures
+					if (!IsInitialLoad)
+						VRAssetManager.Cleanup();
+
+					SharedAssetManager.LoadGame(_xmlPath);
+
+					_dosScreen.WriteLine("Done.");
+					_phase = Phase.Done;
+					// Root polls IsComplete and performs the scene transition
 				}
-			}
-		}
-		#endregion Data members
-
-		#region Godot
-		public SetupRoom()
-		{
-			Name = "SetupRoom";
-			ProcessMode = ProcessModeEnum.Always;
-
-			AddChild(XROrigin = new XROrigin3D());
-			XROrigin.AddChild(XRCamera = new XRCamera3D()
-			{
-				Current = true,
-			});
-			XROrigin.AddChild(LeftController = new XRController3D()
-			{
-				Tracker = "left_hand",
-			});
-			XROrigin.AddChild(RightController = new XRController3D()
-			{
-				Tracker = "right_hand",
-			});
-
-			// Create DosScreen instance
-			DosScreen = new DosScreen();
-
-			// Create quad to display DosScreen in 3D space
-			MeshInstance3D quad = new MeshInstance3D()
-			{
-				Mesh = new QuadMesh()
+				catch (Exception ex)
 				{
-					Size = new Vector2(2.4384f, 1.8288f),
-				},
-				MaterialOverride = new StandardMaterial3D()
-				{
-					AlbedoTexture = DosScreen.GetViewport().GetTexture(),
-					ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-					DisableReceiveShadows = true,
-					DisableAmbientLight = true,
-					CullMode = BaseMaterial3D.CullModeEnum.Back,
-					Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
-				},
-				Position = Vector3.Forward * 3f,
-			};
-			XRCamera.AddChild(quad);
-
-			WriteLine("Platform detected: " + OS.GetName());
-			// TODO: Detect VR mode from XR interface
-			// WriteLine("VR mode: " + Main.VR);
-		}
-
-		public override void _Ready()
-		{
-			// TODO: Initialize XR interface
-			// if (XRServer.FindInterface("OpenXR") is XRInterface xrInterface)
-			// {
-			//     if (xrInterface.Initialize())
-			//         GetViewport().UseXR = true;
-			// }
-		}
-
-		public override void _Process(double delta)
-		{
-			if (State == LoadingState.READY)
-				switch (OS.GetName())
-				{
-					case "Android":
-						// TODO: Implement permission checking for Android
-						// State = PermissionsGranted ? LoadingState.GET_SHAREWARE : LoadingState.ASK_PERMISSION;
-						State = LoadingState.GET_SHAREWARE;
-						break;
-					default:
-						State = LoadingState.GET_SHAREWARE;
-						break;
+					_dosScreen.WriteLine($"ERROR: {ex.Message}");
+					// Stay in Loading — Root will not transition and the error stays visible
 				}
+				break;
 		}
-		#endregion Godot
-
-		#region Android
-		// TODO: Implement Android permission checking
-		// public static bool PermissionsGranted =>
-		//     OS.GetGrantedPermissions() is string[] permissions &&
-		//     permissions != null &&
-		//     permissions.Contains("android.permission.READ_EXTERNAL_STORAGE", StringComparer.InvariantCultureIgnoreCase) &&
-		//     permissions.Contains("android.permission.WRITE_EXTERNAL_STORAGE", StringComparer.InvariantCultureIgnoreCase);
-		#endregion Android
-
-		#region VR
-		// TODO: Implement button press handling
-		// public void ButtonPressed(int buttonIndex)
-		// {
-		//     if (IsVRButton(buttonIndex))
-		//         switch (State)
-		//         {
-		//             case LoadingState.ASK_PERMISSION:
-		//                 if (PermissionsGranted)
-		//                     State = LoadingState.GET_SHAREWARE;
-		//                 else
-		//                     OS.RequestPermissions();
-		//                 break;
-		//         }
-		// }
-
-		public SetupRoom WriteLine(string message)
-		{
-			GD.Print(message);
-			DosScreen.WriteLine(message);
-			return this;
-		}
-		#endregion VR
-
-		#region Shareware
-		public void Shareware()
-		{
-			// TODO: Implement shareware installation
-			// This would copy game XML files and extract shareware data
-			// Reference old implementation for details
-			WriteLine("Shareware installation not yet implemented");
-		}
-
-		// TODO: Implement file listing
-		// public static System.Collections.Generic.IEnumerable<string> ListFiles(string path = null, string filter = "*.*")
-		// {
-		//     filter = WildCardToRegular(filter);
-		//     DirAccess dir = DirAccess.Open(path ?? "res://");
-		//     if (dir != null)
-		//     {
-		//         dir.ListDirBegin();
-		//         string fileName;
-		//         while ((fileName = dir.GetNext()) != "")
-		//         {
-		//             if (fileName[0] != '.' && System.Text.RegularExpressions.Regex.IsMatch(fileName, filter))
-		//                 yield return fileName;
-		//         }
-		//         dir.ListDirEnd();
-		//     }
-		// }
-
-		// public static string WildCardToRegular(string value) =>
-		//     "^" + System.Text.RegularExpressions.Regex.Escape(value).Replace("\\?", ".").Replace("\\*", ".*") + "$";
-		#endregion Shareware
-
-		#region LoadAssets
-		public void LoadAssets()
-		{
-			WriteLine(Load is string ? "Loading \"" + Load + "\"..." : "Loading game selection menu...");
-			// TODO: Implement asset loading
-			// This would load Wolf3D assets and transition to menu
-			// AmbientTasks.Add(Task.Run(LoadAssets2));
-		}
-
-		// TODO: Implement async asset loading
-		// public static void LoadAssets2()
-		// {
-		//     if (Load is string)
-		//     {
-		//         Main.Folder = System.IO.Path.GetDirectoryName(Load);
-		//         Assets.Load(Main.Folder, System.IO.Path.GetFileName(Load));
-		//         Settings.Load();
-		//         Main.StatusBar = new StatusBar();
-		//         Main.MenuRoom = new MenuRoom();
-		//     }
-		//     else
-		//     {
-		//         Assets.Load(
-		//             Main.Folder = System.IO.Path.Combine(Main.Path, "WL1"),
-		//             Assets.LoadXML(Main.Folder).InsertGameSelectionMenu(),
-		//             true
-		//         );
-		//         Settings.Load();
-		//         Main.MenuRoom = new MenuRoom("_GameSelect0");
-		//     }
-		//     Main.Room = Main.MenuRoom;
-		// }
-		#endregion LoadAssets
 	}
 }

@@ -113,6 +113,18 @@ public partial class MenuRoom : Node3D
 	/// </summary>
 	public ushort PendingHighScoreEpisode { get; set; }
 	/// <summary>
+	/// Optional override MenuCollection for procedural menus (e.g., game selection screen).
+	/// When set, used instead of SharedAssetManager.CurrentGame.MenuCollection.
+	/// </summary>
+	public Assets.Gameplay.MenuCollection MenuCollectionOverride { get; set; }
+
+	/// <summary>
+	/// Set when the user selects a game from the game selection menu (via SelectGame() Lua call).
+	/// Polled by Root._Process(). Null when not in game selection mode or no selection yet.
+	/// </summary>
+	public string SelectedGameXmlPath { get; private set; }
+
+	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// Must be called after _Ready (when MenuManager exists).
@@ -142,9 +154,13 @@ public partial class MenuRoom : Node3D
 		_displayMode.Initialize(this);
 
 		// Create menu manager
-		if (SharedAssetManager.CurrentGame?.MenuCollection is not Assets.Gameplay.MenuCollection menuCollection)
+		// MenuCollectionOverride allows procedural menus (e.g., game selection screen)
+		// without requiring a fully-loaded game.
+		Assets.Gameplay.MenuCollection menuCollection = MenuCollectionOverride
+			?? SharedAssetManager.CurrentGame?.MenuCollection;
+		if (menuCollection is null)
 		{
-			GD.PrintErr("ERROR: No MenuCollection in SharedAssetManager.CurrentGame");
+			GD.PrintErr("ERROR: No MenuCollection available (set MenuCollectionOverride or load a game first)");
 			return;
 		}
 
@@ -153,6 +169,8 @@ public partial class MenuRoom : Node3D
 			menuCollection,
 			SharedAssetManager.Config,
 			logger: null);
+		// Wire up game selection (used when MenuCollectionOverride is the procedural game list)
+		_menuManager.ScriptContext.SelectGameAction = path => SelectedGameXmlPath = path;
 		// Wire up in-game state so menu items with InGame conditions show/hide correctly
 		_menuManager.ScriptContext.IsGameInProgressFunc = () => HasSuspendedGame;
 		// Wire up ResumeGame so "Back to Game" menu item signals Root to resume
@@ -394,6 +412,11 @@ public partial class MenuRoom : Node3D
 	{
 		// Update menu manager
 		_menuManager?.Update((float)delta);
+
+		// If a game selection was made, Root is already handling the transition.
+		// Skip all other menu processing to avoid spurious state changes.
+		if (SelectedGameXmlPath != null)
+			return;
 
 		// Quit: user confirmed quit dialog
 		if (_menuManager?.PendingQuit == true)

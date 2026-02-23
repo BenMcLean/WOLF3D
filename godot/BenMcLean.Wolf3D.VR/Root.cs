@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Shared;
+using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.State;
 using BenMcLean.Wolf3D.VR.VR;
@@ -71,28 +73,14 @@ public partial class Root : Node3D
 			_fadeOverlay.FadeOutComplete += OnFadeOutComplete;
 			_fadeOverlay.FadeInComplete += OnFadeInComplete;
 
-			// Load game assets
-			// TODO: Eventually this will be done from menu selection, not hardcoded
-			Shared.SharedAssetManager.LoadGame(@"..\..\games\WL1.xml");
-
-			// Create VR-specific 3D materials
-			// Try scaleFactor: 4 for better performance, or 8 for maximum quality
-			VRAssetManager.Initialize(scaleFactor: 8);
-
 			// Add SoundBlaster to scene tree (manages both AdLib and PC Speaker audio)
 			AddChild(new Shared.Audio.SoundBlaster());
 
-			// Play the first level's music
-			string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
-			if (!string.IsNullOrWhiteSpace(songName))
-				Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
-
-			// Boot to MenuRoom and fade in from black
-			MenuRoom menuRoom = new(DisplayMode);
-			TransitionToImmediate(menuRoom);
-
-			// Wire up fade transitions for menu screen navigations
-			menuRoom.SetFadeTransitionHandler(StartMenuFade);
+			// Boot to SetupRoom which loads the shareware assets and shows the
+			// DosScreen progress log. After completion, _Process() transitions to
+			// the game selection MenuRoom.
+			SetupRoom setupRoom = new(DisplayMode, @"..\..\games\WL1.xml", isInitialLoad: true);
+			TransitionToImmediate(setupRoom);
 
 			// Fade in the initial screen (all screens should fade in)
 			_transitionState = TransitionState.FadingIn;
@@ -114,9 +102,40 @@ public partial class Root : Node3D
 		if (_transitionState != TransitionState.Idle)
 			return;
 
+		// Poll SetupRoom: transitions after assets finish loading
+		if (_currentScene is SetupRoom setupRoom && setupRoom.IsComplete)
+		{
+			if (setupRoom.IsInitialLoad)
+			{
+				// Shareware assets loaded → show the game selection menu
+				string gamesDir = System.IO.Path.GetFullPath(@"..\..\games");
+				MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(gamesDir);
+				MenuRoom selectionRoom = new(DisplayMode) { MenuCollectionOverride = gameSelectMenu };
+				TransitionTo(selectionRoom);
+			}
+			else
+			{
+				// Selected game assets loaded → initialize VR materials, play music, enter game
+				// scaleFactor: 4 for better performance, 8 for maximum quality
+				VRAssetManager.Initialize(scaleFactor: 8);
+				string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
+				if (!string.IsNullOrWhiteSpace(songName))
+					Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
+				TransitionTo(new MenuRoom(DisplayMode));
+			}
+			return;
+		}
+
 		// Poll MenuRoom for game start, resume, or intermission completion
 		if (_currentScene is MenuRoom menuRoom)
 		{
+			// Game selected from the procedural game selection menu
+			if (menuRoom.SelectedGameXmlPath != null)
+			{
+				TransitionTo(new SetupRoom(DisplayMode, menuRoom.SelectedGameXmlPath, isInitialLoad: false));
+				return;
+			}
+
 			if (menuRoom.PendingEndGame)
 			{
 				// User confirmed "End Game" — discard suspended game and go to main menu
