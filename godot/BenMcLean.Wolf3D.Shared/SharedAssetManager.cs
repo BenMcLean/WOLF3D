@@ -330,6 +330,12 @@ public static class SharedAssetManager
 			size: new Godot.Vector2I(sourceFont.Height, 0),
 			textureIndex: 0,
 			image: AtlasImage);
+		// Glyphs render from the baseline downward (offset Vector2.Zero), so they live
+		// entirely in the descent region. Ascent = 0, descent = full font height.
+		// Without these, get_height() returns 0 and multiline Labels collapse all lines
+		// to the same Y position.
+		font.SetCacheAscent(cacheIndex: 0, size: sourceFont.Height, ascent: 0);
+		font.SetCacheDescent(cacheIndex: 0, size: sourceFont.Height, descent: sourceFont.Height);
 		for (int charCode = 0; charCode < sourceFont.Glyphs.Length; charCode++)
 		{
 			if (sourceFont.Widths[charCode] == 0)
@@ -386,6 +392,9 @@ public static class SharedAssetManager
 			size: new Godot.Vector2I(font.FixedSize, 0),
 			textureIndex: 0,
 			image: AtlasImage);
+		// See BuildChunkFont for rationale: ascent=0, descent=full height.
+		font.SetCacheAscent(cacheIndex: 0, size: font.FixedSize, ascent: 0);
+		font.SetCacheDescent(cacheIndex: 0, size: font.FixedSize, descent: font.FixedSize);
 		foreach ((char character, int picNumber) in picFont.Glyphs)
 		{
 			if (!vgaGraphRegions.TryGetValue(picNumber, out Godot.Rect2I region))
