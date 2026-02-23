@@ -322,6 +322,13 @@ void sky() {
 			// Convert Direction enum to Godot rotation using ToAngle extension method
 			// Handles Wolf3D coordinate system → Godot coordinate system conversion
 			cameraRotationY = playerStart.Facing.ToAngle();
+			// Pre-warm the simulator's player position so the first Update() call sees no
+			// positional delta and doesn't sweep the path from (0,0) to the spawn point.
+			// PlacePlayer is the right call here: this is system-driven placement, not travel.
+			_simulatorController.Simulator.PlacePlayer(
+				playerStart.X.ToMetersCentered().ToFixedPoint(),
+				playerStart.Y.ToMetersCentered().ToFixedPoint(),
+				cameraRotationY.ToWolf3DAngle());
 		}
 		else
 		{

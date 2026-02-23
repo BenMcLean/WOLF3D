@@ -313,6 +313,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Update the simulation with elapsed real time.
 	/// Events are dispatched to subscribers via C# events as they occur.
 	/// Based on WL_PLAY.C:PlayLoop and WL_DRAW.C:CalcTics.
+	/// For instant position changes (spawn, level transitions) use TeleportPlayer instead.
 	/// </summary>
 	/// <param name="deltaTime">Elapsed real time in seconds</param>
 	/// <param name="playerX">Player X position in 16.16 fixed-point (from HMD tracking)</param>
@@ -329,10 +330,11 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		PlayerY = playerY;
 		PlayerAngle = playerAngle;
 
-		// Check for item pickups when player position changes
-		// WL_AGENT.C:ClipMove checks for bonus collision
+		// Check for item pickups along the full movement path when player position changes.
+		// WL_AGENT.C:ClipMove checks for bonus collision.
+		// We extend this to cover all tiles traversed (handles high-speed multi-tile moves).
 		if (PlayerX != prevX || PlayerY != prevY)
-			CheckItemPickups();
+			CheckItemPickupsAlongPath(prevX, prevY);
 
 		accumulatedTime += deltaTime;
 		// WL_DRAW.C:CalcTics - calculate tics since last refresh
@@ -346,6 +348,25 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			ProcessTic();
 			CurrentTic++;
 		}
+	}
+
+	/// <summary>
+	/// Places the player at a position on behalf of the game system, with no path traversal.
+	/// Use for initial spawn, level transitions, and any other case where the system is
+	/// positioning the player rather than the player traveling there themselves.
+	/// Checks pickups only at the destination tile; never traverses the path from the
+	/// previous position (contrast with VR teleportation, which is player-initiated travel
+	/// and should use Update so items along the path are collected).
+	/// </summary>
+	/// <param name="playerX">Player X position in 16.16 fixed-point</param>
+	/// <param name="playerY">Player Y position in 16.16 fixed-point</param>
+	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
+	public void PlacePlayer(int playerX, int playerY, short playerAngle)
+	{
+		PlayerX = playerX;
+		PlayerY = playerY;
+		PlayerAngle = playerAngle;
+		CheckItemPickups();
 	}
 
 	/// <summary>
@@ -2327,7 +2348,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			if (deltaX < HALF_TILE && deltaY < HALF_TILE)
 			{
 				// Player is touching item - try to pick it up
-				if (TryPickupItem(i, item))
+				if (TryPickupItem(i, item, out _))
 				{
 					// Item was consumed - mark as despawned
 					item.ShapeNum = -1;
@@ -2351,9 +2372,13 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	/// <param name="itemIndex">Index in StatObjList</param>
 	/// <param name="item">The item to pick up</param>
+	/// <param name="navigationTriggered">Set to true if the script called NavigateToMenu (e.g. level exit)</param>
 	/// <returns>True if item was consumed, false if not (e.g., health at max)</returns>
-	private bool TryPickupItem(int itemIndex, StatObj item)
+	private bool TryPickupItem(int itemIndex, StatObj item, out bool navigationTriggered)
 	{
+		// Use a local variable; out params can't be captured in lambdas (CS1628)
+		bool navLocal = false;
+
 		// Look up script name by ItemNumber
 		if (!itemNumberToScript.TryGetValue(item.ItemNumber, out string scriptName))
 		{
@@ -2361,6 +2386,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			logger?.LogWarning("TryPickupItem: No script mapping for ItemNumber {ItemNumber} (index {Index}). Available keys: {Keys}",
 				item.ItemNumber, itemIndex,
 				string.Join(", ", itemNumberToScript.Keys.Select(k => k.ToString())));
+			navigationTriggered = false;
 			return true;
 		}
 
@@ -2369,6 +2395,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			// Script name not found - consume by default
 			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' not found in itemScripts. Available: {Scripts}",
 				scriptName, string.Join(", ", itemScripts.Keys));
+			navigationTriggered = false;
 			return true;
 		}
 
@@ -2376,6 +2403,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		{
 			// Empty script - consume by default
 			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' is empty or whitespace", scriptName);
+			navigationTriggered = false;
 			return true;
 		}
 
@@ -2394,14 +2422,19 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			PlayDigiSoundAction = soundName =>
 					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true),
 			// Wire up menu navigation - generic mechanism for VictoryTile, quiz triggers, etc.
+			// Set navLocal so callers can detect a level transition and stop path traversal.
 			NavigateToMenuAction = menuName =>
-					NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName })
+			{
+				navLocal = true;
+				NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName });
+			}
 		};
 
 		try
 		{
 			// Execute the item script
 			MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(script, context);
+			navigationTriggered = navLocal;
 
 			// Script returns true to consume, false to leave
 			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
@@ -2414,8 +2447,91 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		{
 			logger?.LogError(ex, "Error executing item script '{ScriptName}' at ({TileX}, {TileY})",
 				scriptName, item.TileX, item.TileY);
+			navigationTriggered = navLocal;
 			// On error, don't consume (safer default)
 			return false;
+		}
+	}
+
+	/// <summary>
+	/// Processes item pickups at a specific tile coordinate.
+	/// Returns true if a NavigateToMenu call was triggered (e.g. level exit tile),
+	/// which means path traversal should stop at this tile.
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate to check for items</param>
+	/// <param name="tileY">Tile Y coordinate to check for items</param>
+	/// <returns>True if a level transition was triggered by an item script</returns>
+	private bool PickupItemsAtTile(ushort tileX, ushort tileY)
+	{
+		for (int i = 0; i < lastStatObj; i++)
+		{
+			StatObj item = StatObjList[i];
+			if (item == null || item.IsFree || item.TileX != tileX || item.TileY != tileY)
+				continue;
+
+			if (TryPickupItem(i, item, out bool navigationTriggered))
+			{
+				item.ShapeNum = -1;
+				BonusPickedUp?.Invoke(new BonusPickedUpEvent
+				{
+					StatObjIndex = i,
+					TileX = item.TileX,
+					TileY = item.TileY,
+					ItemNumber = item.ItemNumber
+				});
+			}
+
+			if (navigationTriggered)
+				return true;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Checks for item pickups along the entire path from a previous player position to the current one.
+	/// Uses Bresenham tile traversal to visit every tile along the path (excluding the start tile).
+	/// If a level transition is triggered mid-path, the player is stopped at that tile's center.
+	/// Handles items along high-speed movement paths that cross multiple tiles per frame.
+	/// </summary>
+	/// <param name="fromX">Previous player X position (16.16 fixed-point)</param>
+	/// <param name="fromY">Previous player Y position (16.16 fixed-point)</param>
+	private void CheckItemPickupsAlongPath(int fromX, int fromY)
+	{
+		int fromTileX = Math.Max(0, Math.Min(mapWidth - 1, fromX >> 16));
+		int fromTileY = Math.Max(0, Math.Min(mapHeight - 1, fromY >> 16));
+		int toTileX = Math.Max(0, Math.Min(mapWidth - 1, PlayerX >> 16));
+		int toTileY = Math.Max(0, Math.Min(mapHeight - 1, PlayerY >> 16));
+
+		// Same tile: fall back to proximity-based check (existing behaviour)
+		if (fromTileX == toTileX && fromTileY == toTileY)
+		{
+			CheckItemPickups();
+			return;
+		}
+
+		// Multi-tile path: process every tile from (fromTile+step) through toTile.
+		// The start tile was already processed in a previous frame; skip it.
+		int dx = Math.Abs(toTileX - fromTileX);
+		int dy = Math.Abs(toTileY - fromTileY);
+		int sx = fromTileX < toTileX ? 1 : -1;
+		int sy = fromTileY < toTileY ? 1 : -1;
+		int err = dx - dy;
+		int x = fromTileX;
+		int y = fromTileY;
+
+		while (x != toTileX || y != toTileY)
+		{
+			int e2 = 2 * err;
+			if (e2 > -dy) { err -= dy; x += sx; }
+			if (e2 < dx) { err += dx; y += sy; }
+
+			if (PickupItemsAtTile((ushort)x, (ushort)y))
+			{
+				// Level transition triggered - snap player to this tile's center and stop
+				PlayerX = (x << 16) + 0x8000;
+				PlayerY = (y << 16) + 0x8000;
+				return;
+			}
 		}
 	}
 	#endregion
@@ -2791,16 +2907,19 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		if (NoClip)
 			return (desiredX, desiredY);
 
-		// Check if full movement is valid
-		if (IsPositionValidForPlayer(desiredX, desiredY, headSize))
+		// Check if full movement is valid (destination AABB + path for diagonal corner blocking)
+		if (IsPositionValidForPlayer(desiredX, desiredY, headSize)
+			&& IsMovementPathClearForPlayer(currentX, currentY, desiredX, desiredY))
 			return (desiredX, desiredY);
 
 		// Wall sliding: try X-only movement
-		if (IsPositionValidForPlayer(desiredX, currentY, headSize))
+		if (IsPositionValidForPlayer(desiredX, currentY, headSize)
+			&& IsMovementPathClearForPlayer(currentX, currentY, desiredX, currentY))
 			return (desiredX, currentY);
 
 		// Wall sliding: try Y-only movement
-		if (IsPositionValidForPlayer(currentX, desiredY, headSize))
+		if (IsPositionValidForPlayer(currentX, desiredY, headSize)
+			&& IsMovementPathClearForPlayer(currentX, currentY, currentX, desiredY))
 			return (currentX, desiredY);
 
 		// Completely blocked, stay at current position
@@ -2877,6 +2996,59 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		{
 			Actor actor = actors[actorAtTile[tileIdx]];
 			if (actor.HitPoints > 0)
+				return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Checks that the tile path from current to desired position is passable for the player.
+	/// Prevents high-speed clipping through blocked diagonal corners (where both adjacent
+	/// tiles to a diagonal step are blocking). Also catches fully blocked intermediate tiles.
+	/// Based on same Bresenham DDA approach as HasLineOfSight.
+	/// </summary>
+	/// <param name="fromX">Start X position (16.16 fixed-point)</param>
+	/// <param name="fromY">Start Y position (16.16 fixed-point)</param>
+	/// <param name="toX">End X position (16.16 fixed-point)</param>
+	/// <param name="toY">End Y position (16.16 fixed-point)</param>
+	/// <returns>True if the path is clear (no blocked intermediate tiles or diagonal corners)</returns>
+	private bool IsMovementPathClearForPlayer(int fromX, int fromY, int toX, int toY)
+	{
+		int fromTileX = Math.Max(0, Math.Min(mapWidth - 1, fromX >> 16));
+		int fromTileY = Math.Max(0, Math.Min(mapHeight - 1, fromY >> 16));
+		int toTileX = Math.Max(0, Math.Min(mapWidth - 1, toX >> 16));
+		int toTileY = Math.Max(0, Math.Min(mapHeight - 1, toY >> 16));
+
+		// Same tile - no intermediate tiles to check
+		if (fromTileX == toTileX && fromTileY == toTileY)
+			return true;
+
+		int dx = Math.Abs(toTileX - fromTileX);
+		int dy = Math.Abs(toTileY - fromTileY);
+		int sx = fromTileX < toTileX ? 1 : -1;
+		int sy = fromTileY < toTileY ? 1 : -1;
+		int err = dx - dy;
+		int x = fromTileX;
+		int y = fromTileY;
+
+		while (x != toTileX || y != toTileY)
+		{
+			int e2 = 2 * err;
+			bool movedX = false, movedY = false;
+			if (e2 > -dy) { err -= dy; x += sx; movedX = true; }
+			if (e2 < dx) { err += dx; y += sy; movedY = true; }
+
+			// Diagonal corner blocking: if we stepped in both X and Y simultaneously,
+			// the center path crosses the exact corner where all four tiles meet.
+			// Because the player has nonzero bounding box, either adjacent wall would clip them.
+			// Block the diagonal if EITHER adjacent tile is impassable.
+			if (movedX && movedY && (!IsTileValidForPlayer(x - sx, y) || !IsTileValidForPlayer(x, y - sy)))
+				return false;
+
+			// Check intermediate tiles for navigability.
+			// Destination tile validity is already checked by IsPositionValidForPlayer.
+			if ((x != toTileX || y != toTileY) && !IsTileValidForPlayer(x, y))
 				return false;
 		}
 
