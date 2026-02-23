@@ -80,6 +80,8 @@ public static class BiosFont
 			glSize = new(CharacterWidth, CharactersPerRow),
 			advance = new(CharacterWidth, 0);
 		font.SetTextureImage(0, size, 0, image);
+		font.SetCacheAscent(cacheIndex: 0, size: CharacterHeight, ascent: 0);
+		font.SetCacheDescent(cacheIndex: 0, size: CharacterHeight, descent: CharacterHeight);
 		for (char glyph = (char)0; glyph < 256; glyph++)
 		{
 			int column = glyph % CharactersPerRow,
