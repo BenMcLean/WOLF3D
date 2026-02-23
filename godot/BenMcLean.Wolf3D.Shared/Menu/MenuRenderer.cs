@@ -253,67 +253,23 @@ public class MenuRenderer
 	/// </summary>
 	/// <param name="menuDef">Menu definition containing box list</param>
 	private void RenderMenuBoxes(MenuDefinition menuDef)
-	{//TODO check whether a dedicated PixelRect class would take care of both this AND the ModalDialogue class's pixel box drawing needs to keep box drawing DRY
+	{
 		if (menuDef.Boxes is null || menuDef.Boxes.Count == 0)
 			return;
 		foreach (MenuBoxDefinition boxDef in menuDef.Boxes)
 		{
-			// WL_MENU.C:DrawWindow - VWB_Bar(x,y,w,h,BKGDCOLOR)
-			if (boxDef.BackgroundColor.HasValue)
-			{
-				Color boxColor = SharedAssetManager.GetPaletteColor(boxDef.BackgroundColor.Value);
-				ColorRect boxFill = new()
-				{
-					Color = boxColor,
-					Position = new Vector2(boxDef.X, boxDef.Y),
-					Size = new Vector2(boxDef.W, boxDef.H),
-					ZIndex = 6, // Draw box above pictures
-				};
-				_canvas.AddChild(boxFill);
-			}
-			// WL_MENU.C:DrawOutline - 3D beveled border effect
-			// Top and left edges use DEACTIVE color (lighter)
-			// Bottom and right edges use BORD2COLOR (darker)
+			// WL_MENU.C:DrawWindow + DrawOutline - fill then beveled border
+			// Top and left edges use DEACTIVE color (lighter); bottom and right use BORD2COLOR (darker)
 			byte deactiveColor = boxDef.Deactive ?? 0x2b, // DEACTIVE default
 				border2Color = boxDef.Border2Color ?? 0x23; // BORD2COLOR default
-			Color colorDeactive = SharedAssetManager.GetPaletteColor(deactiveColor),
-				colorBorder2 = SharedAssetManager.GetPaletteColor(border2Color);
-			// Top edge (DEACTIVE)
-			ColorRect topLine = new()
-			{
-				Color = colorDeactive,
-				Position = new Vector2(boxDef.X, boxDef.Y),
-				Size = new Vector2(boxDef.W + 1, 1), // +1 to connect corner
-				ZIndex = 7,
-			};
-			_canvas.AddChild(topLine);
-			// Left edge (DEACTIVE)
-			ColorRect leftLine = new()
-			{
-				Color = colorDeactive,
-				Position = new Vector2(boxDef.X, boxDef.Y),
-				Size = new Vector2(1, boxDef.H + 1), // +1 to connect corner
-				ZIndex = 7,
-			};
-			_canvas.AddChild(leftLine);
-			// Bottom edge (BORD2COLOR)
-			ColorRect bottomLine = new()
-			{
-				Color = colorBorder2,
-				Position = new Vector2(boxDef.X, boxDef.Y + boxDef.H),
-				Size = new Vector2(boxDef.W + 1, 1),
-				ZIndex = 7,
-			};
-			_canvas.AddChild(bottomLine);
-			// Right edge (BORD2COLOR)
-			ColorRect rightLine = new()
-			{
-				Color = colorBorder2,
-				Position = new Vector2(boxDef.X + boxDef.W, boxDef.Y),
-				Size = new Vector2(1, boxDef.H + 1),
-				ZIndex = 7,
-			};
-			_canvas.AddChild(rightLine);
+			Color? bgColor = boxDef.BackgroundColor.HasValue
+				? SharedAssetManager.GetPaletteColor(boxDef.BackgroundColor.Value)
+				: null;
+			DrawBevelledBox(boxDef.X, boxDef.Y, boxDef.W, boxDef.H,
+				bgColor,
+				SharedAssetManager.GetPaletteColor(deactiveColor),
+				SharedAssetManager.GetPaletteColor(border2Color),
+				bgZIndex: 6, borderZIndex: 7);
 		}
 	}
 	/// <summary>
@@ -779,20 +735,22 @@ public class MenuRenderer
 	}
 	/// <summary>
 	/// Draws a filled rectangle with a PixelRect-style bevelled border.
-	/// Used by RenderModal for the dialog box and Yes/No button boxes.
+	/// Used by RenderMenuBoxes and RenderModal for boxes and Yes/No buttons.
 	/// colorNW = top/left bevel (lighter); colorSE = bottom/right bevel (darker).
+	/// bgColor may be null to skip the fill and draw only the border.
 	/// </summary>
 	private void DrawBevelledBox(float x, float y, float w, float h,
-		Color bgColor, Color colorNW, Color colorSE,
+		Color? bgColor, Color colorNW, Color colorSE,
 		int bgZIndex, int borderZIndex)
 	{
-		_canvas.AddChild(new ColorRect
-		{
-			Color = bgColor,
-			Position = new Vector2(x, y),
-			Size = new Vector2(w, h),
-			ZIndex = bgZIndex,
-		});
+		if (bgColor.HasValue)
+			_canvas.AddChild(new ColorRect
+			{
+				Color = bgColor.Value,
+				Position = new Vector2(x, y),
+				Size = new Vector2(w, h),
+				ZIndex = bgZIndex,
+			});
 		AddOutline(x, y, w, h, colorNW, colorSE, borderZIndex);
 	}
 	/// <summary>
