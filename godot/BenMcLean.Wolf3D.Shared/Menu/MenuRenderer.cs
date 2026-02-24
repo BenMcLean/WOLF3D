@@ -179,13 +179,16 @@ public class MenuRenderer
 				continue;
 			}
 			// Render horizontal stripes if enabled
+		// Resolve centering using the actual texture dimensions
+			float picX = pictureDef.CenterX ? (320f - texture.Region.Size.X) / 2f : pictureDef.XValue;
+			float picY = pictureDef.CenterY ? (200f - texture.Region.Size.Y) / 2f : pictureDef.YValue;
 			if (pictureDef.Stripes)
-				RenderStripes(texture, pictureDef.Y);
+				RenderStripes(texture, (int)picY);
 			// Render the normal picture
 			TextureRect picture = new()
 			{
 				Texture = texture,
-				Position = new Vector2(pictureDef.X, pictureDef.Y),
+				Position = new Vector2(picX, picY),
 				Size = texture.Region.Size,
 				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 				ZIndex = pictureDef.ZIndex ?? 5, // Default 5 (below boxes), or custom value (e.g., 9 for difficulty pic)
@@ -194,7 +197,7 @@ public class MenuRenderer
 			// Track clickable pictures (those with Lua scripts)
 			if (!string.IsNullOrEmpty(pictureDef.Script))
 				_clickablePictureBounds.Add(new ClickablePictureBounds(
-					new Rect2(new Vector2(pictureDef.X, pictureDef.Y), texture.Region.Size),
+					new Rect2(new Vector2(picX, picY), texture.Region.Size),
 					pictureIndex));
 			// Track animated pictures for frame cycling
 			if (!string.IsNullOrEmpty(pictureDef.Frames))
@@ -311,14 +314,14 @@ public class MenuRenderer
 					FontColor = textColor,
 				}
 			};
-			// Calculate position (with centering if specified)
-			// Add to canvas first so we can get the text size
-			_canvas.AddChild(label);
-			Vector2 textSize = label.Size;
-			// Set final position
+			// Measure text size from font directly — label.Size is zero until Godot lays out the node
+			Font font = theme.DefaultFont;
+			Vector2 textSize = font.GetStringSize(textDef.Content, fontSize: theme.DefaultFontSize);
+			// Set position before adding to canvas
 			label.Position = new Vector2(
 				x: textDef.CenterX ? (320f - textSize.X) / 2f : textDef.XValue,
 				y: textDef.CenterY ? (200f - textSize.Y) / 2f : textDef.YValue);
+			_canvas.AddChild(label);
 			label.PivotOffset = Vector2.Zero;
 			// Track named text labels for dynamic updates from Lua
 			if (!string.IsNullOrEmpty(textDef.Name))

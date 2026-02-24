@@ -23,9 +23,9 @@ namespace BenMcLean.Wolf3D.Shared
 			{
 				get
 				{
-					StringBuilder stringBuilder = new StringBuilder();
+					StringBuilder stringBuilder = new();
 					foreach (string line in lines)
-						stringBuilder.Append(line).Append("\n");
+						stringBuilder.Append(line).Append('\n');
 					return stringBuilder.ToString();
 				}
 				set
@@ -42,7 +42,7 @@ namespace BenMcLean.Wolf3D.Shared
 				set
 				{
 					label = value;
-					if (label != null)
+					if (label is not null)
 						label.Text = Text;
 				}
 			}
@@ -54,18 +54,18 @@ namespace BenMcLean.Wolf3D.Shared
 				set
 				{
 					cursor = value;
-					if (cursor != null)
+					if (cursor is not null)
 						SetCursor();
 				}
 			}
 
 			public VirtualScreenText SetCursor() =>
 				SetCursor((uint)(lines.Count == 0 ? 0 : lines.Last().Length > 79 ? 0 : lines.Last().Length),
-						 (uint)(lines.Count - (lines.Count > 0 ? 1 : 0)));
+						(uint)(lines.Count - (lines.Count > 0 ? 1 : 0)));
 
 			public VirtualScreenText SetCursor(uint x, uint y)
 			{
-				if (Cursor != null)
+				if (Cursor is not null)
 					Cursor.GlobalPosition = new Godot.Vector2(x * 9, y * 16 + 12);
 				return this;
 			}
@@ -121,10 +121,10 @@ namespace BenMcLean.Wolf3D.Shared
 			{
 				if (width <= 0)
 					return value;
-				StringBuilder stringBuilder = new StringBuilder();
+				StringBuilder stringBuilder = new();
 				foreach (string a in value.Split('\n'))
 					foreach (string b in ChunksUpto(a, width))
-						stringBuilder.Append(b).Append("\n");
+						stringBuilder.Append(b).Append('\n');
 				return TrimLastCharacter(stringBuilder.ToString());
 			}
 
@@ -135,10 +135,10 @@ namespace BenMcLean.Wolf3D.Shared
 			}
 
 			public static string TrimLastCharacter(string str) =>
-				string.IsNullOrEmpty(str) ? str : str.Substring(0, (str.Length - 1));
+				string.IsNullOrEmpty(str) ? str : str[..^1];
 		}
-
-		public readonly VirtualScreenText Screen = new VirtualScreenText();
+		private static readonly Color _grey = Color.Color8(170, 170, 170, 255);
+		public readonly VirtualScreenText Screen = new();
 		private SubViewport Viewport;
 
 		public DosScreen()
@@ -157,19 +157,21 @@ namespace BenMcLean.Wolf3D.Shared
 			FontFile font = BiosFont.GetFont();
 			Label label = new()
 			{
-				Theme = new Theme()
-				{
-					DefaultFont = font,
-				},
+				Theme = BiosFont.GetTheme(),
 				Position = new Vector2(0f, 0f),
+				LabelSettings = new LabelSettings
+				{
+					Font = font,
+					FontSize = BiosFont.CharacterHeight,
+					LineSpacing = 0,
+					FontColor = _grey,
+				},
 			};
-			label.Set("custom_constants/line_spacing", 0);
-			label.Set("custom_colors/font_color", Color.Color8(170, 170, 170, 255));
 			Viewport.AddChild(label);
 			Screen.Label = label;
 			ColorRect cursor = new()
 			{
-				Color = Color.Color8(170, 170, 170, 255),
+				Color = _grey,
 				Size = new Vector2(9f, 2f),
 			};
 			Viewport.AddChild(cursor);

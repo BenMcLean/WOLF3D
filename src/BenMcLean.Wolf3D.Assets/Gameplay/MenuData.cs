@@ -118,13 +118,29 @@ public class MenuPictureDefinition
 	/// </summary>
 	public string Name { get; set; }
 	/// <summary>
-	/// X coordinate for picture placement
+	/// X coordinate for picture placement, or "Center" for horizontal centering
 	/// </summary>
-	public int X { get; set; }
+	public string X { get; set; }
 	/// <summary>
-	/// Y coordinate for picture placement
+	/// Y coordinate for picture placement, or "Center" for vertical centering
 	/// </summary>
-	public int Y { get; set; }
+	public string Y { get; set; }
+	/// <summary>
+	/// Returns true if X coordinate should be centered horizontally
+	/// </summary>
+	public bool CenterX => X?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Returns true if Y coordinate should be centered vertically
+	/// </summary>
+	public bool CenterY => Y?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Gets the X coordinate as an integer, or 0 if set to "Center"
+	/// </summary>
+	public int XValue => CenterX ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	/// <summary>
+	/// Gets the Y coordinate as an integer, or 0 if set to "Center"
+	/// </summary>
+	public int YValue => CenterY ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
 	/// If true, renders the leftmost column of pixels stretched horizontally across the screen
 	/// before rendering the normal picture. Used for decorative stripe backgrounds.
@@ -162,8 +178,8 @@ public class MenuPictureDefinition
 		MenuPictureDefinition picture = new()
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Picture element must have a Name attribute"),
-			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
-			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
+			X = element.Attribute("X")?.Value ?? "0",
+			Y = element.Attribute("Y")?.Value ?? "0",
 			Stripes = bool.TryParse(element.Attribute("Stripes")?.Value, out bool stripes) && stripes,
 			Frames = element.Attribute("Frames")?.Value,
 			Script = element.Value?.Trim()
