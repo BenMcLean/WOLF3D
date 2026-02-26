@@ -6,7 +6,7 @@
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Resource Include="WeaponSpriteVoxelDDA.gdshader" />
+	  <Resource Include="Action\WeaponSpriteVoxelDDA.gdshader" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />

@@ -28,6 +28,10 @@ public static class VRAssetManager
 	/// </summary>
 	public static IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials { get; private set; }
 	/// <summary>
+	/// Sprite textures for billboarded objects, indexed by VSwap page number.
+	/// </summary>
+	public static IReadOnlyDictionary<ushort, Texture2D> SpriteTextures { get; private set; }
+	/// <summary>
 	/// Cache of flipped opaque materials with horizontally mirrored UVs.
 	/// Only contains materials for door textures. Used with negative scale for correct handle orientation.
 	/// </summary>
@@ -69,19 +73,38 @@ void fragment() {
 		_flippedOpaqueMaterials = [];
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
 		// Only process pages that actually exist in the VSwap (skip null entries)
-		Dictionary<ushort, StandardMaterial3D> opaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)
+		OpaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)
 			.Where(pageNumber => _vswap.Pages[pageNumber] is not null)
 			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateOpaqueMaterial((ushort)pageNumber)))
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-		OpaqueMaterials = opaqueMaterials;
-		// Eagerly convert all sprite materials using parallelization
+		// Eagerly convert all sprite textures using parallelization
 		// Only process sprite pages that actually exist in the VSwap (skip null entries)
 		int spriteCount = _vswap.Pages.Length - _vswap.SpritePage;
-		Dictionary<ushort, StandardMaterial3D> spriteMaterials = Enumerable.Range(_vswap.SpritePage, spriteCount)
+		SpriteTextures = Enumerable.Range(_vswap.SpritePage, spriteCount)
 			.Where(pageNumber => _vswap.Pages[pageNumber] is not null)
-			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateSpriteMaterial((ushort)pageNumber)))
+			.Parallelize(pageNumber => new KeyValuePair<ushort, Texture2D>((ushort)pageNumber, CreateSpriteTexture((ushort)pageNumber)))
+			.Where(kvp => kvp.Value is not null)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-		SpriteMaterials = spriteMaterials;
+		// Eagerly convert all sprite materials from the pre-created textures
+		SpriteMaterials = SpriteTextures
+			.Parallelize(kvp => new KeyValuePair<ushort, StandardMaterial3D>(kvp.Key, new()
+			{
+				AlbedoTexture = kvp.Value,
+				// Use alpha scissor (cutout) for binary transparency like original Wolf3D
+				// This allows proper depth testing/writing unlike alpha blending
+				Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor,
+				AlphaScissorThreshold = 0.5f,
+				// Nearest filtering for sharp, retro pixel aesthetic
+				TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
+				// Disable shading for flat, Wolfenstein 3D-style sprites
+				ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+				// Enable backface culling - billboards rotate to face camera, only front is visible
+				CullMode = BaseMaterial3D.CullModeEnum.Back,
+				// Alpha scissor allows normal depth testing for proper occlusion
+				NoDepthTest = false,
+				DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Always,
+			}))
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 	}
 	/// <summary>
 	/// Eagerly creates flipped materials for the specified door texture indices.
@@ -190,10 +213,10 @@ void fragment() {
 		return material;
 	}
 	/// <summary>
-	/// Creates a StandardMaterial3D for a sprite texture with transparency support.
-	/// Applies upscaling, generates mipmaps, and enables alpha blending for billboarded objects.
+	/// Creates a Texture2D for a sprite page. Applies upscaling and generates mipmaps.
+	/// Returns null and logs an error if creation fails.
 	/// </summary>
-	private static StandardMaterial3D CreateSpriteMaterial(ushort pageNumber)
+	private static ImageTexture CreateSpriteTexture(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
 		byte[] originalData = _vswap.Pages[pageNumber];
@@ -210,35 +233,15 @@ void fragment() {
 		if (image is null)
 		{
 			GD.PrintErr($"ERROR: Image.CreateFromData returned null for sprite page {pageNumber}");
-			return new StandardMaterial3D { AlbedoColor = Colors.Yellow };
+			return null;
 		}
 		// Generate mipmaps after creation
 		image.GenerateMipmaps();
 		// Create ImageTexture from the image
 		ImageTexture texture = ImageTexture.CreateFromImage(image);
 		if (texture is null)
-		{
 			GD.PrintErr($"ERROR: ImageTexture.CreateFromImage returned null for sprite page {pageNumber}");
-			return new StandardMaterial3D { AlbedoColor = Colors.Cyan };
-		}
-		// Create material with transparency and VR-optimized settings
-		return new()
-		{
-			AlbedoTexture = texture,
-			// Use alpha scissor (cutout) for binary transparency like original Wolf3D
-			// This allows proper depth testing/writing unlike alpha blending
-			Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor,
-			AlphaScissorThreshold = 0.5f,
-			// Nearest filtering for sharp, retro pixel aesthetic
-			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
-			// Disable shading for flat, Wolfenstein 3D-style sprites
-			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-			// Enable backface culling - billboards rotate to face camera, only front is visible
-			CullMode = BaseMaterial3D.CullModeEnum.Back,
-			// Alpha scissor allows normal depth testing for proper occlusion
-			NoDepthTest = false,
-			DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Always,
-		};
+		return texture;
 	}
 	/// <summary>
 	/// Disposes all loaded VR assets.
@@ -255,6 +258,10 @@ void fragment() {
 		if (SpriteMaterials is not null)
 			foreach (StandardMaterial3D material in SpriteMaterials.Values)
 				material?.Dispose();
+		// Dispose sprite textures (after materials, which hold references to them)
+		if (SpriteTextures is not null)
+			foreach (Texture2D texture in SpriteTextures.Values)
+				texture?.Dispose();
 		// Dispose flipped materials
 		if (_flippedOpaqueMaterials is not null)
 			foreach (ShaderMaterial material in _flippedOpaqueMaterials.Values)

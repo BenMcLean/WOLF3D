@@ -346,6 +346,9 @@ void sky() {
 			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
 		}
 
+		// TEST: Voxel pistol box placed 2 tiles in front of player start
+		AddTestPistolBox(cameraPosition, cameraRotationY);
+
 		// Store level index in inventory so save/load can determine which level to restore
 		// WL_DEF.H:gamestate.mapon
 		_simulatorController.Simulator.Inventory.SetValue("MapOn", _initialLevelIndex);
@@ -771,6 +774,45 @@ void sky() {
 		if (_statusBarState != null)
 			_statusBarState.Frozen = true;
 		PendingDeathFadeOut = true;
+	}
+
+	/// <summary>
+	/// TEST: Places a BoxMesh using WeaponSpriteVoxelDDA.gdshader 2 tiles in front of
+	/// the player's starting position to verify voxel sprite rendering.
+	/// Remove when VR controller weapon attachment is implemented.
+	/// </summary>
+	private void AddTestPistolBox(Vector3 playerPosition, float playerRotationY)
+	{
+		const ushort sprPistolReadyPage = 527;
+		if (!VRAssetManager.SpriteTextures.TryGetValue(sprPistolReadyPage, out Texture2D pistolTexture))
+		{
+			GD.PrintErr("Warning: SPR_PISTOLREADY (page 527) not found in SpriteTextures");
+			return;
+		}
+		Shader voxelShader = ResourceLoader.Load<Shader>("res://Action/WeaponSpriteVoxelDDA.gdshader");
+		if (voxelShader is null)
+		{
+			GD.PrintErr("Warning: WeaponSpriteVoxelDDA.gdshader not found");
+			return;
+		}
+		ShaderMaterial material = new() { Shader = voxelShader };
+		material.SetShaderParameter("sprite_texture", pistolTexture);
+		material.SetShaderParameter("resolution", 64);
+		// 2 tiles ahead in the direction the player is facing
+		float forwardX = Mathf.Sin(playerRotationY);
+		float forwardZ = -Mathf.Cos(playerRotationY);
+		Vector3 boxPosition = playerPosition + new Vector3(
+			forwardX * 2f * Constants.TileWidth,
+			0f,
+			forwardZ * 2f * Constants.TileWidth);
+		MeshInstance3D testBox = new()
+		{
+			Name = "TestPistolBox",
+			Mesh = new BoxMesh { Size = Vector3.One },
+			MaterialOverride = material,
+			Position = boxPosition,
+		};
+		AddChild(testBox);
 	}
 
 	/// <summary>
