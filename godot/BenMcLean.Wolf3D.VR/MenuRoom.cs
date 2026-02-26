@@ -14,8 +14,10 @@ namespace BenMcLean.Wolf3D.VR;
 /// In VR mode: Displays menu on a floating 3D panel.
 /// In flatscreen mode: Uses existing 2D overlay approach.
 /// </summary>
-public partial class MenuRoom : Node3D
+public partial class MenuRoom : Node3D, IRoom
 {
+	public bool SkipFade => false;
+
 	private readonly IDisplayMode _displayMode;
 	private MenuManager _menuManager;
 	private MeshInstance3D _menuPanel;

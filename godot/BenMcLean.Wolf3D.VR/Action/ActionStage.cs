@@ -17,8 +17,10 @@ namespace BenMcLean.Wolf3D.VR;
 /// Handles camera, walls, doors, sprites, and gameplay simulation.
 /// Supports both VR and flatscreen display modes.
 /// </summary>
-public partial class ActionStage : Node3D
+public partial class ActionStage : Node3D, IRoom
 {
+	public bool SkipFade => false;
+
 	/// <summary>
 	/// Represents a pending level transition requested by elevator activation.
 	/// Root polls this to initiate a fade transition.

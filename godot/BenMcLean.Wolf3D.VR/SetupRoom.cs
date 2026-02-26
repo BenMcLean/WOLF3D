@@ -17,8 +17,10 @@ namespace BenMcLean.Wolf3D.VR;
 ///   VR mode      — DosScreen quad attached to the camera (head-locked), 1.5 m forward
 ///   Flatscreen   — DosScreen in a CanvasLayer scaled to the largest 4:3 area in the window
 /// </summary>
-public partial class SetupRoom : Node3D
+public partial class SetupRoom : Node3D, IRoom
 {
+	public bool SkipFade => true;
+
 	private enum Phase { NotStarted, ShowingMessage, Loading, Done }
 
 	private readonly IDisplayMode _displayMode;

@@ -45,6 +45,7 @@ public partial class Root : Node3D
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
 	private TransitionState _transitionState = TransitionState.Idle;
+	private bool _skipFadeIn = false;
 	private SuspendedGameState _suspendedGame;
 
 	/// <summary>
@@ -81,10 +82,6 @@ public partial class Root : Node3D
 			// the game selection MenuRoom.
 			SetupRoom setupRoom = new(DisplayMode, @"..\..\games\WL1.xml", isInitialLoad: true);
 			TransitionToImmediate(setupRoom);
-
-			// Fade in the initial screen (all screens should fade in)
-			_transitionState = TransitionState.FadingIn;
-			_fadeOverlay.FadeFromBlack(FadeDuration);
 		}
 		catch (Exception ex)
 		{
@@ -338,30 +335,52 @@ public partial class Root : Node3D
 
 	/// <summary>
 	/// Transitions to a new scene with fade-to-black and fade-from-black.
+	/// Skips fade-out when the current scene has IRoom.SkipFade (already black background).
+	/// Skips fade-in when the incoming scene has IRoom.SkipFade (already black background).
 	/// </summary>
 	public void TransitionTo(Node newScene)
 	{
 		if (_errorMode || _transitionState != TransitionState.Idle)
 			return;
 
+		bool skipFadeOut = (_currentScene as IRoom)?.SkipFade ?? false;
+		bool skipFadeIn = (newScene as IRoom)?.SkipFade ?? false;
+
 		_pendingScene = newScene;
-		StartFade(() =>
+
+		if (skipFadeOut)
 		{
-			// Swap scenes while screen is fully black
+			// Current scene already has a black background — swap immediately then fade in.
 			if (_currentScene != null)
 			{
 				RemoveChild(_currentScene);
 				_currentScene.QueueFree();
 			}
-
 			_currentScene = _pendingScene;
 			_pendingScene = null;
 			AddChild(_currentScene);
+			(_currentScene as IRoom)?.SetFadeTransitionHandler(StartMenuFade);
 
-			// Wire up fade handler for any MenuRoom (intermission, victory, etc.)
-			if (_currentScene is MenuRoom mr)
-				mr.SetFadeTransitionHandler(StartMenuFade);
-		});
+			_transitionState = TransitionState.FadingIn;
+			GetTree().Paused = true;
+			_fadeOverlay.FadeFromBlack(FadeDuration);
+		}
+		else
+		{
+			StartFade(() =>
+			{
+				// Swap scenes while screen is fully black
+				if (_currentScene != null)
+				{
+					RemoveChild(_currentScene);
+					_currentScene.QueueFree();
+				}
+				_currentScene = _pendingScene;
+				_pendingScene = null;
+				AddChild(_currentScene);
+				(_currentScene as IRoom)?.SetFadeTransitionHandler(StartMenuFade);
+			}, skipFadeIn: skipFadeIn);
+		}
 	}
 
 	/// <summary>
@@ -385,10 +404,12 @@ public partial class Root : Node3D
 
 	/// <summary>
 	/// Starts a fade-out, executes the action at mid-fade, then fades back in.
+	/// Pass skipFadeIn=true when the incoming scene has a black background (IRoom.SkipFade).
 	/// Used for both scene transitions and menu screen navigations.
 	/// </summary>
-	private void StartFade(Action midFadeAction)
+	private void StartFade(Action midFadeAction, bool skipFadeIn = false)
 	{
+		_skipFadeIn = skipFadeIn;
 		_pendingMidFadeAction = midFadeAction;
 		_transitionState = TransitionState.FadingOut;
 		GetTree().Paused = true;
@@ -412,16 +433,25 @@ public partial class Root : Node3D
 	}
 
 	/// <summary>
-	/// Called when fade-to-black completes. Executes mid-fade action and starts fade-in.
+	/// Called when fade-to-black completes. Executes mid-fade action and starts fade-in,
+	/// unless skipFadeIn was set (incoming scene has a black background).
 	/// </summary>
 	private void OnFadeOutComplete()
 	{
 		_pendingMidFadeAction?.Invoke();
 		_pendingMidFadeAction = null;
 
-		// Start fade-in
-		_transitionState = TransitionState.FadingIn;
-		_fadeOverlay.FadeFromBlack(FadeDuration);
+		if (_skipFadeIn)
+		{
+			_skipFadeIn = false;
+			_transitionState = TransitionState.Idle;
+			GetTree().Paused = false;
+		}
+		else
+		{
+			_transitionState = TransitionState.FadingIn;
+			_fadeOverlay.FadeFromBlack(FadeDuration);
+		}
 	}
 
 	/// <summary>
