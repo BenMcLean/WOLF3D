@@ -93,9 +93,9 @@ public class AssetManager
 		stateCollection.ValidateFunctionReferences();
 		return stateCollection;
 	}
-	private WeaponCollection LoadWeaponCollection(XElement xml)
+	private static WeaponCollection LoadWeaponCollection(XElement xml)
 	{
-		WeaponCollection weaponCollection = new WeaponCollection();
+		WeaponCollection weaponCollection = new();
 		// Find the GameplayWeapons element inside VSwap
 		XElement vswapElement = xml.Element("VSwap");
 		XElement weaponsElement = vswapElement?.Element("GameplayWeapons");
