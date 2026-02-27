@@ -804,6 +804,7 @@ void sky() {
 			MaterialOverride = material,
 			Position = boxPosition,
 			RotationDegrees = new Vector3(90, 0, 0),
+			Scale = new Vector3(1f, 1f/64f, 1.2f),
 		};
 		AddChild(testBox);
 	}
