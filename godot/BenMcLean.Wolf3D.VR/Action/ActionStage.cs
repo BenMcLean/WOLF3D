@@ -25,38 +25,29 @@ public partial class ActionStage : Node3D, IRoom
 	/// Represents a pending level transition requested by elevator activation.
 	/// Root polls this to initiate a fade transition.
 	/// </summary>
-	public class LevelTransitionRequest
+	public class LevelTransitionRequest(
+		int levelIndex,
+		Dictionary<string, int> savedInventory,
+		LevelCompletionStats completionStats = null,
+		string menuName = "LevelComplete",
+		IReadOnlyList<LevelCompletionStats> allLevelStats = null)
 	{
-		public int LevelIndex { get; }
-		public Dictionary<string, int> SavedInventory { get; }
-		public LevelCompletionStats CompletionStats { get; }
+		public int LevelIndex { get; } = levelIndex;
+		public Dictionary<string, int> SavedInventory { get; } = savedInventory;
+		public LevelCompletionStats CompletionStats { get; } = completionStats;
 
 		/// <summary>
 		/// Menu to show for this transition. Defaults to "LevelComplete" for elevator transitions.
 		/// Set to "Victory" by VictoryTile, or any other menu name by item scripts.
 		/// </summary>
-		public string MenuName { get; }
+		public string MenuName { get; } = menuName;
 
 		/// <summary>
 		/// Accumulated stats from all completed levels in this episode.
 		/// Read from Simulator.LevelRatios at transition time.
 		/// Used by Victory screen to display averaged stats.
 		/// </summary>
-		public IReadOnlyList<LevelCompletionStats> AllLevelStats { get; }
-
-		public LevelTransitionRequest(
-			int levelIndex,
-			Dictionary<string, int> savedInventory,
-			LevelCompletionStats completionStats = null,
-			string menuName = "LevelComplete",
-			IReadOnlyList<LevelCompletionStats> allLevelStats = null)
-		{
-			LevelIndex = levelIndex;
-			SavedInventory = savedInventory;
-			CompletionStats = completionStats;
-			MenuName = menuName;
-			AllLevelStats = allLevelStats ?? (IReadOnlyList<LevelCompletionStats>)Array.Empty<LevelCompletionStats>();
-		}
+		public IReadOnlyList<LevelCompletionStats> AllLevelStats { get; } = allLevelStats ?? [];
 	}
 
 	/// <summary>
@@ -812,6 +803,7 @@ void sky() {
 			Mesh = new BoxMesh { Size = Vector3.One },
 			MaterialOverride = material,
 			Position = boxPosition,
+			RotationDegrees = new Vector3(90, 0, 0),
 		};
 		AddChild(testBox);
 	}

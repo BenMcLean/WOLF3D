@@ -1,7 +1,7 @@
 shader_type spatial;
 render_mode cull_disabled, unshaded, depth_draw_always;
 
-uniform sampler2D sprite_texture;
+uniform sampler2D sprite_texture : source_color;
 uniform int resolution = 64;
 
 // Local-space vertex position, interpolated across each face
