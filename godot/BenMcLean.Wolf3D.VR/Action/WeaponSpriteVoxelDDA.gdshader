@@ -32,7 +32,9 @@ void fragment() {
 	if (t_exit < max(t_entry, 0.0))
 		discard;
 
-	float t = max(t_entry, 0.0);
+	// Nudge past the entry face to avoid FP boundary: ray_origin + ray_dir * t_entry
+	// can land just outside the box, putting the initial cell at -1 (out of bounds).
+	float t = max(t_entry, 0.0) + 1e-4;
 
 	vec3 pos = ray_origin + ray_dir * t;
 	vec3 p = pos + vec3(0.5);
@@ -49,7 +51,7 @@ void fragment() {
 	// Initialize as absolute t values so steps use t = tmax2.x (assignment, not +=)
 	vec2 tmax2 = t + (next_boundary - p.xz) / ray_dir.xz;
 
-	vec4 tex;
+	vec4 tex = vec4(0.0);
 
 	for (int i = 0; i < 128; i++) {
 
@@ -83,13 +85,11 @@ void fragment() {
 		discard;
 
 	ALBEDO = tex.rgb;
-	ALPHA = 1.0;
 
 	// --- Correct depth ---
 	vec3 hit_local = ray_origin + ray_dir * t;
 	vec4 world_hit = MODEL_MATRIX * vec4(hit_local,1.0);
 	vec4 clip_hit = PROJECTION_MATRIX * VIEW_MATRIX * world_hit;
 
-	float ndc = clip_hit.z / clip_hit.w;
-	DEPTH = ndc * 0.5 + 0.5;
+	DEPTH = clip_hit.z / clip_hit.w;
 }

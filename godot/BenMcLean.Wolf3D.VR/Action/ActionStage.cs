@@ -789,7 +789,7 @@ void sky() {
 			GD.PrintErr("Warning: SPR_PISTOLREADY (page 527) not found in SpriteTextures");
 			return;
 		}
-		Shader voxelShader = ResourceLoader.Load<Shader>("res://Action/WeaponSpriteVoxelDDA.gdshader");
+		Shader voxelShader = new Shader { Code = FileAccess.GetFileAsString("res://Action/WeaponSpriteVoxelDDA.gdshader") };
 		if (voxelShader is null)
 		{
 			GD.PrintErr("Warning: WeaponSpriteVoxelDDA.gdshader not found");
