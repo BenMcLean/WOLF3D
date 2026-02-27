@@ -4,24 +4,29 @@ render_mode cull_disabled, unshaded, depth_draw_always;
 uniform sampler2D sprite_texture;
 uniform int resolution = 64;
 
+// Local-space vertex position, interpolated across each face
+varying vec3 v_vertex_local;
+// Camera position in local space — same for all vertices (depends only on uniforms)
+varying vec3 v_ray_origin;
+
+void vertex() {
+	// VERTEX is in local space in vertex() — pass through directly
+	v_vertex_local = VERTEX;
+	// Compute camera-in-local-space once per vertex instead of per fragment
+	v_ray_origin = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+}
+
 void fragment() {
 
-	// --- Ray in local space ---
-	// Cache inv_model to avoid computing inverse(MODEL_MATRIX) twice
-	mat4 inv_model = inverse(MODEL_MATRIX);
-	vec3 ray_origin = (inv_model * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
-	// VERTEX in fragment() is in view space; convert view→world via INV_VIEW_MATRIX,
-	// then world→local via inv_model, to match the space of ray_origin
-	vec3 vertex_local = (inv_model * INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	vec3 ray_dir = normalize(vertex_local - ray_origin);
+	vec3 ray_dir = normalize(v_vertex_local - v_ray_origin);
 
 	// --- Ray-AABB intersection ---
 	vec3 box_min = vec3(-0.5);
 	vec3 box_max = vec3(0.5);
 
 	vec3 inv_dir = 1.0 / ray_dir;
-	vec3 t0 = (box_min - ray_origin) * inv_dir;
-	vec3 t1 = (box_max - ray_origin) * inv_dir;
+	vec3 t0 = (box_min - v_ray_origin) * inv_dir;
+	vec3 t1 = (box_max - v_ray_origin) * inv_dir;
 
 	vec3 tmin = min(t0, t1);
 	vec3 tmax = max(t0, t1);
@@ -36,7 +41,7 @@ void fragment() {
 	// can land just outside the box, putting the initial cell at -1 (out of bounds).
 	float t = max(t_entry, 0.0) + 1e-4;
 
-	vec3 pos = ray_origin + ray_dir * t;
+	vec3 pos = v_ray_origin + ray_dir * t;
 	vec3 p = pos + vec3(0.5);
 
 	float grid = float(resolution);
@@ -87,8 +92,8 @@ void fragment() {
 	ALBEDO = tex.rgb;
 
 	// --- Correct depth ---
-	vec3 hit_local = ray_origin + ray_dir * t;
-	vec4 world_hit = MODEL_MATRIX * vec4(hit_local,1.0);
+	vec3 hit_local = v_ray_origin + ray_dir * t;
+	vec4 world_hit = MODEL_MATRIX * vec4(hit_local, 1.0);
 	vec4 clip_hit = PROJECTION_MATRIX * VIEW_MATRIX * world_hit;
 
 	DEPTH = clip_hit.z / clip_hit.w;
