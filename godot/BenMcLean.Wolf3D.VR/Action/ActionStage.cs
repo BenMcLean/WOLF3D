@@ -799,12 +799,13 @@ void sky() {
 		material.SetShaderParameter("sprite_texture", pistolTexture);
 		material.SetShaderParameter("resolution", 64);
 		// 2 tiles ahead in the direction the player is facing
-		float forwardX = Mathf.Sin(playerRotationY);
-		float forwardZ = -Mathf.Cos(playerRotationY);
+		// Godot forward = R_y(θ) * (0,0,-1) = (-sin θ, 0, -cos θ)
+		// (matches UseObjectPlayerIsFacing: forwardX * -TileWidth, forwardZ * TileWidth
+		//  where forwardX = sin, forwardZ = -cos)
 		Vector3 boxPosition = playerPosition + new Vector3(
-			forwardX * 2f * Constants.TileWidth,
+			-Mathf.Sin(playerRotationY) * 2f * Constants.TileWidth,
 			0f,
-			forwardZ * 2f * Constants.TileWidth);
+			-Mathf.Cos(playerRotationY) * 2f * Constants.TileWidth);
 		MeshInstance3D testBox = new()
 		{
 			Name = "TestPistolBox",

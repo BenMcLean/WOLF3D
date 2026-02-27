@@ -7,8 +7,13 @@ uniform int resolution = 64;
 void fragment() {
 
 	// --- Ray in local space ---
-	vec3 ray_origin = (INV_MODEL_MATRIX * vec4(CAMERA_POSITION_WORLD,1.0)).xyz;
-	vec3 ray_dir = normalize(VERTEX - ray_origin);
+	// Cache inv_model to avoid computing inverse(MODEL_MATRIX) twice
+	mat4 inv_model = inverse(MODEL_MATRIX);
+	vec3 ray_origin = (inv_model * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+	// VERTEX in fragment() is in view space; convert view→world via INV_VIEW_MATRIX,
+	// then world→local via inv_model, to match the space of ray_origin
+	vec3 vertex_local = (inv_model * INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec3 ray_dir = normalize(vertex_local - ray_origin);
 
 	// --- Ray-AABB intersection ---
 	vec3 box_min = vec3(-0.5);
@@ -41,7 +46,8 @@ void fragment() {
 	vec2 delta = abs(vec2(voxel) / ray_dir.xz);
 
 	vec2 next_boundary = (vec2(cell) + step(vec2(0.0), ray_dir.xz)) * voxel;
-	vec2 tmax2 = (next_boundary - p.xz) / ray_dir.xz;
+	// Initialize as absolute t values so steps use t = tmax2.x (assignment, not +=)
+	vec2 tmax2 = t + (next_boundary - p.xz) / ray_dir.xz;
 
 	vec4 tex;
 
@@ -52,17 +58,19 @@ void fragment() {
 			break;
 
 		vec2 uv = (vec2(cell) + 0.5) / grid;
-		tex = texture(sprite_texture, uv);
+		// Force LOD 0: DDA alpha checks require exact per-texel alpha,
+		// not blurred mipmap averages which corrupt the 0.5 threshold
+		tex = textureLod(sprite_texture, uv, 0.0);
 
 		if (tex.a > 0.5)
 			break;
 
 		if (tmax2.x < tmax2.y) {
-			t += tmax2.x;
+			t = tmax2.x;
 			tmax2.x += delta.x;
 			cell.x += int(step_dir.x);
 		} else {
-			t += tmax2.y;
+			t = tmax2.y;
 			tmax2.y += delta.y;
 			cell.y += int(step_dir.y);
 		}
