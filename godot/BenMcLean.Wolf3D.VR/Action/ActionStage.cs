@@ -337,8 +337,19 @@ void sky() {
 			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
 		}
 
-		// TEST: Voxel pistol box placed 2 tiles in front of player start
-		AddTestPistolBox(cameraPosition, cameraRotationY);
+		// Placeholder: weapon hand mesh for VR controller slot 0, 2 tiles ahead of player start.
+		// TODO: Reposition to actual VR controller transform when controller tracking is wired up.
+		WeaponHandMesh weaponHandMesh0 = new WeaponHandMesh(VRAssetManager.SpriteTextures, 0)
+		{
+			Name = "WeaponHandMesh0",
+			Position = cameraPosition + new Vector3(
+				-Mathf.Sin(cameraRotationY) * 2f * Constants.TileWidth,
+				0f,
+				-Mathf.Cos(cameraRotationY) * 2f * Constants.TileWidth),
+		};
+		AddChild(weaponHandMesh0);
+		weaponHandMesh0.Subscribe(_simulatorController.Simulator);
+		_simulatorController.Simulator.EmitWeaponState();
 
 		// Store level index in inventory so save/load can determine which level to restore
 		// WL_DEF.H:gamestate.mapon
@@ -765,48 +776,6 @@ void sky() {
 		if (_statusBarState != null)
 			_statusBarState.Frozen = true;
 		PendingDeathFadeOut = true;
-	}
-
-	/// <summary>
-	/// TEST: Places a BoxMesh using WeaponSpriteVoxelDDA.gdshader 2 tiles in front of
-	/// the player's starting position to verify voxel sprite rendering.
-	/// Remove when VR controller weapon attachment is implemented.
-	/// </summary>
-	private void AddTestPistolBox(Vector3 playerPosition, float playerRotationY)
-	{
-		const ushort sprPistolReadyPage = 527;
-		if (!VRAssetManager.SpriteTextures.TryGetValue(sprPistolReadyPage, out Texture2D pistolTexture))
-		{
-			GD.PrintErr("Warning: SPR_PISTOLREADY (page 527) not found in SpriteTextures");
-			return;
-		}
-		Shader voxelShader = new Shader { Code = FileAccess.GetFileAsString("res://Action/WeaponSpriteVoxelDDA.gdshader") };
-		if (voxelShader is null)
-		{
-			GD.PrintErr("Warning: WeaponSpriteVoxelDDA.gdshader not found");
-			return;
-		}
-		ShaderMaterial material = new() { Shader = voxelShader };
-		material.SetShaderParameter("sprite_texture", pistolTexture);
-		material.SetShaderParameter("resolution", 64);
-		// 2 tiles ahead in the direction the player is facing
-		// Godot forward = R_y(θ) * (0,0,-1) = (-sin θ, 0, -cos θ)
-		// (matches UseObjectPlayerIsFacing: forwardX * -TileWidth, forwardZ * TileWidth
-		//  where forwardX = sin, forwardZ = -cos)
-		Vector3 boxPosition = playerPosition + new Vector3(
-			-Mathf.Sin(playerRotationY) * 2f * Constants.TileWidth,
-			0f,
-			-Mathf.Cos(playerRotationY) * 2f * Constants.TileWidth);
-		MeshInstance3D testBox = new()
-		{
-			Name = "TestPistolBox",
-			Mesh = new BoxMesh { Size = Vector3.One },
-			MaterialOverride = material,
-			Position = boxPosition,
-			RotationDegrees = new Vector3(90, 0, 0),
-			Scale = new Vector3(1f, 1f/64f, 1.2f),
-		};
-		AddChild(testBox);
 	}
 
 	/// <summary>

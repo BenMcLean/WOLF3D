@@ -2676,6 +2676,36 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	}
 
 	/// <summary>
+	/// Emits current weapon-equipped and weapon-sprite-changed events for all active slots.
+	/// Use after subscribing a new weapon observer to bring it up to date
+	/// without re-emitting all entity state.
+	/// </summary>
+	public void EmitWeaponState()
+	{
+		for (int i = 0; i < weaponSlots.Count; i++)
+		{
+			WeaponSlot slot = weaponSlots[i];
+			if (!string.IsNullOrEmpty(slot.WeaponType))
+			{
+				WeaponEquipped?.Invoke(new WeaponEquippedEvent
+				{
+					SlotIndex = i,
+					WeaponType = slot.WeaponType,
+					Shape = (ushort)slot.ShapeNum
+				});
+				if (slot.ShapeNum >= 0)
+				{
+					WeaponSpriteChanged?.Invoke(new WeaponSpriteChangedEvent
+					{
+						SlotIndex = i,
+						Shape = (ushort)slot.ShapeNum
+					});
+				}
+			}
+		}
+	}
+
+	/// <summary>
 	/// Emits an actor sound event - sound will be attached to the actor.
 	/// Called from ActorScriptContext.
 	/// WL_STATE.C:PlaySoundLocActor
