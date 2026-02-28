@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1">
-	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC">
-		<Sizes Chunk="0" StartFont="1" StartPic="3" />
+<Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
+	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC" Sizes="0" StartFont="1" StartPic="3">
 		<Font Number="0" Name="SMALL" />
 		<Font Number="1" Name="BIG" />
 		<Font Prefix="L_" Name="L" SpaceColor="127" SpaceWidth="16" />
@@ -175,7 +174,8 @@
 				<Weapon Number="3" Pic="GATLINGGUNPIC" Init="0" />
 			</Weapons>
 			<!-- WL_GAME.C:Died() — decrement lives, reset to pistol/init ammo/no keys, restart or game over -->
-			<OnDeath><![CDATA[
+			<OnDeath>
+				<![CDATA[
 if GetValue("Lives") > 0 then
 	AddValue("Lives", -1)
 	SetValue("Health", GetInit("Health"))
@@ -192,10 +192,11 @@ if GetValue("Lives") > 0 then
 end
 PlayAdLibSound("PLAYERDEATHSND")
 return "HighScores"
-]]></OnDeath>
+]]>
+			</OnDeath>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Start="Title" Pause="Main" TextColor="23" Highlight="19" BorderColor="41" BoxBackgroundColor="45" Deactive="43" Border2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBorder2Color="0">
+		<Menus Start="Title" Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
@@ -205,7 +206,7 @@ return "HighScores"
 			<EndString>Heroes, press N.&#10;Wimps, press Y.</EndString>
 			<EndString>You are at an intersection.&#10;A sign says, 'Press Y to quit.'&#10;&gt;</EndString>
 			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
-			<Menu Name="Title" BorderColor="0" Music="NAZI_NOR_MUS">
+			<Menu Name="Title" BordColor="0" Music="NAZI_NOR_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
 				<Pause Duration="00:00:03">NavigateToMenu("Credits")</Pause>
 			</Menu>
@@ -406,7 +407,7 @@ end
 				<!-- ZIndex=9 to draw above boxes (boxes are ZIndex=7) -->
 				<!-- Item 0: Sound FX None -->
 				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9">
-									SetSoundMode('Off')
+					SetSoundMode('Off')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 1: Sound FX PC -->
@@ -420,7 +421,8 @@ end
 					RefreshMenu()
 				</Picture>
 				<!-- Item 3: Digitized None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9">					SetDigiMode('Off')
+				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9">
+					SetDigiMode('Off')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 4: Digitized SB -->
@@ -591,7 +593,7 @@ end
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BorderColor="41"
+			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
 				  X="0" Y="0" Indent="0" Spacing="0">
 				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
@@ -619,7 +621,8 @@ end
 				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
 				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
 				<Pause>BackToPreviousMenu()</Pause>
-				<OnShow><![CDATA[
+				<OnShow>
+					<![CDATA[
 					for i = 0, GetHighScoreCount() - 1 do
 						local ep = GetHighScoreEpisode(i) + 1
 						local lvl = GetHighScoreCompleted(i)
@@ -627,9 +630,10 @@ end
 						SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
 						SetText("Score" .. i, tostring(GetHighScoreScore(i)))
 					end
-				]]></OnShow>
+				]]>
+				</OnShow>
 			</Menu>
-			<Menu Name="LevelComplete" Font="L" BorderColor="127" Music="ENDLEVEL_MUS"
+			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
 				  X="112" Y="168" Indent="0" Spacing="13">
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC" FrameInterval="0.5" />
@@ -701,45 +705,46 @@ end
 				]]>
 				</OnShow>
 			</Menu>
-		<!-- High scores screen: WL_HSCOR.C:CheckHighScore / DrawHighScores -->
-		<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
-		<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
-		<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-		<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BorderColor="41"
-			  X="0" Y="0" Indent="0" Spacing="0">
-			<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
-			<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
-			<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
-			<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
-			<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
-			<Picture Name="C_LEVELPIC" X="160" Y="68" />
-			<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
-			<Picture Name="C_SCOREPIC" X="224" Y="68" />
-			<!-- 7 rows at PrintY = 76 + 16*i -->
-			<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-			<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-			<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-			<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-			<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-			<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-			<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-			<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
-			<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
-			<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-			<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
-			<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
-			<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-			<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
-			<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
-			<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-			<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
-			<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
-			<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-			<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
-			<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
-			<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
-			<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
-			<OnShow><![CDATA[
+			<!-- High scores screen: WL_HSCOR.C:CheckHighScore / DrawHighScores -->
+			<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
+			<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
+			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
+			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
+				  X="0" Y="0" Indent="0" Spacing="0">
+				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
+				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
+				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
+				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
+				<Picture Name="C_LEVELPIC" X="160" Y="68" />
+				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
+				<Picture Name="C_SCOREPIC" X="224" Y="68" />
+				<!-- 7 rows at PrintY = 76 + 16*i -->
+				<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+				<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+				<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+				<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+				<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+				<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+				<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+				<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
+				<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
+				<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+				<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
+				<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
+				<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+				<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
+				<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
+				<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+				<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
+				<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
+				<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
+				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
+				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
+				<OnShow>
+					<![CDATA[
 				CheckAndAddHighScore()
 				for i = 0, GetHighScoreCount() - 1 do
 					local ep = GetHighScoreEpisode(i) + 1
@@ -748,38 +753,39 @@ end
 					SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
 					SetText("Score" .. i, tostring(GetHighScoreScore(i)))
 				end
-			]]></OnShow>
-		</Menu>
-		<!-- Victory screen: WL_INTER.C:Victory -->
-		<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
-		<Menu Name="Victory" Font="L" BorderColor="127" Music="URAHERO_MUS"
-			  X="0" Y="0" Indent="0" Spacing="13">
-			<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
-			<Picture Name="L_BJWINSPIC" X="8" Y="4" />
-			<!-- WL_INTER.C:Write(18,2,STR_YOUWIN) = pixel (144,16) -->
-			<Text X="144" Y="16" Font="L">YOU WIN!</Text>
-			<!-- WL_INTER.C:Write(TIMEX,TIMEY-2,STR_TOTALTIME) TIMEX=14,TIMEY=8 → pixel (112,48) -->
-			<Text X="112" Y="48" Font="L">TOTAL TIME</Text>
-			<!-- Total time value displayed by Lua -->
-			<Text Name="TotalTimeValue" X="208" Y="64" Font="L">0:00</Text>
-			<!-- WL_INTER.C:Write(12,RATIOY-2,"averages") RATIOY=14 → pixel (96,96) -->
-			<Text X="96" Y="96" Font="L">AVERAGES</Text>
-			<!-- WL_INTER.C:Write(RATIOX+8,RATIOY,"kill    %") RATIOX=6 → pixel (112,112) -->
-			<Text X="112" Y="112" Font="L">KILL    %</Text>
-			<!-- WL_INTER.C:Write(RATIOX+4,RATIOY+2,"secret    %") → pixel (80,128) -->
-			<Text X="80" Y="128" Font="L">SECRET    %</Text>
-			<!-- WL_INTER.C:Write(RATIOX,RATIOY+4,"treasure    %") → pixel (48,144) -->
-			<Text X="48" Y="144" Font="L">TREASURE    %</Text>
-			<!-- Ticker values for averaged ratios -->
-			<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right"
-					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-			<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right"
-					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-			<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right"
-					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-			<Pause>NavigateToMenu("HighScores")</Pause>
-			<OnShow>
-				<![CDATA[
+			]]>
+				</OnShow>
+			</Menu>
+			<!-- Victory screen: WL_INTER.C:Victory -->
+			<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
+			<Menu Name="Victory" Font="L" BordColor="127" Music="URAHERO_MUS"
+				  X="0" Y="0" Indent="0" Spacing="13">
+				<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
+				<Picture Name="L_BJWINSPIC" X="8" Y="4" />
+				<!-- WL_INTER.C:Write(18,2,STR_YOUWIN) = pixel (144,16) -->
+				<Text X="144" Y="16" Font="L">YOU WIN!</Text>
+				<!-- WL_INTER.C:Write(TIMEX,TIMEY-2,STR_TOTALTIME) TIMEX=14,TIMEY=8 → pixel (112,48) -->
+				<Text X="112" Y="48" Font="L">TOTAL TIME</Text>
+				<!-- Total time value displayed by Lua -->
+				<Text Name="TotalTimeValue" X="208" Y="64" Font="L">0:00</Text>
+				<!-- WL_INTER.C:Write(12,RATIOY-2,"averages") RATIOY=14 → pixel (96,96) -->
+				<Text X="96" Y="96" Font="L">AVERAGES</Text>
+				<!-- WL_INTER.C:Write(RATIOX+8,RATIOY,"kill    %") RATIOX=6 → pixel (112,112) -->
+				<Text X="112" Y="112" Font="L">KILL    %</Text>
+				<!-- WL_INTER.C:Write(RATIOX+4,RATIOY+2,"secret    %") → pixel (80,128) -->
+				<Text X="80" Y="128" Font="L">SECRET    %</Text>
+				<!-- WL_INTER.C:Write(RATIOX,RATIOY+4,"treasure    %") → pixel (48,144) -->
+				<Text X="48" Y="144" Font="L">TREASURE    %</Text>
+				<!-- Ticker values for averaged ratios -->
+				<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right"
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right"
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right"
+						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Pause>NavigateToMenu("HighScores")</Pause>
+				<OnShow>
+					<![CDATA[
 				SetText("TotalTimeValue", FormatTime(GetTotalTime()))
 
 				-- Calculate averaged ratios across all completed levels
@@ -793,8 +799,8 @@ end
 				StartTicker("AvgSecretRatio", sr)
 				StartTicker("AvgTreasureRatio", tr)
 			]]>
-			</OnShow>
-		</Menu>
+				</OnShow>
+			</Menu>
 		</Menus>
 	</VgaGraph>
 	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29" >

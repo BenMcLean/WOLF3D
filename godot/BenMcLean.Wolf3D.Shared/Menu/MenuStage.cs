@@ -92,9 +92,9 @@ public partial class MenuStage : Node
 		};
 		canvasLayer.AddChild(textureRect);
 		// Subscribe to border color change events
-		_menuManager.Renderer.BorderColorChanged += OnBorderColorChanged;
+		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
 		// Set initial margin color
-		OnBorderColorChanged(_menuManager.Renderer.CurrentBorderColor);
+		OnBordColorChanged(_menuManager.Renderer.CurrentBordColor);
 		// Note: MenuManager constructor already calls RefreshMenu via NavigateToMenu
 	}
 	/// <summary>
@@ -102,7 +102,7 @@ public partial class MenuStage : Node
 	/// Updates the margin background to match the new border color.
 	/// </summary>
 	/// <param name="color">New border color from the menu</param>
-	private void OnBorderColorChanged(Color color)
+	private void OnBordColorChanged(Color color)
 	{
 		if (_marginBackground is not null)
 			_marginBackground.Color = color;

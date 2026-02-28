@@ -341,8 +341,8 @@ public partial class MenuRoom : Node3D, IRoom
 		canvasLayer.AddChild(textureRect);
 
 		// Subscribe to border color changes
-		_menuManager.Renderer.BorderColorChanged += OnBorderColorChanged;
-		OnBorderColorChanged(_menuManager.Renderer.CurrentBorderColor);
+		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
+		OnBordColorChanged(_menuManager.Renderer.CurrentBordColor);
 
 		// Create flatscreen pointer provider for mouse crosshair tracking
 		_flatscreenPointerProvider = new FlatscreenMenuPointerProvider();
@@ -397,7 +397,7 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuPanel.Rotation = new Vector3(0, yRotation, 0);
 	}
 
-	private void OnBorderColorChanged(Color color)
+	private void OnBordColorChanged(Color color)
 	{
 		if (_marginBackground != null)
 			_marginBackground.Color = color;

@@ -22,7 +22,7 @@ public class MenuRenderer
 	private readonly Dictionary<string, Label> _namedTextLabels = [];
 	private readonly Dictionary<string, Label> _tickerLabels = [];
 	private readonly List<AnimatedPictureState> _animatedPictures = [];
-	private Color _currentBorderColor = Colors.Black;
+	private Color _currentBordColor = Colors.Black;
 	private Input.PointerState _primaryPointer;
 	private Input.PointerState _secondaryPointer;
 	private TextureRect _primaryCrosshair;
@@ -33,13 +33,13 @@ public class MenuRenderer
 	/// Event fired when the border color changes.
 	/// Allows presentation layer to update margins to match border color.
 	/// </summary>
-	public event Action<Color> BorderColorChanged;
+	public event Action<Color> BordColorChanged;
 	#endregion Events
 	/// <summary>
 	/// Gets the current border color.
 	/// This is the color used for the menu background/border (SVGA mode 13h border color).
 	/// </summary>
-	public Color CurrentBorderColor => _currentBorderColor;
+	public Color CurrentBordColor => _currentBordColor;
 	/// <summary>
 	/// Creates a new MenuRenderer with a 320x200 virtual canvas.
 	/// </summary>
@@ -108,16 +108,16 @@ public class MenuRenderer
 		Clear();
 		visibleItems ??= menuDef.Items;
 		// Render background color if specified, otherwise use black
-		if (menuDef.BorderColor.HasValue)
-			RenderBackgroundColor(menuDef.BorderColor.Value);
+		if (menuDef.BordColor.HasValue)
+			RenderBkgdColor(menuDef.BordColor.Value);
 		else
 		{
 			// No border color specified - use black and fire event if changed
 			Color black = Colors.Black;
-			if (_currentBorderColor != black)
+			if (_currentBordColor != black)
 			{
-				_currentBorderColor = black;
-				BorderColorChanged?.Invoke(black);
+				_currentBordColor = black;
+				BordColorChanged?.Invoke(black);
 			}
 		}
 		// Render pictures (backgrounds and decorative images - WL_MENU.C:DrawMainMenu)
@@ -142,7 +142,7 @@ public class MenuRenderer
 	/// Render a solid background color.
 	/// </summary>
 	/// <param name="colorIndex">VGA palette color index (0-255)</param>
-	private void RenderBackgroundColor(byte colorIndex)
+	private void RenderBkgdColor(byte colorIndex)
 	{
 		// Get color from palette
 		Color color = SharedAssetManager.GetPaletteColor(colorIndex);
@@ -154,10 +154,10 @@ public class MenuRenderer
 		};
 		_canvas.AddChild(background);
 		// Update current border color and fire event if changed
-		if (_currentBorderColor != color)
+		if (_currentBordColor != color)
 		{
-			_currentBorderColor = color;
-			BorderColorChanged?.Invoke(color);
+			_currentBordColor = color;
+			BordColorChanged?.Invoke(color);
 		}
 	}
 	/// <summary>
@@ -264,9 +264,9 @@ public class MenuRenderer
 			// WL_MENU.C:DrawWindow + DrawOutline - fill then beveled border
 			// Top and left edges use DEACTIVE color (lighter); bottom and right use BORD2COLOR (darker)
 			byte deactiveColor = boxDef.Deactive ?? 0x2b, // DEACTIVE default
-				border2Color = boxDef.Border2Color ?? 0x23; // BORD2COLOR default
-			Color? bgColor = boxDef.BackgroundColor.HasValue
-				? SharedAssetManager.GetPaletteColor(boxDef.BackgroundColor.Value)
+				border2Color = boxDef.Bord2Color ?? 0x23; // BORD2COLOR default
+			Color? bgColor = boxDef.BkgdColor.HasValue
+				? SharedAssetManager.GetPaletteColor(boxDef.BkgdColor.Value)
 				: null;
 			DrawBevelledBox(boxDef.X, boxDef.Y, boxDef.W, boxDef.H,
 				bgColor,
@@ -646,7 +646,7 @@ public class MenuRenderer
 			// PixelRect.NWColor — top/left bevel (lighter, old BordColor)
 			nwColorIndex = menuCollection?.DefaultModalHighlight ?? menuCollection?.DefaultHighlight ?? 0x13,
 			// PixelRect.SEColor — bottom/right bevel (darker, old Bord2Color)
-			seColorIndex = menuCollection?.DefaultModalBorder2Color ?? menuCollection?.DefaultBorder2Color ?? 0;
+			seColorIndex = menuCollection?.DefaultModalBord2Color ?? menuCollection?.DefaultBord2Color ?? 0;
 		Color bgColor = SharedAssetManager.GetPaletteColor(bgColorIndex),
 			textColor = SharedAssetManager.GetPaletteColor(textColorIndex),
 			colorNW = SharedAssetManager.GetPaletteColor(nwColorIndex),

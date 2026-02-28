@@ -21,6 +21,14 @@
 				<xs:element ref="Palette" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
+			<xs:attribute name="Version" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Game version string (e.g., "1.4"). Informational metadata identifying
+						the specific release of the game this definition targets.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Extension" type="xs:string"/>
 			<xs:attribute name="Exe" type="xs:string"/>
 			<xs:attribute name="HighScores" type="xs:string"/>
@@ -41,7 +49,6 @@
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element ref="Sizes" minOccurs="0"/>
 				<xs:element ref="Font" minOccurs="0" maxOccurs="unbounded"/>
 				<xs:element ref="Pic" minOccurs="0" maxOccurs="unbounded"/>
 				<xs:element ref="StatusBar" minOccurs="0"/>
@@ -51,50 +58,26 @@
 			<xs:attribute name="VgaGraph" type="xs:string" use="required"/>
 			<xs:attribute name="VgaHead" type="xs:string" use="required"/>
 			<xs:attribute name="LoadingPic" type="xs:string"/>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Sizes">
-		<xs:annotation>
-			<xs:documentation>
-				VgaGraph sizes array metadata. The sizes chunk contains width/height pairs
-				for all Pic elements in the VgaGraph.
-
-				Chunk: File chunk number containing the sizes array (typically 0)
-				StartPic: First file chunk containing Pic data (typically 3)
-				StartFont: First file chunk containing Font data (typically 1)
-				Fonts: Number of regular (non-prefix) fonts to load
-
-				Regular fonts are loaded sequentially from chunks [StartFont..StartFont+Fonts-1].
-				Pics are loaded sequentially from chunks [StartPic..StartPic+PicCount-1].
-			</xs:documentation>
-		</xs:annotation>
-		<xs:complexType>
-			<xs:attribute name="Chunk" type="xs:nonNegativeInteger" use="required">
+			<xs:attribute name="Sizes" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>
-						File chunk number containing the sizes array (typically 0).
+						File chunk number containing the sizes array (width/height pairs for all Pics).
+						Typically 0.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="StartPic" type="xs:nonNegativeInteger" use="required">
+			<xs:attribute name="StartFont" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						First file chunk containing Font data (typically 1, after the sizes chunk).
+						The number of chunk-based fonts is computed as (StartPic - StartFont).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="StartPic" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>
 						First file chunk containing Pic data (typically 3, after sizes and fonts).
-					</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="StartFont" type="xs:nonNegativeInteger" use="required">
-				<xs:annotation>
-					<xs:documentation>
-						First file chunk containing Font data (typically 1, after sizes chunk 0).
-					</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="Fonts" type="xs:nonNegativeInteger" use="required">
-				<xs:annotation>
-					<xs:documentation>
-						Number of regular (non-prefix) fonts to load from sequential chunks.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -108,32 +91,37 @@
 				1. Regular VgaGraph fonts (no Prefix attribute) - loaded from file chunks
 				2. Prefix-based fonts (with Prefix attribute) - built from VgaGraph Pics
 
-				For REGULAR fonts (no Prefix):
-				- Number is the index into both the final Fonts[] array AND VgaGraph.Fonts[] array
-				- Font data is loaded from file chunk (StartFont + Number)
-				- Example: Font Number="0" loads from VgaGraph.Fonts[0] (file chunk StartFont+0)
+				CONSTRAINT (XOR): exactly one of Number or Prefix must be present.
+				XSD 1.0 cannot enforce this; it is a logical requirement enforced by the program.
 
-				For PREFIX-BASED fonts (with Prefix):
-				- Number is the index into the final Fonts[] array only
+				For REGULAR fonts (Number present, no Prefix):
+				- Number is the index into VgaGraph.Fonts[] (chunk-based font array)
+				- Font data is loaded from file chunk (StartFont + Number)
+				- Example: Font Number="0" loads from file chunk StartFont+0
+
+				For PREFIX-BASED fonts (Prefix present, no Number):
 				- Font is synthesized from VgaGraph Pics whose names start with the Prefix
 				- Each Pic must have a Character attribute mapping it to a character
-				- Height, SpaceWidth attributes configure the font metrics
-				- Example: Font Number="2" Prefix="L_" builds from pics L_APIC, L_BPIC, etc.
+				- Height, SpaceWidth, SpaceColor attributes configure the font metrics
+				- Example: Font Prefix="L_" builds from pics L_APIC, L_BPIC, etc.
+				- Prefix-based fonts are a Godot UI abstraction; they have no equivalent
+				  in the original Wolfenstein 3-D engine.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:attribute name="Number" type="xs:unsignedShort" use="required">
+			<xs:attribute name="Number" type="xs:unsignedShort">
 				<xs:annotation>
 					<xs:documentation>
-						Index in final Fonts[] array. For regular fonts, also index into VgaGraph.Fonts[].
+						Index into VgaGraph.Fonts[] (chunk-based fonts only).
+						Required when Prefix is absent; must be absent when Prefix is present.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:attribute name="Prefix" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>
-						Pic name prefix for building synthetic fonts (e.g., "L_" matches L_APIC, L_BPIC).
-						If present, this is a prefix-based font. If absent, this is a regular VgaGraph font.
+						Pic name prefix for building prefix-based fonts (e.g., "L_" matches L_APIC, L_BPIC).
+						Required when Number is absent; must be absent when Number is present.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -311,14 +299,96 @@
 					<xs:documentation>Default cursor picture for all menus (e.g., "C_CURSOR1PIC")</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Deactive" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Stripe" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="SelectSound" type="xs:string"/>
-			<xs:attribute name="ScrollSound" type="xs:string"/>
-			<xs:attribute name="BordColor" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Bord2Color" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Color" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="TextColor" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="Pause" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the menu to show when the player pauses during gameplay (e.g., "Main").
+						Replaces the hardcoded call to US_ControlPanel in WL_MENU.C:CheckPause.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="TextColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for normal (unselected) menu item text.
+						WL_MENU.H:TEXTCOLOR. Used in WL_MENU.C:color_norml[] and DrawMenu.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Highlight" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the selected/highlighted menu item text.
+						WL_MENU.H:HIGHLIGHT. Used in WL_MENU.C:color_hlite[] and DrawMenu.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BordColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the screen background stripe drawn behind menus.
+						WL_MENU.H:BORDCOLOR. Used in WL_MENU.C:ClearMScreen via DrawStripes.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BkgdColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the menu box fill color (wcolor parameter of DrawWindow).
+						WL_MENU.H:BKGDCOLOR. Used in WL_MENU.C:DrawWindow and as SETFONTCOLOR background.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Deactive" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for inactive/disabled menu items and the top-left bevel of box borders.
+						WL_MENU.H:DEACTIVE. Used in WL_MENU.C:color_norml[0], color_hlite[0],
+						and DrawWindow via DrawOutline (color2 = top and left edges).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Bord2Color" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the bottom-right bevel of box borders.
+						WL_MENU.H:BORD2COLOR. Used in WL_MENU.C:DrawWindow via DrawOutline
+						(color1 = bottom and right edges).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ModalColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the modal confirmation dialog box fill.
+						WL_MENU.C:Confirm passes TEXTCOLOR as the wcolor to DrawWindow.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ModalTextColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for text rendered inside the modal confirmation dialog.
+						No direct original constant; WL_MENU.C:Confirm uses SETFONTCOLOR implicitly.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ModalHighlight" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the top-left bevel of the modal dialog border.
+						WL_MENU.C:Confirm calls DrawOutline with HIGHLIGHT as color2 (top and left edges).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ModalBord2Color" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						Palette index for the bottom-right bevel of the modal dialog border.
+						WL_MENU.C:Confirm calls DrawOutline with hardcoded 0 (black) as color1 (bottom and right edges).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Font" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Default font for all menus (e.g., "BIG", "SMALL"). Individual menus can override this.</xs:documentation>
@@ -329,9 +399,6 @@
 					<xs:documentation>Default vertical spacing between menu items in pixels (original uses 13). Individual menus can override this.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="ModalFont" type="xs:string"/>
-			<xs:attribute name="Selected" type="xs:string"/>
-			<xs:attribute name="NotSelected" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -389,7 +456,7 @@
 					<xs:documentation>Y coordinate for background image (default: 0)</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="BorderColor" type="xs:nonNegativeInteger">
+			<xs:attribute name="BordColor" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>Background color index (VGA palette 0-255). WL_MENU.H:BORDCOLOR = 0x29</xs:documentation>
 				</xs:annotation>
@@ -454,15 +521,6 @@
 			<xs:attribute name="Y" type="xs:string"/>
 			<xs:attribute name="XBanner" type="xs:integer"/>
 			<xs:attribute name="Action" type="xs:string"/>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Text">
-		<xs:complexType>
-			<xs:attribute name="String" type="xs:string" use="required"/>
-			<xs:attribute name="X" type="xs:string"/>
-			<xs:attribute name="Y" type="xs:string"/>
-			<xs:attribute name="Color" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -548,7 +606,7 @@
 					<xs:documentation>Height of box</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="BackgroundColor" type="xs:nonNegativeInteger">
+			<xs:attribute name="BkgdColor" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>Background color index for box fill. WL_MENU.H:BKGDCOLOR = 0x2d</xs:documentation>
 				</xs:annotation>
@@ -558,7 +616,7 @@
 					<xs:documentation>Top/left border color. WL_MENU.H:DEACTIVE = 0x2b</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Border2Color" type="xs:nonNegativeInteger">
+			<xs:attribute name="Bord2Color" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>Bottom/right border color. WL_MENU.H:BORD2COLOR = 0x23</xs:documentation>
 				</xs:annotation>

@@ -71,7 +71,7 @@ public class MenuBoxDefinition
 	/// <summary>
 	/// Background color index for box fill (WL_MENU.H:BKGDCOLOR = 0x2d)
 	/// </summary>
-	public byte? BackgroundColor { get; set; }
+	public byte? BkgdColor { get; set; }
 	/// <summary>
 	/// Top/left border color (WL_MENU.H:DEACTIVE = 0x2b)
 	/// </summary>
@@ -79,7 +79,7 @@ public class MenuBoxDefinition
 	/// <summary>
 	/// Bottom/right border color (WL_MENU.H:BORD2COLOR = 0x23)
 	/// </summary>
-	public byte? Border2Color { get; set; }
+	public byte? Bord2Color { get; set; }
 	/// <summary>
 	/// Creates a MenuBoxDefinition instance from an XElement.
 	/// </summary>
@@ -96,12 +96,12 @@ public class MenuBoxDefinition
 		};
 
 		// Parse colors using semantic attribute names from WL_MENU.H
-		if (byte.TryParse(element.Attribute("BackgroundColor")?.Value, out byte bgColor))
-			box.BackgroundColor = bgColor;
+		if (byte.TryParse(element.Attribute("BkgdColor")?.Value, out byte bgColor))
+			box.BkgdColor = bgColor;
 		if (byte.TryParse(element.Attribute("Deactive")?.Value, out byte deactive))
 			box.Deactive = deactive;
-		if (byte.TryParse(element.Attribute("Border2Color")?.Value, out byte border2))
-			box.Border2Color = border2;
+		if (byte.TryParse(element.Attribute("Bord2Color")?.Value, out byte border2))
+			box.Bord2Color = border2;
 
 		return box;
 	}
@@ -461,7 +461,7 @@ public class MenuDefinition
 	/// <summary>
 	/// Background color index (VGA palette 0-255) - WL_MENU.H:BORDCOLOR = 0x29
 	/// </summary>
-	public byte? BorderColor { get; set; }
+	public byte? BordColor { get; set; }
 	/// <summary>
 	/// Normal (unselected) menu item text color (WL_MENU.H:TEXTCOLOR = 0x17)
 	/// </summary>
@@ -568,8 +568,8 @@ public class MenuDefinition
 		};
 
 		// Parse color attributes using semantic names from WL_MENU.H
-		if (byte.TryParse(element.Attribute("BorderColor")?.Value, out byte borderColor))
-			menu.BorderColor = borderColor;
+		if (byte.TryParse(element.Attribute("BordColor")?.Value, out byte borderColor))
+			menu.BordColor = borderColor;
 		if (byte.TryParse(element.Attribute("TextColor")?.Value, out byte textColor))
 			menu.TextColor = textColor;
 		if (byte.TryParse(element.Attribute("Highlight")?.Value, out byte highlight))
@@ -625,7 +625,7 @@ public class MenuDefinition
 		{
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
-			if (attrName is not ("Name" or "Background" or "BackgroundX" or "BackgroundY" or "BorderColor"
+			if (attrName is not ("Name" or "Background" or "BackgroundX" or "BackgroundY" or "BordColor"
 				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CursorPic" or "CursorMoveSound"))
 			{
 				menu.CustomProperties[attrName] = attr.Value;
@@ -670,11 +670,11 @@ public class MenuCollection
 	/// <summary>
 	/// Default border/background color for menus (WL_MENU.H:BORDCOLOR = 0x29 / 41)
 	/// </summary>
-	public byte? DefaultBorderColor { get; set; }
+	public byte? DefaultBordColor { get; set; }
 	/// <summary>
 	/// Default background color for menu boxes (WL_MENU.H:BKGDCOLOR = 0x2d / 45)
 	/// </summary>
-	public byte? DefaultBoxBackgroundColor { get; set; }
+	public byte? DefaultBkgdColor { get; set; }
 	/// <summary>
 	/// Default DEACTIVE color for box borders (WL_MENU.H:DEACTIVE = 0x2b / 43)
 	/// </summary>
@@ -682,7 +682,7 @@ public class MenuCollection
 	/// <summary>
 	/// Default BORD2COLOR for box borders (WL_MENU.H:BORD2COLOR = 0x23 / 35)
 	/// </summary>
-	public byte? DefaultBorder2Color { get; set; }
+	public byte? DefaultBord2Color { get; set; }
 	/// <summary>
 	/// Background fill color for modal dialog boxes (WL_MENU.C:Message DrawWindow wcolor).
 	/// Separate from DefaultTextColor — other games may use different colors for each.
@@ -703,10 +703,10 @@ public class MenuCollection
 	public byte? DefaultModalHighlight { get; set; }
 	/// <summary>
 	/// Bottom/right bevel color for modal boxes (PixelRect.SEColor = SouthEast bevel).
-	/// Corresponds to old Bord2Color attribute. Separate from DefaultBorder2Color.
-	/// WL1.xml: ModalBorder2Color="0"
+	/// Corresponds to old Bord2Color attribute. Separate from DefaultBord2Color.
+	/// WL1.xml: ModalBord2Color="0"
 	/// </summary>
-	public byte? DefaultModalBorder2Color { get; set; }
+	public byte? DefaultModalBord2Color { get; set; }
 	/// <summary>
 	/// Default sound to play when cursor moves to different menu item (e.g., "MOVEGUN2SND")
 	/// </summary>
@@ -802,7 +802,7 @@ public class MenuCollection
 		foreach (MenuDefinition menu in Menus.Values)
 		{
 			// Apply default colors to menus
-			menu.BorderColor ??= DefaultBorderColor;
+			menu.BordColor ??= DefaultBordColor;
 			menu.TextColor ??= DefaultTextColor;
 			menu.Highlight ??= DefaultHighlight;
 
@@ -819,9 +819,9 @@ public class MenuCollection
 			foreach (MenuBoxDefinition box in menu.Boxes)
 			{
 				// Boxes use BKGDCOLOR for background, not BORDCOLOR
-				box.BackgroundColor ??= DefaultBoxBackgroundColor;
+				box.BkgdColor ??= DefaultBkgdColor;
 				box.Deactive ??= DefaultDeactive;
-				box.Border2Color ??= DefaultBorder2Color;
+				box.Bord2Color ??= DefaultBord2Color;
 			}
 		}
 	}
@@ -860,22 +860,22 @@ public class MenuCollection
 			collection.DefaultTextColor = textColor;
 		if (byte.TryParse(menusElement.Attribute("Highlight")?.Value, out byte highlight))
 			collection.DefaultHighlight = highlight;
-		if (byte.TryParse(menusElement.Attribute("BorderColor")?.Value, out byte borderColor))
-			collection.DefaultBorderColor = borderColor;
-		if (byte.TryParse(menusElement.Attribute("BoxBackgroundColor")?.Value, out byte boxBgColor))
-			collection.DefaultBoxBackgroundColor = boxBgColor;
+		if (byte.TryParse(menusElement.Attribute("BordColor")?.Value, out byte borderColor))
+			collection.DefaultBordColor = borderColor;
+		if (byte.TryParse(menusElement.Attribute("BkgdColor")?.Value, out byte boxBgColor))
+			collection.DefaultBkgdColor = boxBgColor;
 		if (byte.TryParse(menusElement.Attribute("Deactive")?.Value, out byte deactive))
 			collection.DefaultDeactive = deactive;
-		if (byte.TryParse(menusElement.Attribute("Border2Color")?.Value, out byte border2))
-			collection.DefaultBorder2Color = border2;
+		if (byte.TryParse(menusElement.Attribute("Bord2Color")?.Value, out byte border2))
+			collection.DefaultBord2Color = border2;
 		if (byte.TryParse(menusElement.Attribute("ModalColor")?.Value, out byte modalColor))
 			collection.DefaultModalColor = modalColor;
 		if (byte.TryParse(menusElement.Attribute("ModalTextColor")?.Value, out byte modalTextColor))
 			collection.DefaultModalTextColor = modalTextColor;
 		if (byte.TryParse(menusElement.Attribute("ModalHighlight")?.Value, out byte modalHighlight))
 			collection.DefaultModalHighlight = modalHighlight;
-		if (byte.TryParse(menusElement.Attribute("ModalBorder2Color")?.Value, out byte modalBorder2))
-			collection.DefaultModalBorder2Color = modalBorder2;
+		if (byte.TryParse(menusElement.Attribute("ModalBord2Color")?.Value, out byte modalBorder2))
+			collection.DefaultModalBord2Color = modalBorder2;
 
 		// Parse default spacing
 		if (int.TryParse(menusElement.Attribute("Spacing")?.Value, out int spacing))

@@ -51,10 +51,10 @@ public static class GameSelectionMenuFactory
 			DefaultSpacing = 13,
 			DefaultTextColor = 0x17,          // WL_MENU.H:TEXTCOLOR
 			DefaultHighlight = 0x13,          // WL_MENU.H:HIGHLIGHT
-			DefaultBorderColor = 0x29,        // WL_MENU.H:BORDCOLOR
-			DefaultBoxBackgroundColor = 0x2d, // WL_MENU.H:BKGDCOLOR
+			DefaultBordColor = 0x29,        // WL_MENU.H:BORDCOLOR
+			DefaultBkgdColor = 0x2d, // WL_MENU.H:BKGDCOLOR
 			DefaultDeactive = 0x2b,           // WL_MENU.H:DEACTIVE
-			DefaultBorder2Color = 0x23,       // WL_MENU.H:BORD2COLOR
+			DefaultBord2Color = 0x23,       // WL_MENU.H:BORD2COLOR
 			DefaultCursorPic = "C_CURSOR1PIC",
 			DefaultCursorMoveSound = "MOVEGUN2SND",
 		};
@@ -68,7 +68,7 @@ public static class GameSelectionMenuFactory
 			MenuDefinition menu = new()
 			{
 				Name = "_GameSelect" + page,
-				BorderColor = 0x29,
+				BordColor = 0x29,
 				TextColor = 0x17,
 				Highlight = 0x13,
 				Font = "SMALL",
@@ -96,9 +96,9 @@ public static class GameSelectionMenuFactory
 						Y = 19,
 						W = 316,
 						H = 168,
-						BackgroundColor = 45, // PixelRect Color
+						BkgdColor = 45, // PixelRect Color
 						Deactive = 44,        // PixelRect BordColor
-						Border2Color = 35,    // PixelRect Bord2Color
+						Bord2Color = 35,    // PixelRect Bord2Color
 					},
 				],
 			};

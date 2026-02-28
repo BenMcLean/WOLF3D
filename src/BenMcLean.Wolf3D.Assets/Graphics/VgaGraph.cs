@@ -52,10 +52,10 @@ public sealed class VgaGraph
 	{
 		Palettes = [.. VSwap.LoadPalettes(xml)];
 		XElement vgaGraph = xml.Element("VgaGraph");
-		using (MemoryStream sizes = new(file[(uint?)vgaGraph.Element("Sizes").Attribute("Chunk") ?? 0]))
+		using (MemoryStream sizes = new(file[(uint?)vgaGraph.Attribute("Sizes") ?? 0]))
 			Sizes = Load16BitPairs(sizes);
-		uint startFont = (uint)vgaGraph.Element("Sizes").Attribute("StartFont"),
-			startPic = (uint)vgaGraph.Element("Sizes").Attribute("StartPic");
+		uint startFont = (uint)vgaGraph.Attribute("StartFont"),
+			startPic = (uint)vgaGraph.Attribute("StartPic");
 		Fonts = [.. Enumerable.Range(0, (int)(startPic - startFont))
 			.Parallelize(i =>
 			{
