@@ -37,6 +37,7 @@ public partial class SoundBlaster : Node
 	};
 	#endregion Audio Players
 	private string currentMusicName = null;
+	private Assets.Gameplay.Config _subscribedConfig = null;
 	public SoundBlaster()
 	{
 		Name = "SoundBlaster";
@@ -48,12 +49,11 @@ public partial class SoundBlaster : Node
 		AddChild(OplPlayer);
 		AddChild(PcSpeakerPlayer);
 		AddChild(DirectionlessBusSpeaker);
-		// Subscribe to config events
-		if (SharedAssetManager.Config is not null)
-		{
-			SharedAssetManager.Config.MusicEnabledChanged += OnMusicEnabledChanged;
-			SharedAssetManager.Config.SoundModeChanged += OnSoundModeChanged;
-		}
+		// Subscribe to ConfigReplaced so we re-subscribe whenever the Config object changes.
+		// Config is null at _Ready() time (loaded later by SetupRoom), so we can't
+		// subscribe to its events here directly.
+		SharedAssetManager.ConfigReplaced += OnConfigReplaced;
+		SubscribeToConfig(SharedAssetManager.Config);
 		// Subscribe to event bus
 		EventBus.Subscribe(GameEvent.PlaySound, OnPlaySoundEvent);
 		EventBus.Subscribe(GameEvent.PlayMusic, OnPlayMusicEvent);
@@ -61,16 +61,29 @@ public partial class SoundBlaster : Node
 	}
 	public override void _ExitTree()
 	{
-		// Unsubscribe from config events
-		if (SharedAssetManager.Config is not null)
-		{
-			SharedAssetManager.Config.MusicEnabledChanged -= OnMusicEnabledChanged;
-			SharedAssetManager.Config.SoundModeChanged -= OnSoundModeChanged;
-		}
+		SharedAssetManager.ConfigReplaced -= OnConfigReplaced;
+		SubscribeToConfig(null);
 		// Unsubscribe from event bus
 		EventBus.Unsubscribe(GameEvent.PlaySound, OnPlaySoundEvent);
 		EventBus.Unsubscribe(GameEvent.PlayMusic, OnPlayMusicEvent);
 		EventBus.Unsubscribe(GameEvent.StopMusic, OnStopMusicEvent);
+	}
+	private void OnConfigReplaced(Assets.Gameplay.Config newConfig) => SubscribeToConfig(newConfig);
+	private void SubscribeToConfig(Assets.Gameplay.Config config)
+	{
+		if (_subscribedConfig is not null)
+		{
+			_subscribedConfig.MusicEnabledChanged -= OnMusicEnabledChanged;
+			_subscribedConfig.SoundModeChanged -= OnSoundModeChanged;
+			_subscribedConfig.DigiModeChanged -= OnDigiModeChanged;
+		}
+		_subscribedConfig = config;
+		if (_subscribedConfig is not null)
+		{
+			_subscribedConfig.MusicEnabledChanged += OnMusicEnabledChanged;
+			_subscribedConfig.SoundModeChanged += OnSoundModeChanged;
+			_subscribedConfig.DigiModeChanged += OnDigiModeChanged;
+		}
 	}
 	#region Event Handlers
 	private void OnMusicEnabledChanged(object sender, EventArgs e)
@@ -82,6 +95,11 @@ public partial class SoundBlaster : Node
 	private void OnSoundModeChanged(object sender, EventArgs e)
 	{
 		// Sound effects are fire-and-forget, no action needed
+	}
+	private void OnDigiModeChanged(object sender, EventArgs e)
+	{
+		if (SharedAssetManager.Config?.DigiMode == Assets.Gameplay.Config.SDSMode.Off)
+			DirectionlessBusSpeaker.Stop();
 	}
 	private void OnPlaySoundEvent(object data)
 	{

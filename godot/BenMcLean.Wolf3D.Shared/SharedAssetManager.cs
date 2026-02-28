@@ -24,8 +24,23 @@ public static class SharedAssetManager
 	/// <summary>
 	/// Game configuration (sound/music/input settings).
 	/// Persisted to CONFIG file and used by menus and gameplay.
+	/// Fires ConfigReplaced when the Config object itself is swapped (e.g., on game load).
 	/// </summary>
-	public static Assets.Gameplay.Config Config { get; set; }
+	public static Assets.Gameplay.Config Config
+	{
+		get => _config;
+		set
+		{
+			_config = value;
+			ConfigReplaced?.Invoke(value);
+		}
+	}
+	private static Assets.Gameplay.Config _config;
+	/// <summary>
+	/// Fired when the Config object is replaced (new game loaded or config cleared).
+	/// The argument is the new Config, or null when cleared.
+	/// </summary>
+	public static event Action<Assets.Gameplay.Config> ConfigReplaced;
 	/// <summary>
 	/// Path to the CONFIG file for saving changes.
 	/// </summary>
