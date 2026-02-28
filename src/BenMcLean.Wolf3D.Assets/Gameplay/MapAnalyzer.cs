@@ -122,7 +122,7 @@ public class MapAnalyzer
 
 		// Parse states BEFORE objects (needed for state->sprite lookup)
 		States = [];
-		IEnumerable<XElement> stateElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("State") ?? [];
+		IEnumerable<XElement> stateElements = XML.Element("VSwap")?.Element("Actors")?.Elements("State") ?? [];
 		foreach (XElement state in stateElements)
 		{
 			string name = state.Attribute("Name")?.Value;

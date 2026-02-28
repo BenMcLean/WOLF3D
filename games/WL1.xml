@@ -1506,6 +1506,8 @@ return true
 			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
+		</StatInfo>
+		<Actors>
 			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1" />
 			<!-- State Functions (Lua implementations of Think/Action) -->
 			<Function Name="T_Stand" Description="Actor standing idle, watching for player (generic for all actor types)">
@@ -2234,7 +2236,7 @@ elseif actorType == "Hans" then
 end
 ]]>
 			</Function>
-		</StatInfo>
+		</Actors>
 	</VSwap>
 	<Palette>
 		<Color Hex="#000000"/>

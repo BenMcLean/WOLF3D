@@ -70,21 +70,21 @@ public class AssetManager
 				return (short)spriteNum;
 			return -1; // Unknown sprite
 		}
-		// Find the StatInfo element inside VSwap
+		// Find the Actors element inside VSwap
 		XElement vswapElement = xml.Element("VSwap");
-		XElement statInfoElement = vswapElement?.Element("StatInfo");
-		if (statInfoElement == null)
+		XElement actorsElement = vswapElement?.Element("Actors");
+		if (actorsElement == null)
 			return stateCollection; // No states defined
 									// Load state functions first
-		IEnumerable<XElement> functionElements = statInfoElement.Elements("Function");
+		IEnumerable<XElement> functionElements = actorsElement.Elements("Function");
 		if (functionElements != null)
 			stateCollection.LoadFunctionsFromXml(functionElements);
 		// Load states (Phase 1: Create all state objects)
-		IEnumerable<XElement> stateElements = statInfoElement.Elements("State");
+		IEnumerable<XElement> stateElements = actorsElement.Elements("State");
 		if (stateElements != null)
 			stateCollection.LoadStatesFromXml(stateElements, ResolveSpriteNameToNumber);
 		// Load actor definitions (for death states, chase states, etc.)
-		IEnumerable<XElement> actorElements = statInfoElement.Elements("Actor");
+		IEnumerable<XElement> actorElements = actorsElement.Elements("Actor");
 		if (actorElements != null)
 			stateCollection.LoadActorDefinitionsFromXml(actorElements);
 		// Phase 2: Link state references
