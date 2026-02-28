@@ -31,13 +31,13 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 ///
 /// Example Lua script for weapon pickup:
 /// <code>
-/// if not Has("Weapon2") then
-///     SetValue("Weapon2", 1)
-///     AddValue("Ammo", 6)
-///     PlayLocalDigiSound("GETMACHINESND")
-///     return true
-/// end
-/// return false
+/// local isNew = not Has("Weapon2")
+/// SetValue("Weapon2", 1)
+/// AddValue("Ammo", 6)
+/// if isNew then SwitchToWeapon("machinegun") end
+/// PlayAdLibSound("GETMACHINESND")
+/// FlashScreen(0xFFF800)
+/// return true
 /// </code>
 /// </summary>
 public class ItemScriptContext(
@@ -64,4 +64,18 @@ public class ItemScriptContext(
 	/// Shape number of the item sprite (exposed to Lua).
 	/// </summary>
 	public int ItemShape => item.ShapeNum;
+	#region Weapon Switching
+	/// <summary>
+	/// Switch to the named weapon in all weapon slots.
+	/// Used when the player first picks up a new weapon.
+	/// Equips the weapon in all slots without specifying a particular slot.
+	/// Requires the weapon to already be in inventory (SetValue must be called first).
+	/// </summary>
+	/// <param name="weaponName">Weapon name (e.g., "machinegun", "chaingun")</param>
+	public void SwitchToWeapon(string weaponName)
+	{
+		for (int i = 0; i < simulator.WeaponSlots.Count; i++)
+			simulator.EquipWeapon(i, weaponName);
+	}
+	#endregion Weapon Switching
 }

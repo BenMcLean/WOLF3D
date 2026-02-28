@@ -1315,8 +1315,10 @@ return false
 			</BonusScript>
 			<BonusScript Name="weapon_machinegun">
 				<![CDATA[
+local isNew = not Has("Weapon2")
 SetValue("Weapon2", 1)
 AddValue("Ammo", 6)
+if isNew then SwitchToWeapon("machinegun") end
 PlayAdLibSound("GETMACHINESND")
 FlashScreen(0xFFF800)
 return true
@@ -1324,8 +1326,10 @@ return true
 			</BonusScript>
 			<BonusScript Name="weapon_chaingun">
 				<![CDATA[
+local isNew = not Has("Weapon3")
 SetValue("Weapon3", 1)
 AddValue("Ammo", 6)
+if isNew then SwitchToWeapon("chaingun") end
 PlayAdLibSound("GETGATLINGSND")
 FlashScreen(0xFFF800)
 return true
