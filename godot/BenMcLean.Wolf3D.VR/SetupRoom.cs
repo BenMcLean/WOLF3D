@@ -168,6 +168,9 @@ public partial class SetupRoom : Node3D, IRoom
 					// before SharedAssetManager.LoadGame() disposes the atlas textures
 					if (!IsInitialLoad)
 						VRAssetManager.Cleanup();
+					else
+						SharedAssetManager.ExtractSharewareIfNeeded(
+							System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(_xmlPath)));
 
 					SharedAssetManager.LoadGame(_xmlPath);
 

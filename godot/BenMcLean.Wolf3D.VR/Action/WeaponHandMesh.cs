@@ -43,7 +43,7 @@ public partial class WeaponHandMesh : Node3D
 			Mesh = new BoxMesh { Size = Vector3.One },
 			MaterialOverride = _material,
 			RotationDegrees = new Vector3(90f, 0f, 0f),
-			Scale = new Vector3(1f, 1f / 64f, 1.2f),
+			Scale = Constants.WeaponScale,
 		};
 		AddChild(mesh);
 	}

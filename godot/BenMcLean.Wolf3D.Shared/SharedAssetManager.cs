@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using Godot;
@@ -581,6 +582,30 @@ public static class SharedAssetManager
 		}
 	}
 	#endregion Config
+	/// <summary>
+	/// Extracts the embedded shareware ZIP to the WL1 subfolder of <paramref name="gamesFolder"/>,
+	/// creating the folder if needed and skipping any files that already exist.
+	/// </summary>
+	/// <param name="gamesFolder">Absolute path to the games directory.</param>
+	public static void ExtractSharewareIfNeeded(string gamesFolder)
+	{
+		string targetFolder = Path.Combine(gamesFolder, "WL1");
+		Directory.CreateDirectory(targetFolder);
+		using Stream stream = Assembly.GetExecutingAssembly()
+			.GetManifestResourceStream("BenMcLean.Wolf3D.Shared.Resources.Wolfenstein3dV14sw.ZIP");
+		if (stream is null)
+			return;
+		using ZipArchive archive = new(stream, ZipArchiveMode.Read);
+		foreach (ZipArchiveEntry entry in archive.Entries)
+		{
+			if (string.IsNullOrEmpty(entry.Name))
+				continue;
+			string destPath = Path.Combine(targetFolder, entry.Name);
+			if (File.Exists(destPath))
+				continue;
+			entry.ExtractToFile(destPath);
+		}
+	}
 	/// <summary>
 	/// Loads a game from the user's games folder.
 	/// </summary>
