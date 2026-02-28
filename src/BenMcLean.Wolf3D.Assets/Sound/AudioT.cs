@@ -109,7 +109,7 @@ public sealed class AudioT
 			: [];
 		uint startMusic = (uint)xml.Attribute("StartMusic"),
 			endMusic = (uint)file.Length - startMusic;
-		bool midi = xml.Elements("MIDI").Any();
+		bool midi = xml.Elements("Midi").Any();
 		Songs = Enumerable.Range(0, (int)endMusic)
 			.AsParallel()
 			.Where(i => file[startMusic + i] is not null)
@@ -122,7 +122,7 @@ public sealed class AudioT
 					song.Position = 2;
 					return new Music
 					{
-						Name = xml.Elements("MIDI")
+						Name = xml.Elements("Midi")
 							.Where(e => uint.TryParse(e.Attribute("Number")?.Value, out uint n) && n == i)
 							.Select(e => e.Attribute("Name")?.Value)
 							.FirstOrDefault()

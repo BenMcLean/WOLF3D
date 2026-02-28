@@ -1009,16 +1009,6 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Border" type="xs:nonNegativeInteger">
-				<xs:annotation>
-					<xs:documentation>
-						Border/overscan color as VGA palette index (BORDERCOLOR macro).
-						Defined in WL_DEF.H:104, used with COLORBORDER() macro.
-						Standard values: 3 (Wolf3D), 0x9b (Spear), 0xdb (Noah3D).
-						Sets the VGA overscan border around the playfield.
-					</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
 			<xs:attribute name="Par" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>
@@ -1069,7 +1059,7 @@
 		<xs:annotation>
 			<xs:documentation>
 				Audio assets from AUDIOHED/AUDIOT files.
-				Contains AdLib/PC Speaker sounds and music (IMF format).
+				Contains AdLib/PC Speaker sounds and music (IMF or MIDI format).
 				DigiSounds (Sound Blaster) are stored in VSWAP, not here.
 			</xs:documentation>
 		</xs:annotation>
@@ -1077,6 +1067,7 @@
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
 				<xs:element ref="Sound"/>
 				<xs:element ref="Imf"/>
+				<xs:element ref="Midi"/>
 			</xs:choice>
 			<xs:attribute name="AudioHead" type="xs:string" use="required"/>
 			<xs:attribute name="AudioT" type="xs:string" use="required"/>
@@ -1108,6 +1099,13 @@
 	</xs:element>
 
 	<xs:element name="Imf">
+		<xs:complexType>
+			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Name" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Midi">
 		<xs:complexType>
 			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string" use="required"/>

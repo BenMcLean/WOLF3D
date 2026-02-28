@@ -382,8 +382,6 @@ end
 					SetStartGame(true)
 				</MenuItem>
 			</Menu>
-
-			<!-- Placeholder menus for testing navigation -->
 			<!-- Sound Menu (WL_MENU.H: SM_X=48, SM_Y1=20) -->
 			<!-- WL_MENU.C:1820-1822: Three DrawWindow boxes for Sound FX, Digitized, Music sections -->
 			<!-- WL_MENU.C:1852-1854: Title pictures at (100, SM_Yn-20) -->
