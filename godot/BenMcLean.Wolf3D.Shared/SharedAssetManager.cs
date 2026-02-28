@@ -605,9 +605,11 @@ public static class SharedAssetManager
 				continue;
 			entry.ExtractToFile(destPath);
 		}
-		string wl1 = Path.Combine(gamesFolder, "WL1.xml");
+		string wl1 = Path.Combine(gamesFolder, "WL1.xml"),
+			assemblyLocation = Assembly.GetExecutingAssembly().Location;
 		if (!File.Exists(wl1) ||
-			File.GetLastWriteTime(wl1) < File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location))
+			(!string.IsNullOrEmpty(assemblyLocation) &&
+			File.GetLastWriteTime(wl1) < File.GetLastWriteTime(assemblyLocation)))
 		{
 			using Stream wl1Stream = Assembly.GetExecutingAssembly()
 				.GetManifestResourceStream("BenMcLean.Wolf3D.Shared.Resources.WL1.xml");
