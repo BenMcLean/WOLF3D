@@ -573,6 +573,15 @@
 							<xs:documentation>Optional Lua expression for visibility/enabled state</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
+					<xs:attribute name="ExtraSpacing" type="xs:integer">
+						<xs:annotation>
+							<xs:documentation>
+								Extra pixels added above this menu item, pushing it and all subsequent items downward.
+								Used to simulate gaps where the original Wolf3D Sound menu had empty/spacer entries
+								that were hardcoded in CP_itemtype arrays (WL_MENU.C:SndItems, SndMenu).
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 				</xs:extension>
 			</xs:simpleContent>
 		</xs:complexType>
@@ -795,9 +804,9 @@
 		<xs:complexType>
 			<xs:simpleContent>
 				<xs:extension base="xs:string">
-					<xs:attribute name="Duration" type="xs:duration">
+					<xs:attribute name="Duration" type="xs:string">
 						<xs:annotation>
-							<xs:documentation>Optional timeout as an XML duration/TimeSpan (e.g., "PT5S" for 5 seconds, "PT1M30S" for 1 minute 30 seconds). If omitted, waits indefinitely for any button press.</xs:documentation>
+							<xs:documentation>Optional timeout as a TimeSpan string (e.g., "00:00:05" for 5 seconds, "00:01:30" for 1 minute 30 seconds). Parsed by C# TimeSpan.TryParse. If omitted, waits indefinitely for any button press.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 				</xs:extension>
@@ -1007,7 +1016,7 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Song" type="xs:string">
+			<xs:attribute name="Music" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>
 						Music track name for this level (songs[] array).
@@ -1047,19 +1056,34 @@
 		<xs:annotation>
 			<xs:documentation>
 				Audio assets from AUDIOHED/AUDIOT files.
-				Contains digital sounds and music (IMF format).
+				Contains AdLib/PC Speaker sounds and music (IMF format).
+				DigiSounds (Sound Blaster) are stored in VSWAP, not here.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="DigiSound" minOccurs="0" maxOccurs="unbounded"/>
-				<xs:element ref="Imf" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element ref="Sound"/>
+				<xs:element ref="Imf"/>
+			</xs:choice>
 			<xs:attribute name="AudioHead" type="xs:string" use="required"/>
 			<xs:attribute name="AudioT" type="xs:string" use="required"/>
 			<xs:attribute name="StartPCSounds" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="StartAdlibSounds" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="StartMusic" type="xs:nonNegativeInteger"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Sound">
+		<xs:annotation>
+			<xs:documentation>
+				AdLib/PC Speaker sound effect from AUDIOT file.
+				Distinct from DigiSound (Sound Blaster samples stored in VSWAP).
+				Number is the index into the AUDIOT sound table.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Name" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -1459,6 +1483,15 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="WeaponNumber" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Weapon slot number for inventory and key binding (e.g., 0=knife, 1=pistol, 2=machinegun, 3=chaingun).
+						Based on WL_AGENT.C attackinfo[] index.
+						Used to map keyboard keys (Key1-Key4) to weapons.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="IdleState" type="xs:string" use="required">
 				<xs:annotation>
 					<xs:documentation>
@@ -1475,11 +1508,12 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="BaseDamage" type="xs:short" use="required">
+			<xs:attribute name="BaseDamage" type="xs:short">
 				<xs:annotation>
 					<xs:documentation>
 						Base damage per hit (can be modified by scripts or difficulty).
 						Examples: Knife=10, Pistol=5, Machinegun=5, Chaingun=5.
+						Defaults to 0 if absent.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

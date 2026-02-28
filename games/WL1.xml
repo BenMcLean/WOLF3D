@@ -524,9 +524,9 @@ end
 			</Menu>
 
 			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="Mouse Enabled" Action="BackToPreviousMenu" />
-				<MenuItem Text="Joystick Enabled" Action="BackToPreviousMenu" />
-				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+				<MenuItem Text="Mouse Enabled">BackToPreviousMenu()</MenuItem>
+				<MenuItem Text="Joystick Enabled">BackToPreviousMenu()</MenuItem>
+				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
@@ -586,9 +586,9 @@ end
 			</Menu>
 
 			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="Size 1" Action="BackToPreviousMenu" />
-				<MenuItem Text="Size 2" Action="BackToPreviousMenu" />
-				<MenuItem Text="Back" Action="BackToPreviousMenu" />
+				<MenuItem Text="Size 1">BackToPreviousMenu()</MenuItem>
+				<MenuItem Text="Size 2">BackToPreviousMenu()</MenuItem>
+				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
 			</Menu>
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
@@ -943,8 +943,6 @@ end
 				WeaponNumber="0"
 				IdleState="s_knife"
 				FireState="s_knife_1"
-				RequiresAmmo="false"
-				AmmoType="none"
 				AmmoPerShot="0"
 				FireSound="ATKKNIFESND"/>
 			<!-- Pistol (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] -->
@@ -953,24 +951,20 @@ end
 				WeaponNumber="1"
 				IdleState="s_pistol"
 				FireState="s_pistol_1"
-				RequiresAmmo="true"
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKPISTOLSND"
-				BaseDamage="5"
-				MaxRange="100"/>
+				BaseDamage="5"/>
 			<!-- Machine Gun (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] -->
 			<GameplayWeapon
 				Name="machinegun"
 				WeaponNumber="2"
 				IdleState="s_machinegun"
 				FireState="s_machinegun_1"
-				RequiresAmmo="true"
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKMACHINEGUNSND"
 				BaseDamage="5"
-				MaxRange="100"
 				RapidFire="true"/>
 			<!-- Chain Gun (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] -->
 			<GameplayWeapon
@@ -978,12 +972,10 @@ end
 				WeaponNumber="3"
 				IdleState="s_chaingun"
 				FireState="s_chaingun_1"
-				RequiresAmmo="true"
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKGATLINGSND"
 				BaseDamage="5"
-				MaxRange="100"
 				RapidFire="true"/>
 		</GameplayWeapons>
 		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
