@@ -1435,7 +1435,9 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			// WL_ACT1.C:SpawnStand/SpawnPatrol - enemies are FL_SHOOTABLE if they have a death state
 			if (actorDef != null && !string.IsNullOrEmpty(actorDef.DeathState))
 				actor.Flags |= ActorFlags.Shootable;
-			if (spawn.Ambush)
+			// FL_AMBUSH from spawn tile (N3D info-plane encoding: tile 126 vs 108)
+			// OR from actor class definition (WL_ACT2.C:SpawnBoss always sets FL_AMBUSH)
+			if (spawn.Ambush || (actorDef?.Ambush ?? false))
 				actor.Flags |= ActorFlags.Ambush;
 			if (spawn.Patrol)
 				actor.Flags |= ActorFlags.Patrolling;

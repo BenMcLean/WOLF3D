@@ -1412,6 +1412,30 @@
 			<xs:attribute name="Direction" type="DirectionType"/>
 			<xs:attribute name="Difficulty" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="State" type="xs:string"/>
+			<xs:attribute name="Ambush" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						Info-plane tile-encoded ambush flag. When true, this tile spawns the
+						actor with FL_AMBUSH set, making it deaf/inactive until the player is
+						in direct line of sight.
+
+						Use case 1 - N3D info-plane tile variants: Tiles 126-130 are ambush
+						variants of tiles 108-112 (e.g., tile 126 is the ambush White ram,
+						tile 108 is the normal White ram). The tile number itself encodes
+						ambush, so the higher-numbered tile ObjectType has Ambush="true".
+
+						Use case 2 - Do NOT use for bosses: Boss actors that always spawn
+						ambush (Hans, Carl the Camel, etc.) should have Ambush="true" on their
+						Actor class definition instead. SpawnBoss() sets FL_AMBUSH
+						unconditionally in WL_ACT2.C — that is a spawn-function property, not
+						a tile property.
+
+						For WL1 regular enemies (guards, SS, dogs): ambush is encoded in the
+						wall plane via AMBUSHTILE (106), not here. No Ambush attribute needed
+						on those ObjectType entries.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

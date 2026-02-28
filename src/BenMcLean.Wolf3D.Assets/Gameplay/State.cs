@@ -233,6 +233,12 @@ public class ActorDefinition
 	/// </summary>
 	public string InitialState { get; set; }
 	/// <summary>
+	/// Actor class always spawns in ambush mode (FL_AMBUSH set unconditionally).
+	/// WL_ACT2.C:SpawnBoss always sets FL_AMBUSH regardless of map tile or position.
+	/// Used for bosses that are never placed on an AMBUSHTILE and have no tile-encoded ambush variant.
+	/// </summary>
+	public bool Ambush { get; set; }
+	/// <summary>
 	/// Returns hit points for the given difficulty level.
 	/// No clamping — throws IndexOutOfRangeException on bad index (informative crash).
 	/// </summary>
@@ -257,7 +263,8 @@ public class ActorDefinition
 			HitPointsByDifficulty = hitPoints,
 			PainState = element.Attribute("Pain")?.Value,
 			PainState1 = element.Attribute("Pain1")?.Value,
-			InitialState = element.Attribute("Stand")?.Value
+			InitialState = element.Attribute("Stand")?.Value,
+			Ambush = element.IsTrue("Ambush")
 		};
 	}
 }

@@ -511,7 +511,9 @@ public class MapAnalyzer
 							objInfo.Page,
 							x, y,
 							objInfo.Facing.Value,
-							objInfo.Ambush,
+							// FL_AMBUSH from ObjectType.Ambush (N3D info-plane tile encoding: tile 126 vs 108)
+						// OR from wall-plane AMBUSHTILE (WL_ACT2.C:SpawnStand checks *map == AMBUSHTILE)
+						objInfo.Ambush || mapAnalyzer.AmbushTiles.Contains(gameMap.GetMapData(x, y)),
 							objInfo.Patrol,
 							objInfo.State,
 							objInfo.Difficulty));

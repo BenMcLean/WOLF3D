@@ -787,114 +787,25 @@ end
 		<Midi Number="10" Name="NOAH11_MUS" />
 	</Audio>
 	<VSwap Name="vswap.n3d" Sqrt="64" Scale="8" MipMaps="true">
-		<Walls FloorCodeFirst="108" FloorCodeLast="143">
-			<Wall Number="1" Page="0" DarkSide="1" Name="Wood wall 1" />
-			<Wall Number="2" Page="2" DarkSide="3" Name="Wood wall 2 mossy" />
-			<Wall Number="3" Page="4" DarkSide="5" Name="Yellow curtain" />
-			<Wall Number="4" Page="6" DarkSide="7" Name="Monkey portrait" />
-			<Wall Number="5" Page="8" DarkSide="9" Name="Log wall" />
-			<Wall Number="6" Page="10" DarkSide="11" Name="Noah portrait" />
-			<Wall Number="7" Page="12" DarkSide="13" Name="Red curtain" />
-			<Wall Number="8" Page="14" DarkSide="15" Name="Duck portrait" />
-			<Wall Number="9" Page="16" DarkSide="17" Name="Silvery with wood" />
-			<Wall Number="10" Page="18" DarkSide="19" Name="Broken wooden kennel" />
-			<Wall Number="11" Page="20" DarkSide="21" Name="Silvery wall" />
-			<Wall Number="12" Page="22" DarkSide="23" Name="Broken kennel" />
-			<Wall Number="13" Page="24" DarkSide="25" Name="Wooden panel" />
-			<Wall Number="14" Page="26" DarkSide="27" Name="Large cabinet" />
-			<Elevator Number="15" Page="28" DarkSide="29" Direction="W" Action="NextFloor" Name="EW=Stairs/NS=Brick" />
-			<Wall Number="16" Page="30" DarkSide="31" Name="Outside: NS=Dy/EW=Nt" />
-			<Wall Number="17" Page="32" DarkSide="33" Name="Entry panel" />
-			<Wall Number="18" Page="34" DarkSide="35" Name="Naamah portrait" />
-			<Wall Number="19" Page="36" DarkSide="37" Name="Checkered wall 1" />
-			<Wall Number="20" Page="38" DarkSide="39" Name="Checkered w pennant" />
-			<Wall Number="21" Page="40" DarkSide="41" Name="Grey brick wall" />
-			<Wall Number="22" Page="42" DarkSide="43" Name="Blue curtain" />
-			<Wall Number="23" Page="44" DarkSide="45" Name="Light wood panel" />
-			<Wall Number="24" Page="46" DarkSide="47" Name="Chalkboard" />
-			<Wall Number="25" Page="48" DarkSide="49" Name="Yellow wall" />
-			<Wall Number="26" Page="50" DarkSide="51" Name="Fruit shelf cabinet" />
-			<Wall Number="27" Page="52" DarkSide="53" Name="Red wall" />
-			<Wall Number="28" Page="54" DarkSide="55" Name="Small cabinets" />
-			<Wall Number="29" Page="56" DarkSide="57" Name="Purple wall" />
-			<Wall Number="30" Page="58" DarkSide="59" Name="Fake: NS=Lk/EW=Unlok" />
-			<Wall Number="31" Page="60" DarkSide="61" Name="Fake: NS=Str/EW=Lock" />
-			<Wall Number="33" Page="0" DarkSide="1" Name="Wood wall 1" />
-			<Wall Number="34" Page="2" DarkSide="3" Name="Wood wall 2 mossy" />
-			<Wall Number="35" Page="4" DarkSide="5" Name="Yellow curtain" />
-			<Wall Number="36" Page="6" DarkSide="7" Name="Monkey portrait" />
-			<Wall Number="37" Page="8" DarkSide="9" Name="Log wall" />
-			<Wall Number="38" Page="10" DarkSide="11" Name="Noah portrait" />
-			<Wall Number="39" Page="12" DarkSide="13" Name="Red curtain" />
-			<Wall Number="40" Page="14" DarkSide="15" Name="Duck portrait" />
-			<Wall Number="41" Page="16" DarkSide="17" Name="Silvery with wood" />
-			<Wall Number="42" Page="18" DarkSide="19" Name="Broken wooden kennel" />
-			<Wall Number="43" Page="20" DarkSide="21" Name="Silvery wall" />
-			<Wall Number="44" Page="22" DarkSide="23" Name="Broken kennel" />
-			<Wall Number="45" Page="24" DarkSide="25" Name="Wooden panel" />
-			<Wall Number="46" Page="26" DarkSide="27" Name="Large cabinet" />
-			<Elevator Number="47" Page="28" DarkSide="29" Direction="W" Action="NextFloor"  Name="EW=Stairs/NS=Brick" />
-			<Wall Number="48" Page="30" DarkSide="31" Name="Outside: NS=Dy/EW=Nt" />
-			<Wall Number="49" Page="32" DarkSide="33" Name="Entry panel" />
-			<Wall Number="50" Page="34" DarkSide="35" Name="Naamah portrait" />
-			<Wall Number="51" Page="36" DarkSide="37" Name="Checkered wall 1" />
-			<Wall Number="52" Page="38" DarkSide="39" Name="Checkered w pennant" />
-			<Wall Number="53" Page="40" DarkSide="41" Name="Grey brick wall" />
-			<Wall Number="54" Page="42" DarkSide="43" Name="Blue curtain" />
-			<Wall Number="55" Page="44" DarkSide="45" Name="Light wood panel" />
-			<Wall Number="56" Page="46" DarkSide="47" Name="Chalkboard" />
-			<Wall Number="57" Page="48" DarkSide="49" Name="Yellow wall" />
-			<Wall Number="58" Page="50" DarkSide="51" Name="Fruit shelf cabinet" />
-			<Wall Number="59" Page="52" DarkSide="53" Name="Red wall" />
-			<Wall Number="60" Page="54" DarkSide="55" Name="Small cabinets" />
-			<Wall Number="61" Page="56" DarkSide="57" Name="Purple wall" />
-			<Wall Number="62" Page="58" DarkSide="59" Name="Fake: NS=Lk/EW=Unlok" />
-			<Wall Number="63" Page="60" DarkSide="61" Name="Fake: NS=Str/EW=Lock" />
-			<DoorFrame Page="62" DarkSide="62" />
-			<Wall Number="65" Page="0" DarkSide="1" Name="Wood wall 1" />
-			<Wall Number="66" Page="2" DarkSide="3" Name="Wood wall 2 mossy" />
-			<Wall Number="67" Page="4" DarkSide="5" Name="Yellow curtain" />
-			<Wall Number="68" Page="6" DarkSide="7" Name="Monkey portrait" />
-			<Wall Number="69" Page="8" DarkSide="9" Name="Log wall" />
-			<Wall Number="70" Page="10" DarkSide="11" Name="Noah portrait" />
-			<Wall Number="71" Page="12" DarkSide="13" Name="Red curtain" />
-			<Wall Number="72" Page="14" DarkSide="15" Name="Duck portrait" />
-			<Wall Number="73" Page="16" DarkSide="17" Name="Silvery with wood" />
-			<Wall Number="74" Page="18" DarkSide="19" Name="Broken wooden kennel" />
-			<Wall Number="75" Page="20" DarkSide="21" Name="Silvery wall" />
-			<Wall Number="76" Page="22" DarkSide="23" Name="Broken kennel" />
-			<Wall Number="77" Page="24" DarkSide="25" Name="Wooden panel" />
-			<Wall Number="78" Page="26" DarkSide="27" Name="Large cabinet" />
-			<Elevator Number="79" Page="28" DarkSide="29" Direction="W" Action="NextFloor" Name="EW=Stairs/NS=Brick" />
-			<Wall Number="80" Page="30" DarkSide="31" Name="Outside: NS=Dy/EW=Nt" />
-			<Wall Number="81" Page="32" DarkSide="33" Name="Entry panel" />
-			<Wall Number="82" Page="34" DarkSide="35" Name="Naamah portrait" />
-			<Wall Number="83" Page="36" DarkSide="37" Name="Checkered wall 1" />
-			<Wall Number="84" Page="38" DarkSide="39" Name="Checkered w pennant" />
-			<Wall Number="85" Page="40" DarkSide="41" Name="Grey brick wall" />
-			<Wall Number="86" Page="42" DarkSide="43" Name="Blue curtain" />
-			<Wall Number="87" Page="44" DarkSide="45" Name="Light wood panel" />
-			<Wall Number="88" Page="46" DarkSide="47" Name="Chalkboard" />
-			<Wall Number="89" Page="56" DarkSide="57" Name="Map background/Fake: NS=Str/EW=Lock" />
-			<Door Number="90" Page="58" Name="Unlocked door-E/W" Direction="W" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="91" Page="58" Name="Unlocked door-N/S" Direction="S" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="92" Page="59" Name="Locked door-E/W" Direction="W" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="93" Page="59" Name="Locked door-N/S" Direction="S" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="94" Page="60" Name="Locked door-E/W" Direction="W" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="95" Page="60" Name="Locked door-N/S" Direction="S" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="96" Page="61" Name="Stairway door-E/W" Direction="W" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Door Number="97" Page="61" Name="Stairway door-N/S" Direction="S" OpenDigiSound="D_OPENDRSND" CloseDigiSound="D_CLOSDRSND" />
-			<Wall Number="98" Page="2" DarkSide="3" Name="Wood wall 2 mossy" />
-			<Wall Number="99" Page="4" DarkSide="5" Name="Yellow curtain" />
-			<Wall Number="100" Page="6" DarkSide="7" Name="Monkey portrait" />
-			<Wall Number="101" Page="8" DarkSide="9" Name="Log wall" />
-			<Wall Number="102" Page="10" DarkSide="11" Name="Noah portrait" />
-			<Wall Number="103" Page="12" DarkSide="13" Name="Red curtain" />
-			<Wall Number="104" Page="14" DarkSide="15" Name="Duck portrait" />
-			<Wall Number="105" Page="16" DarkSide="17" Name="Silvery with wood" />
-			<Wall Number="106" Page="18" DarkSide="19" Name="Broken wooden kennel" />
-			<Ambush Number="107" Name="Passive animal floor" />
-		</Walls>
+		<WallPlane MaxWallTiles="32" DoorWall="58" FloorCodeFirst="107" FloorCodeLast="143">
+			<!-- Walls 1-31 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
+			<!-- WL_DEF.H #ifdef GAMEVER_NOAH3D: MAXWALLTILES=32 (vs 64 in Wolf3D) -->
+			<!-- WL_GAME.C #ifdef GAMEVER_NOAH3D: tile &= 31 (lower 5 bits); wall tile 89 maps to tile 31 special case -->
+			<!-- DoorWall=58: DOORWALL(x)=(PMSpriteStart-x)-8; PMSpriteStart=71 (first sprite page); DOORWALL(5)=58 for dr_normal -->
+			<!-- WL_DRAW.C #ifdef GAMEVER_NOAH3D: DOORWALL is macro (PMSpriteStart-x)-8; DoorFrame adjacent wall=DOORWALL(1)=62=DoorWall+4 -->
+			<!-- N3D does NOT use ELEVATORTILE, EXITTILE, ALTELEVATORTILE, AMBUSHTILE, or PUSHABLETILE (wall plane) -->
+			<!-- N3D exit: SpawnExit() from info plane tiles 100/101 (WL_ACT1.C #ifdef GAMEVER_NOAH3D) -->
+			<!-- N3D ambush: boolean parameter to SpawnStand() from info plane tile 126 (WL_GAME.C #ifdef GAMEVER_NOAH3D) -->
+
+			<!-- Door types: Tile is base (even), Tile+1 (odd) implied for N/S vs E/W orientation -->
+			<!-- N3D lock mapping: WL_GAME.C #ifdef GAMEVER_NOAH3D -->
+			<!-- Tile 90/91: lock=0 (dr_normal), 92/93: lock=1 (dr_lock1), 94/95: lock=2 (dr_lock2), 96/97: lock=5 (dr_elevator) -->
+			<!-- Page is offset from DoorWall=58: actual VSWAP page = DoorWall + Page -->
+			<Door Tile="90" Name="Unlocked" Page="0" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" />
+			<Door Tile="92" Name="Gold key" Key="Gold Key" Page="1" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND" />
+			<Door Tile="94" Name="Silver key" Key="Silver Key" Page="2" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND" />
+			<Door Tile="96" Name="Stairway" Page="3" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" />
+		</WallPlane>
 		<Objects>
 			<Start Number="19" Direction="E" Name="Start" />
 			<Start Number="20" Direction="N" Name="Start" />
@@ -1246,6 +1157,44 @@ end
 			<State Name="s_hitlershoot5" Shape="SPR_HITLER_SHOOT3" Tics="10" Act="T_Shoot" Next="s_hitlershoot6" />
 			<State Name="s_hitlershoot6" Shape="SPR_HITLER_SHOOT2" Tics="10" Act="T_Shoot" Next="s_hitlerchase1" />
 		</Objects>
+		<StatInfo>
+			<!-- N3D info-plane actor tiles. Ambush is encoded in the tile number itself:
+			     normal tile (e.g. 108) and ambush variant (e.g. 126) are separate ObjectType entries.
+			     WL_GAME.C #ifdef GAMEVER_NOAH3D: SpawnStand(en_guard, x, y, 0, tile==126)
+			     All actors spawn facing East (dir=0) per SpawnStand(...,0,...) in WL_GAME.C. -->
+
+			<!-- Regular enemies: normal variants (tiles 108-112) -->
+			<ObjectType Number="108" ObClass="actor" Actor="White ram" Direction="E" Difficulty="1" State="s_grdstand" />
+			<ObjectType Number="109" ObClass="actor" Actor="Ostrich" Direction="E" Difficulty="1" State="s_ofcstand" />
+			<ObjectType Number="110" ObClass="actor" Actor="Antelope" Direction="E" Difficulty="1" State="s_ssstand" />
+			<ObjectType Number="111" ObClass="actor" Actor="Goat" Direction="E" Difficulty="1" State="s_dogpath1" />
+			<ObjectType Number="112" ObClass="actor" Actor="Ox" Direction="E" Difficulty="1" State="s_mutstand" />
+
+			<!-- Boss tiles: both variants always call SpawnBoss()/SpawnXxx() which sets FL_AMBUSH
+			     unconditionally (WL_ACT2.C:SpawnBoss). Ambush is on the Actor class definition,
+			     not here. Tile variants 113 and 131 are identical in behavior. -->
+			<ObjectType Number="113" ObClass="actor" Actor="Carl the Camel" Direction="E" Difficulty="1" State="s_bossstand" />
+			<ObjectType Number="114" ObClass="actor" Actor="Melvin the Monkey" Direction="E" Difficulty="1" State="s_schabbstand" />
+			<ObjectType Number="115" ObClass="actor" Actor="Ginny the Giraffe" Direction="E" Difficulty="1" State="s_gretelstand" />
+			<ObjectType Number="116" ObClass="actor" Actor="Kerry the Kangaroo" Direction="E" Difficulty="1" State="s_giftstand" />
+			<ObjectType Number="117" ObClass="actor" Actor="Ernie the Elephant" Direction="E" Difficulty="1" State="s_fatstand" />
+			<ObjectType Number="118" ObClass="actor" Actor="Burt the Bear" Direction="E" Difficulty="1" State="s_mechastand" />
+
+			<!-- Regular enemies: ambush variants (tiles 126-130), Ambush="true" -->
+			<ObjectType Number="126" ObClass="actor" Actor="White ram" Direction="E" Difficulty="1" State="s_grdstand" Ambush="true" />
+			<ObjectType Number="127" ObClass="actor" Actor="Ostrich" Direction="E" Difficulty="1" State="s_ofcstand" Ambush="true" />
+			<ObjectType Number="128" ObClass="actor" Actor="Antelope" Direction="E" Difficulty="1" State="s_ssstand" Ambush="true" />
+			<ObjectType Number="129" ObClass="actor" Actor="Goat" Direction="E" Difficulty="1" State="s_dogpath1" Ambush="true" />
+			<ObjectType Number="130" ObClass="actor" Actor="Ox" Direction="E" Difficulty="1" State="s_mutstand" Ambush="true" />
+
+			<!-- Boss ambush variants (tiles 131-136): same behavior as 113-118 (Actor.Ambush handles it) -->
+			<ObjectType Number="131" ObClass="actor" Actor="Carl the Camel" Direction="E" Difficulty="1" State="s_bossstand" />
+			<ObjectType Number="132" ObClass="actor" Actor="Melvin the Monkey" Direction="E" Difficulty="1" State="s_schabbstand" />
+			<ObjectType Number="133" ObClass="actor" Actor="Ginny the Giraffe" Direction="E" Difficulty="1" State="s_gretelstand" />
+			<ObjectType Number="134" ObClass="actor" Actor="Kerry the Kangaroo" Direction="E" Difficulty="1" State="s_giftstand" />
+			<ObjectType Number="135" ObClass="actor" Actor="Ernie the Elephant" Direction="E" Difficulty="1" State="s_fatstand" />
+			<ObjectType Number="136" ObClass="actor" Actor="Burt the Bear" Direction="E" Difficulty="1" State="s_mechastand" />
+		</StatInfo>
 		<Sprites>
 			<Sprite Page="63" Name="Ground" />
 			<Sprite Page="64" Name="Ceiling" />
