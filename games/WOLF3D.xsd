@@ -1113,14 +1113,14 @@
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
+			<xs:all>
 				<xs:element ref="WallPlane" minOccurs="0"/>
 				<xs:element ref="StatInfo" minOccurs="0"/>
 				<xs:element ref="Actors" minOccurs="0"/>
 				<xs:element ref="GameplayWeapons" minOccurs="0"/>
 				<xs:element ref="Sprites" minOccurs="0"/>
 				<xs:element ref="DigiSounds" minOccurs="0"/>
-			</xs:sequence>
+			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Sqrt" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Scale" type="xs:nonNegativeInteger"/>
