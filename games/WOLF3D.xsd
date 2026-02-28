@@ -1146,8 +1146,8 @@
 				<xs:element ref="StatInfo" minOccurs="0"/>
 				<xs:element ref="Actors" minOccurs="0"/>
 				<xs:element ref="GameplayWeapons" minOccurs="0"/>
-				<xs:element ref="SpritePlane" minOccurs="0"/>
-				<xs:element ref="SoundPlane" minOccurs="0"/>
+				<xs:element ref="Sprites" minOccurs="0"/>
+				<xs:element ref="DigiSounds" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Sqrt" type="xs:nonNegativeInteger"/>
@@ -1664,9 +1664,9 @@
 		</xs:complexType>
 	</xs:element>
 
-	<!-- SpritePlane -->
+	<!-- Sprites -->
 
-	<xs:element name="SpritePlane">
+	<xs:element name="Sprites">
 		<xs:annotation>
 			<xs:documentation>
 				Sprite definitions. Page is absolute VSWAP page number.
@@ -1688,9 +1688,9 @@
 		</xs:complexType>
 	</xs:element>
 
-	<!-- SoundPlane (digital sounds in VSwap) -->
+	<!-- DigiSounds (digital sounds in VSwap) -->
 
-	<xs:element name="SoundPlane">
+	<xs:element name="DigiSounds">
 		<xs:annotation>
 			<xs:documentation>
 				Digital sound data stored in VSWAP after sprites.

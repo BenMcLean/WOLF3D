@@ -105,7 +105,7 @@ public sealed class VSwap
 		// Parse sprite name->page mappings
 		// Note: XML Page attributes are absolute VSWAP page numbers
 		SpritesByName = [];
-		foreach (XElement spriteElement in xml.Element("VSwap")?.Element("SpritePlane")?.Elements("Sprite") ?? [])
+		foreach (XElement spriteElement in xml.Element("VSwap")?.Element("Sprites")?.Elements("Sprite") ?? [])
 		{
 			string name = spriteElement.Attribute("Name")?.Value;
 			if (!string.IsNullOrWhiteSpace(name)
@@ -151,7 +151,7 @@ public sealed class VSwap
 			}
 		});
 		DigiSoundsByName = [];
-		foreach (XElement digiSoundElement in xml.Element("VSwap")?.Element("SoundPlane")?.Elements("DigiSound") ?? [])
+		foreach (XElement digiSoundElement in xml.Element("VSwap")?.Element("DigiSounds")?.Elements("DigiSound") ?? [])
 			if (ushort.TryParse(digiSoundElement.Attribute("Number")?.Value, out ushort number)
 				&& number < DigiSounds.Length
 				&& DigiSounds[number] is byte[] bytes)
