@@ -62,13 +62,13 @@ public sealed class VgaGraph
 				using MemoryStream fontStream = new(file[startFont + i]);
 				return new Font(fontStream);
 			})];
-		Pics = [.. Enumerable.Range(0, vgaGraph.Elements("Pic")?.Count() ?? 0)
+		Pics = [.. Enumerable.Range(0, vgaGraph.Element("Pics")?.Elements("Pic").Count() ?? 0)
 			.Parallelize(i =>
 				Deplanify(file[startPic + i], Sizes[i][0])
 					.Indices2ByteArray(Palettes[PaletteNumber(i, xml)]))];
 		// Build PicsByName dictionary from XML
 		PicsByName = [];
-		foreach (XElement picElement in vgaGraph.Elements("Pic"))
+		foreach (XElement picElement in vgaGraph.Element("Pics")?.Elements("Pic") ?? [])
 		{
 			string name = picElement.Attribute("Name")?.Value;
 			if (string.IsNullOrEmpty(name))
@@ -81,7 +81,7 @@ public sealed class VgaGraph
 		// Build font dictionaries
 		ChunkFontsByName = [];
 		PicFonts = [];
-		foreach (XElement fontElement in vgaGraph.Elements("Font"))
+		foreach (XElement fontElement in vgaGraph.Element("Fonts")?.Elements("Font") ?? [])
 		{
 			// Name is required - crash if missing
 			string name = fontElement.Attribute("Name")?.Value;
@@ -96,7 +96,7 @@ public sealed class VgaGraph
 				// Pic font: build from Pics using prefix matching
 				string prefix = fontElement.Attribute("Prefix").Value;
 				Dictionary<char, int> characters = [];
-				foreach (XElement picElement in vgaGraph.Elements("Pic"))
+				foreach (XElement picElement in vgaGraph.Element("Pics")?.Elements("Pic") ?? [])
 				{
 					string picName = picElement.Attribute("Name")?.Value;
 					if (string.IsNullOrEmpty(picName) || !picName.StartsWith(prefix))
@@ -130,7 +130,7 @@ public sealed class VgaGraph
 			StatusBar = StatusBarDefinition.FromXElement(statusBarElement);
 	}
 	public static int PaletteNumber(int picNumber, XElement xml) =>
-		xml?.Element("VgaGraph")?.Elements("Pic")?.Where(
+		xml?.Element("VgaGraph")?.Element("Pics")?.Elements("Pic")?.Where(
 			e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort number) && number == picNumber
 			)?.Select(e => ushort.TryParse(e.Attribute("Palette")?.Value, out ushort palette) ? palette : (ushort)0)
 		?.FirstOrDefault() ?? 0;

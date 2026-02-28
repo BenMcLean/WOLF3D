@@ -293,7 +293,7 @@ public sealed class VSwap
 			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
 		?.FirstOrDefault() ?? 0;
 	public static IEnumerable<uint[]> LoadPalettes(XElement xml) =>
-		xml.Elements("Palette").Select(paletteElement =>
+		(xml.Element("Palettes")?.Elements("Palette") ?? []).Select(paletteElement =>
 		{
 			uint[] result = new uint[256];
 			List<XElement> colorElements = paletteElement.Elements("Color").ToList();

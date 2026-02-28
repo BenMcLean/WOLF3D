@@ -13,13 +13,13 @@
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
+			<xs:all>
 				<xs:element ref="VgaGraph" minOccurs="0"/>
 				<xs:element ref="Maps" minOccurs="0"/>
 				<xs:element ref="Audio" minOccurs="0"/>
 				<xs:element ref="VSwap" minOccurs="0"/>
-				<xs:element ref="Palette" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
+				<xs:element ref="Palettes" minOccurs="0"/>
+			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Version" type="xs:string">
 				<xs:annotation>
@@ -48,12 +48,12 @@
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Font" minOccurs="0" maxOccurs="unbounded"/>
-				<xs:element ref="Pic" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:all>
+				<xs:element ref="Fonts" minOccurs="0"/>
+				<xs:element ref="Pics" minOccurs="0"/>
 				<xs:element ref="StatusBar" minOccurs="0"/>
 				<xs:element ref="Menus" minOccurs="0"/>
-			</xs:sequence>
+			</xs:all>
 			<xs:attribute name="VgaDict" type="xs:string" use="required"/>
 			<xs:attribute name="VgaGraph" type="xs:string" use="required"/>
 			<xs:attribute name="VgaHead" type="xs:string" use="required"/>
@@ -157,6 +157,34 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Fonts">
+		<xs:annotation>
+			<xs:documentation>
+				Wrapper for all Font elements inside VgaGraph.
+				Required by xs:all, which does not allow maxOccurs="unbounded" on direct children.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Font" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Pics">
+		<xs:annotation>
+			<xs:documentation>
+				Wrapper for all Pic elements inside VgaGraph.
+				Required by xs:all, which does not allow maxOccurs="unbounded" on direct children.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Pic" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 
@@ -274,11 +302,11 @@
 
 	<xs:element name="Menus">
 		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="EndString" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-				<xs:element ref="MenuFunction" minOccurs="0" maxOccurs="unbounded"/>
-				<xs:element ref="Menu" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="EndString" type="xs:string"/>
+				<xs:element ref="MenuFunction"/>
+				<xs:element ref="Menu"/>
+			</xs:choice>
 			<xs:attribute name="Start" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Name of the initial/starting menu</xs:documentation>
@@ -1442,9 +1470,9 @@
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
+			<xs:all>
 				<xs:element name="Script" type="xs:string" minOccurs="0"/>
-			</xs:sequence>
+			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="HP" type="xs:string"/>
 			<xs:attribute name="Reaction" type="xs:string"/>
@@ -1468,9 +1496,9 @@
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:sequence>
+			<xs:all>
 				<xs:element name="Script" type="xs:string" minOccurs="0"/>
-			</xs:sequence>
+			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Rotate" type="xs:boolean"/>
 			<xs:attribute name="Shape" type="xs:string"/>
@@ -1684,6 +1712,20 @@
 	<!-- ============================================ -->
 	<!-- Palette Section                              -->
 	<!-- ============================================ -->
+
+	<xs:element name="Palettes">
+		<xs:annotation>
+			<xs:documentation>
+				Wrapper for all Palette elements inside Game.
+				Required by xs:all, which does not allow maxOccurs="unbounded" on direct children.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Palette" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
 
 	<xs:element name="Palette">
 		<xs:annotation>
