@@ -1450,9 +1450,13 @@
 			<xs:attribute name="Reaction" type="xs:string"/>
 			<xs:attribute name="Speed" type="xs:integer"/>
 			<xs:attribute name="AlertDigiSound" type="xs:string"/>
+			<xs:attribute name="Stand" type="xs:string"/>
 			<xs:attribute name="Chase" type="xs:string"/>
 			<xs:attribute name="Attack" type="xs:string"/>
 			<xs:attribute name="Death" type="xs:string"/>
+			<xs:attribute name="Pain" type="xs:string"/>
+			<xs:attribute name="Pain1" type="xs:string"/>
+			<xs:attribute name="Ambush" type="xs:boolean"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -1472,7 +1476,7 @@
 			<xs:attribute name="Shape" type="xs:string"/>
 			<xs:attribute name="Tics" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Think" type="xs:string"/>
-			<xs:attribute name="Act" type="xs:string"/>
+			<xs:attribute name="Action" type="xs:string"/>
 			<xs:attribute name="Speed" type="xs:integer"/>
 			<xs:attribute name="Next" type="xs:string"/>
 			<xs:attribute name="Alive" type="xs:boolean"/>
