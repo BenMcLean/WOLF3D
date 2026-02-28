@@ -127,12 +127,12 @@ public static class SharedAssetManager
 		if (CurrentGame?.VSwap?.Pages is not null)
 			foreach (byte[] page in CurrentGame.VSwap.Pages
 				.Where(page => page is not null))
-					rectangles.Add(new PackingRectangle(
-						x: 0,
-						y: 0,
-						width: vSwapSize,
-						height: vSwapSize,
-						id: rectangles.Count));
+				rectangles.Add(new PackingRectangle(
+					x: 0,
+					y: 0,
+					width: vSwapSize,
+					height: vSwapSize,
+					id: rectangles.Count));
 		// Add rectangles for VgaGraph Pics
 		if (CurrentGame.VgaGraph is not null)
 		{
@@ -604,6 +604,15 @@ public static class SharedAssetManager
 			if (File.Exists(destPath))
 				continue;
 			entry.ExtractToFile(destPath);
+		}
+		string wl1 = Path.Combine(gamesFolder, "WL1.xml");
+		if (!File.Exists(wl1) ||
+			File.GetLastWriteTime(wl1) < File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location))
+		{
+			using Stream wl1Stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("BenMcLean.Wolf3D.Shared.Resources.WL1.xml");
+			using FileStream dest = File.Create(wl1);
+			wl1Stream.CopyTo(dest);
 		}
 	}
 	/// <summary>
