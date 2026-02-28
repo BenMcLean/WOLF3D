@@ -360,7 +360,7 @@ elseif index == 2 then
 elseif index == 3 then
 	SetPicture('C_HARDPIC', 0)
 end
-					]]>
+]]>
 				</OnSelectionChanged>
 				<MenuItem Text="Can I play, Daddy?">
 					PlayAdLibSound('SHOOTDOORSND')
@@ -486,7 +486,7 @@ else
 	SetPicture('C_NOTSELECTEDPIC', 9)
 	SetPicture('C_SELECTEDPIC', 10)
 end
-					]]>
+]]>
 				</OnSelectionChanged>
 
 				<!-- Menu Items (WL_MENU.C:164-195) -->
@@ -538,15 +538,15 @@ end
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
-					for i = 0, 9 do
-						local name = GetSaveSlotName(i)
-						if name == "" then
-							SetItemText(i, "- empty -")
-						else
-							SetItemText(i, name)
-						end
-					end
-				]]>
+for i = 0, 9 do
+	local name = GetSaveSlotName(i)
+	if name == "" then
+		SetItemText(i, "- empty -")
+	else
+		SetItemText(i, name)
+	end
+end
+]]>
 				</OnShow>
 				<MenuItem Text="- empty -">LoadGame(0)</MenuItem>
 				<MenuItem Text="- empty -">LoadGame(1)</MenuItem>
@@ -566,15 +566,15 @@ end
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
-					for i = 0, 9 do
-						local name = GetSaveSlotName(i)
-						if name == "" then
-							SetItemText(i, "- empty -")
-						else
-							SetItemText(i, name)
-						end
-					end
-				]]>
+for i = 0, 9 do
+	local name = GetSaveSlotName(i)
+	if name == "" then
+		SetItemText(i, "- empty -")
+	else
+		SetItemText(i, name)
+	end
+end
+]]>
 				</OnShow>
 				<MenuItem Text="- empty -">SaveGame(0)</MenuItem>
 				<MenuItem Text="- empty -">SaveGame(1)</MenuItem>
@@ -627,14 +627,14 @@ end
 				<Pause>BackToPreviousMenu()</Pause>
 				<OnShow>
 					<![CDATA[
-					for i = 0, GetHighScoreCount() - 1 do
-						local ep = GetHighScoreEpisode(i) + 1
-						local lvl = GetHighScoreCompleted(i)
-						SetText("Name"  .. i, GetHighScoreName(i))
-						SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
-						SetText("Score" .. i, tostring(GetHighScoreScore(i)))
-					end
-				]]>
+for i = 0, GetHighScoreCount() - 1 do
+	local ep = GetHighScoreEpisode(i) + 1
+	local lvl = GetHighScoreCompleted(i)
+	SetText("Name"  .. i, GetHighScoreName(i))
+	SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
+	SetText("Score" .. i, tostring(GetHighScoreScore(i)))
+end
+]]>
 				</OnShow>
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
@@ -664,49 +664,46 @@ end
 				<!-- WL_INTER.C:Write(1,18,"treasure ratio    %") = pixel (8,144) -->
 				<Text X="8" Y="144" Font="L">TREASURE RATIO    %</Text>
 				<!-- Ticker values: RATIOXX=37 → pixel 296, right-aligned -->
-				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Pause>ContinueToNextLevel()</Pause>
 				<OnShow>
 					<![CDATA[
-					local floor = GetFloor()
-					SetText("FloorNumber", tostring(floor))
-					SetText("ParValue", FormatTime(GetParTime()))
-					SetText("TimeValue", FormatTime(GetLevelTime()))
+local floor = GetFloor()
+SetText("FloorNumber", tostring(floor))
+SetText("ParValue", FormatTime(GetParTime()))
+SetText("TimeValue", FormatTime(GetLevelTime()))
 
-					-- Calculate ratios
-					local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal()) or 0
-					local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
-					local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
+-- Calculate ratios
+local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal()) or 0
+local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
+local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
 
-					-- Calculate time bonus (500 points per second under par)
-					local parSec = GetParTime()
-					local levelSec = GetLevelTime()
-					local timeBonus = 0
-					if parSec > 0 and levelSec < parSec then
-						timeBonus = math.floor((parSec - levelSec) * 500)
-					end
+-- Calculate time bonus (500 points per second under par)
+local parSec = GetParTime()
+local levelSec = GetLevelTime()
+local timeBonus = 0
+if parSec > 0 and levelSec < parSec then
+	timeBonus = math.floor((parSec - levelSec) * 500)
+end
 
-					-- Calculate total bonus
-					local bonus = timeBonus
-					if kr == 100 then bonus = bonus + 10000 end
-					if sr == 100 then bonus = bonus + 10000 end
-					if tr == 100 then bonus = bonus + 10000 end
-					SetText("BonusValue", tostring(bonus))
-					GivePoints(bonus)
+-- Calculate total bonus
+local bonus = timeBonus
+if kr == 100 then bonus = bonus + 10000 end
+if sr == 100 then bonus = bonus + 10000 end
+if tr == 100 then bonus = bonus + 10000 end
+SetText("BonusValue", tostring(bonus))
+GivePoints(bonus)
 
-					-- Queue intermission sequence (WL_INTER.C flow)
-					-- Tickers count up one at a time, top to bottom
-					-- Pressing any button during counting skips to final values
-					QueueDelay(2)                      -- Pause before counting (~2*TickBase)
-					StartTicker("KillRatio", kr)       -- Kill ratio counts up
-					StartTicker("SecretRatio", sr)     -- Then secret ratio
-					StartTicker("TreasureRatio", tr)   -- Then treasure ratio
-				]]>
+-- Queue intermission sequence (WL_INTER.C flow)
+-- Tickers count up one at a time, top to bottom
+-- Pressing any button during counting skips to final values
+QueueDelay(2)                      -- Pause before counting (~2*TickBase)
+StartTicker("KillRatio", kr)       -- Kill ratio counts up
+StartTicker("SecretRatio", sr)     -- Then secret ratio
+StartTicker("TreasureRatio", tr)   -- Then treasure ratio
+]]>
 				</OnShow>
 			</Menu>
 			<!-- High scores screen: WL_HSCOR.C:CheckHighScore / DrawHighScores -->
@@ -749,15 +746,15 @@ end
 				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
 				<OnShow>
 					<![CDATA[
-				CheckAndAddHighScore()
-				for i = 0, GetHighScoreCount() - 1 do
-					local ep = GetHighScoreEpisode(i) + 1
-					local lvl = GetHighScoreCompleted(i)
-					SetText("Name"  .. i, GetHighScoreName(i))
-					SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
-					SetText("Score" .. i, tostring(GetHighScoreScore(i)))
-				end
-			]]>
+CheckAndAddHighScore()
+for i = 0, GetHighScoreCount() - 1 do
+	local ep = GetHighScoreEpisode(i) + 1
+	local lvl = GetHighScoreCompleted(i)
+	SetText("Name"  .. i, GetHighScoreName(i))
+	SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
+	SetText("Score" .. i, tostring(GetHighScoreScore(i)))
+end
+]]>
 				</OnShow>
 			</Menu>
 			<!-- Victory screen: WL_INTER.C:Victory -->
@@ -781,28 +778,25 @@ end
 				<!-- WL_INTER.C:Write(RATIOX,RATIOY+4,"treasure    %") → pixel (48,144) -->
 				<Text X="48" Y="144" Font="L">TREASURE    %</Text>
 				<!-- Ticker values for averaged ratios -->
-				<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right"
-						TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Pause>NavigateToMenu("HighScores")</Pause>
 				<OnShow>
 					<![CDATA[
-				SetText("TotalTimeValue", FormatTime(GetTotalTime()))
+SetText("TotalTimeValue", FormatTime(GetTotalTime()))
 
-				-- Calculate averaged ratios across all completed levels
-				local kr = GetAverageKillRatio()
-				local sr = GetAverageSecretRatio()
-				local tr = GetAverageTreasureRatio()
+-- Calculate averaged ratios across all completed levels
+local kr = GetAverageKillRatio()
+local sr = GetAverageSecretRatio()
+local tr = GetAverageTreasureRatio()
 
-				-- Queue victory sequence (same ticker pattern as intermission)
-				QueueDelay(2)
-				StartTicker("AvgKillRatio", kr)
-				StartTicker("AvgSecretRatio", sr)
-				StartTicker("AvgTreasureRatio", tr)
-			]]>
+-- Queue victory sequence (same ticker pattern as intermission)
+QueueDelay(2)
+StartTicker("AvgKillRatio", kr)
+StartTicker("AvgSecretRatio", sr)
+StartTicker("AvgTreasureRatio", tr)
+]]>
 				</OnShow>
 			</Menu>
 		</Menus>
@@ -1594,7 +1588,7 @@ end
 -- Set attack mode flags (all actor types)
 SetFlag(0x10)  -- FL_ATTACKMODE
 SetFlag(0x20)  -- FL_FIRSTATTACK
-				]]>
+]]>
 			</Function>
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
@@ -1729,7 +1723,7 @@ RequestMelee({
 	damageBase = 0,
 	damageRandom = 16  -- US_RndT() >> 4
 })
-				]]>
+]]>
 			</Function>
 			<Function Name="A_PistolAttack" Description="Pistol hitscan attack - WL_AGENT.C:GunAttack (line 1902)">
 				<![CDATA[
@@ -1744,7 +1738,7 @@ RequestHitScan({
 	damageRandom = 10,
 	damageRangeModifier = true
 })
-				]]>
+]]>
 			</Function>
 			<Function Name="A_MachineGunAttack" Description="Machine gun hitscan attack - WL_AGENT.C:GunAttack">
 				<![CDATA[
@@ -1759,7 +1753,7 @@ RequestHitScan({
 	damageRandom = 10,
 	damageRangeModifier = true
 })
-				]]>
+]]>
 			</Function>
 			<Function Name="A_ChainGunAttack" Description="Chain gun hitscan attack - WL_AGENT.C:GunAttack">
 				<![CDATA[
@@ -1774,7 +1768,7 @@ RequestHitScan({
 	damageRandom = 10,
 	damageRangeModifier = true
 })
-				]]>
+]]>
 			</Function>
 			<Function Name="A_RapidFire" Description="Rapid fire check - WL_AGENT.C:T_Attack cases 3 and 4 (lines 2203, 2223)">
 				<![CDATA[
@@ -1789,7 +1783,7 @@ if HasAmmo(1) and IsButtonHeld("attack") then
 		SetNextState("s_chaingun_1")
 	end
 end
-				]]>
+]]>
 			</Function>
 			<Function Name="A_WeaponReady" Description="Return to ready state - check ammo and weapon switching - WL_AGENT.C:T_Attack case -1 (line 2146)">
 				<![CDATA[
@@ -1798,7 +1792,7 @@ end
 if not HasAmmo(1) then
 	SwitchToLowestWeapon()
 end
-				]]>
+]]>
 			</Function>
 			<!-- WL_ACT2.C:T_Path -->
 			<Function Name="T_Path">
@@ -1933,7 +1927,7 @@ while move > 0 do
 		return  -- All movement is blocked
 	end
 end
-			]]>
+]]>
 			</Function>
 			<!-- WL_ACT2.C:T_Chase -->
 			<Function Name="T_Chase" Description="Chase behavior - actively pursue and attack the player">
