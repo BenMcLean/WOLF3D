@@ -851,7 +851,7 @@ fabric.properties
 games/*/
 
 # Exclude WL1.xml (stored in "/godot/BenMcLean.Wolf3D.Shared/Resources/WL1.xml")
-#games/WL1.xml
+games/WL1.xml
 
 # Godot OpenXR Vendors plugin (downloaded separately, not checked in)
 # Run godot/BenMcLean.Wolf3D.VR/setup-openxr-vendors.sh to install
