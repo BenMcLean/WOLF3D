@@ -10,6 +10,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\**\*.png" />
+		<EmbeddedResource Include="Resources\**\*.wlf" />
 		<EmbeddedResource Include="Resources\**\*.ZIP" />
 	</ItemGroup>
 	<ItemGroup>

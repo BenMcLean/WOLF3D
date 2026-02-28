@@ -779,7 +779,8 @@ public class MenuManager
 	/// <param name="musicName">Name of the music track</param>
 	private void PlayMusicImpl(string musicName)
 	{
-		if (SharedAssetManager.CurrentGame?.AudioT?.Songs is null)
+		if (SharedAssetManager.CurrentGame?.AudioT?.Songs is null &&
+			!SharedAssetManager.RawImfSongs.ContainsKey(musicName))
 		{
 			_logger?.LogWarning("Cannot play music '{musicName}' - no AudioT loaded", musicName);
 			return;

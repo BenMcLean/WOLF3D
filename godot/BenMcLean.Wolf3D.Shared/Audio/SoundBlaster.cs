@@ -136,6 +136,13 @@ public partial class SoundBlaster : Node
 			OplPlayer.AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller);
 			return;
 		}
+		// Check pre-loaded raw IMF songs (no game/AudioT needed)
+		if (SharedAssetManager.RawImfSongs.TryGetValue(musicName, out Assets.Sound.Imf[] rawImf))
+		{
+			ImfSignaller.ImfQueue.Enqueue(rawImf);
+			OplPlayer.AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller);
+			return;
+		}
 		// Look up the music
 		if (SharedAssetManager.CurrentGame?.AudioT?.Songs == null)
 		{

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using Godot;
 using RectpackSharp;
 using Microsoft.Extensions.Logging;
@@ -76,6 +78,29 @@ public static class SharedAssetManager
 	/// </summary>
 	public static IReadOnlyDictionary<string, Godot.AudioStreamWav> DigiSounds => _digiSounds;
 	private static Dictionary<string, Godot.AudioStreamWav> _digiSounds;
+	/// <summary>
+	/// Pre-loaded IMF songs embedded in the Shared DLL (no game/AudioT required).
+	/// Keyed by music name (e.g., "GAMESELECT_MUS").
+	/// </summary>
+	public static IReadOnlyDictionary<string, Assets.Sound.Imf[]> RawImfSongs => _rawImfSongs;
+	private static readonly Dictionary<string, Assets.Sound.Imf[]> _rawImfSongs = LoadRawImfSongs();
+	private static Dictionary<string, Assets.Sound.Imf[]> LoadRawImfSongs()
+	{
+		Dictionary<string, Assets.Sound.Imf[]> result = new(StringComparer.OrdinalIgnoreCase);
+		Assembly assembly = Assembly.GetExecutingAssembly();
+		string wlfName = Array.Find(assembly.GetManifestResourceNames(),
+			n => n.EndsWith(".wlf", StringComparison.OrdinalIgnoreCase));
+		if (wlfName is null)
+			return result;
+		try
+		{
+			using Stream stream = assembly.GetManifestResourceStream(wlfName);
+			if (stream is not null)
+				result["GAMESELECT_MUS"] = Assets.Sound.Imf.ReadImf(stream);
+		}
+		catch { }
+		return result;
+	}
 	/// <summary>
 	/// Crosshair AtlasTexture ready for display in VR and other modes.
 	/// </summary>

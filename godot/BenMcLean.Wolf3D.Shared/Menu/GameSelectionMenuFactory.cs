@@ -68,6 +68,7 @@ public static class GameSelectionMenuFactory
 			MenuDefinition menu = new()
 			{
 				Name = "_GameSelect" + page,
+				Music = "GAMESELECT_MUS",
 				BordColor = 0x29,
 				TextColor = 0x17,
 				Highlight = 0x13,
