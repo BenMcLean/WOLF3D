@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
-using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.State;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
@@ -17,9 +16,6 @@ namespace BenMcLean.Wolf3D.VR;
 /// </summary>
 public partial class Root : Node3D
 {
-	// VW_FadeOut/VW_FadeIn: 30 interpolation steps at 70Hz
-	private const float FadeDuration = 30f / 70f;
-
 	private enum TransitionState
 	{
 		Idle,
@@ -370,7 +366,7 @@ public partial class Root : Node3D
 
 			_transitionState = TransitionState.FadingIn;
 			GetTree().Paused = true;
-			_fadeOverlay.FadeFromBlack(FadeDuration);
+			_fadeOverlay.FadeFromBlack();
 		}
 		else
 		{
@@ -420,7 +416,7 @@ public partial class Root : Node3D
 		_pendingMidFadeAction = midFadeAction;
 		_transitionState = TransitionState.FadingOut;
 		GetTree().Paused = true;
-		_fadeOverlay.FadeToBlack(FadeDuration);
+		_fadeOverlay.FadeToBlack();
 	}
 
 	/// <summary>
@@ -460,7 +456,7 @@ public partial class Root : Node3D
 			else
 			{
 				_transitionState = TransitionState.FadingIn;
-				_fadeOverlay.FadeFromBlack(FadeDuration);
+				_fadeOverlay.FadeFromBlack();
 			}
 		}
 		catch (Exception ex)

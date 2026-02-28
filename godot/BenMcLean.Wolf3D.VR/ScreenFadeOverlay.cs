@@ -61,7 +61,7 @@ public partial class ScreenFadeOverlay : Node
 	/// <summary>
 	/// Starts a fade to black over the specified duration.
 	/// </summary>
-	public void FadeToBlack(float duration)
+	public void FadeToBlack(float duration = (float)Shared.Constants.FadeDuration)
 	{
 		targetAlpha = 1f;
 		rate = (duration > 0f) ? (1f / duration) : 1f;
@@ -72,7 +72,7 @@ public partial class ScreenFadeOverlay : Node
 	/// Starts a fade from black over the specified duration.
 	/// Assumes screen is already fully black (alpha = 1).
 	/// </summary>
-	public void FadeFromBlack(float duration)
+	public void FadeFromBlack(float duration = (float)Shared.Constants.FadeDuration)
 	{
 		alpha = 1f;
 		targetAlpha = 0f;

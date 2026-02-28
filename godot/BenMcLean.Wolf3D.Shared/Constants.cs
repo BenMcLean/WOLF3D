@@ -24,7 +24,15 @@ public static class Constants
 		/// <summary>
 		/// Duration of one Wolf3D tic in seconds
 		/// </summary>
-		SecondsPerTic = 1.0 / TicsPerSecond;
+		SecondsPerTic = 1.0 / TicsPerSecond,
+		/// <summary>
+		/// Number of Wolf3D tics per TimeSpan tick
+		/// </summary>
+		TicsPerTimeSpanTick = TicsPerSecond / TimeSpanTicksPerSecond,
+		/// <summary>
+		/// VW_FadeOut/VW_FadeIn: 30 interpolation steps at 70Hz
+		/// </summary>
+		FadeDuration = 30.0 / TicsPerSecond;
 	/// <summary>
 	/// C# TimeSpan uses 100-nanosecond ticks (10,000,000 per second)
 	/// </summary>
@@ -33,9 +41,5 @@ public static class Constants
 		/// Number of TimeSpan ticks in one Wolf3D tic
 		/// </summary>
 		TimeSpanTicksPerTic = (long)(TimeSpanTicksPerSecond / TicsPerSecond);
-	/// <summary>
-	/// Number of Wolf3D tics per TimeSpan tick
-	/// </summary>
-	public const double TicsPerTimeSpanTick = TicsPerSecond / TimeSpanTicksPerSecond;
 	#endregion Time
 }
