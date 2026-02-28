@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
-	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC" Sizes="0" StartFont="1" StartPic="3">
-		<Fonts>
+	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC" Sizes="0">
+		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
 			<Font Number="1" Name="BIG" />
 			<Font Prefix="L_" Name="L" SpaceColor="127" SpaceWidth="16" />
 			<Font Prefix="N_" Name="N" />
 		</Fonts>
-		<Pics>
+		<Pics Start="3">
 			<Pic Number="0" Name="H_BJPIC" />
 			<Pic Number="1" Name="H_CASTLEPIC" />
 			<Pic Number="2" Name="H_KEYBOARDPIC" />

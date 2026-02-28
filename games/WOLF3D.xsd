@@ -66,21 +66,6 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="StartFont" type="xs:nonNegativeInteger">
-				<xs:annotation>
-					<xs:documentation>
-						First file chunk containing Font data (typically 1, after the sizes chunk).
-						The number of chunk-based fonts is computed as (StartPic - StartFont).
-					</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="StartPic" type="xs:nonNegativeInteger">
-				<xs:annotation>
-					<xs:documentation>
-						First file chunk containing Pic data (typically 3, after sizes and fonts).
-					</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -171,6 +156,14 @@
 			<xs:sequence>
 				<xs:element ref="Font" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
+			<xs:attribute name="Start" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						First file chunk containing Font data (typically 1, after the sizes chunk).
+						The number of chunk-based fonts is computed as (Pics/@Start - Fonts/@Start).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -185,6 +178,13 @@
 			<xs:sequence>
 				<xs:element ref="Pic" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
+			<xs:attribute name="Start" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						First file chunk containing Pic data (typically 3, after sizes and fonts).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
