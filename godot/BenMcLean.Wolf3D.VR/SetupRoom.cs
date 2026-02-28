@@ -177,7 +177,11 @@ public partial class SetupRoom : Node3D, IRoom
 				}
 				catch (Exception ex)
 				{
-					_dosScreen.WriteLine($"ERROR: {ex.Message}");
+					GD.PrintErr($"ERROR: {ex}");
+					string msg = ex.Message;
+					if (msg.Length > 2000)
+						msg = msg[..2000];
+					_dosScreen.WriteLine($"ERROR: {msg}");
 					// Stay in Loading — Root will not transition and the error stays visible
 				}
 				break;

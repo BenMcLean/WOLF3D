@@ -80,6 +80,18 @@ public partial class ScreenFadeOverlay : Node
 		UpdateVisuals();
 	}
 
+	/// <summary>
+	/// Instantly clears the overlay to fully transparent without firing FadeInComplete.
+	/// Used when transitioning into a scene that already has a black background (SkipFade),
+	/// so the overlay does not permanently obscure the scene's content.
+	/// </summary>
+	public void SetTransparent()
+	{
+		alpha = 0f;
+		targetAlpha = 0f;
+		UpdateVisuals();
+	}
+
 	public override void _Process(double delta)
 	{
 		if (alpha == targetAlpha)

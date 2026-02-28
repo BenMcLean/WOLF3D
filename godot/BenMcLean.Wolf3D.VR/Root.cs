@@ -114,11 +114,18 @@ public partial class Root : Node3D
 			{
 				// Selected game assets loaded → initialize VR materials, play music, enter game
 				// scaleFactor: 4 for better performance, 8 for maximum quality
-				VRAssetManager.Initialize(scaleFactor: 8);
-				string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
-				if (!string.IsNullOrWhiteSpace(songName))
-					Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
-				TransitionTo(new MenuRoom(DisplayMode));
+				try
+				{
+					VRAssetManager.Initialize(scaleFactor: 8);
+					string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
+					if (!string.IsNullOrWhiteSpace(songName))
+						Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
+					TransitionTo(new MenuRoom(DisplayMode));
+				}
+				catch (Exception ex)
+				{
+					ExceptionHandler.HandleException(ex);
+				}
 			}
 			return;
 		}
@@ -438,19 +445,31 @@ public partial class Root : Node3D
 	/// </summary>
 	private void OnFadeOutComplete()
 	{
-		_pendingMidFadeAction?.Invoke();
-		_pendingMidFadeAction = null;
-
-		if (_skipFadeIn)
+		try
 		{
+			_pendingMidFadeAction?.Invoke();
+			_pendingMidFadeAction = null;
+
+			if (_skipFadeIn)
+			{
+				_skipFadeIn = false;
+				_transitionState = TransitionState.Idle;
+				GetTree().Paused = false;
+				_fadeOverlay.SetTransparent();
+			}
+			else
+			{
+				_transitionState = TransitionState.FadingIn;
+				_fadeOverlay.FadeFromBlack(FadeDuration);
+			}
+		}
+		catch (Exception ex)
+		{
+			_pendingMidFadeAction = null;
 			_skipFadeIn = false;
 			_transitionState = TransitionState.Idle;
 			GetTree().Paused = false;
-		}
-		else
-		{
-			_transitionState = TransitionState.FadingIn;
-			_fadeOverlay.FadeFromBlack(FadeDuration);
+			ExceptionHandler.HandleException(ex);
 		}
 	}
 
