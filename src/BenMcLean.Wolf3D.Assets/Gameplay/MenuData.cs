@@ -445,20 +445,6 @@ public class MenuDefinition
 	/// </summary>
 	public string Name { get; set; }
 	/// <summary>
-	/// Background image name from VgaGraph (e.g., "C_OPTIONSPIC", "TITLEPIC")
-	/// </summary>
-	public string Background { get; set; }
-	/// <summary>
-	/// X coordinate for background image (WL_MENU.C: VWB_DrawPic(84,0,C_OPTIONSPIC))
-	/// Default is 0 for full-screen backgrounds like TITLEPIC
-	/// </summary>
-	public int? BackgroundX { get; set; }
-	/// <summary>
-	/// Y coordinate for background image
-	/// Default is 0
-	/// </summary>
-	public int? BackgroundY { get; set; }
-	/// <summary>
 	/// Background color index (VGA palette 0-255) - WL_MENU.H:BORDCOLOR = 0x29
 	/// </summary>
 	public byte? BordColor { get; set; }
@@ -558,7 +544,6 @@ public class MenuDefinition
 		MenuDefinition menu = new()
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Menu element must have a Name attribute"),
-			Background = element.Attribute("Background")?.Value,
 			Font = element.Attribute("Font")?.Value,
 			Music = element.Attribute("Music")?.Value ?? element.Attribute("Song")?.Value,
 			CursorPic = element.Attribute("CursorPic")?.Value,
@@ -574,12 +559,6 @@ public class MenuDefinition
 			menu.TextColor = textColor;
 		if (byte.TryParse(element.Attribute("Highlight")?.Value, out byte highlight))
 			menu.Highlight = highlight;
-
-		// Parse background position (for images like C_OPTIONSPIC at (84,0))
-		if (int.TryParse(element.Attribute("BackgroundX")?.Value, out int bgX))
-			menu.BackgroundX = bgX;
-		if (int.TryParse(element.Attribute("BackgroundY")?.Value, out int bgY))
-			menu.BackgroundY = bgY;
 
 		// Parse layout coordinates (X, Y, Indent, Spacing)
 		if (int.TryParse(element.Attribute("X")?.Value, out int x))
@@ -625,7 +604,7 @@ public class MenuDefinition
 		{
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
-			if (attrName is not ("Name" or "Background" or "BackgroundX" or "BackgroundY" or "BordColor"
+			if (attrName is not ("Name" or "BordColor"
 				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CursorPic" or "CursorMoveSound"))
 			{
 				menu.CustomProperties[attrName] = attr.Value;

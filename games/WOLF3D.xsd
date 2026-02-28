@@ -469,21 +469,6 @@
 					<xs:documentation>Unique identifier for this menu (e.g., "Main", "Episodes")</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Background" type="xs:string">
-				<xs:annotation>
-					<xs:documentation>Background image name from VgaGraph (e.g., "C_OPTIONSPIC", "TITLEPIC")</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="BackgroundX" type="xs:integer">
-				<xs:annotation>
-					<xs:documentation>X coordinate for background image (default: 0)</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-			<xs:attribute name="BackgroundY" type="xs:integer">
-				<xs:annotation>
-					<xs:documentation>Y coordinate for background image (default: 0)</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
 			<xs:attribute name="BordColor" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>Background color index (VGA palette 0-255). WL_MENU.H:BORDCOLOR = 0x29</xs:documentation>

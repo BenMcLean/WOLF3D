@@ -199,7 +199,7 @@ return "HighScores"
 			</OnDeath>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Start="Title" Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
+		<Menus Start="Credits" Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
@@ -209,13 +209,13 @@ return "HighScores"
 			<EndString>Heroes, press N.&#10;Wimps, press Y.</EndString>
 			<EndString>You are at an intersection.&#10;A sign says, 'Press Y to quit.'&#10;&gt;</EndString>
 			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
-			<Menu Name="Title" BordColor="0" Music="NAZI_NOR_MUS">
-				<Picture Name="TITLEPIC" X="0" Y="0" />
-				<Pause Duration="00:00:03">NavigateToMenu("Credits")</Pause>
-			</Menu>
 			<Menu Name="Credits" Music="NAZI_NOR_MUS">
 				<Picture Name="CREDITSPIC" X="0" Y="0" />
-				<Pause Duration="00:00:10">NavigateToMenu("Main")</Pause>
+				<Pause Duration="00:00:10">NavigateToMenu("Title")</Pause>
+			</Menu>
+			<Menu Name="Title" BordColor="0" Music="NAZI_NOR_MUS">
+				<Picture Name="TITLEPIC" X="0" Y="0" />
+				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
 			</Menu>
 			<!-- High score table has a pause duration of 9 seconds -->
 			<!-- Main Menu (WL_MENU.H: MENU_X=76, MENU_Y=55, MainItems indent=24)
@@ -557,7 +557,6 @@ end
 				<MenuItem Text="- empty -">LoadGame(7)</MenuItem>
 				<MenuItem Text="- empty -">LoadGame(8)</MenuItem>
 				<MenuItem Text="- empty -">LoadGame(9)</MenuItem>
-				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
@@ -585,7 +584,6 @@ end
 				<MenuItem Text="- empty -">SaveGame(7)</MenuItem>
 				<MenuItem Text="- empty -">SaveGame(8)</MenuItem>
 				<MenuItem Text="- empty -">SaveGame(9)</MenuItem>
-				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
 			</Menu>
 
 			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
