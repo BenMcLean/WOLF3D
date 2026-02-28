@@ -86,7 +86,7 @@
 
 				For PREFIX-BASED fonts (Prefix present, no Number):
 				- Font is synthesized from VgaGraph Pics whose names start with the Prefix
-				- Each Pic must have a Character attribute mapping it to a character
+				- Each Pic must have a Glyph attribute mapping it to a character
 				- Height, SpaceWidth, SpaceColor attributes configure the font metrics
 				- Example: Font Prefix="L_" builds from pics L_APIC, L_BPIC, etc.
 				- Prefix-based fonts are a Godot UI abstraction; they have no equivalent
@@ -128,7 +128,7 @@
 				<xs:annotation>
 					<xs:documentation>
 						Optional: Width of space character in pixels (prefix-based fonts only).
-						Use when the font doesn't include a Pic with Character=" ".
+						Use when the font doesn't include a Pic with Glyph=" ".
 						If specified with SpaceColor, a textured space glyph will be created.
 					</xs:documentation>
 				</xs:annotation>
@@ -137,7 +137,7 @@
 				<xs:annotation>
 					<xs:documentation>
 						Optional: Color index (0-255) from the default palette (index 0) for space character color (prefix-based fonts only).
-						Use when the font doesn't include a Pic with Character=" ".
+						Use when the font doesn't include a Pic with Glyph=" ".
 						Creates a solid-color textured glyph for the space character required for Godot UI.
 					</xs:documentation>
 				</xs:annotation>
@@ -200,7 +200,7 @@
 				Each Pic has corresponding size data in the sizes array at Sizes[Number].
 				The width and height are stored as a pair: [width, height].
 
-				Character attribute is used for prefix-based fonts - when a Pic is part
+				Glyph attribute is used for prefix-based fonts - when a Pic is part
 				of a font (name matches font's Prefix), this maps it to a character.
 
 				Palette attribute (optional, not shown) can override the default palette.
@@ -222,11 +222,11 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Character" type="xs:string">
+			<xs:attribute name="Glyph" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>
-						Character mapping for prefix-based fonts. Single character this Pic represents
-						when used in a font (e.g., Character="A" for L_APIC in the "L_" font).
+						Glyph mapping for prefix-based fonts. Single character this Pic represents
+						when used in a font (e.g., Glyph="A" for L_APIC in the "L_" font).
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

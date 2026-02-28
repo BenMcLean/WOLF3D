@@ -101,7 +101,7 @@ public sealed class VgaGraph
 					string picName = picElement.Attribute("Name")?.Value;
 					if (string.IsNullOrEmpty(picName) || !picName.StartsWith(prefix))
 						continue;
-					string charAttr = picElement.Attribute("Character")?.Value;
+					string charAttr = picElement.Attribute("Glyph")?.Value;
 					if (string.IsNullOrEmpty(charAttr))
 						continue;
 					if (ushort.TryParse(picElement.Attribute("Number")?.Value, out ushort picNumber))

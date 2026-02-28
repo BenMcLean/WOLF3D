@@ -61,46 +61,46 @@
 			<Pic Number="50" Name="C_JOY1PIC" />
 			<Pic Number="51" Name="C_JOY2PIC" />
 			<Pic Number="52" Name="L_GUYPIC" />
-			<Pic Number="53" Character=":" Name="L_COLONPIC" />
-			<Pic Number="54" Character="0" Name="L_NUM0PIC" />
-			<Pic Number="55" Character="1" Name="L_NUM1PIC" />
-			<Pic Number="56" Character="2" Name="L_NUM2PIC" />
-			<Pic Number="57" Character="3" Name="L_NUM3PIC" />
-			<Pic Number="58" Character="4" Name="L_NUM4PIC" />
-			<Pic Number="59" Character="5" Name="L_NUM5PIC" />
-			<Pic Number="60" Character="6" Name="L_NUM6PIC" />
-			<Pic Number="61" Character="7" Name="L_NUM7PIC" />
-			<Pic Number="62" Character="8" Name="L_NUM8PIC" />
-			<Pic Number="63" Character="9" Name="L_NUM9PIC" />
-			<Pic Number="64" Character="%" Name="L_PERCENTPIC" />
-			<Pic Number="65" Character="A" Name="L_APIC" />
-			<Pic Number="66" Character="B" Name="L_BPIC" />
-			<Pic Number="67" Character="C" Name="L_CPIC" />
-			<Pic Number="68" Character="D" Name="L_DPIC" />
-			<Pic Number="69" Character="E" Name="L_EPIC" />
-			<Pic Number="70" Character="F" Name="L_FPIC" />
-			<Pic Number="71" Character="G" Name="L_GPIC" />
-			<Pic Number="72" Character="H" Name="L_HPIC" />
-			<Pic Number="73" Character="I" Name="L_IPIC" />
-			<Pic Number="74" Character="J" Name="L_JPIC" />
-			<Pic Number="75" Character="K" Name="L_KPIC" />
-			<Pic Number="76" Character="L" Name="L_LPIC" />
-			<Pic Number="77" Character="M" Name="L_MPIC" />
-			<Pic Number="78" Character="N" Name="L_NPIC" />
-			<Pic Number="79" Character="O" Name="L_OPIC" />
-			<Pic Number="80" Character="P" Name="L_PPIC" />
-			<Pic Number="81" Character="Q" Name="L_QPIC" />
-			<Pic Number="82" Character="R" Name="L_RPIC" />
-			<Pic Number="83" Character="S" Name="L_SPIC" />
-			<Pic Number="84" Character="T" Name="L_TPIC" />
-			<Pic Number="85" Character="U" Name="L_UPIC" />
-			<Pic Number="86" Character="V" Name="L_VPIC" />
-			<Pic Number="87" Character="W" Name="L_WPIC" />
-			<Pic Number="88" Character="X" Name="L_XPIC" />
-			<Pic Number="89" Character="Y" Name="L_YPIC" />
-			<Pic Number="90" Character="Z" Name="L_ZPIC" />
-			<Pic Number="91" Character="!" Name="L_EXPOINTPIC" />
-			<Pic Number="92" Character="'" Name="L_APOSTROPHEPIC" />
+			<Pic Number="53" Glyph=":" Name="L_COLONPIC" />
+			<Pic Number="54" Glyph="0" Name="L_NUM0PIC" />
+			<Pic Number="55" Glyph="1" Name="L_NUM1PIC" />
+			<Pic Number="56" Glyph="2" Name="L_NUM2PIC" />
+			<Pic Number="57" Glyph="3" Name="L_NUM3PIC" />
+			<Pic Number="58" Glyph="4" Name="L_NUM4PIC" />
+			<Pic Number="59" Glyph="5" Name="L_NUM5PIC" />
+			<Pic Number="60" Glyph="6" Name="L_NUM6PIC" />
+			<Pic Number="61" Glyph="7" Name="L_NUM7PIC" />
+			<Pic Number="62" Glyph="8" Name="L_NUM8PIC" />
+			<Pic Number="63" Glyph="9" Name="L_NUM9PIC" />
+			<Pic Number="64" Glyph="%" Name="L_PERCENTPIC" />
+			<Pic Number="65" Glyph="A" Name="L_APIC" />
+			<Pic Number="66" Glyph="B" Name="L_BPIC" />
+			<Pic Number="67" Glyph="C" Name="L_CPIC" />
+			<Pic Number="68" Glyph="D" Name="L_DPIC" />
+			<Pic Number="69" Glyph="E" Name="L_EPIC" />
+			<Pic Number="70" Glyph="F" Name="L_FPIC" />
+			<Pic Number="71" Glyph="G" Name="L_GPIC" />
+			<Pic Number="72" Glyph="H" Name="L_HPIC" />
+			<Pic Number="73" Glyph="I" Name="L_IPIC" />
+			<Pic Number="74" Glyph="J" Name="L_JPIC" />
+			<Pic Number="75" Glyph="K" Name="L_KPIC" />
+			<Pic Number="76" Glyph="L" Name="L_LPIC" />
+			<Pic Number="77" Glyph="M" Name="L_MPIC" />
+			<Pic Number="78" Glyph="N" Name="L_NPIC" />
+			<Pic Number="79" Glyph="O" Name="L_OPIC" />
+			<Pic Number="80" Glyph="P" Name="L_PPIC" />
+			<Pic Number="81" Glyph="Q" Name="L_QPIC" />
+			<Pic Number="82" Glyph="R" Name="L_RPIC" />
+			<Pic Number="83" Glyph="S" Name="L_SPIC" />
+			<Pic Number="84" Glyph="T" Name="L_TPIC" />
+			<Pic Number="85" Glyph="U" Name="L_UPIC" />
+			<Pic Number="86" Glyph="V" Name="L_VPIC" />
+			<Pic Number="87" Glyph="W" Name="L_WPIC" />
+			<Pic Number="88" Glyph="X" Name="L_XPIC" />
+			<Pic Number="89" Glyph="Y" Name="L_YPIC" />
+			<Pic Number="90" Glyph="Z" Name="L_ZPIC" />
+			<Pic Number="91" Glyph="!" Name="L_EXPOINTPIC" />
+			<Pic Number="92" Glyph="'" Name="L_APOSTROPHEPIC" />
 			<Pic Number="93" Name="L_GUY2PIC" />
 			<Pic Number="94" Name="L_BJWINSPIC" />
 			<Pic Number="95" Name="STATUSBARPIC" />
@@ -115,17 +115,17 @@
 			<Pic Number="104" Name="NOKEYPIC" />
 			<Pic Number="105" Name="GOLDKEYPIC" />
 			<Pic Number="106" Name="SILVERKEYPIC" />
-			<Pic Number="107" Character=" " Name="N_BLANKPIC" />
-			<Pic Number="108" Character="0" Name="N_0PIC" />
-			<Pic Number="109" Character="1" Name="N_1PIC" />
-			<Pic Number="110" Character="2" Name="N_2PIC" />
-			<Pic Number="111" Character="3" Name="N_3PIC" />
-			<Pic Number="112" Character="4" Name="N_4PIC" />
-			<Pic Number="113" Character="5" Name="N_5PIC" />
-			<Pic Number="114" Character="6" Name="N_6PIC" />
-			<Pic Number="115" Character="7" Name="N_7PIC" />
-			<Pic Number="116" Character="8" Name="N_8PIC" />
-			<Pic Number="117" Character="9" Name="N_9PIC" />
+			<Pic Number="107" Glyph=" " Name="N_BLANKPIC" />
+			<Pic Number="108" Glyph="0" Name="N_0PIC" />
+			<Pic Number="109" Glyph="1" Name="N_1PIC" />
+			<Pic Number="110" Glyph="2" Name="N_2PIC" />
+			<Pic Number="111" Glyph="3" Name="N_3PIC" />
+			<Pic Number="112" Glyph="4" Name="N_4PIC" />
+			<Pic Number="113" Glyph="5" Name="N_5PIC" />
+			<Pic Number="114" Glyph="6" Name="N_6PIC" />
+			<Pic Number="115" Glyph="7" Name="N_7PIC" />
+			<Pic Number="116" Glyph="8" Name="N_8PIC" />
+			<Pic Number="117" Glyph="9" Name="N_9PIC" />
 			<Pic Number="118" Name="FACE1APIC" />
 			<Pic Number="119" Name="FACE1BPIC" />
 			<Pic Number="120" Name="FACE1CPIC" />
