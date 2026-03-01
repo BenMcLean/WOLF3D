@@ -127,6 +127,7 @@ public partial class SoundBlaster : Node
 		// Don't restart if same song is already playing
 		if (musicName == currentMusicName)
 			return;
+		OplPlayer.AdlibSignaller?.Silence(OplPlayer.Opl);
 		currentMusicName = musicName;
 		// Stop music if null or music disabled
 		if (string.IsNullOrEmpty(musicName) || SharedAssetManager.Config?.MusicEnabled != true)
@@ -171,6 +172,7 @@ public partial class SoundBlaster : Node
 	/// </summary>
 	public void StopMusic()
 	{
+		OplPlayer.AdlibSignaller?.Silence(OplPlayer.Opl);
 		currentMusicName = null;
 		ImfSignaller.ImfQueue.Enqueue(null);
 		MidiSignaller.Midi = null;

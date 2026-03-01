@@ -51,6 +51,7 @@ public class MidiSignaller : IAdlibSignaller
 	/// </summary>
 	private readonly byte[] channelInstruments = new byte[16]; // Current instrument per channel
 	private byte drums = 0; // ID_SD.C:2058 static byte drums (rhythm mode flags)
+	private bool pendingSilence = false;
 	public Midi Midi
 	{
 		get => midi;
@@ -60,6 +61,7 @@ public class MidiSignaller : IAdlibSignaller
 			eventIndex = 0;
 			currentTempo = 500000; // Reset to default tempo
 			deltaTimeRemaining = midi?.Events.Count > 0 ? midi.Events[0].DeltaTime : 0;
+			pendingSilence = true;
 		}
 	}
 	public void Init(IOpl opl)
@@ -75,6 +77,11 @@ public class MidiSignaller : IAdlibSignaller
 	}
 	public uint Update(IOpl opl)
 	{
+		if (pendingSilence)
+		{
+			Silence(opl);
+			pendingSilence = false;
+		}
 		if (midi is null)
 			return 1; // No music loaded
 		// Loop when song ends (like ImfSignaller does)
