@@ -4,7 +4,7 @@ I'm developing a C# recreation of Wolfenstein 3-D for VR and also potentially ot
 ### Directory Structure & Purpose
 - `BenMcLean.Wolf3D`: **The Active Workspace**. This is the ONLY folder you may edit.
 	- `games\`: XML files describing different Wolfenstein 3-D engine games/mods.
-	- `games\WL1.xml`: Uniquely, this file is only a mirror of `godot\BenMcLean.Wolf3D.Shared\Resources\WL1.xml` so edits should be made there, not to the `games\` copy. This does not apply to any other XML file.
+	- `games\WL1.xml`: The canonical source for WL1 game data. Embedded into `BenMcLean.Wolf3D.Shared.dll` via a `Link` reference in the csproj so edits here are automatically reflected in the build.
 	- `games\WOLF3D.xsd`: Schema for those XML files.
 	- `src\`: Core projects independent of modern game engines.
 		- `src\BenMcLean.Wolf3D.Assets`: Assets extraction code.

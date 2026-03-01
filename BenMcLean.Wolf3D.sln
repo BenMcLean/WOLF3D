@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		convert_vga_pal_to_hex.sh = convert_vga_pal_to_hex.sh
 		games\N3D.xml = games\N3D.xml
 		src\ThirdParty\NScumm.Audio.md = src\ThirdParty\NScumm.Audio.md
-		godot\BenMcLean.Wolf3D.Shared\Resources\WL1.xml = godot\BenMcLean.Wolf3D.Shared\Resources\WL1.xml
+		games\WL1.xml = games\WL1.xml
 		games\WOLF3D.xsd = games\WOLF3D.xsd
 	EndProjectSection
 EndProject

@@ -14,7 +14,7 @@
 		<EmbeddedResource Include="Resources\**\*.ZIP" />
 	</ItemGroup>
 	<ItemGroup>
-	  <EmbeddedResource Include="Resources\WL1.xml" />
+	  <EmbeddedResource Include="..\..\games\WL1.xml" Link="Resources\WL1.xml" />
 	</ItemGroup>
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />

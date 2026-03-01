@@ -131,8 +131,7 @@ public sealed class VgaGraph
 			}
 		}
 		// Parse StatusBar definition
-		XElement statusBarElement = vgaGraph.Element("StatusBar");
-		if (statusBarElement != null)
+		if (vgaGraph.Element("StatusBar") is XElement statusBarElement)
 			StatusBar = StatusBarDefinition.FromXElement(statusBarElement);
 	}
 	public static uint[] ParseVgaPalette(ReadOnlySpan<byte> chunk)
