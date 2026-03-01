@@ -21,6 +21,19 @@ public static class ExtensionMethods
 			.OrderBy(resultTuple => resultTuple.index)
 			.AsEnumerable()
 			.Select(resultTuple => resultTuple.result)];
+	/// <summary>
+	/// Parallelizes the execution of a Select query while preserving the order of the source sequence,
+	/// exposing the element's zero-based index to the selector.
+	/// </summary>
+	public static List<TResult> Parallelize<TSource, TResult>(
+		this IEnumerable<TSource> source,
+		Func<TSource, int, TResult> selector) => [.. source
+			.Select((element, index) => (element, index))
+			.AsParallel()
+			.Select(sourceTuple => (result: selector(sourceTuple.element, sourceTuple.index), sourceTuple.index))
+			.OrderBy(resultTuple => resultTuple.index)
+			.AsEnumerable()
+			.Select(resultTuple => resultTuple.result)];
 	public static bool IsTrue(this XElement xElement, string attribute) =>
 		bool.TryParse(xElement?.Attribute(attribute)?.Value, out bool @bool) && @bool;
 	public static bool IsFalse(this XElement xElement, string attribute) =>

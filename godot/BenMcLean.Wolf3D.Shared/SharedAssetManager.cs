@@ -275,7 +275,7 @@ public static class SharedAssetManager
 			ushort width = picFont.SpaceWidth,
 				height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
 			// Draw solid color rectangle directly onto atlas
-			uint color = CurrentGame.VgaGraph.Palettes[0][picFont.SpaceColor]; // Use default palette
+			uint color = CurrentGame.VgaGraph.Palette[picFont.SpaceColor];
 			atlas.DrawRectangle(
 				x: (int)(rect.X + 1),
 				y: (int)(rect.Y + 1),
@@ -642,7 +642,7 @@ public static class SharedAssetManager
 	/// </summary>
 	/// <param name="colorIndex">VGA palette color index (0-255)</param>
 	/// <returns>Godot Color corresponding to the palette entry</returns>
-	public static Godot.Color GetPaletteColor(byte colorIndex) => CurrentGame.VgaGraph.Palettes[0][colorIndex].ToColor();
+	public static Godot.Color GetPaletteColor(byte colorIndex) => CurrentGame.VgaGraph.Palette[colorIndex].ToColor();
 	/// <summary>
 	/// Disposes all loaded resources to free memory.
 	/// Called before loading a new game or on program exit.

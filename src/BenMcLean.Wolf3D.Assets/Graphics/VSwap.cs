@@ -2,6 +2,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -24,12 +25,12 @@ public sealed class VSwap
 		using FileStream vSwap = new(Path.Combine(folder, xml.Element("VSwap").Attribute("Name").Value), FileMode.Open);
 		return new VSwap(
 			xml: xml,
-			palettes: [.. LoadPalettes(xml)],
+			palette: LoadPalette(xml),
 			stream: vSwap,
 			tileSqrt: ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort tileSqrt) ? tileSqrt : (ushort)64);
 	}
 	#region Data
-	public uint[][] Palettes { get; private init; }
+	public uint[] Palette { get; private init; }
 	public byte[][] Pages { get; private init; }
 	public byte[][] DigiSounds { get; private init; }
 	public Dictionary<string, byte[]> DigiSoundsByName { get; private init; }
@@ -54,11 +55,11 @@ public sealed class VSwap
 		&& GetOffset(x, y) + 3 is uint offset
 		&& offset < Pages[page].Length
 		&& Pages[page][offset] > 128;
-	public VSwap(XElement xml, uint[][] palettes, Stream stream, ushort tileSqrt = 64)
+	public VSwap(XElement xml, uint[] palette, Stream stream, ushort tileSqrt = 64)
 	{
-		Palettes = palettes;
+		Palette = palette;
 		TileSqrt = tileSqrt;
-		if (Palettes is null || Palettes.Length < 1)
+		if (Palette is null)
 			throw new InvalidDataException("Must load a palette before loading a VSWAP!");
 		using BinaryReader binaryReader = new(stream);
 		#region parse header info
@@ -92,7 +93,6 @@ public sealed class VSwap
 			.ForAll(page =>
 			{
 				if (rawPages[page] is null) return;
-				uint[] palette = palettes[PaletteNumber(page, xml)];
 				if (page < SpritePage)
 					Pages[page] = ProcessWall(rawPages[page], palette, TileSqrt);
 				else
@@ -286,28 +286,28 @@ public sealed class VSwap
 		}
 	}
 	#endregion ApplyTransparentBorder
-	#region Palettes
-	public static uint PaletteNumber(int pageNumber, XElement xml) =>
-		xml?.Element("VSwap")?.Descendants()?.Where(
-			e => ushort.TryParse(e.Attribute("Page")?.Value, out ushort page) && page == pageNumber
-			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
-		?.FirstOrDefault() ?? 0;
-	public static IEnumerable<uint[]> LoadPalettes(XElement xml) =>
-		xml.Element("Palette") is XElement p
-			? [ParseXmlPalette(p)]
-			: [];
-	private static uint[] ParseXmlPalette(XElement paletteElement)
+	#region Palette
+	public static uint[] LoadPalette(XElement xml)
 	{
+		if (xml.Element("Palette") is not XElement paletteElement)
+			throw new InvalidDataException("No <Palette> element found in game XML.");
 		uint[] result = new uint[256];
-		List<XElement> colorElements = paletteElement.Elements("Color").ToList();
-		for (int i = 0; i < 256 && i < colorElements.Count; i++)
+		int i = 0;
+		foreach (XElement colorElement in paletteElement.Elements("Color"))
 		{
-			string hexAttr = colorElements[i].Attribute("Hex")?.Value;
-			if (hexAttr != null && hexAttr.Length == 7 && hexAttr[0] == '#' &&
-				uint.TryParse(hexAttr[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb))
-				result[i] = (rgb << 8) | (i == 255 ? 0u : 0xFFu);
+			if (i >= 256) break;
+			if (colorElement.Attribute("Hex")?.Value is { Length: 7 } hexAttr &&
+				hexAttr[0] == '#' &&
+				uint.TryParse(hexAttr.AsSpan(1), NumberStyles.HexNumber, null, out uint rgb))
+				result[i] = (rgb << 8) | 0xFFu;
+			else
+				throw new InvalidDataException($"Invalid color in palette at index {i}.");
+			i++;
 		}
+		if (i < 256)
+			throw new InvalidDataException($"Only found {i} colors in pallete. Expected 256.");
+		result[255] &= 0xFFFFFF00u;
 		return result;
 	}
-	#endregion Palettes
+	#endregion Palette
 }

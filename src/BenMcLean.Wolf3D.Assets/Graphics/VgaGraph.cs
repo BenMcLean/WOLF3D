@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ public sealed class VgaGraph
 	public Font[] Fonts { get; private init; }
 	public byte[][] Pics { get; private init; }
 	public ushort[][] Sizes { get; private init; }
-	public uint[][] Palettes { get; private init; }
+	public uint[] Palette { get; private init; }
 	/// <summary>
 	/// Dictionary mapping Pic names to their indices in the Pics[] array.
 	/// </summary>
@@ -50,7 +51,7 @@ public sealed class VgaGraph
 	{ }
 	public VgaGraph(byte[][] file, XElement xml)
 	{
-		Palettes = [.. VSwap.LoadPalettes(xml)];
+		Palette = VSwap.LoadPalette(xml);
 		XElement vgaGraph = xml.Element("VgaGraph");
 		using (MemoryStream sizes = new(file[(uint?)vgaGraph.Attribute("Sizes") ?? 0]))
 			Sizes = Load16BitPairs(sizes);
@@ -62,14 +63,14 @@ public sealed class VgaGraph
 				using MemoryStream fontStream = new(file[startFont + i]);
 				return new Font(fontStream);
 			})];
-		Pics = [.. Enumerable.Range(0, vgaGraph.Element("Pics")?.Elements("Pic").Count() ?? 0)
-			.Parallelize(i =>
-			{
-				uint[] palette = PaletteChunkNumber(i, xml) is int chunkNum
-					? ParseVgaPalette(file[chunkNum])
-					: Palettes[PaletteNumber(i, xml)];
+		Pics = [.. (vgaGraph.Element("Pics")?.Elements("Pic") ?? [])
+			.Parallelize(e => {
+				if (!int.TryParse(e.Attribute("Number")?.Value, out int i))
+					throw new InvalidDataException("<Pic> element missing Number attribute!");
 				return Deplanify(file[startPic + i], Sizes[i][0])
-					.Indices2ByteArray(palette);
+					.Indices2ByteArray(int.TryParse(e.Attribute("PaletteChunk")?.Value, out int c)
+						? ParseVgaPalette(file[c])
+						: Palette);
 			})];
 		// Build PicsByName dictionary from XML
 		PicsByName = [];
@@ -134,26 +135,14 @@ public sealed class VgaGraph
 		if (statusBarElement != null)
 			StatusBar = StatusBarDefinition.FromXElement(statusBarElement);
 	}
-	public static int PaletteNumber(int picNumber, XElement xml) =>
-		xml?.Element("VgaGraph")?.Element("Pics")?.Elements("Pic")?.Where(
-			e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort number) && number == picNumber
-			)?.Select(e => ushort.TryParse(e.Attribute("Palette")?.Value, out ushort palette) ? palette : (ushort)0)
-		?.FirstOrDefault() ?? 0;
-	public static int? PaletteChunkNumber(int picNumber, XElement xml) =>
-		xml?.Element("VgaGraph")?.Element("Pics")?.Elements("Pic")
-			?.Where(e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort n) && n == picNumber)
-			?.Select(e => int.TryParse(e.Attribute("PaletteChunk")?.Value, out int c) ? c : (int?)null)
-			?.FirstOrDefault();
-	public static uint[] ParseVgaPalette(byte[] chunk)
+	public static uint[] ParseVgaPalette(ReadOnlySpan<byte> chunk)
 	{
 		uint[] palette = new uint[256];
-		for (int i = 0; i < 256; i++)
-		{
-			uint r = (uint)(chunk[i * 3] << 2);     // 6-bit → 8-bit
-			uint g = (uint)(chunk[i * 3 + 1] << 2);
-			uint b = (uint)(chunk[i * 3 + 2] << 2);
-			palette[i] = (r << 24) | (g << 16) | (b << 8) | (i == 255 ? 0u : 0xFFu);
-		}
+		for (int index = 0, offset = 0; index < 255; index++, offset += 3)
+			palette[index] = BinaryPrimitives.ReadUInt32BigEndian(chunk[offset..]) << 2 & 0xFCFCFC00u | 0xFFu;
+		palette[255] = (uint)chunk[765] << 26 |
+			(uint)chunk[766] << 18 |
+			(uint)chunk[767] << 10;
 		return palette;
 	}
 	public static uint[] ParseHead(Stream stream)
@@ -182,13 +171,7 @@ public sealed class VgaGraph
 						count: split[i].Length);
 				}
 			}
-		return [.. split
-			.Select((slice, index) => (slice, index))
-			.AsParallel()
-			.Select(work => (result: CAL_HuffExpand(work.slice, dictionary, lengths[work.index]), work.index))
-			.OrderBy(resultTuple => resultTuple.index)
-			.AsEnumerable()
-			.Select(resultTuple => resultTuple.result)];
+		return [.. split.Parallelize((slice, index) => CAL_HuffExpand(slice, dictionary, lengths[index]))];
 	}
 	public static byte[] Deplanify(byte[] input, ushort width) =>
 		Deplanify(input, width, (ushort)(input.Length / width));

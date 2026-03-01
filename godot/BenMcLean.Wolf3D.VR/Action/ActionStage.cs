@@ -676,8 +676,7 @@ void sky() {
 	/// </summary>
 	private void SetupSky(MapAnalyzer.MapAnalysis level)
 	{
-		// Get VGA palette (usually palette 0)
-		uint[] palette = Shared.SharedAssetManager.CurrentGame.VSwap.Palettes[0];
+		uint[] palette = Shared.SharedAssetManager.CurrentGame.VSwap.Palette;
 		// Get floor and ceiling colors from map, or use defaults
 		Color floorColor = level.Floor is byte floor ? palette[floor].ToColor() : new Color(0.33f, 0.33f, 0.33f), // Default: dark gray
 			ceilingColor = level.Ceiling is byte ceiling ? palette[ceiling].ToColor() : new Color(0.2f, 0.2f, 0.2f); // Default: darker gray
