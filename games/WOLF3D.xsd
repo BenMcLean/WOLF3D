@@ -18,7 +18,7 @@
 				<xs:element ref="Maps" minOccurs="0"/>
 				<xs:element ref="Audio" minOccurs="0"/>
 				<xs:element ref="VSwap" minOccurs="0"/>
-				<xs:element ref="Palettes" minOccurs="0"/>
+				<xs:element ref="Palette" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Version" type="xs:string">
@@ -234,6 +234,16 @@
 				<xs:annotation>
 					<xs:documentation>
 						Optional palette index override. If omitted, uses default palette (index 0).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="PaletteChunk" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						VGAGRAPH chunk number whose raw data is a 6-bit VGA palette (768 bytes, 256×3).
+						When present, this chunk is parsed as the palette for this pic instead of the
+						XML-defined palette. Corresponds to STARTEXTERNS-region chunks such as
+						TITLEPALETTE=127 in GFXV_N3D.H.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -1720,27 +1730,12 @@
 	<!-- Palette Section                              -->
 	<!-- ============================================ -->
 
-	<xs:element name="Palettes">
-		<xs:annotation>
-			<xs:documentation>
-				Wrapper for all Palette elements inside Game.
-				Required by xs:all, which does not allow maxOccurs="unbounded" on direct children.
-			</xs:documentation>
-		</xs:annotation>
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Palette" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-
 	<xs:element name="Palette">
 		<xs:annotation>
 			<xs:documentation>
 				Palette containing 256 colors in XML format.
 				Each Color element specifies a 24-bit RGB color using hex notation.
-				The Name attribute is optional and used for alternate palettes.
-				The first palette without a Name attribute is the default palette.
+				The Name attribute is optional.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>

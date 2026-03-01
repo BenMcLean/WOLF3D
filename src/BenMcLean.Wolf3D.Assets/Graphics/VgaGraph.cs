@@ -64,8 +64,13 @@ public sealed class VgaGraph
 			})];
 		Pics = [.. Enumerable.Range(0, vgaGraph.Element("Pics")?.Elements("Pic").Count() ?? 0)
 			.Parallelize(i =>
-				Deplanify(file[startPic + i], Sizes[i][0])
-					.Indices2ByteArray(Palettes[PaletteNumber(i, xml)]))];
+			{
+				uint[] palette = PaletteChunkNumber(i, xml) is int chunkNum
+					? ParseVgaPalette(file[chunkNum])
+					: Palettes[PaletteNumber(i, xml)];
+				return Deplanify(file[startPic + i], Sizes[i][0])
+					.Indices2ByteArray(palette);
+			})];
 		// Build PicsByName dictionary from XML
 		PicsByName = [];
 		foreach (XElement picElement in vgaGraph.Element("Pics")?.Elements("Pic") ?? [])
@@ -134,6 +139,23 @@ public sealed class VgaGraph
 			e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort number) && number == picNumber
 			)?.Select(e => ushort.TryParse(e.Attribute("Palette")?.Value, out ushort palette) ? palette : (ushort)0)
 		?.FirstOrDefault() ?? 0;
+	public static int? PaletteChunkNumber(int picNumber, XElement xml) =>
+		xml?.Element("VgaGraph")?.Element("Pics")?.Elements("Pic")
+			?.Where(e => ushort.TryParse(e.Attribute("Number")?.Value, out ushort n) && n == picNumber)
+			?.Select(e => int.TryParse(e.Attribute("PaletteChunk")?.Value, out int c) ? c : (int?)null)
+			?.FirstOrDefault();
+	public static uint[] ParseVgaPalette(byte[] chunk)
+	{
+		uint[] palette = new uint[256];
+		for (int i = 0; i < 256; i++)
+		{
+			uint r = (uint)(chunk[i * 3] << 2);     // 6-bit → 8-bit
+			uint g = (uint)(chunk[i * 3 + 1] << 2);
+			uint b = (uint)(chunk[i * 3 + 2] << 2);
+			palette[i] = (r << 24) | (g << 16) | (b << 8) | (i == 255 ? 0u : 0xFFu);
+		}
+		return palette;
+	}
 	public static uint[] ParseHead(Stream stream)
 	{
 		uint[] head = new uint[stream.Length / 3];

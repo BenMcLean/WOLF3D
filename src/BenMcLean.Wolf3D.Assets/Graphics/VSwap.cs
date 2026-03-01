@@ -293,18 +293,21 @@ public sealed class VSwap
 			)?.Select(e => uint.TryParse(e.Attribute("Palette")?.Value, out uint palette) ? palette : 0)
 		?.FirstOrDefault() ?? 0;
 	public static IEnumerable<uint[]> LoadPalettes(XElement xml) =>
-		(xml.Element("Palettes")?.Elements("Palette") ?? []).Select(paletteElement =>
+		xml.Element("Palette") is XElement p
+			? [ParseXmlPalette(p)]
+			: [];
+	private static uint[] ParseXmlPalette(XElement paletteElement)
+	{
+		uint[] result = new uint[256];
+		List<XElement> colorElements = paletteElement.Elements("Color").ToList();
+		for (int i = 0; i < 256 && i < colorElements.Count; i++)
 		{
-			uint[] result = new uint[256];
-			List<XElement> colorElements = paletteElement.Elements("Color").ToList();
-			for (int i = 0; i < 256 && i < colorElements.Count; i++)
-			{
-				string hexAttr = colorElements[i].Attribute("Hex")?.Value;
-				if (hexAttr != null && hexAttr.Length == 7 && hexAttr[0] == '#' &&
-					uint.TryParse(hexAttr[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb))
-					result[i] = (rgb << 8) | (i == 255 ? 0u : 0xFFu);
-			}
-			return result;
-		});
+			string hexAttr = colorElements[i].Attribute("Hex")?.Value;
+			if (hexAttr != null && hexAttr.Length == 7 && hexAttr[0] == '#' &&
+				uint.TryParse(hexAttr[1..], System.Globalization.NumberStyles.HexNumber, null, out uint rgb))
+				result[i] = (rgb << 8) | (i == 255 ? 0u : 0xFFu);
+		}
+		return result;
+	}
 	#endregion Palettes
 }
