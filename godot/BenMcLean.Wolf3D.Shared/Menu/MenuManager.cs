@@ -211,6 +211,30 @@ public class MenuManager
 		NavigateToMenuImmediate(menuName);
 	}
 	/// <summary>
+	/// Apply music for the given menu.
+	/// Menus without a Music attribute inherit the Menus-level default via ApplyDefaults,
+	/// so null here means no Music attribute and no default — keep current music unchanged.
+	/// An empty string explicitly overrides to silence.
+	/// </summary>
+	private void ApplyMenuMusic(MenuDefinition menuDef)
+	{
+		// null  = no Music attribute and no Menus-level default → do nothing
+		// ""    = Music attribute present but empty → explicit silence
+		// else  → play named track
+		if (menuDef.Music == null)
+			return;
+		if (menuDef.Music == "")
+		{
+			_currentMenuMusic = null;
+			_scriptContext.StopMusic();
+		}
+		else
+		{
+			_currentMenuMusic = menuDef.Music;
+			_scriptContext.PlayMusic(menuDef.Music);
+		}
+	}
+	/// <summary>
 	/// Navigate to a menu immediately without fading.
 	/// </summary>
 	private void NavigateToMenuImmediate(string menuName)
@@ -223,19 +247,7 @@ public class MenuManager
 		// Set new current menu
 		_currentMenuName = menuName;
 		_selectedItemIndex = 0; // Reset to first item
-								// Handle menu music
-								// null = no music attribute (do nothing), "" = explicit stop, otherwise play
-		if (menuDef.Music != null)
-			if (menuDef.Music == "")
-			{
-				_currentMenuMusic = null;
-				_scriptContext.StopMusic();
-			}
-			else
-			{
-				_currentMenuMusic = menuDef.Music;
-				_scriptContext.PlayMusic(menuDef.Music);
-			}
+		ApplyMenuMusic(menuDef);
 		// Render the menu
 		RefreshMenu();
 		// Create a sequence for OnShow to queue steps into
@@ -292,6 +304,8 @@ public class MenuManager
 		{
 			_currentMenuName = _menuStack.Pop();
 			_selectedItemIndex = 0;
+			if (_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
+				ApplyMenuMusic(menuDef);
 			RefreshMenu();
 			_logger?.LogDebug("Navigated back to menu: {menuName}", _currentMenuName);
 		}

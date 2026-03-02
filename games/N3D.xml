@@ -481,16 +481,46 @@ for i = 0, 9 do
 end
 ]]>
 				</OnShow>
-				<MenuItem Text="- empty -">LoadGame(0)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(1)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(2)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(3)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(4)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(5)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(6)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(7)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(8)</MenuItem>
-				<MenuItem Text="- empty -">LoadGame(9)</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(0)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(1)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(2)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(3)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(4)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(5)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(6)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(7)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(8)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					LoadGame(9)
+				</MenuItem>
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
@@ -508,16 +538,46 @@ for i = 0, 9 do
 end
 ]]>
 				</OnShow>
-				<MenuItem Text="- empty -">SaveGame(0)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(1)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(2)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(3)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(4)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(5)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(6)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(7)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(8)</MenuItem>
-				<MenuItem Text="- empty -">SaveGame(9)</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(0)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(1)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(2)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(3)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(4)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(5)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(6)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(7)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(8)
+				</MenuItem>
+				<MenuItem Text="- empty -">
+					PlayAdLibSound('SHOOTSND')
+					SaveGame(9)
+				</MenuItem>
 			</Menu>
 
 			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
