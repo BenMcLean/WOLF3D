@@ -195,8 +195,9 @@ public class MidiSignaller : IAdlibSignaller
 			opl?.WriteReg(0xBD, (byte)(0x20 | drums)); // alOut(alEffects, alChar|drums)
 			return;
 		}
-		// Original code uses channel directly without remapping
-		// Channels >= 9 are silently ignored (write to invalid registers)
+		// OPL channel 0 is reserved for Adlib sound effects (SDL_AlSound uses alFreqL+0, alFreqH+0)
+		// MIDI channels map to OPL channels offset by +1: MIDI ch 0 → OPL ch 1, etc.
+		// ID_SD.C:2152-2153: alOut(alFreqL + 1 + channel, ...) / alOut(alFreqH + 1 + channel, ...)
 		if (channel >= 9)
 			return;
 		// Extract octave and semitone from MIDI note number
@@ -206,11 +207,11 @@ public class MidiSignaller : IAdlibSignaller
 			return;
 		// Get frequency value from note table (ID_SD.C:2163-2164)
 		ushort frequency = NoteTable[semitone];
-		// Write frequency low byte (ID_SD.C:2166)
-		opl?.WriteReg((byte)(0xA0 + channel), (byte)(frequency & 0xFF));
-		// Write octave and frequency high bits, with key-on bit (ID_SD.C:2167-2168)
+		// Write frequency low byte (ID_SD.C:2152: alFreqL + 1 + channel)
+		opl?.WriteReg((byte)(0xA1 + channel), (byte)(frequency & 0xFF));
+		// Write octave and frequency high bits, with key-on bit (ID_SD.C:2153: alFreqH + 1 + channel)
 		byte blockFreq = (byte)((octave & 0x07) << 2 | frequency >> 8 & 0x03 | 0x20);
-		opl?.WriteReg((byte)(0xB0 + channel), blockFreq);
+		opl?.WriteReg((byte)(0xB1 + channel), blockFreq);
 	}
 	/// <summary>
 	/// MIDI Note Off handler.
@@ -243,9 +244,9 @@ public class MidiSignaller : IAdlibSignaller
 		}
 		if (channel >= 9)
 			return;
-		// Turn off key-on bit while preserving frequency/octave (ID_SD.C:2109)
+		// Turn off key-on bit while preserving frequency/octave (ID_SD.C:2116: alFreqH + 1 + channel)
 		byte currentValue = 0; // In real implementation, we'd read current register value
-		opl?.WriteReg((byte)(0xB0 + channel), (byte)(currentValue & ~0x20));
+		opl?.WriteReg((byte)(0xB1 + channel), (byte)(currentValue & ~0x20));
 	}
 	/// <summary>
 	/// MIDI Program Change handler.
@@ -345,8 +346,10 @@ public class MidiSignaller : IAdlibSignaller
 		}
 		byte[] instrument = Instruments[instrumentIndex];    // inst_t (11 bytes)
 		// ID_SD.C:2290-2301 Write instrument data using modifiers/carriers arrays
-		// Channel offset mapping: 0,1,2,3,4,5,6,7,8 -> 0,1,2,8,9,10,16,17,18
-		byte channelOffset = (byte)(channel < 3 ? channel : channel + 5);
+		// MIDI channel maps to OPL channel+1: use modifiers[channel+1] / carriers[channel+1]
+		// modifiers: {0,1,2,8,9,10,...}, so channelOffset for MIDI ch N = modifiers[N+1]
+		// Channel offset mapping (MIDI ch → operator offset): 0→1, 1→2, 2→8, 3→9, 4→10
+		byte channelOffset = (byte)(channel < 2 ? channel + 1 : channel + 6);
 		// Configure modulator and carrier (INTERLEAVED format)
 		// ID_SD.C uses: modifiers[channel+1]+alChar, carriers[channel+1]+alChar, etc.
 		opl?.WriteReg((byte)(0x20 + channelOffset), instrument[0]); // modChar
