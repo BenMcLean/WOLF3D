@@ -229,16 +229,16 @@
 					RequestQuit()
 				</MenuItem>
 			</Menu>
-			<Menu Name="Episodes">
+			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
 				<Box X="6" Y="19" W="308" H="162" />
 				<Text X="Center" Y="2" Color="15">Which episode to play?</Text>
-				<Picture Name="C_EPISODE1PIC" X="40" Y="22" />
-				<Picture Name="C_EPISODE2PIC" X="40" Y="49" />
-				<Picture Name="C_EPISODE3PIC" X="40" Y="76" />
-				<Picture Name="C_EPISODE4PIC" X="40" Y="103" />
-				<Picture Name="C_EPISODE5PIC" X="40" Y="130" />
-				<Picture Name="C_EPISODE6PIC" X="40" Y="157" />
+				<Picture Name="C_EPISODE1PIC" X="42" Y="23" ZIndex="9" />
+				<Picture Name="C_EPISODE2PIC" X="42" Y="49" ZIndex="9" />
+				<Picture Name="C_EPISODE3PIC" X="42" Y="75" ZIndex="9" />
+				<Picture Name="C_EPISODE4PIC" X="42" Y="101" ZIndex="9" />
+				<Picture Name="C_EPISODE5PIC" X="42" Y="127" ZIndex="9" />
+				<Picture Name="C_EPISODE6PIC" X="42" Y="153" ZIndex="9" />
 				<MenuItem Text="Carl the Camel&#10;Start at level 1-1">
 					PlayAdLibSound('SHOOTSND')
 					SetEpisode(0)
@@ -270,7 +270,7 @@
 					NavigateToMenu("NewGame")
 				</MenuItem>
 			</Menu>
-			<Menu Name="Difficulty" X="8" Y="21">
+			<Menu Name="NewGame" X="8" Y="21">
 				<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H) = (45,90,225,67) -->
 				<Box X="45" Y="90" W="225" H="67" />
 				<!-- WL_MENU.C:1639-1649: US_Print("How tough are you?") at (NM_X+20, NM_Y-32) = (70,68) with READHCOLOR = 0x47 = 71 -->
