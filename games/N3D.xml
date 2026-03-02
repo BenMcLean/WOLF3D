@@ -177,10 +177,10 @@
 				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
 			</Menu>
 			<Menu Name="Main">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" >
+				<Picture Name="C_OPTIONSPIC" X="Center" Y="0" >
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
@@ -230,7 +230,7 @@
 				</MenuItem>
 			</Menu>
 			<Menu Name="Episodes">
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
 				<Box X="6" Y="19" W="308" H="162" />
 				<Text X="Center" Y="2" Color="15">Which episode to play?</Text>
 				<Picture Name="C_EPISODE1PIC" X="40" Y="22" />
@@ -278,7 +278,7 @@
 				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged (WL_MENU.C:1675) -->
 				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
 				<Picture Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					BackToPreviousMenu()
 				</Picture>
 				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
@@ -467,7 +467,7 @@ end
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_LOADGAMEPIC" X="96" Y="0" />
+				<Picture Name="C_LOADGAMEPIC" X="Center" Y="0" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -494,7 +494,7 @@ end
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_SAVEGAMEPIC" X="96" Y="0" />
+				<Picture Name="C_SAVEGAMEPIC" X="Center" Y="0" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -530,7 +530,7 @@ end
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
 				  X="0" Y="0" Indent="0" Spacing="0">
-				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
@@ -644,7 +644,7 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
 				  X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
-				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->

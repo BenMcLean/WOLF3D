@@ -223,10 +223,10 @@ return "HighScores"
 			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,184,C_MOUSELBACKPIC)
 			     WL_MENU.C:DrawWindow(MENU_X-8,MENU_Y-3,MENU_W,MENU_H,BKGDCOLOR) = DrawWindow(68,52,178,136,45) -->
 			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13">
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" >
+				<Picture Name="C_OPTIONSPIC" X="Center" Y="0" Stripes="true" >
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
@@ -281,7 +281,7 @@ return "HighScores"
 			<!-- WL_MENU.C:1612: Episode pictures at (NE_X+32,NE_Y+i*26) for i=0 to 5 -->
 			<!-- WL_MENU.C:95: NewEitems={NE_X,NE_Y,11,0,88} - X=10, Y=23, indent=88 -->
 			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
 				<!-- WL_MENU.C:1597: DrawWindow(6,19,308,162) -->
 				<Box X="6" Y="19" W="308" H="162" />
 				<!-- WL_MENU.C:1599-1604: PrintY=2 (2 pixels from screen top), WindowX=0, US_CPrint centers horizontally -->
@@ -342,7 +342,7 @@ return "HighScores"
 				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged (WL_MENU.C:1675) -->
 				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
 				<Picture Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					BackToPreviousMenu()
 				</Picture>
 				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
@@ -399,7 +399,7 @@ end
 				<Picture Name="C_FXTITLEPIC" X="100" Y="0" />
 				<Picture Name="C_DIGITITLEPIC" X="100" Y="65" />
 				<Picture Name="C_MUSICTITLEPIC" X="100" Y="130" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					BackToPreviousMenu()
 				</Picture>
 
@@ -531,7 +531,7 @@ end
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_LOADGAMEPIC" X="96" Y="0" />
+				<Picture Name="C_LOADGAMEPIC" X="Center" Y="0" Stripes="true" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -558,7 +558,7 @@ end
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_SAVEGAMEPIC" X="96" Y="0" />
+				<Picture Name="C_SAVEGAMEPIC" X="Center" Y="0" Stripes="true" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -594,7 +594,7 @@ end
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
 				  X="0" Y="0" Indent="0" Spacing="0">
-				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />

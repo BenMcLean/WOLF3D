@@ -16,6 +16,10 @@ public static class Constants
 		Magenta = 0xFF00FFFFu,
 		Cyan = 0x00FFFFFFu;
 	#endregion Colors
+	#region Coordinates
+	public const ushort MenuScreenWidth = 320,
+		MenuScreenHeight = 200;
+	#endregion Coordinates
 	#region Time
 	/// <summary>
 	/// Wolf3D runs at 70 tics per second

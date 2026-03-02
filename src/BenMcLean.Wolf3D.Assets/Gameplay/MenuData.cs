@@ -130,17 +130,25 @@ public class MenuPictureDefinition
 	/// </summary>
 	public bool CenterX => X?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
+	/// Returns true if X coordinate should be aligned to the right edge
+	/// </summary>
+	public bool RightX => X?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
 	/// Returns true if Y coordinate should be centered vertically
 	/// </summary>
 	public bool CenterY => Y?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
-	/// Gets the X coordinate as an integer, or 0 if set to "Center"
+	/// Returns true if Y coordinate should be aligned to the bottom edge
 	/// </summary>
-	public int XValue => CenterX ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	public bool BottomY => Y?.Equals("Bottom", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
-	/// Gets the Y coordinate as an integer, or 0 if set to "Center"
+	/// Gets the X coordinate as an integer, or 0 if set to an alignment keyword
 	/// </summary>
-	public int YValue => CenterY ? 0 : (int.TryParse(Y, out int y) ? y : 0);
+	public int XValue => (CenterX || RightX) ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	/// <summary>
+	/// Gets the Y coordinate as an integer, or 0 if set to an alignment keyword
+	/// </summary>
+	public int YValue => (CenterY || BottomY) ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
 	/// If true, renders the leftmost column of pixels stretched horizontally across the screen
 	/// before rendering the normal picture. Used for decorative stripe backgrounds.
@@ -232,17 +240,25 @@ public class MenuTextDefinition
 	/// </summary>
 	public bool CenterX => X?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
+	/// Returns true if X coordinate should be aligned to the right edge
+	/// </summary>
+	public bool RightX => X?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
 	/// Returns true if Y coordinate should be centered vertically
 	/// </summary>
 	public bool CenterY => Y?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
-	/// Gets the X coordinate as an integer, or 0 if set to "Center"
+	/// Returns true if Y coordinate should be aligned to the bottom edge
 	/// </summary>
-	public int XValue => CenterX ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	public bool BottomY => Y?.Equals("Bottom", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
-	/// Gets the Y coordinate as an integer, or 0 if set to "Center"
+	/// Gets the X coordinate as an integer, or 0 if set to an alignment keyword
 	/// </summary>
-	public int YValue => CenterY ? 0 : (int.TryParse(Y, out int y) ? y : 0);
+	public int XValue => (CenterX || RightX) ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	/// <summary>
+	/// Gets the Y coordinate as an integer, or 0 if set to an alignment keyword
+	/// </summary>
+	public int YValue => (CenterY || BottomY) ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
 	/// Creates a MenuTextDefinition instance from an XElement.
 	/// </summary>
@@ -317,13 +333,29 @@ public class MenuTickerDefinition
 	/// </summary>
 	public int TickInterval { get; set; } = 10;
 	/// <summary>
-	/// Gets the X coordinate as an integer, or 0 if "Center".
+	/// Returns true if X coordinate should be centered horizontally
 	/// </summary>
-	public int XValue => int.TryParse(X, out int x) ? x : 0;
+	public bool CenterX => X?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
 	/// <summary>
-	/// Gets the Y coordinate as an integer, or 0 if "Center".
+	/// Returns true if X coordinate should be aligned to the right edge
 	/// </summary>
-	public int YValue => int.TryParse(Y, out int y) ? y : 0;
+	public bool RightX => X?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Returns true if Y coordinate should be centered vertically
+	/// </summary>
+	public bool CenterY => Y?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Returns true if Y coordinate should be aligned to the bottom edge
+	/// </summary>
+	public bool BottomY => Y?.Equals("Bottom", StringComparison.OrdinalIgnoreCase) == true;
+	/// <summary>
+	/// Gets the X coordinate as an integer, or 0 if set to an alignment keyword
+	/// </summary>
+	public int XValue => (CenterX || RightX) ? 0 : (int.TryParse(X, out int x) ? x : 0);
+	/// <summary>
+	/// Gets the Y coordinate as an integer, or 0 if set to an alignment keyword
+	/// </summary>
+	public int YValue => (CenterY || BottomY) ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
 	/// Creates a MenuTickerDefinition instance from an XElement.
 	/// </summary>

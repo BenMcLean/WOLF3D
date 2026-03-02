@@ -48,14 +48,14 @@ public class MenuRenderer
 		// Create 320x200 SubViewport for pixel-perfect rendering
 		_viewport = new SubViewport
 		{
-			Size = new Vector2I(320, 200),
+			Size = new Vector2I(Constants.MenuScreenWidth, Constants.MenuScreenHeight),
 			Disable3D = true,
 			RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
 		};
 		// Create root Control for UI elements
 		_canvas = new Control
 		{
-			CustomMinimumSize = new Vector2(320, 200),
+			CustomMinimumSize = new Vector2(Constants.MenuScreenWidth, Constants.MenuScreenHeight),
 			AnchorsPreset = (int)Control.LayoutPreset.FullRect,
 		};
 		_viewport.AddChild(_canvas);
@@ -150,7 +150,7 @@ public class MenuRenderer
 		{
 			Color = color,
 			Position = Vector2.Zero,
-			Size = new Vector2(320, 200),
+			Size = new Vector2(Constants.MenuScreenWidth, Constants.MenuScreenHeight),
 		};
 		_canvas.AddChild(background);
 		// Update current border color and fire event if changed
@@ -180,8 +180,12 @@ public class MenuRenderer
 			}
 			// Render horizontal stripes if enabled
 		// Resolve centering using the actual texture dimensions
-			float picX = pictureDef.CenterX ? (320f - texture.Region.Size.X) / 2f : pictureDef.XValue;
-			float picY = pictureDef.CenterY ? (200f - texture.Region.Size.Y) / 2f : pictureDef.YValue;
+			float picX = pictureDef.CenterX ? (Constants.MenuScreenWidth - texture.Region.Size.X) / 2f
+				: pictureDef.RightX ? Constants.MenuScreenWidth - texture.Region.Size.X
+				: pictureDef.XValue;
+			float picY = pictureDef.CenterY ? (Constants.MenuScreenHeight - texture.Region.Size.Y) / 2f
+				: pictureDef.BottomY ? Constants.MenuScreenHeight - texture.Region.Size.Y
+				: pictureDef.YValue;
 			if (pictureDef.Stripes)
 				RenderStripes(texture, (int)picY);
 			// Render the normal picture
@@ -243,7 +247,7 @@ public class MenuRenderer
 		{
 			Texture = stripeTexture,
 			Position = new Vector2(0, y),
-			Size = new Vector2(320, region.Size.Y),
+			Size = new Vector2(Constants.MenuScreenWidth, region.Size.Y),
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			ZIndex = 4, // Draw stripes below the picture itself
 		};
@@ -319,8 +323,12 @@ public class MenuRenderer
 			Vector2 textSize = font.GetStringSize(textDef.Content, fontSize: theme.DefaultFontSize);
 			// Set position before adding to canvas
 			label.Position = new Vector2(
-				x: textDef.CenterX ? (320f - textSize.X) / 2f : textDef.XValue,
-				y: textDef.CenterY ? (200f - textSize.Y) / 2f : textDef.YValue);
+				x: textDef.CenterX ? (Constants.MenuScreenWidth - textSize.X) / 2f
+					: textDef.RightX ? Constants.MenuScreenWidth - textSize.X
+					: textDef.XValue,
+				y: textDef.CenterY ? (Constants.MenuScreenHeight - textSize.Y) / 2f
+					: textDef.BottomY ? Constants.MenuScreenHeight - textSize.Y
+					: textDef.YValue);
 			_canvas.AddChild(label);
 			label.PivotOffset = Vector2.Zero;
 			// Track named text labels for dynamic updates from Lua
@@ -537,8 +545,12 @@ public class MenuRenderer
 			};
 			_canvas.AddChild(label);
 			// Position the ticker
-			float x = tickerDef.XValue,
-				y = tickerDef.YValue;
+			float x = tickerDef.CenterX ? Constants.MenuScreenWidth / 2f
+					: tickerDef.RightX ? Constants.MenuScreenWidth
+					: tickerDef.XValue,
+				y = tickerDef.CenterY ? Constants.MenuScreenHeight / 2f
+					: tickerDef.BottomY ? Constants.MenuScreenHeight
+					: tickerDef.YValue;
 			// Right-align: position is the right edge, offset left by text width
 			if (tickerDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) ?? false)
 			{
@@ -594,7 +606,10 @@ public class MenuRenderer
 			{
 				Font font = theme.DefaultFont;
 				float textWidth = font.GetStringSize(value, fontSize: theme.DefaultFontSize).X;
-				label.Position = new Vector2(tickerDef.XValue - textWidth, label.Position.Y);
+				float anchorX = tickerDef.CenterX ? Constants.MenuScreenWidth / 2f
+				: tickerDef.RightX ? Constants.MenuScreenWidth
+				: tickerDef.XValue;
+			label.Position = new Vector2(anchorX - textWidth, label.Position.Y);
 			}
 		}
 	}
@@ -676,8 +691,8 @@ public class MenuRenderer
 		// Center the whole group (message box + buttons) vertically on 320x200
 		// Buttons sit flush against the bottom of the message box (outside it)
 			totalH = msgBoxH + btnBoxH,
-			msgBoxY = Mathf.Round((200f - totalH) / 2f),
-			msgBoxX = Mathf.Round((320f - msgBoxW) / 2f),
+			msgBoxY = Mathf.Round((Constants.MenuScreenHeight - totalH) / 2f),
+			msgBoxX = Mathf.Round((Constants.MenuScreenWidth - msgBoxW) / 2f),
 			btnBoxY = msgBoxY + msgBoxH + 1f,
 		// Yes is left-aligned with the message box; No is right-aligned
 			yesBoxX = msgBoxX,
@@ -687,7 +702,7 @@ public class MenuRenderer
 		{
 			Color = new Color(0f, 0f, 0f, 0.5f),
 			Position = Vector2.Zero,
-			Size = new Vector2(320f, 200f),
+			Size = new Vector2(Constants.MenuScreenWidth, Constants.MenuScreenHeight),
 			ZIndex = 48,
 		});
 		// Message box: fill + single PixelRect-style bevel (NWColor top/left, SEColor bottom/right)
@@ -778,7 +793,7 @@ public class MenuRenderer
 	/// <param name="position">Position in viewport coordinates (320x200).</param>
 	/// <returns>True if the position is on screen.</returns>
 	private static bool IsPositionOnScreen(Vector2 position) =>
-		position.X >= 0 && position.X < 320 && position.Y >= 0 && position.Y < 200;
+		position.X >= 0 && position.X < Constants.MenuScreenWidth && position.Y >= 0 && position.Y < Constants.MenuScreenHeight;
 	/// <summary>
 	/// Creates crosshair TextureRects for active pointers.
 	/// Called during menu rendering to set up crosshair nodes.

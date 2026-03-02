@@ -90,7 +90,7 @@
 				- Height, SpaceWidth, SpaceColor attributes configure the font metrics
 				- Example: Font Prefix="L_" builds from pics L_APIC, L_BPIC, etc.
 				- Prefix-based fonts are a Godot UI abstraction; they have no equivalent
-				  in the original Wolfenstein 3-D engine.
+				in the original Wolfenstein 3-D engine.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -672,14 +672,14 @@
 							<xs:documentation>Name of the VgaGraph image (e.g., "C_MOUSELBACKPIC")</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="X" type="xs:integer" use="required">
+					<xs:attribute name="X" type="XCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>X coordinate for picture placement</xs:documentation>
+							<xs:documentation>X coordinate for picture placement, or "Left"/"Center"/"Right" for alignment</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="Y" type="xs:integer" use="required">
+					<xs:attribute name="Y" type="YCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>Y coordinate for picture placement</xs:documentation>
+							<xs:documentation>Y coordinate for picture placement, or "Top"/"Center"/"Bottom" for alignment</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Stripes" type="xs:boolean">
@@ -718,14 +718,14 @@
 		<xs:complexType>
 			<xs:simpleContent>
 				<xs:extension base="xs:string">
-					<xs:attribute name="X" type="CoordinateOrCenter" use="required">
+					<xs:attribute name="X" type="XCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>X coordinate for text placement, or "Center" to horizontally center the text on screen</xs:documentation>
+							<xs:documentation>X coordinate for text placement, or "Left"/"Center"/"Right" for alignment</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="Y" type="CoordinateOrCenter" use="required">
+					<xs:attribute name="Y" type="YCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>Y coordinate for text placement, or "Center" to vertically center the text on screen</xs:documentation>
+							<xs:documentation>Y coordinate for text placement, or "Top"/"Center"/"Bottom" for alignment</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Font" type="xs:string">
@@ -761,14 +761,14 @@
 					<xs:documentation>Identifier for Lua to start and control the ticker (e.g., "KillRatio")</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="X" type="CoordinateOrCenter" use="required">
+			<xs:attribute name="X" type="XCoordinateOrAlignment" use="required">
 				<xs:annotation>
-					<xs:documentation>X coordinate for ticker placement</xs:documentation>
+					<xs:documentation>X coordinate for ticker placement, or "Left"/"Center"/"Right" for alignment</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Y" type="CoordinateOrCenter" use="required">
+			<xs:attribute name="Y" type="YCoordinateOrAlignment" use="required">
 				<xs:annotation>
-					<xs:documentation>Y coordinate for ticker placement</xs:documentation>
+					<xs:documentation>Y coordinate for ticker placement, or "Top"/"Center"/"Bottom" for alignment</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:attribute name="Font" type="xs:string">
@@ -1359,9 +1359,9 @@
 				Example:
 				&lt;BonusScript Name="health_small"&gt;
 				if GetPlayerHealth() &lt; GetPlayerMaxHealth() then
-				    HealPlayer(4)
-				    PlayLocalDigiSound("HEALTH1SND")
-				    return true
+				HealPlayer(4)
+				PlayLocalDigiSound("HEALTH1SND")
+				return true
 				end
 				return false
 				&lt;/BonusScript&gt;
@@ -1829,18 +1829,35 @@
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="CoordinateOrCenter">
+	<xs:simpleType name="XCoordinateOrAlignment">
 		<xs:annotation>
 			<xs:documentation>
-				Union type allowing either an integer coordinate or the literal string "Center".
-				Use "Center" for X to horizontally center text, or for Y to vertically center text.
-				Numeric values specify absolute screen coordinates.
+				Union type for X coordinates: an integer pixel position, or an alignment keyword.
+				"Center" centers horizontally, "Right" aligns to the right edge.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:union memberTypes="xs:integer">
 			<xs:simpleType>
 				<xs:restriction base="xs:string">
 					<xs:enumeration value="Center"/>
+					<xs:enumeration value="Right"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+
+	<xs:simpleType name="YCoordinateOrAlignment">
+		<xs:annotation>
+			<xs:documentation>
+				Union type for Y coordinates: an integer pixel position, or an alignment keyword.
+				"Center" centers vertically, "Bottom" aligns to the bottom edge.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:union memberTypes="xs:integer">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="Center"/>
+					<xs:enumeration value="Bottom"/>
 				</xs:restriction>
 			</xs:simpleType>
 		</xs:union>
