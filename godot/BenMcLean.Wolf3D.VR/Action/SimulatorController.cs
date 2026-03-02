@@ -5,6 +5,7 @@ using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Shared;
 using Microsoft.Extensions.Logging;
 using BenMcLean.Wolf3D.Simulator.Entities;
+using BenMcLean.Wolf3D.Simulator.State;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -62,7 +63,7 @@ public partial class SimulatorController : Node3D
 		Func<(int X, int Y, short Angle)> getPlayerPosition,
 		StatusBarDefinition statusBar,
 		int difficulty,
-		Dictionary<string, int> savedInventory = null,
+		InventorySnapshot savedInventory = null,
 		IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		// TODO: Load stateCollection from WL1.xml or game data file

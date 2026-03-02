@@ -1176,7 +1176,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// <param name="slotCount">Number of weapon slots (1 for traditional, 2 for VR dual-wield)</param>
 	/// <param name="weapons">Weapon definitions loaded from XML</param>
 	/// <param name="savedInventory">Saved inventory from level transition (null for new game)</param>
-	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, Dictionary<string, int> savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
+	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		Inventory.InitializeFromDefinition(statusBar);
 		onDeathScript = statusBar.OnDeathScript;

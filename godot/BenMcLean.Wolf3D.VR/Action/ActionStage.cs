@@ -27,13 +27,13 @@ public partial class ActionStage : Node3D, IRoom
 	/// </summary>
 	public class LevelTransitionRequest(
 		int levelIndex,
-		Dictionary<string, int> savedInventory,
+		InventorySnapshot savedInventory,
 		LevelCompletionStats completionStats = null,
 		string menuName = "LevelComplete",
 		IReadOnlyList<LevelCompletionStats> allLevelStats = null)
 	{
 		public int LevelIndex { get; } = levelIndex;
-		public Dictionary<string, int> SavedInventory { get; } = savedInventory;
+		public InventorySnapshot SavedInventory { get; } = savedInventory;
 		public LevelCompletionStats CompletionStats { get; } = completionStats;
 
 		/// <summary>
@@ -109,7 +109,7 @@ void sky() {
 
 	private readonly IDisplayMode _displayMode;
 	private readonly int _difficulty;
-	private readonly Dictionary<string, int> _savedInventory;
+	private readonly InventorySnapshot _savedInventory;
 	private readonly IReadOnlyList<LevelCompletionStats> _savedLevelStats;
 	private readonly Simulator.Simulator _existingSimulator;
 	private readonly SimulatorSnapshot _loadSnapshot;
@@ -135,11 +135,11 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionStage(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, Dictionary<string, int> savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
+	public ActionStage(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
-		_difficulty = savedInventory != null && savedInventory.TryGetValue("Difficulty", out int savedDifficulty)
+		_difficulty = savedInventory?.Values != null && savedInventory.Values.TryGetValue("Difficulty", out int savedDifficulty)
 			? savedDifficulty
 			: difficulty;
 		_savedInventory = savedInventory;
@@ -172,10 +172,10 @@ void sky() {
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 		// Level index and difficulty are stored in the snapshot's inventory
-		_initialLevelIndex = snapshot.InventoryValues != null
-			&& snapshot.InventoryValues.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
-		_difficulty = snapshot.InventoryValues != null
-			&& snapshot.InventoryValues.TryGetValue("Difficulty", out int d) ? d : 2;
+		_initialLevelIndex = snapshot.InventoryValues?.Values != null
+			&& snapshot.InventoryValues.Values.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
+		_difficulty = snapshot.InventoryValues?.Values != null
+			&& snapshot.InventoryValues.Values.TryGetValue("Difficulty", out int d) ? d : 2;
 	}
 
 	public override void _Ready()
@@ -467,7 +467,7 @@ void sky() {
 			// Cheat: N skips to next level (like activating the elevator)
 		if (keyEvent.Keycode == Key.N)
 		{
-			Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+			InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
 			byte destinationLevel = MapAnalysis.ElevatorTo;
 			LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
 				_initialLevelIndex + 1, false, MapAnalysis.Par);
@@ -747,7 +747,7 @@ void sky() {
 			EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 
 		// Capture player inventory state before transition
-		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
 
 		// Capture level completion stats for intermission screen
 		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
@@ -785,7 +785,7 @@ void sky() {
 	private void OnNavigateToMenu(NavigateToMenuEvent e)
 	{
 		// Capture player inventory state
-		Dictionary<string, int> savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
 
 		// Capture level completion stats
 		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(

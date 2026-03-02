@@ -132,9 +132,10 @@ public record SimulatorSnapshot
 	public Dictionary<uint, byte> PatrolDirectionAtTile { get; init; }
 
 	/// <summary>
-	/// All player inventory values (health, score, lives, keys, ammo, weapons, MapOn).
+	/// All player inventory state (current values and max capacities).
+	/// Includes health, score, lives, keys, ammo, weapons, MapOn, and their max values.
 	/// </summary>
-	public Dictionary<string, int> InventoryValues { get; init; }
+	public InventorySnapshot InventoryValues { get; init; }
 
 	/// <summary>
 	/// Accumulated level completion stats across the episode.

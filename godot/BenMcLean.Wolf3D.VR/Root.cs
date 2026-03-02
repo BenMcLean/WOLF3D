@@ -194,7 +194,7 @@ public partial class Root : Node3D
 					if (deathResult == "restart")
 					{
 						// WL_GAME.C:Died() with lives remaining — restart same level
-						Dictionary<string, int> savedInventory = sim.Inventory.SaveState();
+						InventorySnapshot savedInventory = sim.Inventory.SaveState();
 						int currentLevel = sim.Inventory.GetValue("MapOn");
 						int difficulty = sim.Inventory.GetValue("Difficulty");
 						ActionStage newStage = new(DisplayMode,
@@ -248,7 +248,7 @@ public partial class Root : Node3D
 					Simulator.LevelCompletionStats lastStats =
 						request.AllLevelStats[request.AllLevelStats.Count - 1];
 					ushort ep = (ushort)Math.Max(0,
-						(request.SavedInventory?.TryGetValue("Episode", out int episodeVal) == true
+						(request.SavedInventory?.Values?.TryGetValue("Episode", out int episodeVal) ?? false
 							? episodeVal : 1) - 1);
 					intermissionRoom.PendingHighScoreScore = lastStats.Score;
 					intermissionRoom.PendingHighScoreCompleted = (ushort)lastStats.FloorNumber;

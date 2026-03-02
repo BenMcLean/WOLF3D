@@ -12,7 +12,7 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// - Easy serialization: Dictionary<string, int> is trivially JSON-serializable
 /// - Event-driven updates: ValueChanged event enables direct UI subscription
 /// </summary>
-public class Inventory : IStateSavable<Dictionary<string, int>>
+public class Inventory : IStateSavable<InventorySnapshot>
 {
 	private readonly Dictionary<string, int> _values = [];
 	private readonly Dictionary<string, int> _maxValues = [];
@@ -114,8 +114,7 @@ public class Inventory : IStateSavable<Dictionary<string, int>>
 	/// <param name="definition">The status bar definition containing value configurations</param>
 	public void InitializeFromDefinition(StatusBarDefinition definition)
 	{
-		if (definition == null)
-			throw new ArgumentNullException(nameof(definition));
+		ArgumentNullException.ThrowIfNull(definition);
 
 		_values.Clear();
 		_maxValues.Clear();
@@ -178,23 +177,38 @@ public class Inventory : IStateSavable<Dictionary<string, int>>
 
 	/// <summary>
 	/// Captures the current inventory state for preservation across level transitions
-	/// and save games. Returns a snapshot of all current values.
+	/// and save games. Includes both current values and max values so that runtime
+	/// capacity upgrades (e.g., ammo bag pickups) survive save/load.
 	/// </summary>
-	/// <returns>Dictionary containing all current inventory values</returns>
-	public Dictionary<string, int> SaveState() =>
-		new(_values);
+	/// <returns>Snapshot containing all current inventory values and max values</returns>
+	public InventorySnapshot SaveState() =>
+		new()
+		{
+			Values = new(_values),
+			MaxValues = new(_maxValues)
+		};
 
 	/// <summary>
 	/// Restores inventory state from a previously captured snapshot.
+	/// Max values are restored before current values so that clamping is applied correctly.
 	/// Used during level transitions and save game loading to preserve player state.
 	/// </summary>
-	/// <param name="savedState">Dictionary containing saved inventory values</param>
-	public void LoadState(Dictionary<string, int> savedState)
+	/// <param name="savedState">Snapshot containing saved inventory values and max values</param>
+	public void LoadState(InventorySnapshot savedState)
 	{
 		if (savedState == null)
 			return;
 
-		foreach (KeyValuePair<string, int> kvp in savedState)
-			SetValue(kvp.Key, kvp.Value);
+		if (savedState.MaxValues != null)
+		{
+			foreach (KeyValuePair<string, int> kvp in savedState.MaxValues)
+				_maxValues[kvp.Key] = kvp.Value;
+		}
+
+		if (savedState.Values != null)
+		{
+			foreach (KeyValuePair<string, int> kvp in savedState.Values)
+				SetValue(kvp.Key, kvp.Value);
+		}
 	}
 }

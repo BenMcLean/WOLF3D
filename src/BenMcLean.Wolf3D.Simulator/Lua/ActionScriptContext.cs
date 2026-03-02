@@ -50,6 +50,14 @@ public class ActionScriptContext(
 	/// <returns>Maximum value, or int.MaxValue if no max defined</returns>
 	public int GetMax(string name) => simulator.Inventory.GetMax(name);
 	/// <summary>
+	/// Set the maximum value for any inventory item.
+	/// Used by capacity upgrade pickups (e.g., ammo bags increasing max feed capacity).
+	/// Examples: SetMax("Ammo", 150)
+	/// </summary>
+	/// <param name="name">The inventory item name</param>
+	/// <param name="max">The new maximum value</param>
+	public void SetMax(string name, int max) => simulator.Inventory.SetMax(name, max);
+	/// <summary>
 	/// Get the initial value for any inventory item.
 	/// Used by OnDeath script to reset values to their starting state.
 	/// Examples: GetInit("Health") returns 100, GetInit("Ammo") returns 8
