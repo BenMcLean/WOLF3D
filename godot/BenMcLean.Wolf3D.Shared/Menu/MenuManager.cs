@@ -433,7 +433,7 @@ public class MenuManager
 			return;
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
-		MenuPictureDefinition picture = menuDef.Pictures.FirstOrDefault(p => p.Id == id);
+		PictureDefinition picture = menuDef.Pictures.FirstOrDefault(p => p.Id == id);
 		if (picture == null)
 		{
 			GD.PrintErr($"ERROR: SetPicture: No picture with Id '{id}' in menu '{_currentMenuName}'");
@@ -713,7 +713,7 @@ public class MenuManager
 	/// Uses DoString to execute script directly (same pattern as ExecuteMenuItemAction).
 	/// </summary>
 	/// <param name="pictureDef">Picture definition containing the script</param>
-	private void ExecutePictureScript(MenuPictureDefinition pictureDef)
+	private void ExecutePictureScript(PictureDefinition pictureDef)
 	{
 		if (string.IsNullOrEmpty(pictureDef.Script))
 			return;

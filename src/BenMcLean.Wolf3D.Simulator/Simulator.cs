@@ -66,6 +66,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private string onNewGameFunctionName;
 	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
 	private string onFaceFunctionName;
+	// Maps StatusBar Text Id → display field width (from initial XML content length).
+	// When Inventory.ValueChanged fires for a name in this dict, auto-emits StatusBarTextChanged
+	// with the value right-justified to the stored width. Width is fixed at game load from XML.
+	private readonly Dictionary<string, int> _statusBarTextWidths = [];
 	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
 	private FaceController faceController;
 	// Map analyzer for accessing door metadata (sounds, etc.)
@@ -311,8 +315,15 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Initialize Lua script engine and compile all state functions
 		luaScriptEngine = new Lua.LuaScriptEngine(logger);
 		luaScriptEngine.CompileAllActionFunctions(stateCollection);
-		// Wire Inventory.ValueChanged to PlayerStateChanged for backwards compatibility
-		Inventory.ValueChanged += (name, value) => EmitPlayerStateChanged();
+		// Wire Inventory.ValueChanged to PlayerStateChanged and auto-text StatusBar updates.
+		// Auto-text: if the inventory key matches a StatusBar Text Id, emit StatusBarTextChanged
+		// with the value right-justified to the field width defined by the initial XML content length.
+		Inventory.ValueChanged += (name, value) =>
+		{
+			EmitPlayerStateChanged();
+			if (_statusBarTextWidths.TryGetValue(name, out int width))
+				EmitStatusBarTextChanged(name, value.ToString().PadLeft(width));
+		};
 	}
 	/// <summary>
 	/// Update the simulation with elapsed real time.
@@ -1196,6 +1207,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		onDeathFunctionName = statusBar.OnDeath;
 		onNewGameFunctionName = statusBar.OnNewGame;
 		onFaceFunctionName = statusBar.OnFace;
+		// Build auto-text map: StatusBar Text Id → field width from initial XML content length.
+		// When SetValue fires for a matching key, the value is right-justified to this width.
+		_statusBarTextWidths.Clear();
+		foreach (Assets.Gameplay.TextDefinition text in statusBar.Texts)
+			if (!string.IsNullOrEmpty(text.Id))
+				_statusBarTextWidths[text.Id] = (text.Content ?? string.Empty).Length;
 		faceController = !string.IsNullOrEmpty(onFaceFunctionName)
 			? new FaceController(rng, luaScriptEngine, onFaceFunctionName, statusBar.FaceTics)
 			: null;

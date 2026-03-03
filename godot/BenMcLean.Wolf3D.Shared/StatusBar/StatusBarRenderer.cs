@@ -119,7 +119,7 @@ public class StatusBarRenderer
 			GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager - cannot render status bar texts");
 			return;
 		}
-		foreach (MenuTextDefinition textDef in _definition.Texts)
+		foreach (TextDefinition textDef in _definition.Texts)
 		{
 			string content = !string.IsNullOrEmpty(textDef.Id)
 				? _state.GetText(textDef.Id)
@@ -150,7 +150,7 @@ public class StatusBarRenderer
 	/// </summary>
 	private void RenderPictures()
 	{
-		foreach (MenuPictureDefinition picDef in _definition.Pictures)
+		foreach (PictureDefinition picDef in _definition.Pictures)
 		{
 			string picName = !string.IsNullOrEmpty(picDef.Id) ? _state.GetPic(picDef.Id) : string.Empty;
 			if (string.IsNullOrEmpty(picName))

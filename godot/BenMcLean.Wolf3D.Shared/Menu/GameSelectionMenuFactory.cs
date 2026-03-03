@@ -81,7 +81,7 @@ public static class GameSelectionMenuFactory
 				Spacing = 13,
 				Texts =
 				[
-					new MenuTextDefinition
+					new TextDefinition
 					{
 						Content = "Which game to play?",
 						X = "Center",
@@ -106,7 +106,7 @@ public static class GameSelectionMenuFactory
 
 			if (pages > 1)
 			{
-				menu.Texts.Add(new MenuTextDefinition
+				menu.Texts.Add(new TextDefinition
 				{
 					Content = "pg " + (page + 1) + " of " + pages,
 					X = "220",

@@ -108,10 +108,10 @@ public class MenuBoxDefinition
 }
 
 /// <summary>
-/// Represents a decorative picture in a menu.
+/// Represents a picture element used in menus and the status bar.
 /// Maps to a &lt;Picture&gt; element in XML.
 /// </summary>
-public class MenuPictureDefinition
+public class PictureDefinition
 {
 	/// <summary>
 	/// Optional identifier for Lua scripts to target this picture (e.g., "DifficultyFace").
@@ -182,13 +182,13 @@ public class MenuPictureDefinition
 	/// </summary>
 	public string Script { get; set; }
 	/// <summary>
-	/// Creates a MenuPictureDefinition instance from an XElement.
+	/// Creates a PictureDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing picture data (&lt;Picture&gt;)</param>
-	/// <returns>A new MenuPictureDefinition instance</returns>
-	public static MenuPictureDefinition FromXElement(XElement element)
+	/// <returns>A new PictureDefinition instance</returns>
+	public static PictureDefinition FromXElement(XElement element)
 	{
-		MenuPictureDefinition picture = new()
+		PictureDefinition picture = new()
 		{
 			Id = element.Attribute("Id")?.Value,
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Picture element must have a Name attribute"),
@@ -211,7 +211,7 @@ public class MenuPictureDefinition
 /// Used for non-interactive text like "How tough are you?" in the NewGame menu.
 /// WL_MENU.C:1639-1649: US_Print("How tough are you?") with READHCOLOR
 /// </summary>
-public class MenuTextDefinition
+public class TextDefinition
 {
 	/// <summary>
 	/// Optional identifier for Lua to update text dynamically.
@@ -266,13 +266,13 @@ public class MenuTextDefinition
 	/// </summary>
 	public int YValue => (CenterY || BottomY) ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
-	/// Creates a MenuTextDefinition instance from an XElement.
+	/// Creates a TextDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing text data (&lt;Text&gt;)</param>
-	/// <returns>A new MenuTextDefinition instance</returns>
-	public static MenuTextDefinition FromXElement(XElement element)
+	/// <returns>A new TextDefinition instance</returns>
+	public static TextDefinition FromXElement(XElement element)
 	{
-		MenuTextDefinition text = new()
+		TextDefinition text = new()
 		{
 			Id = element.Attribute("Id")?.Value,
 			Content = element.Value?.Trim() ?? string.Empty,
@@ -548,12 +548,12 @@ public class MenuDefinition
 	/// <summary>
 	/// Decorative pictures to display (e.g., logos, title graphics)
 	/// </summary>
-	public List<MenuPictureDefinition> Pictures { get; set; } = [];
+	public List<PictureDefinition> Pictures { get; set; } = [];
 	/// <summary>
 	/// Text labels to display (e.g., "How tough are you?" in NewGame menu)
 	/// WL_MENU.C:1639-1649: US_Print() for non-interactive text
 	/// </summary>
-	public List<MenuTextDefinition> Texts { get; set; } = [];
+	public List<TextDefinition> Texts { get; set; } = [];
 	/// <summary>
 	/// Animated percent tickers (e.g., kill%, secret%, treasure% on intermission screen).
 	/// </summary>
@@ -616,12 +616,12 @@ public class MenuDefinition
 		// Parse decorative pictures
 		IEnumerable<XElement> pictureElements = element.Elements("Picture");
 		if (pictureElements != null)
-			menu.Pictures = [.. pictureElements.Select(MenuPictureDefinition.FromXElement)];
+			menu.Pictures = [.. pictureElements.Select(PictureDefinition.FromXElement)];
 
 		// Parse text labels
 		IEnumerable<XElement> textElements = element.Elements("Text");
 		if (textElements != null)
-			menu.Texts = [.. textElements.Select(MenuTextDefinition.FromXElement)];
+			menu.Texts = [.. textElements.Select(TextDefinition.FromXElement)];
 		// Parse tickers
 		IEnumerable<XElement> tickerElements = element.Elements("Ticker");
 		if (tickerElements != null)

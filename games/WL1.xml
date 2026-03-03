@@ -1299,6 +1299,7 @@ return false
 			<BonusScript Name="key_gold">
 				<![CDATA[
 SetValue("Gold Key", 1)
+SetPicture("GoldKey", "GOLDKEYPIC")
 PlayAdLibSound("GETKEYSND")
 FlashScreen(0xFFF800)
 return true
@@ -1307,6 +1308,7 @@ return true
 			<BonusScript Name="key_silver">
 				<![CDATA[
 SetValue("Silver Key", 1)
+SetPicture("SilverKey", "SILVERKEYPIC")
 PlayAdLibSound("GETKEYSND")
 FlashScreen(0xFFF800)
 return true
@@ -2269,18 +2271,14 @@ if GetValue("Lives") > 0 then
 	SetValue("Health", 100)
 	SetValue("Ammo", 8)
 	SetValue("Gold Key", 0)
+	SetPicture("GoldKey", "NOKEYPIC")
 	SetValue("Silver Key", 0)
+	SetPicture("SilverKey", "NOKEYPIC")
 	SetValue("Weapon2", 0)
 	SetValue("Weapon3", 0)
 	SetValue("SelectedWeapon0", 1)
 	SetValue("SelectedWeapon1", 1)
 	SetValue("StatusBarWeapon", 1)
-	-- Update status bar display
-	SetText("Health", "100")
-	SetText("Ammo", " 8")
-	SetText("Lives", " " .. tostring(GetValue("Lives")))
-	SetPicture("GoldKey", "NOKEYPIC")
-	SetPicture("SilverKey", "NOKEYPIC")
 	SetPicture("WeaponPic", "GUNPIC")
 	return "restart"
 end
@@ -2309,32 +2307,34 @@ SetPicture("Face", "FACE" .. level .. frames[math.random(1, 3)] .. "PIC")
 			<!-- WL_GAME.C:NewGame — initialize all inventory values, maxes, and status bar display -->
 			<Function Name="OnNewGame">
 				<![CDATA[
--- Inventory values
+-- Game mechanics maxes (clamping)
+SetMax("Health", 100)
+SetMax("Ammo", 99)
+SetMax("Weapon0", 1)
+SetMax("Weapon1", 1)
+SetMax("Weapon2", 1)
+SetMax("Weapon3", 1)
+-- Inventory values. SetValue auto-updates StatusBar text where Text Id matches inventory key.
+-- Display width comes from the initial XML content length of the matching <Text Id="..."> element.
 SetValue("Difficulty", 1)
 SetValue("Episode", 1)
-SetValue("Floor", 1)
-SetMax("Health", 100);  SetValue("Health", 100)
-SetMax("Ammo", 99);     SetValue("Ammo", 8)
-SetValue("Lives", 3)
-SetValue("Score", 0)
+SetValue("Floor", 1)        -- auto-updates "Floor" text (" 1", width 2)
+SetValue("Health", 100)     -- auto-updates "Health" text ("100", width 3)
+SetValue("Ammo", 8)         -- auto-updates "Ammo" text (" 8", width 2)
+SetValue("Lives", 3)        -- auto-updates "Lives" text (" 3", width 2)
+SetValue("Score", 0)        -- auto-updates "Score" text ("     0", width 6)
 SetValue("Gold Key", 0)
+SetPicture("GoldKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
+SetPicture("SilverKey", "NOKEYPIC")
 SetValue("FaceGrinTics", 0)
-SetMax("Weapon0", 1);  SetValue("Weapon0", 1)
-SetMax("Weapon1", 1);  SetValue("Weapon1", 1)
-SetMax("Weapon2", 1);  SetValue("Weapon2", 0)
-SetMax("Weapon3", 1);  SetValue("Weapon3", 0)
+SetValue("Weapon0", 1)
+SetValue("Weapon1", 1)
+SetValue("Weapon2", 0)
+SetValue("Weapon3", 0)
 SetValue("SelectedWeapon0", 1)
 SetValue("SelectedWeapon1", 1)
 SetValue("StatusBarWeapon", 1)
--- Update status bar display
-SetText("Floor", " 1")
-SetText("Score", "     0")
-SetText("Lives", " 3")
-SetText("Health", "100")
-SetText("Ammo", " 8")
-SetPicture("GoldKey", "NOKEYPIC")
-SetPicture("SilverKey", "NOKEYPIC")
 SetPicture("WeaponPic", "GUNPIC")
 ]]>
 			</Function>

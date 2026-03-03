@@ -171,7 +171,7 @@ public class MenuRenderer
 			return;
 		for (int pictureIndex = 0; pictureIndex < menuDef.Pictures.Count; pictureIndex++)
 		{
-			MenuPictureDefinition pictureDef = menuDef.Pictures[pictureIndex];
+			PictureDefinition pictureDef = menuDef.Pictures[pictureIndex];
 			// Get texture from SharedAssetManager
 			if (!SharedAssetManager.VgaGraph.TryGetValue(pictureDef.Name, out AtlasTexture texture))
 			{
@@ -288,7 +288,7 @@ public class MenuRenderer
 	{
 		if (menuDef.Texts is null || menuDef.Texts.Count == 0)
 			return;
-		foreach (MenuTextDefinition textDef in menuDef.Texts)
+		foreach (TextDefinition textDef in menuDef.Texts)
 		{
 			// Determine font: textDef.Font > menuDef.Font > "BIG" (default)
 			string fontName = textDef.Font ?? menuDef.Font ?? "BIG";

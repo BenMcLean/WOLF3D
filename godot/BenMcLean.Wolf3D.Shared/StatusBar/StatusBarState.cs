@@ -34,11 +34,11 @@ public class StatusBarState
 	{
 		_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 		// Initialize texts from definition (content keyed by Id)
-		foreach (MenuTextDefinition text in _definition.Texts)
+		foreach (TextDefinition text in _definition.Texts)
 			if (!string.IsNullOrEmpty(text.Id))
 				_texts[text.Id] = text.Content ?? string.Empty;
 		// Initialize pictures from definition (only those with an Id can be targeted by Lua)
-		foreach (MenuPictureDefinition picture in _definition.Pictures)
+		foreach (PictureDefinition picture in _definition.Pictures)
 			if (!string.IsNullOrEmpty(picture.Id))
 				_pictures[picture.Id] = picture.Name ?? string.Empty;
 	}

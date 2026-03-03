@@ -646,11 +646,11 @@
 	<xs:element name="Picture">
 		<xs:annotation>
 			<xs:documentation>
-				A picture element used in both menus and the status bar.
+				A picture element used in menus and the status bar.
 				Name is always the VgaGraph image to display.
 				The optional Id attribute identifies this picture for Lua scripts,
 				allowing SetPicture(id, picName) to change the displayed image at runtime.
-				In menus, element content is an optional inline Lua script to execute when clicked.
+				Element content is an optional inline Lua script to execute when clicked (menus only).
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -704,9 +704,10 @@
 	<xs:element name="Text">
 		<xs:annotation>
 			<xs:documentation>
-				Non-interactive text label in a menu (e.g., "How tough are you?" in NewGame menu).
-				Used for static text that is not selectable. WL_MENU.C:US_Print().
-				Element content is the text to display.
+				Text label used in menus and the status bar.
+				In menus: non-interactive, not selectable (WL_MENU.C:US_Print()).
+				In the status bar: dynamically updated via SetText(id, value) from Lua.
+				Element content is the initial text to display.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>

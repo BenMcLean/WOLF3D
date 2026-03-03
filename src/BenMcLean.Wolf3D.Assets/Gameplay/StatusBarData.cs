@@ -22,12 +22,12 @@ public class StatusBarDefinition
 	/// Text label elements (score, health, ammo, floor, lives, etc.).
 	/// Updated at runtime by action scripts via SetText().
 	/// </summary>
-	public List<MenuTextDefinition> Texts { get; set; } = [];
+	public List<TextDefinition> Texts { get; set; } = [];
 	/// <summary>
 	/// Named picture elements (e.g., face display, weapon, keys).
 	/// Updated at runtime by action scripts via SetPicture().
 	/// </summary>
-	public List<MenuPictureDefinition> Pictures { get; set; } = [];
+	public List<PictureDefinition> Pictures { get; set; } = [];
 	/// <summary>
 	/// Name of the ActionFunction to call on each facecount tick.
 	/// WL_AGENT.C:UpdateFace — face frame selection logic.
@@ -59,8 +59,8 @@ public class StatusBarDefinition
 	{
 		BackgroundPic = element.Attribute("Pic")?.Value,
 		Font = int.TryParse(element.Attribute("Font")?.Value, out int font) ? font : 0,
-		Texts = [.. element.Elements("Text").Select(MenuTextDefinition.FromXElement)],
-		Pictures = [.. element.Elements("Picture").Select(MenuPictureDefinition.FromXElement)],
+		Texts = [.. element.Elements("Text").Select(TextDefinition.FromXElement)],
+		Pictures = [.. element.Elements("Picture").Select(PictureDefinition.FromXElement)],
 		OnFace = element.Attribute("OnFace")?.Value,
 		OnDeath = element.Attribute("OnDeath")?.Value,
 		OnNewGame = element.Attribute("OnNewGame")?.Value,
