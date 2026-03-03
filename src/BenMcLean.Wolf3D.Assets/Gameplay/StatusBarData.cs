@@ -67,32 +67,6 @@ public class StatusBarWeaponsDefinition
 }
 
 /// <summary>
-/// Represents the face display position in the status bar.
-/// Maps to a &lt;Face&gt; element in XML.
-/// </summary>
-public class StatusBarFaceDefinition
-{
-	/// <summary>
-	/// X coordinate for face display
-	/// </summary>
-	public int X { get; set; }
-	/// <summary>
-	/// Y coordinate for face display
-	/// </summary>
-	public int Y { get; set; }
-	/// <summary>
-	/// Creates a StatusBarFaceDefinition instance from an XElement.
-	/// </summary>
-	/// <param name="element">The XElement containing face data (&lt;Face&gt;)</param>
-	/// <returns>A new StatusBarFaceDefinition instance</returns>
-	public static StatusBarFaceDefinition FromXElement(XElement element) => new()
-	{
-		X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
-		Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0
-	};
-}
-
-/// <summary>
 /// Represents a number display in the status bar.
 /// Maps to a &lt;Number&gt; element in XML.
 /// Can represent either a numeric display (with X, Y, Digits) or a key display (with Have, Empty pics).
@@ -189,19 +163,26 @@ public class StatusBarDefinition
 	/// </summary>
 	public List<StatusBarNumberDefinition> Numbers { get; set; } = [];
 	/// <summary>
-	/// Face display definition (position only)
+	/// Named picture elements (e.g., face display).
+	/// Updated at runtime by action scripts via SetPicture().
 	/// </summary>
-	public StatusBarFaceDefinition Face { get; set; }
+	public List<MenuPictureDefinition> Pictures { get; set; } = [];
 	/// <summary>
 	/// Weapons display definition
 	/// </summary>
 	public StatusBarWeaponsDefinition Weapons { get; set; }
 	/// <summary>
-	/// Lua script to execute when the player dies (health reaches 0).
-	/// WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
-	/// Returns "restart" or "gameover".
+	/// Name of the ActionFunction to call on each facecount tick.
+	/// WL_AGENT.C:UpdateFace — face frame selection logic.
+	/// Optional: if absent, no face controller runs.
 	/// </summary>
-	public string OnDeathScript { get; set; }
+	public string OnFace { get; set; }
+	/// <summary>
+	/// Name of the ActionFunction to call when the player dies (health reaches 0).
+	/// WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
+	/// Returns "restart" or a menu name (e.g., "HighScores") for game over.
+	/// </summary>
+	public string OnDeath { get; set; }
 	/// <summary>
 	/// Gets a number definition by name.
 	/// </summary>
@@ -220,15 +201,14 @@ public class StatusBarDefinition
 		{
 			BackgroundPic = element.Attribute("Pic")?.Value,
 			Font = int.TryParse(element.Attribute("Font")?.Value, out int font) ? font : 0,
-			Numbers = [.. element.Elements("Number").Select(StatusBarNumberDefinition.FromXElement)]
+			Numbers = [.. element.Elements("Number").Select(StatusBarNumberDefinition.FromXElement)],
+			Pictures = [.. element.Elements("Picture").Select(MenuPictureDefinition.FromXElement)],
+			OnFace = element.Attribute("OnFace")?.Value,
+			OnDeath = element.Attribute("OnDeath")?.Value
 		};
-		XElement faceElement = element.Element("Face");
-		if (faceElement != null)
-			statusBar.Face = StatusBarFaceDefinition.FromXElement(faceElement);
 		XElement weaponsElement = element.Element("Weapons");
 		if (weaponsElement != null)
 			statusBar.Weapons = StatusBarWeaponsDefinition.FromXElement(weaponsElement);
-		statusBar.OnDeathScript = element.Element("OnDeath")?.Value;
 		return statusBar;
 	}
 }

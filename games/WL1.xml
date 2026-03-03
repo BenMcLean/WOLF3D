@@ -153,17 +153,18 @@
 			<Pic Number="142" Name="PAUSEDPIC" />
 			<Pic Number="143" Name="GETPSYCHEDPIC" />
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="3" >
+		<StatusBar Pic="STATUSBARPIC" Font="3" OnFace="UpdateFace" OnDeath="OnDeath">
 			<Number Name="Difficulty" Init="1" />
 			<Number Name="Episode" Init="1" />
 			<Number Name="Floor" X="32" Y="16" Digits="2" Init="1" />
 			<Number Name="Score" X="96" Y="16" Digits="6" Init="0" />
 			<Number Name="Lives" X="128" Y="16" Digits="2" Init="3" />
-			<Face X="134" Y="5" />
+			<Picture Id="Face" Name="FACE1APIC" X="134" Y="5" />
 			<Number Name="Health" X="192" Y="16" Digits="3" Init="100" Max="100" />
 			<Number Name="Ammo" X="232" Y="16" Digits="2" Init="8" Max="99" />
 			<Number Name="Gold Key" X="240" Y="4" Have="GOLDKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
 			<Number Name="Silver Key" X="240" Y="20" Have="SILVERKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
+			<Number Name="FaceGrinTics" Init="0" />
 			<Number Name="Weapon0" Init="1" Max="1" />
 			<Number Name="Weapon1" Init="1" Max="1" />
 			<Number Name="Weapon2" Init="0" Max="1" />
@@ -177,26 +178,6 @@
 				<Weapon Number="2" Pic="MACHINEGUNPIC" Init="0" />
 				<Weapon Number="3" Pic="GATLINGGUNPIC" Init="0" />
 			</Weapons>
-			<!-- WL_GAME.C:Died() — decrement lives, reset to pistol/init ammo/no keys, restart or game over -->
-			<OnDeath>
-				<![CDATA[
-PlayAdLibSound("PLAYERDEATHSND")
-if GetValue("Lives") > 0 then
-	AddValue("Lives", -1)
-	SetValue("Health", GetInit("Health"))
-	SetValue("Ammo", GetInit("Ammo"))
-	SetValue("Gold Key", 0)
-	SetValue("Silver Key", 0)
-	SetValue("Weapon2", GetInit("Weapon2"))
-	SetValue("Weapon3", GetInit("Weapon3"))
-	SetValue("SelectedWeapon0", GetInit("SelectedWeapon0"))
-	SetValue("SelectedWeapon1", GetInit("SelectedWeapon1"))
-	SetValue("StatusBarWeapon", GetInit("StatusBarWeapon"))
-	return "restart"
-end
-return "HighScores"
-]]>
-			</OnDeath>
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
 		<Menus Start="Credits" Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
@@ -341,23 +322,23 @@ return "HighScores"
 				<Text X="70" Y="68" Color="71">How tough are you?</Text>
 				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged (WL_MENU.C:1675) -->
 				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
-				<Picture Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
+				<Picture Id="DifficultyFace" Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					BackToPreviousMenu()
 				</Picture>
 				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
 				<OnSelectionChanged>
 					<![CDATA[
--- Update the difficulty face picture (index 1) based on current selection
+-- Update the difficulty face picture based on current selection
 local index = GetSelectedIndex()
 if index == 0 then
-	SetPicture('C_BABYMODEPIC', 0)
+	SetPicture('DifficultyFace', 'C_BABYMODEPIC')
 elseif index == 1 then
-	SetPicture('C_EASYPIC', 0)
+	SetPicture('DifficultyFace', 'C_EASYPIC')
 elseif index == 2 then
-	SetPicture('C_NORMALPIC', 0)
+	SetPicture('DifficultyFace', 'C_NORMALPIC')
 elseif index == 3 then
-	SetPicture('C_HARDPIC', 0)
+	SetPicture('DifficultyFace', 'C_HARDPIC')
 end
 ]]>
 				</OnSelectionChanged>
@@ -407,37 +388,37 @@ end
 				<!-- Position: (SM_X+24, SM_Y1+i*13+2) = (72, 20+i*13+2) -->
 				<!-- ZIndex=9 to draw above boxes (boxes are ZIndex=7) -->
 				<!-- Item 0: Sound FX None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9">
+				<Picture Id="SoundFxNone" Name="C_NOTSELECTEDPIC" X="72" Y="22" ZIndex="9">
 					SetSoundMode('Off')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 1: Sound FX PC -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9">
+				<Picture Id="SoundFxPC" Name="C_NOTSELECTEDPIC" X="72" Y="35" ZIndex="9">
 					SetSoundMode('PC')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 2: Sound FX AdLib -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9">
+				<Picture Id="SoundFxAdLib" Name="C_NOTSELECTEDPIC" X="72" Y="48" ZIndex="9">
 					SetSoundMode('AdLib')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 3: Digitized None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9">
+				<Picture Id="DigiNone" Name="C_NOTSELECTEDPIC" X="72" Y="87" ZIndex="9">
 					SetDigiMode('Off')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 4: Digitized SB -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9">
+				<Picture Id="DigiSoundBlaster" Name="C_NOTSELECTEDPIC" X="72" Y="100" ZIndex="9">
 					SetDigiMode('SoundBlaster')
 					RefreshMenu()
 				</Picture>
 				<!-- Item 5: Music None -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9">
+				<Picture Id="MusicNone" Name="C_NOTSELECTEDPIC" X="72" Y="152" ZIndex="9">
 					SetMusicEnabled(false)
 					RefreshMenu()
 				</Picture>
 				<!-- Item 6: Music AdLib -->
-				<Picture Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9">
+				<Picture Id="MusicAdLib" Name="C_NOTSELECTEDPIC" X="72" Y="165" ZIndex="9">
 					SetMusicEnabled(true)
 					RefreshMenu()
 				</Picture>
@@ -446,42 +427,41 @@ end
 				<OnSelectionChanged>
 					<![CDATA[
 -- Update all toggle switches to reflect current sound settings
--- Picture indices: 4-11 correspond to the 8 toggle switches (excluding spacers)
 local soundMode = GetSoundMode()
 local digiMode = GetDigiMode()
 local musicEnabled = GetMusicEnabled()
 
--- Sound Effects toggles (items 0-2, picture indices 4-6)
+-- Sound Effects toggles
 if soundMode == "Off" then
-	SetPicture('C_SELECTEDPIC', 4)
-	SetPicture('C_NOTSELECTEDPIC', 5)
-	SetPicture('C_NOTSELECTEDPIC', 6)
+	SetPicture('SoundFxNone', 'C_SELECTEDPIC')
+	SetPicture('SoundFxPC', 'C_NOTSELECTEDPIC')
+	SetPicture('SoundFxAdLib', 'C_NOTSELECTEDPIC')
 elseif soundMode == "PC" then
-	SetPicture('C_NOTSELECTEDPIC', 4)
-	SetPicture('C_SELECTEDPIC', 5)
-	SetPicture('C_NOTSELECTEDPIC', 6)
+	SetPicture('SoundFxNone', 'C_NOTSELECTEDPIC')
+	SetPicture('SoundFxPC', 'C_SELECTEDPIC')
+	SetPicture('SoundFxAdLib', 'C_NOTSELECTEDPIC')
 elseif soundMode == "AdLib" then
-	SetPicture('C_NOTSELECTEDPIC', 4)
-	SetPicture('C_NOTSELECTEDPIC', 5)
-	SetPicture('C_SELECTEDPIC', 6)
+	SetPicture('SoundFxNone', 'C_NOTSELECTEDPIC')
+	SetPicture('SoundFxPC', 'C_NOTSELECTEDPIC')
+	SetPicture('SoundFxAdLib', 'C_SELECTEDPIC')
 end
 
--- Digitized Sound toggles (items 3-4, picture indices 7-8)
+-- Digitized Sound toggles
 if digiMode == "Off" then
-	SetPicture('C_SELECTEDPIC', 7)
-	SetPicture('C_NOTSELECTEDPIC', 8)
+	SetPicture('DigiNone', 'C_SELECTEDPIC')
+	SetPicture('DigiSoundBlaster', 'C_NOTSELECTEDPIC')
 elseif digiMode == "SoundBlaster" then
-	SetPicture('C_NOTSELECTEDPIC', 7)
-	SetPicture('C_SELECTEDPIC', 8)
+	SetPicture('DigiNone', 'C_NOTSELECTEDPIC')
+	SetPicture('DigiSoundBlaster', 'C_SELECTEDPIC')
 end
 
--- Music toggles (items 5-6, picture indices 9-10)
+-- Music toggles
 if not musicEnabled then
-	SetPicture('C_SELECTEDPIC', 9)
-	SetPicture('C_NOTSELECTEDPIC', 10)
+	SetPicture('MusicNone', 'C_SELECTEDPIC')
+	SetPicture('MusicAdLib', 'C_NOTSELECTEDPIC')
 else
-	SetPicture('C_NOTSELECTEDPIC', 9)
-	SetPicture('C_SELECTEDPIC', 10)
+	SetPicture('MusicNone', 'C_NOTSELECTEDPIC')
+	SetPicture('MusicAdLib', 'C_SELECTEDPIC')
 end
 ]]>
 				</OnSelectionChanged>
@@ -1386,6 +1366,7 @@ local isNew = not Has("Weapon3")
 SetValue("Weapon3", 1)
 AddValue("Ammo", 6)
 if isNew then SwitchToWeapon("chaingun") end
+SetValue("FaceGrinTics", 2)
 PlayAdLibSound("GETGATLINGSND")
 FlashScreen(0xFFF800)
 return true
@@ -2291,6 +2272,46 @@ elseif actorType == "Hans" then
 	PlaceItemType(43, 128)  -- bo_key1 (gold key)
 	PlayLocalDigiSound("MUTTISND")
 end
+]]>
+			</Function>
+			<!-- StatusBar ActionFunctions -->
+			<!-- WL_GAME.C:Died() — decrement lives, reset to pistol/init ammo/no keys, restart or game over -->
+			<Function Name="OnDeath">
+				<![CDATA[
+PlayAdLibSound("PLAYERDEATHSND")
+if GetValue("Lives") > 0 then
+	AddValue("Lives", -1)
+	SetValue("Health", GetInit("Health"))
+	SetValue("Ammo", GetInit("Ammo"))
+	SetValue("Gold Key", 0)
+	SetValue("Silver Key", 0)
+	SetValue("Weapon2", GetInit("Weapon2"))
+	SetValue("Weapon3", GetInit("Weapon3"))
+	SetValue("SelectedWeapon0", GetInit("SelectedWeapon0"))
+	SetValue("SelectedWeapon1", GetInit("SelectedWeapon1"))
+	SetValue("StatusBarWeapon", GetInit("StatusBarWeapon"))
+	return "restart"
+end
+return "HighScores"
+]]>
+			</Function>
+			<!-- WL_AGENT.C:UpdateFace — select face frame based on health and grin state -->
+			<Function Name="UpdateFace">
+				<![CDATA[
+local grinTics = GetValue("FaceGrinTics")
+if grinTics > 0 then
+	AddValue("FaceGrinTics", -1)
+	SetPicture("Face", "GOTGATLINGPIC")
+	return
+end
+local health = GetValue("Health")
+if health <= 0 then
+	SetPicture("Face", "FACE8APIC")
+	return
+end
+local level = math.min(7, math.floor((100 - health) / 16) + 1)
+local frames = {"A", "B", "C"}
+SetPicture("Face", "FACE" .. level .. frames[math.random(1, 3)] .. "PIC")
 ]]>
 			</Function>
 		</Actors>

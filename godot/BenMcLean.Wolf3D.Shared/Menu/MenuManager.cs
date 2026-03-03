@@ -422,24 +422,25 @@ public class MenuManager
 		}
 	}
 	/// <summary>
-	/// Update a picture in the current menu's Pictures list.
+	/// Update a picture in the current menu by its Id.
 	/// Used by OnSelectionChanged scripts to change pictures dynamically (e.g., difficulty faces).
 	/// </summary>
-	/// <param name="pictureName">Name of the VgaGraph picture</param>
-	/// <param name="pictureIndex">Index of the picture to update in the Pictures list</param>
-	private void SetPicture(string pictureName, int pictureIndex)
+	/// <param name="id">Id attribute of the picture to update</param>
+	/// <param name="picName">Name of the VgaGraph picture to display</param>
+	private void SetPicture(string id, string picName)
 	{
 		if (string.IsNullOrEmpty(_currentMenuName))
 			return;
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
-		if (pictureIndex < 0 || pictureIndex >= menuDef.Pictures.Count)
+		MenuPictureDefinition picture = menuDef.Pictures.FirstOrDefault(p => p.Id == id);
+		if (picture == null)
 		{
-			_logger?.LogWarning("SetPicture: Picture index {index} out of range for menu '{menu}'", pictureIndex, _currentMenuName);
+			GD.PrintErr($"ERROR: SetPicture: No picture with Id '{id}' in menu '{_currentMenuName}'");
 			return;
 		}
 		// Update the picture definition
-		menuDef.Pictures[pictureIndex].Name = pictureName;
+		picture.Name = picName;
 		// Re-render the menu to show the updated picture
 		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
 	}

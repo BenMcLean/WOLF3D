@@ -114,6 +114,11 @@ public class MenuBoxDefinition
 public class MenuPictureDefinition
 {
 	/// <summary>
+	/// Optional identifier for Lua scripts to target this picture (e.g., "DifficultyFace").
+	/// When set, menu scripts can call SetPicture(id, picName) to update the display.
+	/// </summary>
+	public string Id { get; set; }
+	/// <summary>
 	/// Name of the VgaGraph image (e.g., "C_MOUSELBACKPIC")
 	/// </summary>
 	public string Name { get; set; }
@@ -185,6 +190,7 @@ public class MenuPictureDefinition
 	{
 		MenuPictureDefinition picture = new()
 		{
+			Id = element.Attribute("Id")?.Value,
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Picture element must have a Name attribute"),
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",

@@ -225,11 +225,11 @@ public class MenuScriptContext(
 	/// </summary>
 	public Func<int> GetSelectedIndexFunc { get; set; }
 	/// <summary>
-	/// Delegate for updating a picture in the current menu.
+	/// Delegate for updating a picture in the current menu by Id.
 	/// Set by MenuManager after context creation.
-	/// Parameters: pictureName (e.g., "C_BABYMODEPIC"), pictureIndex (0-based index in Pictures list)
+	/// Parameters: id (e.g., "DifficultyFace"), picName (e.g., "C_BABYMODEPIC")
 	/// </summary>
-	public Action<string, int> SetPictureAction { get; set; }
+	public Action<string, string> SetPictureAction { get; set; }
 	/// <summary>
 	/// Get the currently selected menu item index.
 	/// Exposed to Lua. Delegates to MenuManager.
@@ -238,13 +238,13 @@ public class MenuScriptContext(
 	/// <returns>Zero-based index of selected item</returns>
 	public int GetSelectedIndex() => GetSelectedIndexFunc?.Invoke() ?? 0;
 	/// <summary>
-	/// Update a picture in the current menu.
+	/// Update a picture in the current menu by its Id.
 	/// Used for dynamic picture changes like difficulty faces in NewGame menu.
 	/// Matches original Wolf3D's VWB_DrawPic behavior in DrawNewGameDiff.
 	/// </summary>
-	/// <param name="pictureName">Name of the VgaGraph picture (e.g., "C_BABYMODEPIC")</param>
-	/// <param name="pictureIndex">Zero-based index of the picture in the menu's Pictures list (defaults to 0)</param>
-	public void SetPicture(string pictureName, int pictureIndex = 0) => SetPictureAction?.Invoke(pictureName, pictureIndex);
+	/// <param name="id">Id attribute of the picture to update (e.g., "DifficultyFace")</param>
+	/// <param name="picName">Name of the VgaGraph picture to display (e.g., "C_BABYMODEPIC")</param>
+	public void SetPicture(string id, string picName) => SetPictureAction?.Invoke(id, picName);
 	#endregion Menu Item Selection and Dynamic Content
 	#region Dynamic Content Updates
 	/// <summary>

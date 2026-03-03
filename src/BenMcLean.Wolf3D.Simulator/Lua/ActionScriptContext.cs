@@ -97,4 +97,15 @@ public class ActionScriptContext(
 	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
 	#endregion
+	#region Picture API (exposed to Lua)
+	/// <summary>
+	/// Update a named status bar picture.
+	/// Exposed to Lua. Used by face update and other status bar animations.
+	/// Fires StatusBarPicChangedEvent for the presentation layer.
+	/// </summary>
+	/// <param name="id">Picture Id as defined in the StatusBar &lt;Picture Id="..."&gt; element</param>
+	/// <param name="picName">New VgaGraph picture name to display (e.g., "FACE1APIC")</param>
+	public void SetPicture(string id, string picName) =>
+		simulator.EmitStatusBarPicChanged(id, picName);
+	#endregion
 }

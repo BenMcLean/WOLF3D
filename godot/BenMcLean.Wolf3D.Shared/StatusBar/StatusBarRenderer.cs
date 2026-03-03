@@ -18,10 +18,9 @@ public class StatusBarRenderer
 	private readonly StatusBarDefinition _definition;
 	private readonly Dictionary<string, Label> _numberLabels = [];
 	private readonly Dictionary<string, TextureRect> _keyTextures = [];
-	private TextureRect _faceTexture,
-		_weaponTexture;
-	private int _lastFaceFrame = -1,
-		_lastWeapon = -1;
+	private readonly Dictionary<string, TextureRect> _pictureTextures = [];
+	private TextureRect _weaponTexture;
+	private int _lastWeapon = -1;
 	/// <summary>
 	/// Creates a new StatusBarRenderer with a 320x40 virtual canvas.
 	/// </summary>
@@ -46,6 +45,7 @@ public class StatusBarRenderer
 		_viewport.AddChild(_canvas);
 		// Subscribe to state changes
 		_state.ValueChanged += OnValueChanged;
+		_state.PicChanged += UpdatePicture;
 		// Initial render
 		RenderAll();
 	}
@@ -72,7 +72,7 @@ public class StatusBarRenderer
 		RenderBackground();
 		RenderNumbers();
 		RenderKeys();
-		RenderFace();
+		RenderPictures();
 		RenderWeapon();
 	}
 	/// <summary>
@@ -84,9 +84,8 @@ public class StatusBarRenderer
 			child.QueueFree();
 		_numberLabels.Clear();
 		_keyTextures.Clear();
-		_faceTexture = null;
+		_pictureTextures.Clear();
 		_weaponTexture = null;
-		_lastFaceFrame = -1;
 		_lastWeapon = -1;
 	}
 	/// <summary>
@@ -178,30 +177,36 @@ public class StatusBarRenderer
 		}
 	}
 	/// <summary>
-	/// Renders the player face.
-	/// Face pattern: FACE{level}{frame}PIC where level is 1-7 based on health, frame is A/B/C
-	/// Level 8 = dead face (FACE8APIC)
+	/// Renders all named picture elements from the StatusBar definition.
+	/// Each picture's initial pic name comes from the definition; runtime updates
+	/// arrive via UpdatePicture() when the simulator fires StatusBarPicChangedEvent.
 	/// </summary>
-	private void RenderFace()
+	private void RenderPictures()
 	{
-		if (_definition.Face is null)
-			return;
-		string facePicName = GetFacePicName();
-		if (!SharedAssetManager.VgaGraph.TryGetValue(facePicName, out AtlasTexture texture))
+		foreach (MenuPictureDefinition picDef in _definition.Pictures)
 		{
-			GD.PrintErr($"ERROR: Face picture '{facePicName}' not found in VgaGraph");
-			return;
+			string picName = !string.IsNullOrEmpty(picDef.Id) ? _state.GetPic(picDef.Id) : string.Empty;
+			if (string.IsNullOrEmpty(picName))
+				picName = picDef.Name;
+			if (string.IsNullOrEmpty(picName))
+				continue;
+			if (!SharedAssetManager.VgaGraph.TryGetValue(picName, out AtlasTexture texture))
+			{
+				GD.PrintErr($"ERROR: Status bar picture '{picName}' (Id='{picDef.Id}') not found in VgaGraph");
+				continue;
+			}
+			TextureRect pictureRect = new()
+			{
+				Texture = texture,
+				Position = new Vector2(picDef.XValue, picDef.YValue),
+				Size = texture.Region.Size,
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				ZIndex = 10,
+			};
+			_canvas.AddChild(pictureRect);
+			if (!string.IsNullOrEmpty(picDef.Id))
+				_pictureTextures[picDef.Id] = pictureRect;
 		}
-		_faceTexture = new TextureRect
-		{
-			Texture = texture,
-			Position = new Vector2(_definition.Face.X, _definition.Face.Y),
-			Size = texture.Region.Size,
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			ZIndex = 10,
-		};
-		_canvas.AddChild(_faceTexture);
-		_lastFaceFrame = _state.FaceFrame;
 	}
 	/// <summary>
 	/// Renders the current weapon icon.
@@ -241,9 +246,6 @@ public class StatusBarRenderer
 	/// </summary>
 	public void Update()
 	{
-		// Update face if frame changed
-		if (_state.FaceFrame != _lastFaceFrame)
-			UpdateFace();
 		// Update weapon if changed
 		if (_state.CurrentWeapon != _lastWeapon)
 			UpdateWeapon();
@@ -272,24 +274,20 @@ public class StatusBarRenderer
 					keyTexture.Texture = texture;
 			}
 		}
-		// Health changes affect face level
-		if (name == "Health")
-			UpdateFace();
 	}
 	/// <summary>
-	/// Updates the face texture based on current health and frame.
+	/// Updates a named picture texture to a new VgaGraph pic.
+	/// Called when the simulator fires StatusBarPicChangedEvent via _state.PicChanged.
 	/// </summary>
-	private void UpdateFace()
+	private void UpdatePicture(string name, string picName)
 	{
-		if (_faceTexture is null || _definition.Face is null)
+		if (!_pictureTextures.TryGetValue(name, out TextureRect pictureRect))
 			return;
-		string facePicName = GetFacePicName();
-		if (SharedAssetManager.VgaGraph.TryGetValue(facePicName, out AtlasTexture texture))
+		if (SharedAssetManager.VgaGraph.TryGetValue(picName, out AtlasTexture texture))
 		{
-			_faceTexture.Texture = texture;
-			_faceTexture.Size = texture.Region.Size;
+			pictureRect.Texture = texture;
+			pictureRect.Size = texture.Region.Size;
 		}
-		_lastFaceFrame = _state.FaceFrame;
 	}
 	/// <summary>
 	/// Updates the weapon texture based on current weapon.
@@ -314,28 +312,6 @@ public class StatusBarRenderer
 		_lastWeapon = _state.CurrentWeapon;
 	}
 	/// <summary>
-	/// Gets the face picture name based on current health and frame.
-	/// </summary>
-	private string GetFacePicName()
-	{
-		int health = _state.GetValue("Health");
-		// Dead face at level 8
-		if (health <= 0)
-			return "FACE8APIC";
-		// Calculate face level (1-7) based on health percentage
-		// Level 1 = highest health (80-100%), Level 7 = lowest (1-14%)
-		int level = health >= 80 ? 1
-			: health >= 67 ? 2
-			: health >= 53 ? 3
-			: health >= 40 ? 4
-			: health >= 27 ? 5
-			: health >= 14 ? 6
-			: 7;
-		// Frame A, B, or C based on FaceFrame (0, 1, 2)
-		char frame = (char)('A' + (_state.FaceFrame % 3));
-		return $"FACE{level}{frame}PIC";
-	}
-	/// <summary>
 	/// Formats a number for display with right-justification.
 	/// Uses space padding to maintain consistent width.
 	/// </summary>
@@ -354,6 +330,7 @@ public class StatusBarRenderer
 	public void Dispose()
 	{
 		_state.ValueChanged -= OnValueChanged;
+		_state.PicChanged -= UpdatePicture;
 		_viewport?.QueueFree();
 	}
 }

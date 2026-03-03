@@ -412,3 +412,16 @@ public struct NavigateToMenuEvent
 	/// <summary>Menu name as defined in XML (e.g., "Victory", "Quiz")</summary>
 	public required string MenuName { get; init; }
 }
+
+/// <summary>
+/// A named status bar picture changed (e.g., face frame update).
+/// Fired when an action script calls SetPicture().
+/// Presentation layer uses this to swap the displayed VgaGraph picture.
+/// </summary>
+public struct StatusBarPicChangedEvent
+{
+	/// <summary>Picture Id as defined in the StatusBar &lt;Picture Id="..."&gt; element</summary>
+	public required string Name { get; init; }
+	/// <summary>New VgaGraph picture name to display (e.g., "FACE1APIC", "GOTGATLINGPIC")</summary>
+	public required string PicName { get; init; }
+}

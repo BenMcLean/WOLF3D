@@ -254,20 +254,29 @@
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
 				<xs:element ref="Number"/>
-				<xs:element ref="Face"/>
+				<xs:element ref="Picture"/>
 				<xs:element ref="Weapons"/>
-				<xs:element name="OnDeath" type="xs:string" minOccurs="0">
-					<xs:annotation>
-						<xs:documentation>
-							Lua script executed when the player dies (health reaches 0).
-							WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
-							Return "restart" to restart the current level, or "gameover" to return to menu.
-						</xs:documentation>
-					</xs:annotation>
-				</xs:element>
 			</xs:choice>
 			<xs:attribute name="Pic" type="xs:string"/>
 			<xs:attribute name="Font" type="xs:string"/>
+			<xs:attribute name="OnFace" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the ActionFunction to call on each facecount tick.
+						WL_AGENT.C:UpdateFace — face frame selection logic.
+						Optional: if absent, no face controller runs.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="OnDeath" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the ActionFunction to call when the player dies (health reaches 0).
+						WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
+						The function should return "restart" to restart the level, or a menu name for game over.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -282,13 +291,6 @@
 			<xs:attribute name="Have" type="xs:string"/>
 			<xs:attribute name="Empty" type="xs:string"/>
 			<xs:attribute name="LevelReset" type="xs:integer"/>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Face">
-		<xs:complexType>
-			<xs:attribute name="X" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Y" type="xs:nonNegativeInteger"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -460,7 +462,7 @@
 						<xs:documentation>
 							Lua script to execute when menu selection changes (including initial menu construction).
 							Similar to original Wolf3D's DrawNewGameDiff callback in HandleMenu (WL_MENU.C:1518).
-							The script can call GetSelectedIndex() to query current selection and SetPicture() to update pictures dynamically.
+							The script can call GetSelectedIndex() to query current selection and SetPicture(id, picName) to update pictures with an Id attribute.
 						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
@@ -659,9 +661,11 @@
 	<xs:element name="Picture">
 		<xs:annotation>
 			<xs:documentation>
-				Picture in a menu (e.g., logos, title graphics).
-				Element content is optional inline Lua script to execute when the picture is clicked.
-				If no script is provided, the picture is purely decorative (not clickable).
+				A picture element used in both menus and the status bar.
+				Name is always the VgaGraph image to display.
+				The optional Id attribute identifies this picture for Lua scripts,
+				allowing SetPicture(id, picName) to change the displayed image at runtime.
+				In menus, element content is an optional inline Lua script to execute when clicked.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -669,17 +673,22 @@
 				<xs:extension base="xs:string">
 					<xs:attribute name="Name" type="xs:string" use="required">
 						<xs:annotation>
-							<xs:documentation>Name of the VgaGraph image (e.g., "C_MOUSELBACKPIC")</xs:documentation>
+							<xs:documentation>Name of the VgaGraph image to display (e.g., "FACE1APIC", "C_MOUSELBACKPIC").</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="X" type="XCoordinateOrAlignment" use="required">
+					<xs:attribute name="Id" type="xs:string">
 						<xs:annotation>
-							<xs:documentation>X coordinate for picture placement, or "Left"/"Center"/"Right" for alignment</xs:documentation>
+							<xs:documentation>Optional identifier for Lua scripts to target this picture via SetPicture(id, picName) (e.g., "Face", "DifficultyFace").</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="Y" type="YCoordinateOrAlignment" use="required">
+					<xs:attribute name="X" type="XCoordinateOrAlignment">
 						<xs:annotation>
-							<xs:documentation>Y coordinate for picture placement, or "Top"/"Center"/"Bottom" for alignment</xs:documentation>
+							<xs:documentation>X coordinate for picture placement, or "Left"/"Center"/"Right" for alignment.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Y" type="YCoordinateOrAlignment">
+						<xs:annotation>
+							<xs:documentation>Y coordinate for picture placement, or "Top"/"Center"/"Bottom" for alignment.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Stripes" type="xs:boolean">

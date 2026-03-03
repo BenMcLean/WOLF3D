@@ -60,8 +60,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private readonly GameClock gameClock;
 	// Logger for debug output
 	private readonly Microsoft.Extensions.Logging.ILogger logger;
-	// OnDeath Lua script from StatusBar definition (WL_GAME.C:Died)
-	private string onDeathScript;
+	// OnDeath ActionFunction name from StatusBar definition (WL_GAME.C:Died)
+	private string onDeathFunctionName;
+	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
+	private string onFaceFunctionName;
+	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
+	private FaceController faceController;
 	// Map analyzer for accessing door metadata (sounds, etc.)
 	private MapAnalyzer mapAnalyzer;
 	// Map analysis for line-of-sight calculations and navigation
@@ -278,6 +282,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// WL_AGENT.C:VictoryTile
 	/// </summary>
 	public event Action<NavigateToMenuEvent> NavigateToMenu;
+	/// <summary>
+	/// Fired when an action script calls SetPicture() to update a named status bar picture.
+	/// Presentation layer swaps the displayed VgaGraph picture for the named element.
+	/// </summary>
+	public event Action<StatusBarPicChangedEvent> StatusBarPicChanged;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -384,6 +393,15 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// WL_ACT2.C:DoActor - update all actors
 		for (int i = 0; i < actors.Count; i++)
 			UpdateActor(i);
+		// WL_AGENT.C:UpdateFace - update status bar face on facecount tick
+		if (faceController != null)
+		{
+			Lua.ActionScriptContext faceContext = new(this, rng, gameClock, logger)
+			{
+				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+			};
+			faceController.Update(faceContext);
+		}
 	}
 	private void ProcessAction(PlayerAction action)
 	{
@@ -1169,7 +1187,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		Inventory.InitializeFromDefinition(statusBar);
-		onDeathScript = statusBar.OnDeathScript;
+		onDeathFunctionName = statusBar.OnDeath;
+		onFaceFunctionName = statusBar.OnFace;
+		faceController = !string.IsNullOrEmpty(onFaceFunctionName)
+			? new FaceController(rng, luaScriptEngine, onFaceFunctionName)
+			: null;
 		// Restore accumulated level stats from previous levels (carries across level transitions)
 		if (savedLevelStats != null)
 		{
@@ -2202,15 +2224,15 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 
 	/// <summary>
-	/// Executes the OnDeath Lua script (WL_GAME.C:Died).
+	/// Executes the OnDeath ActionFunction (WL_GAME.C:Died).
 	/// Called by the presentation layer after the death fadeout completes,
 	/// so that inventory resets (health, ammo, keys, weapons) happen while
 	/// the screen is fully black and the player can't see the status bar change.
 	/// </summary>
-	/// <returns>Script result: "restart" if lives remain, or a menu name (e.g., "Title") for game over</returns>
+	/// <returns>Function result: "restart" if lives remain, or a menu name (e.g., "HighScores") for game over</returns>
 	public string ExecuteOnDeathScript()
 	{
-		if (!string.IsNullOrEmpty(onDeathScript))
+		if (!string.IsNullOrEmpty(onDeathFunctionName))
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
@@ -2218,13 +2240,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			};
 			try
 			{
-				MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(onDeathScript, context);
+				MoonSharp.Interpreter.DynValue result = luaScriptEngine.ExecuteActionFunction(onDeathFunctionName, context);
 				if (result.Type == MoonSharp.Interpreter.DataType.String)
 					return result.String;
 			}
 			catch (Exception ex)
 			{
-				logger?.LogError(ex, "Error executing OnDeath script");
+				logger?.LogError(ex, "Error executing OnDeath function '{FunctionName}'", onDeathFunctionName);
 			}
 		}
 		return "gameover";
@@ -2275,6 +2297,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
 		{
 			SoundName = soundName
+		});
+	}
+
+	/// <summary>
+	/// Emit a StatusBarPicChanged event to update a named status bar picture.
+	/// Called by ActionScriptContext.SetPicture() from Lua scripts.
+	/// </summary>
+	public void EmitStatusBarPicChanged(string name, string picName)
+	{
+		StatusBarPicChanged?.Invoke(new StatusBarPicChangedEvent
+		{
+			Name = name,
+			PicName = picName
 		});
 	}
 

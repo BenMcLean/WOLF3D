@@ -22,6 +22,11 @@ public class StatusBarState
 	/// </summary>
 	public event Action<string, int> ValueChanged;
 	/// <summary>
+	/// Event fired when a named picture changes.
+	/// Parameters: (pictureName, newVgaGraphPicName)
+	/// </summary>
+	public event Action<string, string> PicChanged;
+	/// <summary>
 	/// When true, inventory change events are ignored.
 	/// Used to freeze the status bar display during death fadeout so the player
 	/// doesn't see inventory reset values while the death animation plays.
@@ -31,12 +36,8 @@ public class StatusBarState
 	/// Current weapon slot (0-3)
 	/// </summary>
 	public int CurrentWeapon { get; set; }
-	/// <summary>
-	/// Current face animation frame.
-	/// Face pattern: FACE{level}{frame}PIC where level is 1-7 based on health, frame is A/B/C
-	/// Level 8 = dead face (FACE8APIC)
-	/// </summary>
-	public int FaceFrame { get; set; }
+	// Named picture states (pictureName → current VgaGraph pic name)
+	private readonly Dictionary<string, string> _pictures = [];
 	/// <summary>
 	/// Creates a new StatusBarState initialized from a StatusBarDefinition.
 	/// </summary>
@@ -47,6 +48,10 @@ public class StatusBarState
 		// Initialize values from definition
 		foreach (StatusBarNumberDefinition number in _definition.Numbers)
 			_values[number.Name] = number.Init;
+		// Initialize pictures from definition (only those with an Id can be targeted by Lua)
+		foreach (MenuPictureDefinition picture in _definition.Pictures)
+			if (!string.IsNullOrEmpty(picture.Id))
+				_pictures[picture.Id] = picture.Name ?? string.Empty;
 		// Initialize weapon display from StatusBarWeapon inventory value
 		StatusBarNumberDefinition statusBarWeapon = _definition.GetNumber("StatusBarWeapon");
 		if (statusBarWeapon != null)
@@ -100,6 +105,30 @@ public class StatusBarState
 				SetValue(number.Name, number.LevelReset.Value);
 	}
 	/// <summary>
+	/// Sets the current pic name for a named status bar picture.
+	/// Fires PicChanged for the presentation layer to swap the displayed texture.
+	/// </summary>
+	/// <param name="name">Picture name (e.g., "Face")</param>
+	/// <param name="picName">New VgaGraph pic name (e.g., "FACE1APIC")</param>
+	public void SetPic(string name, string picName)
+	{
+		if (_pictures.TryGetValue(name, out string current) && current == picName)
+			return;
+		_pictures[name] = picName;
+		PicChanged?.Invoke(name, picName);
+	}
+	/// <summary>
+	/// Gets the current pic name for a named status bar picture.
+	/// </summary>
+	/// <param name="name">Picture name (e.g., "Face")</param>
+	/// <returns>Current VgaGraph pic name, or empty string if not found</returns>
+	public string GetPic(string name) =>
+		_pictures.TryGetValue(name, out string pic) ? pic : string.Empty;
+	/// <summary>
+	/// Gets all current picture states as a read-only dictionary.
+	/// </summary>
+	public IReadOnlyDictionary<string, string> Pictures => _pictures;
+	/// <summary>
 	/// Resets all values to their initial state.
 	/// Called when starting a new game.
 	/// </summary>
@@ -107,11 +136,14 @@ public class StatusBarState
 	{
 		foreach (StatusBarNumberDefinition number in _definition.Numbers)
 			SetValue(number.Name, number.Init);
+		// Reset pictures to initial state
+		foreach (MenuPictureDefinition picture in _definition.Pictures)
+			if (!string.IsNullOrEmpty(picture.Id))
+				SetPic(picture.Id, picture.Name ?? string.Empty);
 		// Reset weapon display from StatusBarWeapon inventory value
 		StatusBarNumberDefinition statusBarWeapon = _definition.GetNumber("StatusBarWeapon");
 		if (statusBarWeapon != null)
 			CurrentWeapon = statusBarWeapon.Init;
-		FaceFrame = 0;
 	}
 	/// <summary>
 	/// Syncs status bar state from simulator values.
