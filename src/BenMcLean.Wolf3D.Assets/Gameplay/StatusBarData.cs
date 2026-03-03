@@ -178,6 +178,11 @@ public class StatusBarDefinition
 	/// </summary>
 	public string OnFace { get; set; }
 	/// <summary>
+	/// Tics between face update checks. Default 2 (≈35Hz, approximating original 286 frame rate).
+	/// Values smaller than 2 are treated as 1 (every tic). Larger values slow the face animation.
+	/// </summary>
+	public int FaceTics { get; set; } = 2;
+	/// <summary>
 	/// Name of the ActionFunction to call when the player dies (health reaches 0).
 	/// WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
 	/// Returns "restart" or a menu name (e.g., "HighScores") for game over.
@@ -204,7 +209,8 @@ public class StatusBarDefinition
 			Numbers = [.. element.Elements("Number").Select(StatusBarNumberDefinition.FromXElement)],
 			Pictures = [.. element.Elements("Picture").Select(MenuPictureDefinition.FromXElement)],
 			OnFace = element.Attribute("OnFace")?.Value,
-			OnDeath = element.Attribute("OnDeath")?.Value
+			OnDeath = element.Attribute("OnDeath")?.Value,
+			FaceTics = int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics) ? faceTics : 2
 		};
 		XElement weaponsElement = element.Element("Weapons");
 		if (weaponsElement != null)

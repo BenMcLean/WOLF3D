@@ -1190,7 +1190,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		onDeathFunctionName = statusBar.OnDeath;
 		onFaceFunctionName = statusBar.OnFace;
 		faceController = !string.IsNullOrEmpty(onFaceFunctionName)
-			? new FaceController(rng, luaScriptEngine, onFaceFunctionName)
+			? new FaceController(rng, luaScriptEngine, onFaceFunctionName, statusBar.FaceTics)
 			: null;
 		// Restore accumulated level stats from previous levels (carries across level transitions)
 		if (savedLevelStats != null)
