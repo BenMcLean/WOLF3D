@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Entities;
-using BenMcLean.Wolf3D.Simulator.State;
-using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
@@ -14,7 +13,7 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// Discrete event simulator for Wolfenstein 3D game logic.
 /// Runs at 70Hz tic rate matching the original game (WL_DRAW.C:CalcTics).
 /// </summary>
-public class Simulator : IStateSavable<SimulatorSnapshot>
+public class Simulator : ISnapshot<SimulatorSnapshot>
 {
 	public const double TicRate = 70.0, // Hz
 		TicDuration = 1.0 / TicRate; // ~14.2857ms
@@ -136,11 +135,11 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// Corresponds to original WL_INTER.C:LRstruct LevelRatios[].
 	/// Dynamically sized (no hardcoded max) for game-agnostic modding support.
 	/// </summary>
-	public List<LevelCompletionStats> LevelRatios { get; } = new();
+	public List<LevelCompletionStats> LevelRatios { get; } = [];
 	// Item scripts loaded from game config (maps script name to Lua code)
-	private Dictionary<string, string> itemScripts = new();
+	private Dictionary<string, string> itemScripts = [];
 	// Map from ItemNumber (byte) to script name for lookup
-	private Dictionary<byte, string> itemNumberToScript = new();
+	private Dictionary<byte, string> itemNumberToScript = [];
 	#region C# Events for Observer Pattern
 	/// <summary>
 	/// Fired when a door starts opening (position was 0).
@@ -173,11 +172,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	public event Action<DoorLockedEvent> DoorLocked;
 	/// <summary>
-	/// Fired when a door is blocked from closing by an actor or player.
-	/// WL_ACT1.C:DoorClosing
-	/// </summary>
-	public event Action<DoorBlockedEvent> DoorBlocked;
-	/// <summary>
 	/// Fired when a bonus object spawns (static placement or enemy drop).
 	/// WL_GAME.C:ScanInfoPlane or WL_ACT1.C:PlaceItemType
 	/// </summary>
@@ -202,11 +196,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// WL_DEF.H:statestruct - fires very frequently
 	/// </summary>
 	public event Action<ActorSpriteChangedEvent> ActorSpriteChanged;
-	/// <summary>
-	/// Fired when an actor is removed from the world (death, despawn).
-	/// WL_ACT1.C:KillActor
-	/// </summary>
-	public event Action<ActorDespawnedEvent> ActorDespawned;
 	/// <summary>
 	/// Fired when an actor plays a sound.
 	/// WL_STATE.C:PlaySoundLocActor
@@ -458,13 +447,14 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			gameClock,
 			door.TileX,
 			door.TileY,
-			logger);
-
-		// Wire up sound callbacks
-		context.PlayAdLibSoundAction = soundName =>
-			EmitDoorPlaySound(doorIndex, soundName);
-		context.PlayDigiSoundAction = soundName =>
-			EmitDoorPlaySound(doorIndex, soundName);
+			logger)
+		{
+			// Wire up sound callbacks
+			PlayAdLibSoundAction = soundName =>
+				EmitDoorPlaySound(doorIndex, soundName),
+			PlayDigiSoundAction = soundName =>
+				EmitDoorPlaySound(doorIndex, soundName)
+		};
 
 		try
 		{
@@ -1127,14 +1117,14 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	public void TransitionActorStateByName(int actorIndex, string stateName)
 	{
-		if (stateCollection.States.TryGetValue(stateName, out GameplayState nextState))
+		if (stateCollection.States.TryGetValue(stateName, out State nextState))
 			TransitionActorState(actorIndex, nextState);
 	}
 	/// <summary>
 	/// Transitions an actor to a new state.
 	/// Updates sprite, tics, executes Action function, and fires events.
 	/// </summary>
-	private void TransitionActorState(int actorIndex, GameplayState nextState)
+	private void TransitionActorState(int actorIndex, State nextState)
 	{
 		Actor actor = actors[actorIndex];
 		// Update state
@@ -1410,7 +1400,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 				}
 			}
 
-			if (!stateCollection.States.TryGetValue(initialStateName, out GameplayState initialState))
+			if (!stateCollection.States.TryGetValue(initialStateName, out State initialState))
 			{
 				System.Diagnostics.Debug.WriteLine($"Warning: Initial state '{initialStateName}' not found for actor type '{spawn.ActorType}', skipping");
 				continue;
@@ -1454,8 +1444,8 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 				// WL_ACT2.C:1246-1262 - Initialize actor ready to move
 				int spawnTileIdx = GetTileIndex(actor.TileX, actor.TileY);
 				actorAtTile[spawnTileIdx] = -1; // Clear spawn tile
-				// Move TileX/TileY to destination (adjacent tile in facing direction)
-				// This sets up ob->tilex/tiley to point to the first destination
+												// Move TileX/TileY to destination (adjacent tile in facing direction)
+												// This sets up ob->tilex/tiley to point to the first destination
 				switch (spawn.Facing)
 				{
 					case Direction.E: actor.TileX++; break;
@@ -1469,7 +1459,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 				}
 				// WL_ACT2.C:1242 - Set distance to move one full tile
 				actor.Distance = 0x10000; // TILEGLOBAL
-				// Claim destination tile
+										  // Claim destination tile
 				int destTileIdx = GetTileIndex(actor.TileX, actor.TileY);
 				actorAtTile[destTileIdx] = (short)actorIndex;
 			}
@@ -1571,7 +1561,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		if (!PlayerHasWeapon(weaponType))
 			return;
 
-		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out GameplayState idleState))
+		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out State idleState))
 		{
 			logger?.LogError("Weapon {WeaponType} idle state {IdleState} not found", weaponType, weaponInfo.IdleState);
 			return;
@@ -1709,23 +1699,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	}
 
 	/// <summary>
-	/// Set ammo count for a specific ammo type.
-	/// Based on WL_DEF.H:gametype:ammo[4].
-	/// </summary>
-	/// <param name="ammoType">Ammo type identifier (e.g., "bullets")</param>
-	/// <param name="amount">Amount of ammo</param>
-	public void SetAmmo(string ammoType, int amount) =>
-		Inventory.SetValue("Ammo", amount);
-
-	/// <summary>
-	/// Get ammo count for a specific ammo type.
-	/// </summary>
-	/// <param name="ammoType">Ammo type identifier</param>
-	/// <returns>Current ammo count (0 if type not found)</returns>
-	public int GetAmmo(string ammoType) =>
-		Inventory.GetValue("Ammo");
-
-	/// <summary>
 	/// Update a single weapon slot's state machine.
 	/// Based on WL_AGENT.C:T_Attack (line 2101) and Actor update pattern.
 	/// </summary>
@@ -1773,7 +1746,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	/// <param name="slotIndex">Weapon slot index</param>
 	/// <param name="nextState">New state to transition to</param>
-	private void TransitionWeaponState(int slotIndex, GameplayState nextState)
+	private void TransitionWeaponState(int slotIndex, State nextState)
 	{
 		WeaponSlot slot = weaponSlots[slotIndex];
 		short oldShape = slot.ShapeNum;
@@ -1815,7 +1788,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 						if (hasAmmo)
 						{
 							string fireFrameState = weaponInfo.FireState;
-							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out GameplayState fireState))
+							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
 							{
 								slot.CurrentState = fireState;
 								slot.TicCount = fireState.Tics;
@@ -1851,7 +1824,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 				if (idleWeaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(idleWeaponInfo.AmmoType))
 					hasAmmo = Inventory.GetValue("Ammo") >= idleWeaponInfo.AmmoPerShot;
 
-				if (hasAmmo && stateCollection.States.TryGetValue(idleWeaponInfo.FireState, out GameplayState autoFireState))
+				if (hasAmmo && stateCollection.States.TryGetValue(idleWeaponInfo.FireState, out State autoFireState))
 				{
 					slot.CurrentState = autoFireState;
 					slot.TicCount = autoFireState.Tics;
@@ -1927,7 +1900,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 
 		// Start fire animation - ammo consumption, hit detection, and damage
 		// are handled by the attack action (A_PistolAttack, etc.) on the fire frame
-		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out GameplayState fireState))
+		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out State fireState))
 			return;
 
 		TransitionWeaponState(action.SlotIndex, fireState);
@@ -2274,7 +2247,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			Health = Inventory.GetValue("Health"),
 			Score = Inventory.GetValue("Score"),
 			Lives = Inventory.GetValue("Lives"),
-			Ammo = GetAmmo("bullets"),
+			Ammo = Inventory.GetValue("Ammo"),
 			KeyFlags = keyFlags
 		});
 	}
@@ -2413,7 +2386,6 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 		Lua.ItemScriptContext context = new(
 			this,
 			item,
-			itemIndex,
 			rng,
 			gameClock,
 			logger)
@@ -3149,7 +3121,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			LastStatObj = lastStatObj,
 			PatrolDirectionAtTile = patrolDirs,
 			InventoryValues = Inventory.SaveState(),
-			CompletedLevelStats = LevelRatios.ToArray(),
+			CompletedLevelStats = [.. LevelRatios],
 			RngStateA = rng.StateA,
 			RngStateB = rng.StateB,
 			GameClock = gameClock.SaveState()
@@ -3175,8 +3147,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 	/// </summary>
 	public void LoadState(SimulatorSnapshot snapshot)
 	{
-		if (snapshot == null)
-			throw new ArgumentNullException(nameof(snapshot));
+		ArgumentNullException.ThrowIfNull(snapshot);
 
 		// Validate game compatibility
 		if (!string.IsNullOrEmpty(GameName) && !string.IsNullOrEmpty(snapshot.GameName)
@@ -3225,7 +3196,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
 			{
 				string stateName = snapshot.Actors[i].CurrentStateName;
-				if (stateName != null && stateCollection.States.TryGetValue(stateName, out GameplayState state))
+				if (stateName != null && stateCollection.States.TryGetValue(stateName, out State state))
 					actors[i].CurrentState = state;
 			}
 		}
@@ -3243,7 +3214,7 @@ public class Simulator : IStateSavable<SimulatorSnapshot>
 			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
 			{
 				string stateName = snapshot.WeaponSlots[i].CurrentStateName;
-				if (stateName != null && stateCollection.States.TryGetValue(stateName, out GameplayState state))
+				if (stateName != null && stateCollection.States.TryGetValue(stateName, out State state))
 					weaponSlots[i].CurrentState = state;
 			}
 		}

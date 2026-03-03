@@ -1,8 +1,9 @@
+using BenMcLean.Wolf3D.Shared;
 using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Pixel-perfect raycasting system that performs ray intersection tests against walls, doors,
@@ -12,7 +13,7 @@ namespace BenMcLean.Wolf3D.VR;
 public class PixelPerfectAiming
 {
 	public const float MaxRayDistance = 64f * Constants.TileWidth; // Maximum ray distance (64 tiles)
-	private readonly ActionStage _actionStage;
+	private readonly ActionRoom _actionStage;
 	private readonly Dictionary<StandardMaterial3D, ushort> _materialToPage;
 	/// <summary>
 	/// Result of a raycast operation.
@@ -58,12 +59,12 @@ public class PixelPerfectAiming
 	/// Creates the pixel-perfect raycasting system.
 	/// </summary>
 	/// <param name="actionStage">ActionStage containing all level components</param>
-	public PixelPerfectAiming(ActionStage actionStage)
+	public PixelPerfectAiming(ActionRoom actionStage)
 	{
 		_actionStage = actionStage ?? throw new ArgumentNullException(nameof(actionStage));
 		// Create reverse lookup from material to page number for pixel transparency checks
 		_materialToPage = [];
-		foreach (KeyValuePair<ushort, StandardMaterial3D> kvp in _actionStage.SpriteMaterials)
+		foreach (KeyValuePair<ushort, StandardMaterial3D> kvp in ActionRoom.SpriteMaterials)
 			_materialToPage[kvp.Value] = kvp.Key;
 	}
 	/// <summary>
@@ -182,11 +183,11 @@ public class PixelPerfectAiming
 		if (!hit)
 			return new RayHit { IsHit = false };
 		// Calculate hit position with proper 3D ray intersection
-		float perpWallDist, hitX, hitZ;
+		float hitX, hitZ;
 		if (hitVertical)
 		{
 			// Hit a vertical wall (perpendicular to X axis)
-			perpWallDist = (sideDistX - deltaDistX);
+			//perpWallDist = sideDistX - deltaDistX;
 			hitX = mapX * Constants.TileWidth + (stepX > 0 ? 0 : Constants.TileWidth);
 			// Calculate Z based on how far along X we traveled
 			hitZ = rayOrigin.Z + (hitX - rayOrigin.X) * rayDirection.Z / rayDirection.X;
@@ -194,7 +195,7 @@ public class PixelPerfectAiming
 		else
 		{
 			// Hit a horizontal wall (perpendicular to Z axis)
-			perpWallDist = (sideDistZ - deltaDistZ);
+			//perpWallDist = sideDistZ - deltaDistZ;
 			hitZ = mapZ * Constants.TileWidth + (stepZ > 0 ? 0 : Constants.TileWidth);
 			// Calculate X based on how far along Z we traveled
 			hitX = rayOrigin.X + (hitZ - rayOrigin.Z) * rayDirection.X / rayDirection.Z;
@@ -431,7 +432,7 @@ public class PixelPerfectAiming
 		}
 		// Early exit: If ray at maxDistance is still out of bounds (and won't re-enter)
 		float rayYAtMaxDist = rayOrigin.Y + rayDirection.Y * maxDistance;
-		if ((rayOrigin.Y < 0 && rayYAtMaxDist < 0) || (rayOrigin.Y > Constants.TileHeight && rayYAtMaxDist > Constants.TileHeight))
+		if (rayOrigin.Y < 0 && rayYAtMaxDist < 0 || rayOrigin.Y > Constants.TileHeight && rayYAtMaxDist > Constants.TileHeight)
 			return new RayHit { IsHit = false }; // Ray never enters vertical bounds
 		RayHit closestHit = new() { IsHit = false, Distance = maxDistance };
 		// Check actors
@@ -554,12 +555,12 @@ public class PixelPerfectAiming
 			return new RayHit { IsHit = false }; // Material not found, treat as miss
 		// Convert UV to pixel coordinates in original sprite space (before upscaling)
 		// Sprites are TileSqrt x TileSqrt (usually 64x64)
-		int pixelX = Mathf.Clamp((int)(u * _actionStage.VSwap.TileSqrt), 0, _actionStage.VSwap.TileSqrt - 1),
-			pixelY = Mathf.Clamp((int)(v * _actionStage.VSwap.TileSqrt), 0, _actionStage.VSwap.TileSqrt - 1);
+		int pixelX = Mathf.Clamp((int)(u * SharedAssetManager.CurrentGame.VSwap.TileSqrt), 0, SharedAssetManager.CurrentGame.VSwap.TileSqrt - 1),
+			pixelY = Mathf.Clamp((int)(v * SharedAssetManager.CurrentGame.VSwap.TileSqrt), 0, SharedAssetManager.CurrentGame.VSwap.TileSqrt - 1);
 		// Check pixel transparency using VSwap's pre-computed masks
 		// Note: VSwap.IsTransparent returns true for OPAQUE pixels (alpha > 128)
 		// despite the confusing method name - likely due to Wolf3D's alpha channel convention
-		if (!_actionStage.VSwap.IsTransparent(pageNumber, (ushort)pixelX, (ushort)pixelY))
+		if (!SharedAssetManager.CurrentGame.VSwap.IsTransparent(pageNumber, (ushort)pixelX, (ushort)pixelY))
 			return new RayHit { IsHit = false }; // Transparent pixel (IsTransparent=false), ray continues
 		// Opaque pixel (IsTransparent=true), we have a hit
 		return new RayHit

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BenMcLean.Wolf3D.Simulator.State;
+namespace BenMcLean.Wolf3D.Simulator.Snapshots;
 
 /// <summary>
 /// Wrapper record for saved game files.

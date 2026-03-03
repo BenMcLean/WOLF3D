@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
-using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.Entities;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
+using BenMcLean.Wolf3D.VR.ActionStage;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -17,7 +17,7 @@ namespace BenMcLean.Wolf3D.VR;
 /// Handles camera, walls, doors, sprites, and gameplay simulation.
 /// Supports both VR and flatscreen display modes.
 /// </summary>
-public partial class ActionStage : Node3D, IRoom
+public partial class ActionRoom : Node3D, IRoom
 {
 	public bool SkipFade => false;
 
@@ -83,8 +83,7 @@ public partial class ActionStage : Node3D, IRoom
 	public Actors Actors => _actors;
 	public Fixtures Fixtures => _fixtures;
 	public Bonuses Bonuses => _bonuses;
-	public IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials => VRAssetManager.SpriteMaterials;
-	public VSwap VSwap => Shared.SharedAssetManager.CurrentGame.VSwap;
+	public static IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials => VRAssetManager.SpriteMaterials;
 	public PixelPerfectAiming PixelPerfectAiming => _pixelPerfectAiming;
 
 	/// <summary>
@@ -135,7 +134,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionStage(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
@@ -153,7 +152,7 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	public ActionStage(IDisplayMode displayMode, Simulator.Simulator existingSimulator)
+	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
@@ -167,7 +166,7 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="snapshot">The saved simulator state to restore.</param>
-	public ActionStage(IDisplayMode displayMode, SimulatorSnapshot snapshot)
+	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
@@ -339,7 +338,7 @@ void sky() {
 
 		// Placeholder: weapon hand mesh for VR controller slot 0, 2 tiles ahead of player start.
 		// TODO: Reposition to actual VR controller transform when controller tracking is wired up.
-		WeaponHandMesh weaponHandMesh0 = new WeaponHandMesh(VRAssetManager.SpriteTextures, 0)
+		WeaponHandMesh weaponHandMesh0 = new(VRAssetManager.SpriteTextures, 0)
 		{
 			Name = "WeaponHandMesh0",
 			Position = cameraPosition + new Vector3(

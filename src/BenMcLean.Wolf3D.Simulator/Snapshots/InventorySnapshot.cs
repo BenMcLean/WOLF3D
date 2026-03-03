@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace BenMcLean.Wolf3D.Simulator.State;
+namespace BenMcLean.Wolf3D.Simulator.Snapshots;
 
 /// <summary>
 /// Serializable snapshot of the Inventory's dynamic state.

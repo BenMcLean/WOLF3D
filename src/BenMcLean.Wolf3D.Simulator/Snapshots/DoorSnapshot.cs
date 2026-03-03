@@ -1,4 +1,4 @@
-namespace BenMcLean.Wolf3D.Simulator.State;
+namespace BenMcLean.Wolf3D.Simulator.Snapshots;
 
 /// <summary>
 /// Serializable snapshot of a Door's dynamic state.

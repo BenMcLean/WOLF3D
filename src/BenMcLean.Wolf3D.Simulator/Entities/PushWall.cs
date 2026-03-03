@@ -1,5 +1,5 @@
 using BenMcLean.Wolf3D.Assets.Gameplay;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -8,7 +8,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Based on WL_DEF.H:pwallstruct and related pushwall logic in WL_ACT1.C.
 /// Pushwalls are special walls that can be pushed by the player to reveal secrets.
 /// </summary>
-public class PushWall : IStateSavable<PushWallSnapshot>
+public class PushWall : ISnapshot<PushWallSnapshot>
 {
 	/// <summary>
 	/// How long a pushwall takes to move one full tile (in tics).

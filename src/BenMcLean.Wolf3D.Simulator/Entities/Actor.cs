@@ -1,6 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
@@ -10,7 +10,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Based on WL_DEF.H:objstruct (lines 884-933) and related actor logic.
 /// Actors use state machines defined in State.cs, with Think/Action functions in Lua.
 /// </summary>
-public class Actor : IStateSavable<ActorSnapshot>
+public class Actor : ISnapshot<ActorSnapshot>
 {
 	// Static properties (from MapAnalysis.ActorSpawn - not serialized, loaded from map)
 

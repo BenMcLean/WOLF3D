@@ -5,10 +5,10 @@ using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Shared;
 using Microsoft.Extensions.Logging;
 using BenMcLean.Wolf3D.Simulator.Entities;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Godot controller that embeds the Wolf3D discrete event simulator.

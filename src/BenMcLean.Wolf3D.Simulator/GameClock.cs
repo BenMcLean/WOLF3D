@@ -1,5 +1,5 @@
 using System;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 
 namespace BenMcLean.Wolf3D.Simulator;
 
@@ -8,7 +8,7 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// Provides os.time() and os.clock() functionality to Lua scripts
 /// with fixed epoch and tic-based progression.
 /// </summary>
-public class GameClock(DateTime? epoch = null) : IStateSavable<GameClockSnapshot>
+public class GameClock(DateTime? epoch = null) : ISnapshot<GameClockSnapshot>
 {
 	/// <summary>
 	/// Game epoch - when the game "starts" in-universe.

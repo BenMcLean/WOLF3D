@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 using Godot;
 
 namespace BenMcLean.Wolf3D.Shared;

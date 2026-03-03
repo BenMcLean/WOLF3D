@@ -1,9 +1,8 @@
 using System;
-using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -36,7 +35,7 @@ public partial class Root : Node3D
 
 	private Node _currentScene;
 	private Node _pendingScene;
-	private Action _pendingMidFadeAction;
+	private System.Action _pendingMidFadeAction;
 	private Shared.DosScreen _errorScreen;
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
@@ -151,11 +150,11 @@ public partial class Root : Node3D
 			{
 				ResumeGame();
 			}
-			else if (menuRoom.PendingLevelTransition is ActionStage.LevelTransitionRequest intermissionRequest)
+			else if (menuRoom.PendingLevelTransition is ActionRoom.LevelTransitionRequest intermissionRequest)
 			{
 				// Intermission dismissed — continue to next level
 				_suspendedGame = null;
-				ActionStage newStage = new(DisplayMode,
+				ActionRoom newStage = new(DisplayMode,
 					levelIndex: intermissionRequest.LevelIndex,
 					savedInventory: intermissionRequest.SavedInventory,
 					savedLevelStats: intermissionRequest.AllLevelStats);
@@ -168,12 +167,12 @@ public partial class Root : Node3D
 				// Get selected episode and difficulty from menu
 				int episode = menuRoom.SelectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
-				ActionStage actionStage = new(DisplayMode, levelIndex: CurrentLevelIndex, difficulty: difficulty);
+				ActionRoom actionStage = new(DisplayMode, levelIndex: CurrentLevelIndex, difficulty: difficulty);
 				TransitionTo(actionStage);
 			}
 		}
 		// Poll ActionStage for level transition or return-to-menu requests
-		else if (_currentScene is ActionStage actionStage)
+		else if (_currentScene is ActionRoom actionStage)
 		{
 			if (actionStage.PendingDeathFadeOut)
 			{
@@ -197,7 +196,7 @@ public partial class Root : Node3D
 						InventorySnapshot savedInventory = sim.Inventory.SaveState();
 						int currentLevel = sim.Inventory.GetValue("MapOn");
 						int difficulty = sim.Inventory.GetValue("Difficulty");
-						ActionStage newStage = new(DisplayMode,
+						ActionRoom newStage = new(DisplayMode,
 							levelIndex: currentLevel,
 							difficulty: difficulty,
 							savedInventory: savedInventory);
@@ -232,7 +231,7 @@ public partial class Root : Node3D
 			{
 				SuspendToMenu(actionStage);
 			}
-			else if (actionStage.PendingTransition is ActionStage.LevelTransitionRequest request)
+			else if (actionStage.PendingTransition is ActionRoom.LevelTransitionRequest request)
 			{
 				// Level transitions discard the suspended game (new level = new state)
 				_suspendedGame = null;
@@ -263,7 +262,7 @@ public partial class Root : Node3D
 	/// Suspends the current game and transitions to the main menu.
 	/// Captures the Simulator and player state before destroying the ActionStage.
 	/// </summary>
-	private void SuspendToMenu(ActionStage actionStage)
+	private void SuspendToMenu(ActionRoom actionStage)
 	{
 		// Capture state before ActionStage is destroyed
 		// Player position/angle are already in the Simulator (updated each frame)
@@ -305,7 +304,7 @@ public partial class Root : Node3D
 			return;
 
 		SuspendedGameState state = _suspendedGame;
-		ActionStage actionStage = new(
+		ActionRoom actionStage = new(
 			DisplayMode,
 			state.Simulator);
 
@@ -332,7 +331,7 @@ public partial class Root : Node3D
 
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
-		ActionStage actionStage = new(DisplayMode, saveFile.Snapshot);
+		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot);
 		TransitionTo(actionStage);
 	}
 
@@ -410,7 +409,7 @@ public partial class Root : Node3D
 	/// Pass skipFadeIn=true when the incoming scene has a black background (IRoom.SkipFade).
 	/// Used for both scene transitions and menu screen navigations.
 	/// </summary>
-	private void StartFade(Action midFadeAction, bool skipFadeIn = false)
+	private void StartFade(System.Action midFadeAction, bool skipFadeIn = false)
 	{
 		_skipFadeIn = skipFadeIn;
 		_pendingMidFadeAction = midFadeAction;
@@ -423,7 +422,7 @@ public partial class Root : Node3D
 	/// Callback for menu screen navigations (Main → Episodes, etc.).
 	/// Wraps the menu navigation in a fade transition.
 	/// </summary>
-	private void StartMenuFade(Action menuNavigation)
+	private void StartMenuFade(System.Action menuNavigation)
 	{
 		if (_errorMode || _transitionState != TransitionState.Idle)
 		{

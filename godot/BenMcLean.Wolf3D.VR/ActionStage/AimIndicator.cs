@@ -1,6 +1,6 @@
 using Godot;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Debug visualization for pixel-perfect aiming.

@@ -4,9 +4,8 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Manages dynamic rendering of bonus/pickup objects in a Wolfenstein 3D map using MultiMesh.

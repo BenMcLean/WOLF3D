@@ -1,11 +1,10 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Shared;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Manages player weapon rendering at bottom of screen (like original Wolf3D HUD).

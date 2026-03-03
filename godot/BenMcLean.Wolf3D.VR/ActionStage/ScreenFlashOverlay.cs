@@ -2,7 +2,7 @@ using Godot;
 using System;
 using BenMcLean.Wolf3D.Simulator;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Full-screen color overlay for gameplay flash effects (damage, bonus pickups).

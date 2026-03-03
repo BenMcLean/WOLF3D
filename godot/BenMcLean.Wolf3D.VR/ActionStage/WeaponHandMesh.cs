@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using BenMcLean.Wolf3D.Simulator;
 using Godot;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// A BoxMesh rendered with the WeaponSpriteVoxelDDA shader, intended to be attached

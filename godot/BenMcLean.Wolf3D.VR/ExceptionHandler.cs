@@ -13,7 +13,7 @@ public static class ExceptionHandler
 	/// Callback for displaying exceptions to the VR user.
 	/// Root registers this callback during initialization.
 	/// </summary>
-	public static Action<Exception>? DisplayCallback { get; set; }
+	public static Action<Exception> DisplayCallback { get; set; }
 
 	/// <summary>
 	/// Central exception handling method.

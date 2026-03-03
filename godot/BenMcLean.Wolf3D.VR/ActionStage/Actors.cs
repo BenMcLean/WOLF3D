@@ -4,7 +4,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Manages dynamic rendering of actor sprites in a Wolfenstein 3D map.
@@ -266,7 +266,6 @@ public partial class Actors : Node3D
 		_simulator.ActorSpawned += OnActorSpawned;
 		_simulator.ActorMoved += OnActorMoved;
 		_simulator.ActorSpriteChanged += OnActorSpriteChanged;
-		_simulator.ActorDespawned += OnActorDespawned;
 		_simulator.ActorPlaySound += OnActorPlaySound;
 	}
 	/// <summary>
@@ -279,7 +278,6 @@ public partial class Actors : Node3D
 		_simulator.ActorSpawned -= OnActorSpawned;
 		_simulator.ActorMoved -= OnActorMoved;
 		_simulator.ActorSpriteChanged -= OnActorSpriteChanged;
-		_simulator.ActorDespawned -= OnActorDespawned;
 		_simulator.ActorPlaySound -= OnActorPlaySound;
 		_simulator = null;
 	}

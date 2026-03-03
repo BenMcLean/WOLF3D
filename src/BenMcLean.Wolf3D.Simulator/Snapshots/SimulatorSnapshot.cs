@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Simulator.Entities;
 
-namespace BenMcLean.Wolf3D.Simulator.State;
+namespace BenMcLean.Wolf3D.Simulator.Snapshots;
 
 /// <summary>
 /// Top-level serializable snapshot of the entire Simulator state.

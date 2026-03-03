@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 
 namespace BenMcLean.Wolf3D.Simulator;
 
@@ -12,7 +12,7 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// - Easy serialization: Dictionary<string, int> is trivially JSON-serializable
 /// - Event-driven updates: ValueChanged event enables direct UI subscription
 /// </summary>
-public class Inventory : IStateSavable<InventorySnapshot>
+public class Inventory : ISnapshot<InventorySnapshot>
 {
 	private readonly Dictionary<string, int> _values = [];
 	private readonly Dictionary<string, int> _maxValues = [];

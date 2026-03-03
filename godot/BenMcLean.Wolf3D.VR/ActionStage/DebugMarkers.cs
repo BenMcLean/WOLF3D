@@ -1,11 +1,10 @@
-using BenMcLean.Wolf3D.Shared;
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer.MapAnalysis;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Debug visualization for special tiles in a Wolfenstein 3D map.

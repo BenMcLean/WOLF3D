@@ -1,5 +1,5 @@
 using System;
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
@@ -15,7 +15,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Slot starts empty (no weapon equipped).
 /// </remarks>
 /// <param name="slotIndex">Slot identifier (0-based index)</param>
-public class WeaponSlot(int slotIndex) : IStateSavable<WeaponSlotSnapshot>
+public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 {
 	/// <summary>
 	/// Slot index (0 = left hand VR / primary traditional, 1 = right hand VR, etc.)

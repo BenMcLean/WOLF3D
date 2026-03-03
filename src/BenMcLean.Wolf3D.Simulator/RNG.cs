@@ -62,7 +62,7 @@ public class RNG : System.Random
 		{
 			value ??= ""; //the following ulong.Parse() will throw a sensible exception
 			StateA = ulong.Parse(value[..16], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
-			StateB = ulong.Parse(value.Substring(16, 16), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+			StateB = ulong.Parse(value.AsSpan(16, 16), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
 		}
 	}
 	/// <summary>
@@ -529,7 +529,7 @@ public class RNG : System.Random
 	}
 	private static void Swap<T>(ref T a, ref T b) => (b, a) = (a, b);
 	private static void Swap<T>(ref List<T> list, int a, int b) => (list[b], list[a]) = (list[a], list[b]);
-	public T[] Shuffle<T>(T[] elements)
+	public new T[] Shuffle<T>(T[] elements)
 	{
 		if (elements is null)
 			return null;

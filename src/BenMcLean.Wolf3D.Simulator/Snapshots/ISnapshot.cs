@@ -1,4 +1,4 @@
-namespace BenMcLean.Wolf3D.Simulator.State;
+namespace BenMcLean.Wolf3D.Simulator.Snapshots;
 
 /// <summary>
 /// Interface for types that can save and load their mutable runtime state.
@@ -16,7 +16,7 @@ namespace BenMcLean.Wolf3D.Simulator.State;
 /// plus cross-level state.
 /// </summary>
 /// <typeparam name="T">The snapshot type used for serialization</typeparam>
-public interface IStateSavable<T>
+public interface ISnapshot<T>
 {
 	/// <summary>
 	/// Captures the current mutable state into a serializable snapshot.

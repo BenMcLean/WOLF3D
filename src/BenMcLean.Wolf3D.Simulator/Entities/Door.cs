@@ -1,4 +1,4 @@
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -12,7 +12,7 @@ public class Door(
 	bool facesEastWest,
 	ushort tileNumber,
 	short area1 = -1,
-	short area2 = -1) : IStateSavable<DoorSnapshot>
+	short area2 = -1) : ISnapshot<DoorSnapshot>
 {
 	// Static properties (from MapAnalysis.DoorSpawn - not serialized, loaded from map)
 	// WL_DEF.H:doorstruct:tilex (original: byte)

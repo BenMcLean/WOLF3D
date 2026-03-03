@@ -43,7 +43,6 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 public class ItemScriptContext(
 	Simulator simulator,
 	StatObj item,
-	int itemIndex,
 	RNG rng,
 	GameClock gameClock,
 	ILogger logger = null) : EntityScriptContext(simulator, rng, gameClock, item.TileX, item.TileY, logger)

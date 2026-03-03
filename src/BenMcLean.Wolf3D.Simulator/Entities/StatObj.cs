@@ -1,4 +1,4 @@
-using BenMcLean.Wolf3D.Simulator.State;
+using BenMcLean.Wolf3D.Simulator.Snapshots;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -7,7 +7,7 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Fixtures (scenery) are display-only and not simulated.
 /// Based on WL_DEF.H:statstruct (lines 948-955).
 /// </summary>
-public class StatObj : IStateSavable<StatObj>
+public class StatObj : ISnapshot<StatObj>
 {
 	/// <summary>
 	/// Maximum number of static objects (bonus items) per level.

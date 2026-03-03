@@ -1,8 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
-using BenMcLean.Wolf3D.Shared.Menu.Input;
-using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.VR.Menu;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
@@ -68,7 +66,7 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Optional level transition request for intermission mode.
 	/// When set, the MenuRoom shows the "LevelComplete" menu instead of "Main".
 	/// </summary>
-	public ActionStage.LevelTransitionRequest LevelTransition { get; set; }
+	public ActionRoom.LevelTransitionRequest LevelTransition { get; set; }
 
 	/// <summary>
 	/// Optional override for the starting menu name.
@@ -81,7 +79,7 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Pending level transition after intermission is dismissed.
 	/// Set by Lua ContinueToNextLevel(), polled by Root._Process().
 	/// </summary>
-	public ActionStage.LevelTransitionRequest PendingLevelTransition { get; private set; }
+	public ActionRoom.LevelTransitionRequest PendingLevelTransition { get; private set; }
 
 	/// <summary>
 	/// Pending load game slot. Null when no load is pending.

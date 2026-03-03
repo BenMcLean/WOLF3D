@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// Generates MultiMesh instances for all static fixture sprites (dressing and block objects) in a Wolfenstein 3D map.
