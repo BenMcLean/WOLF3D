@@ -150,7 +150,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 	/// the Simulator resolves it back to a State reference via StateCollection after
 	/// calling LoadState() on all actors.
 	/// </summary>
-	public ActorSnapshot SaveState() => new()
+	public ActorSnapshot Save() => new()
 	{
 		ActorType = ActorType,
 		CurrentStateName = CurrentState?.Name,
@@ -173,7 +173,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 	/// CurrentState is NOT restored here - it requires resolution via StateCollection,
 	/// which is done by Simulator.LoadState() after calling this method.
 	/// </summary>
-	public void LoadState(ActorSnapshot state)
+	public void Load(ActorSnapshot state)
 	{
 		// CurrentState resolved separately by Simulator via StateCollection
 		TicCount = state.TicCount;

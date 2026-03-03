@@ -22,12 +22,11 @@ public interface ISnapshot<T>
 	/// Captures the current mutable state into a serializable snapshot.
 	/// </summary>
 	/// <returns>A snapshot of the current state</returns>
-	T SaveState();
-
+	T Save();
 	/// <summary>
 	/// Restores mutable state from a previously captured snapshot.
 	/// Static/structural properties are not modified.
 	/// </summary>
 	/// <param name="state">The snapshot to restore from</param>
-	void LoadState(T state);
+	void Load(T state);
 }

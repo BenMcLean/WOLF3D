@@ -1200,7 +1200,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 		if (savedInventory != null)
 		{
-			Inventory.LoadState(savedInventory);
+			Inventory.Load(savedInventory);
 			Inventory.OnLevelChange();
 		}
 		// Set difficulty (for new games this overrides the StatusBar Init default;
@@ -3101,32 +3101,32 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Only mutable runtime state is captured; static/structural data loaded from
 	/// game files is not included (see SimulatorSnapshot documentation for details).
 	/// </summary>
-	public SimulatorSnapshot SaveState()
+	public SimulatorSnapshot Save()
 	{
 		// Capture door dynamic state (matched by index on restore)
 		DoorSnapshot[] doorSnapshots = new DoorSnapshot[doors.Count];
 		for (int i = 0; i < doors.Count; i++)
-			doorSnapshots[i] = doors[i].SaveState();
+			doorSnapshots[i] = doors[i].Save();
 
 		// Capture pushwall dynamic state (matched by index on restore)
 		PushWallSnapshot[] pushWallSnapshots = new PushWallSnapshot[pushWalls.Count];
 		for (int i = 0; i < pushWalls.Count; i++)
-			pushWallSnapshots[i] = pushWalls[i].SaveState();
+			pushWallSnapshots[i] = pushWalls[i].Save();
 
 		// Capture actor state (CurrentStateName resolved on restore)
 		ActorSnapshot[] actorSnapshots = new ActorSnapshot[actors.Count];
 		for (int i = 0; i < actors.Count; i++)
-			actorSnapshots[i] = actors[i].SaveState();
+			actorSnapshots[i] = actors[i].Save();
 
 		// Capture weapon slot state (CurrentStateName resolved on restore)
 		WeaponSlotSnapshot[] weaponSlotSnapshots = new WeaponSlotSnapshot[weaponSlots.Count];
 		for (int i = 0; i < weaponSlots.Count; i++)
-			weaponSlotSnapshots[i] = weaponSlots[i].SaveState();
+			weaponSlotSnapshots[i] = weaponSlots[i].Save();
 
 		// Capture StatObjList (StatObj is its own snapshot type)
 		StatObj[] statObjSnapshots = new StatObj[StatObjList.Length];
 		for (int i = 0; i < StatObjList.Length; i++)
-			statObjSnapshots[i] = StatObjList[i]?.SaveState();
+			statObjSnapshots[i] = StatObjList[i]?.Save();
 
 		// Capture patrol directions with enum stored as byte
 		Dictionary<uint, byte> patrolDirs = null;
@@ -3155,11 +3155,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			StatObjList = statObjSnapshots,
 			LastStatObj = lastStatObj,
 			PatrolDirectionAtTile = patrolDirs,
-			InventoryValues = Inventory.SaveState(),
+			InventoryValues = Inventory.Save(),
 			CompletedLevelStats = [.. LevelRatios],
 			RngStateA = rng.StateA,
 			RngStateB = rng.StateB,
-			GameClock = gameClock.SaveState()
+			GameClock = gameClock.Save()
 		};
 	}
 
@@ -3180,7 +3180,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// 6. Restores RNG, GameClock, inventory, and simulation time
 	/// 7. Clears pending actions
 	/// </summary>
-	public void LoadState(SimulatorSnapshot snapshot)
+	public void Load(SimulatorSnapshot snapshot)
 	{
 		ArgumentNullException.ThrowIfNull(snapshot);
 
@@ -3207,14 +3207,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (snapshot.Doors != null)
 		{
 			for (int i = 0; i < Math.Min(doors.Count, snapshot.Doors.Length); i++)
-				doors[i].LoadState(snapshot.Doors[i]);
+				doors[i].Load(snapshot.Doors[i]);
 		}
 
 		// Restore pushwall dynamic state
 		if (snapshot.PushWalls != null)
 		{
 			for (int i = 0; i < Math.Min(pushWalls.Count, snapshot.PushWalls.Length); i++)
-				pushWalls[i].LoadState(snapshot.PushWalls[i]);
+				pushWalls[i].Load(snapshot.PushWalls[i]);
 		}
 		anyPushWallMoving = snapshot.AnyPushWallMoving;
 
@@ -3222,7 +3222,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (snapshot.Actors != null)
 		{
 			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
-				actors[i].LoadState(snapshot.Actors[i]);
+				actors[i].Load(snapshot.Actors[i]);
 		}
 
 		// Resolve CurrentState references for actors via StateCollection
@@ -3240,7 +3240,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (snapshot.WeaponSlots != null)
 		{
 			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
-				weaponSlots[i].LoadState(snapshot.WeaponSlots[i]);
+				weaponSlots[i].Load(snapshot.WeaponSlots[i]);
 		}
 
 		// Resolve CurrentState references for weapon slots via StateCollection
@@ -3263,7 +3263,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				{
 					if (StatObjList[i] == null)
 						StatObjList[i] = new StatObj();
-					StatObjList[i].LoadState(snapshot.StatObjList[i]);
+					StatObjList[i].Load(snapshot.StatObjList[i]);
 				}
 				else
 				{
@@ -3283,7 +3283,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		// Restore inventory
 		if (snapshot.InventoryValues != null)
-			Inventory.LoadState(snapshot.InventoryValues);
+			Inventory.Load(snapshot.InventoryValues);
 
 		// Restore accumulated level completion stats
 		LevelRatios.Clear();
@@ -3296,7 +3296,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		// Restore GameClock
 		if (snapshot.GameClock != null)
-			gameClock.LoadState(snapshot.GameClock);
+			gameClock.Load(snapshot.GameClock);
 
 		// Clear pending actions (transient per-frame queue)
 		pendingActions.Clear();

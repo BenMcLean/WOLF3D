@@ -57,7 +57,7 @@ public class GameClock(DateTime? epoch = null) : ISnapshot<GameClockSnapshot>
 	/// Captures the current clock state for serialization.
 	/// Only elapsed tics need saving - the epoch is a construction-time parameter.
 	/// </summary>
-	public GameClockSnapshot SaveState() => new()
+	public GameClockSnapshot Save() => new()
 	{
 		EpochTicks = Epoch.Ticks,
 		ElapsedTics = elapsedTics
@@ -67,5 +67,5 @@ public class GameClock(DateTime? epoch = null) : ISnapshot<GameClockSnapshot>
 	/// Restores clock state from a snapshot.
 	/// Epoch is validated but not overwritten (must match construction-time value).
 	/// </summary>
-	public void LoadState(GameClockSnapshot state) => elapsedTics = state.ElapsedTics;
+	public void Load(GameClockSnapshot state) => elapsedTics = state.ElapsedTics;
 }

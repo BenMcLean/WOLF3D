@@ -181,7 +181,7 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// capacity upgrades (e.g., ammo bag pickups) survive save/load.
 	/// </summary>
 	/// <returns>Snapshot containing all current inventory values and max values</returns>
-	public InventorySnapshot SaveState() =>
+	public InventorySnapshot Save() =>
 		new()
 		{
 			Values = new(_values),
@@ -194,7 +194,7 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// Used during level transitions and save game loading to preserve player state.
 	/// </summary>
 	/// <param name="savedState">Snapshot containing saved inventory values and max values</param>
-	public void LoadState(InventorySnapshot savedState)
+	public void Load(InventorySnapshot savedState)
 	{
 		if (savedState == null)
 			return;

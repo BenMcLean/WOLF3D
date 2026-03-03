@@ -286,7 +286,7 @@ void sky() {
 			// then re-emit all entity state so presentation layer syncs with restored state
 			if (_loadSnapshot != null)
 			{
-				_simulatorController.Simulator.LoadState(_loadSnapshot);
+				_simulatorController.Simulator.Load(_loadSnapshot);
 				_simulatorController.Simulator.EmitAllEntityState();
 			}
 		}
@@ -469,7 +469,7 @@ void sky() {
 			// Cheat: N skips to next level (like activating the elevator)
 		if (keyEvent.Keycode == Key.N)
 		{
-			InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+			InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
 			byte destinationLevel = MapAnalysis.ElevatorTo;
 			LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
 				_initialLevelIndex + 1, false, MapAnalysis.Par);
@@ -749,7 +749,7 @@ void sky() {
 			EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 
 		// Capture player inventory state before transition
-		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
 
 		// Capture level completion stats for intermission screen
 		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
@@ -787,7 +787,7 @@ void sky() {
 	private void OnNavigateToMenu(NavigateToMenuEvent e)
 	{
 		// Capture player inventory state
-		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.SaveState();
+		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
 
 		// Capture level completion stats
 		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(

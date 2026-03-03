@@ -60,7 +60,7 @@ public class Door(
 	/// Captures only dynamic door state. Static properties (TileX, TileY, FacesEastWest,
 	/// Lock, TileNumber, Area1, Area2) come from map data on restore.
 	/// </summary>
-	public DoorSnapshot SaveState() => new()
+	public DoorSnapshot Save() => new()
 	{
 		Action = (byte)Action,
 		Position = Position,
@@ -71,7 +71,7 @@ public class Door(
 	/// Restores dynamic door state from a snapshot.
 	/// Static properties are not modified (they come from LoadDoorsFromMapAnalysis).
 	/// </summary>
-	public void LoadState(DoorSnapshot state)
+	public void Load(DoorSnapshot state)
 	{
 		Action = (DoorAction)state.Action;
 		Position = state.Position;

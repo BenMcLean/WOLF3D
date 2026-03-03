@@ -195,7 +195,7 @@ public partial class Root : Node3D
 					if (deathResult == "restart")
 					{
 						// WL_GAME.C:Died() with lives remaining — restart same level
-						InventorySnapshot savedInventory = sim.Inventory.SaveState();
+						InventorySnapshot savedInventory = sim.Inventory.Save();
 						int currentLevel = sim.Inventory.GetValue("MapOn");
 						int difficulty = sim.Inventory.GetValue("Difficulty");
 						ActionRoom newStage = new(DisplayMode,

@@ -845,7 +845,7 @@ public class MenuManager
 			return;
 		}
 		string mapName = GetMapNameFunc?.Invoke() ?? "Unknown";
-		SaveGameManager.Save(slot, sim.SaveState(), mapName);
+		SaveGameManager.Save(slot, sim.Save(), mapName);
 		// Refresh the menu to update slot display names
 		RefreshSaveSlotNames();
 	}

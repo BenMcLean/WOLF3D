@@ -72,7 +72,7 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 	/// the Simulator resolves it back to a State reference via StateCollection after
 	/// calling LoadState() on all weapon slots.
 	/// </summary>
-	public WeaponSlotSnapshot SaveState() => new()
+	public WeaponSlotSnapshot Save() => new()
 	{
 		SlotIndex = SlotIndex,
 		WeaponType = WeaponType,
@@ -88,7 +88,7 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 	/// CurrentState is NOT restored here - it requires resolution via StateCollection,
 	/// which is done by Simulator.LoadState() after calling this method.
 	/// </summary>
-	public void LoadState(WeaponSlotSnapshot state)
+	public void Load(WeaponSlotSnapshot state)
 	{
 		WeaponType = state.WeaponType;
 		// CurrentState resolved separately by Simulator via StateCollection

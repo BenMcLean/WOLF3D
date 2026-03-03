@@ -63,12 +63,12 @@ public class StatObj : ISnapshot<StatObj>
 	/// StatObj is its own snapshot type since all properties are already public+settable
 	/// and no type conversions are needed.
 	/// </summary>
-	public StatObj SaveState() => new(TileX, TileY, ShapeNum, Flags, ItemNumber);
+	public StatObj Save() => new(TileX, TileY, ShapeNum, Flags, ItemNumber);
 
 	/// <summary>
 	/// Copies all field values from another StatObj instance.
 	/// </summary>
-	public void LoadState(StatObj other)
+	public void Load(StatObj other)
 	{
 		TileX = other.TileX;
 		TileY = other.TileY;

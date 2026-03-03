@@ -118,7 +118,7 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	/// Captures only dynamic pushwall state. Static properties (Shape, InitialTileX,
 	/// InitialTileY) come from map data on restore via LoadPushWallsFromMapAnalysis.
 	/// </summary>
-	public PushWallSnapshot SaveState() => new()
+	public PushWallSnapshot Save() => new()
 	{
 		Action = (byte)Action,
 		Direction = (byte)Direction,
@@ -131,7 +131,7 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	/// Restores dynamic pushwall state from a snapshot.
 	/// Static properties are not modified (they come from LoadPushWallsFromMapAnalysis).
 	/// </summary>
-	public void LoadState(PushWallSnapshot state)
+	public void Load(PushWallSnapshot state)
 	{
 		Action = (PushWallAction)state.Action;
 		Direction = (Direction)state.Direction;
