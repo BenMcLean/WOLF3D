@@ -402,6 +402,9 @@ void sky() {
 
 			// Subscribe status bar directly to Inventory for automatic updates
 			_statusBarState.SubscribeToInventory(_simulatorController.Simulator.Inventory);
+			// Wire simulator picture events (e.g., face updates from OnFace Lua) to status bar state
+			_simulatorController.Simulator.StatusBarPicChanged += evt =>
+				_statusBarState.SetPic(evt.Name, evt.PicName);
 
 			// Sync status bar with current inventory values (important for level transitions
 			// where inventory was restored before status bar was created)
