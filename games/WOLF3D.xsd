@@ -271,7 +271,7 @@
 			<xs:attribute name="FaceTics" type="xs:positiveInteger">
 				<xs:annotation>
 					<xs:documentation>
-						Tics between face update checks. Default 2 (≈35Hz, approximating original 286 frame rate).
+						Tics between face update checks. Default 4 (≈17.5Hz, approximating original 286 frame rate).
 						Values smaller than 2 are treated as 1 (every tic at 70Hz). Larger values slow the face animation.
 						WL_AGENT.C:FACETICS — unused constant hinting at a rate-limited design intent.
 					</xs:documentation>

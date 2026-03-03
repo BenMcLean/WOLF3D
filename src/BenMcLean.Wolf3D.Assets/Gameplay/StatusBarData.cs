@@ -178,10 +178,10 @@ public class StatusBarDefinition
 	/// </summary>
 	public string OnFace { get; set; }
 	/// <summary>
-	/// Tics between face update checks. Default 2 (≈35Hz, approximating original 286 frame rate).
+	/// Tics between face update checks. Default 4 (≈17.5Hz, approximating original 286 frame rate).
 	/// Values smaller than 2 are treated as 1 (every tic). Larger values slow the face animation.
 	/// </summary>
-	public int FaceTics { get; set; } = 2;
+	public int FaceTics { get; set; } = 4;
 	/// <summary>
 	/// Name of the ActionFunction to call when the player dies (health reaches 0).
 	/// WL_GAME.C:Died() — decrements lives, resets inventory, restarts level or game over.
