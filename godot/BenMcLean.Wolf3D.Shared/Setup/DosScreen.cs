@@ -185,5 +185,5 @@ public partial class DosScreen : Control
 
 	public override void _Process(double delta) => Screen.UpdateCursor((float)delta);
 
-	public SubViewport GetViewport() => Viewport;//TODO: 'DosScreen.GetViewport()' hides inherited member 'Node.GetViewport()'. Use the new keyword if hiding was intended.
+	public SubViewport GetSubViewport() => Viewport;
 }

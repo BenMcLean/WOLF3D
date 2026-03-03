@@ -2,7 +2,9 @@ using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
+using BenMcLean.Wolf3D.Shared.Setup;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
+using BenMcLean.Wolf3D.VR.MenuStage;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -35,8 +37,8 @@ public partial class Root : Node3D
 
 	private Node _currentScene;
 	private Node _pendingScene;
-	private System.Action _pendingMidFadeAction;
-	private Shared.DosScreen _errorScreen;
+	private Action _pendingMidFadeAction;
+	private DosScreen _errorScreen;
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
 	private TransitionState _transitionState = TransitionState.Idle;
@@ -498,7 +500,7 @@ public partial class Root : Node3D
 		// Create error screen if not already created
 		if (_errorScreen == null)
 		{
-			_errorScreen = new Shared.DosScreen();
+			_errorScreen = new DosScreen();
 			AddChild(_errorScreen);
 		}
 

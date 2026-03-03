@@ -1,5 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Shared;
+using BenMcLean.Wolf3D.Shared.Setup;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -88,7 +89,7 @@ public partial class SetupRoom : Node3D, IRoom
 			},
 			MaterialOverride = new StandardMaterial3D()
 			{
-				AlbedoTexture = _dosScreen.GetViewport().GetTexture(),
+				AlbedoTexture = _dosScreen.GetSubViewport().GetTexture(),
 				ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
 				DisableReceiveShadows = true,
 				DisableAmbientLight = true,
@@ -138,7 +139,7 @@ public partial class SetupRoom : Node3D, IRoom
 
 		TextureRect textureRect = new()
 		{
-			Texture = _dosScreen.GetViewport().GetTexture(),
+			Texture = _dosScreen.GetSubViewport().GetTexture(),
 			Size = dosSize,
 			Position = dosPosition,
 			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,

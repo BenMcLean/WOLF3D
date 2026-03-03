@@ -1,11 +1,10 @@
 using System;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
-using BenMcLean.Wolf3D.VR.Menu;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
-namespace BenMcLean.Wolf3D.VR;
+namespace BenMcLean.Wolf3D.VR.MenuStage;
 
 /// <summary>
 /// VR-aware menu room that wraps MenuStage with VR support.

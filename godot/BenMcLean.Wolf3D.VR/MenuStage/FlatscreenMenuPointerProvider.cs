@@ -1,7 +1,7 @@
 using BenMcLean.Wolf3D.Shared.Menu.Input;
 using Godot;
 
-namespace BenMcLean.Wolf3D.VR.Menu;
+namespace BenMcLean.Wolf3D.VR.MenuStage;
 
 /// <summary>
 /// Pointer provider for flatscreen mode.
