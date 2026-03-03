@@ -275,7 +275,7 @@ public class TextDefinition
 		TextDefinition text = new()
 		{
 			Id = element.Attribute("Id")?.Value,
-			Content = element.Value?.Trim() ?? string.Empty,
+			Content = element.Value ?? string.Empty,
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
 			Font = element.Attribute("Font")?.Value

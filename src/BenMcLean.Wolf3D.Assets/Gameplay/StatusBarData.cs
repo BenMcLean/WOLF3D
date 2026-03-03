@@ -15,9 +15,9 @@ public class StatusBarDefinition
 	/// </summary>
 	public string BackgroundPic { get; set; }
 	/// <summary>
-	/// Font index for number display (chunk font number)
+	/// Font name for number display (e.g., "N", "SMALL")
 	/// </summary>
-	public int Font { get; set; }
+	public string Font { get; set; }
 	/// <summary>
 	/// Text label elements (score, health, ammo, floor, lives, etc.).
 	/// Updated at runtime by action scripts via SetText().
@@ -58,7 +58,7 @@ public class StatusBarDefinition
 	public static StatusBarDefinition FromXElement(XElement element) => new()
 	{
 		BackgroundPic = element.Attribute("Pic")?.Value,
-		Font = int.TryParse(element.Attribute("Font")?.Value, out int font) ? font : 0,
+		Font = element.Attribute("Font")?.Value,
 		Texts = [.. element.Elements("Text").Select(TextDefinition.FromXElement)],
 		Pictures = [.. element.Elements("Picture").Select(PictureDefinition.FromXElement)],
 		OnFace = element.Attribute("OnFace")?.Value,

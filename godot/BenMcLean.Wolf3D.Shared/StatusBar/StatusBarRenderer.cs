@@ -111,9 +111,7 @@ public class StatusBarRenderer
 	{
 		if (_definition.Texts is null || _definition.Texts.Count == 0)
 			return;
-		string fontName = _definition.Font != 0
-			? _definition.Font.ToString()
-			: "N";
+		string fontName = !string.IsNullOrEmpty(_definition.Font) ? _definition.Font : "N";
 		if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
 		{
 			GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager - cannot render status bar texts");
