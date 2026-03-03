@@ -739,9 +739,9 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Update a named text label's content.
-	/// Called from Lua via SetText(name, value).
+	/// Called from Lua via SetText(id, value).
 	/// </summary>
-	/// <param name="name">The Name attribute of the text element</param>
+	/// <param name="name">The Id attribute of the text element</param>
 	/// <param name="value">New text content</param>
 	private void SetText(string name, string value) => _renderer.UpdateText(name, value);
 	/// <summary>

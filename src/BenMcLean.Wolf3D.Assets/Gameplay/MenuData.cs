@@ -215,9 +215,9 @@ public class MenuTextDefinition
 {
 	/// <summary>
 	/// Optional identifier for Lua to update text dynamically.
-	/// When set, the text can be updated via SetText(name, value) from Lua scripts.
+	/// When set, the text can be updated via SetText(id, value) from Lua scripts.
 	/// </summary>
-	public string Name { get; set; }
+	public string Id { get; set; }
 	/// <summary>
 	/// Text content to display
 	/// </summary>
@@ -274,7 +274,7 @@ public class MenuTextDefinition
 	{
 		MenuTextDefinition text = new()
 		{
-			Name = element.Attribute("Name")?.Value,
+			Id = element.Attribute("Id")?.Value,
 			Content = element.Value?.Trim() ?? string.Empty,
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",

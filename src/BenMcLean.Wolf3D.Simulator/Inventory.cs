@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
 
 namespace BenMcLean.Wolf3D.Simulator;
@@ -9,15 +8,12 @@ namespace BenMcLean.Wolf3D.Simulator;
 /// Unified inventory system for all player state (health, score, lives, keys, ammo, weapons).
 /// Uses a string-keyed dictionary of integers, enabling:
 /// - Moddability: Values defined in XML, modders can add custom inventory items
-/// - Easy serialization: Dictionary<string, int> is trivially JSON-serializable
-/// - Event-driven updates: ValueChanged event enables direct UI subscription
+/// - Easy serialization: Dictionary&lt;string, int&gt; is trivially JSON-serializable
 /// </summary>
 public class Inventory : ISnapshot<InventorySnapshot>
 {
 	private readonly Dictionary<string, int> _values = [];
 	private readonly Dictionary<string, int> _maxValues = [];
-	private readonly Dictionary<string, int> _initValues = [];
-	private readonly Dictionary<string, int?> _levelResetValues = [];
 
 	/// <summary>
 	/// Fired when a value changes.
@@ -41,7 +37,6 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// <summary>
 	/// Sets the value for a named inventory item.
 	/// Value is clamped to [0, Max] if a maximum is defined.
-	/// Fires ValueChanged event if value actually changed.
 	/// </summary>
 	/// <param name="name">The name of the value (e.g., "Health", "Ammo")</param>
 	/// <param name="value">The new value</param>
@@ -81,15 +76,6 @@ public class Inventory : ISnapshot<InventorySnapshot>
 		_maxValues.TryGetValue(name, out int max) ? max : int.MaxValue;
 
 	/// <summary>
-	/// Gets the initial value for a named inventory item.
-	/// Used by OnDeath script to reset values to their starting state.
-	/// </summary>
-	/// <param name="name">The name of the value</param>
-	/// <returns>The initial value, or 0 if not defined</returns>
-	public int GetInit(string name) =>
-		_initValues.TryGetValue(name, out int init) ? init : 0;
-
-	/// <summary>
 	/// Sets the maximum value for a named inventory item.
 	/// If current value exceeds new max, it will be clamped on next SetValue call.
 	/// </summary>
@@ -106,74 +92,6 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// <returns>True if value > 0</returns>
 	public bool Has(string name) =>
 		GetValue(name) > 0;
-
-	/// <summary>
-	/// Initializes the inventory from a StatusBarDefinition.
-	/// Sets up initial values, maximums, and level reset values from XML config.
-	/// </summary>
-	/// <param name="definition">The status bar definition containing value configurations</param>
-	public void InitializeFromDefinition(StatusBarDefinition definition)
-	{
-		ArgumentNullException.ThrowIfNull(definition);
-
-		_values.Clear();
-		_maxValues.Clear();
-		_initValues.Clear();
-		_levelResetValues.Clear();
-
-		// Initialize from Number definitions (health, score, ammo, keys, etc.)
-		foreach (StatusBarNumberDefinition number in definition.Numbers)
-		{
-			_initValues[number.Name] = number.Init;
-			_values[number.Name] = number.Init;
-
-			if (number.Max.HasValue)
-				_maxValues[number.Name] = number.Max.Value;
-
-			_levelResetValues[number.Name] = number.LevelReset;
-
-			// Fire initial value event
-			ValueChanged?.Invoke(number.Name, number.Init);
-		}
-
-		// Initialize from Weapon definitions (Weapon0, Weapon1, etc.)
-		if (definition.Weapons?.Weapons != null)
-		{
-			foreach (StatusBarWeaponDefinition weapon in definition.Weapons.Weapons)
-			{
-				string weaponKey = $"Weapon{weapon.Number}";
-				_initValues[weaponKey] = weapon.Init;
-				_values[weaponKey] = weapon.Init;
-				_maxValues[weaponKey] = 1; // Weapons are binary (0 or 1)
-
-				// Fire initial value event
-				ValueChanged?.Invoke(weaponKey, weapon.Init);
-			}
-		}
-	}
-
-	/// <summary>
-	/// Resets values that have LevelReset defined.
-	/// Called when transitioning between levels.
-	/// </summary>
-	public void OnLevelChange()
-	{
-		foreach (KeyValuePair<string, int?> kvp in _levelResetValues)
-		{
-			if (kvp.Value.HasValue)
-				SetValue(kvp.Key, kvp.Value.Value);
-		}
-	}
-
-	/// <summary>
-	/// Resets all values to their initial state.
-	/// Called when starting a new game or dying.
-	/// </summary>
-	public void Reset()
-	{
-		foreach (KeyValuePair<string, int> kvp in _initValues)
-			SetValue(kvp.Key, kvp.Value);
-	}
 
 	/// <summary>
 	/// Captures the current inventory state for preservation across level transitions

@@ -400,17 +400,15 @@ void sky() {
 			_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
 			_statusBarRenderer = new StatusBarRenderer(_statusBarState);
 
-			// Subscribe status bar directly to Inventory for automatic updates
-			_statusBarState.SubscribeToInventory(_simulatorController.Simulator.Inventory);
 			// Wire simulator picture events (e.g., face updates from OnFace Lua) to status bar state
 			_simulatorController.Simulator.StatusBarPicChanged += evt =>
 				_statusBarState.SetPic(evt.Name, evt.PicName);
+			// Wire simulator text events (e.g., health, ammo, score) to status bar state
+			_simulatorController.Simulator.StatusBarTextChanged += evt =>
+				_statusBarState.SetText(evt.Id, evt.Content);
 
-			// Sync status bar with current inventory values (important for level transitions
-			// where inventory was restored before status bar was created)
-			// CurrentWeapon is derived from StatusBarWeapon in the inventory values
-			_statusBarState.SyncFromSimulator(
-				_simulatorController.Simulator.Inventory.Values);
+			// Initialize all inventory values and status bar display via OnNewGame script
+			_simulatorController.Simulator.ExecuteOnNewGameScript();
 
 			// Create CanvasLayer to display status bar at bottom of screen
 			_statusBarCanvas = new CanvasLayer
@@ -445,8 +443,7 @@ void sky() {
 			};
 			_statusBarCanvas.AddChild(statusBarDisplay);
 
-			// Set floor number (not part of Inventory as it's level metadata, not player state)
-			_statusBarState.SetValue("Floor", _initialLevelIndex + 1);
+			// Floor display is updated by the OnNewGame script via SetText("Floor", ...)
 		}
 		}
 		catch (Exception ex)
@@ -729,8 +726,6 @@ void sky() {
 		if (_simulatorController?.Simulator != null)
 			_simulatorController.Simulator.HitDetection = null;
 
-		// Unsubscribe status bar from inventory to prevent dangling references
-		_statusBarState?.UnsubscribeFromInventory();
 
 		// Release mouse when leaving action stage (returning to menu, etc.)
 		if (!_displayMode.IsVRActive)
@@ -772,10 +767,6 @@ void sky() {
 	/// </summary>
 	private void OnPlayerDied(PlayerDiedEvent e)
 	{
-		// Freeze status bar so it stays showing health=0 during death fadeout.
-		// OnDeath script (which resets inventory) runs later after fade completes.
-		if (_statusBarState != null)
-			_statusBarState.Frozen = true;
 		PendingDeathFadeOut = true;
 	}
 

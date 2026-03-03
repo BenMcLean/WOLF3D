@@ -153,31 +153,16 @@
 			<Pic Number="142" Name="PAUSEDPIC" />
 			<Pic Number="143" Name="GETPSYCHEDPIC" />
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="3" OnFace="UpdateFace" OnDeath="OnDeath">
-			<Number Name="Difficulty" Init="1" />
-			<Number Name="Episode" Init="1" />
-			<Number Name="Floor" X="32" Y="16" Digits="2" Init="1" />
-			<Number Name="Score" X="96" Y="16" Digits="6" Init="0" />
-			<Number Name="Lives" X="128" Y="16" Digits="2" Init="3" />
+		<StatusBar Pic="STATUSBARPIC" Font="3" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame">
+			<Text Id="Floor" X="16" Y="16"> 1</Text>
+			<Text Id="Score" X="64" Y="16">     0</Text>
+			<Text Id="Lives" X="112" Y="16"> 3</Text>
 			<Picture Id="Face" Name="FACE1APIC" X="134" Y="5" />
-			<Number Name="Health" X="192" Y="16" Digits="3" Init="100" Max="100" />
-			<Number Name="Ammo" X="232" Y="16" Digits="2" Init="8" Max="99" />
-			<Number Name="Gold Key" X="240" Y="4" Have="GOLDKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
-			<Number Name="Silver Key" X="240" Y="20" Have="SILVERKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
-			<Number Name="FaceGrinTics" Init="0" />
-			<Number Name="Weapon0" Init="1" Max="1" />
-			<Number Name="Weapon1" Init="1" Max="1" />
-			<Number Name="Weapon2" Init="0" Max="1" />
-			<Number Name="Weapon3" Init="0" Max="1" />
-			<Number Name="SelectedWeapon0" Init="1" />
-			<Number Name="SelectedWeapon1" Init="1" />
-			<Number Name="StatusBarWeapon" Init="1" />
-			<Weapons X="256" Y="8">
-				<Weapon Number="0" Pic="KNIFEPIC" Init="1" />
-				<Weapon Number="1" Pic="GUNPIC" Init="1" />
-				<Weapon Number="2" Pic="MACHINEGUNPIC" Init="0" />
-				<Weapon Number="3" Pic="GATLINGGUNPIC" Init="0" />
-			</Weapons>
+			<Text Id="Health" X="176" Y="16">100</Text>
+			<Text Id="Ammo" X="216" Y="16"> 8</Text>
+			<Picture Id="GoldKey" Name="NOKEYPIC" X="240" Y="4" />
+			<Picture Id="SilverKey" Name="NOKEYPIC" X="240" Y="20" />
+			<Picture Id="WeaponPic" Name="GUNPIC" X="256" Y="8" />
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
 		<Menus Start="Credits" Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
@@ -638,27 +623,27 @@ end
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
-				<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-				<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-				<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-				<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
-				<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
-				<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-				<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
-				<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
-				<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-				<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
-				<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
-				<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-				<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
-				<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
-				<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
-				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Text Id="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+				<Text Id="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+				<Text Id="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+				<Text Id="Level2" X="160" Y="108" Font="SMALL"> </Text>
+				<Text Id="Score2" X="224" Y="108" Font="SMALL"> </Text>
+				<Text Id="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+				<Text Id="Level3" X="160" Y="124" Font="SMALL"> </Text>
+				<Text Id="Score3" X="224" Y="124" Font="SMALL"> </Text>
+				<Text Id="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+				<Text Id="Level4" X="160" Y="140" Font="SMALL"> </Text>
+				<Text Id="Score4" X="224" Y="140" Font="SMALL"> </Text>
+				<Text Id="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+				<Text Id="Level5" X="160" Y="156" Font="SMALL"> </Text>
+				<Text Id="Score5" X="224" Y="156" Font="SMALL"> </Text>
+				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
+				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
 				<Pause>BackToPreviousMenu()</Pause>
 				<OnShow>
 					<![CDATA[
@@ -682,16 +667,16 @@ end
 					COMPLETED
 				</Text>
 				<!-- Floor number displayed by Lua SetText -->
-				<Text Name="FloorNumber" X="208" Y="16" Font="L"> </Text>
+				<Text Id="FloorNumber" X="208" Y="16" Font="L"> </Text>
 				<!-- WL_INTER.C:Write(14,7,"bonus     0") = pixel (112,56) -->
 				<Text X="112" Y="56" Font="L">BONUS</Text>
-				<Text Name="BonusValue" X="208" Y="56" Font="L">0</Text>
+				<Text Id="BonusValue" X="208" Y="56" Font="L">0</Text>
 				<!-- WL_INTER.C:Write(16,10,"time") = pixel (128,80) -->
 				<Text X="128" Y="80" Font="L">TIME</Text>
-				<Text Name="TimeValue" X="208" Y="80" Font="L">0:00</Text>
+				<Text Id="TimeValue" X="208" Y="80" Font="L">0:00</Text>
 				<!-- WL_INTER.C:Write(16,12," par") = pixel (128,96) -->
 				<Text X="128" Y="96" Font="L"> PAR</Text>
-				<Text Name="ParValue" X="208" Y="96" Font="L">0:00</Text>
+				<Text Id="ParValue" X="208" Y="96" Font="L">0:00</Text>
 				<!-- WL_INTER.C:Write(9,14,"kill ratio    %") = pixel (72,112) -->
 				<Text X="72" Y="112" Font="L">KILL RATIO    %</Text>
 				<!-- WL_INTER.C:Write(5,16,"secret ratio    %") = pixel (40,128) -->
@@ -756,27 +741,27 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
 				<!-- 7 rows at PrintY = 76 + 16*i -->
-				<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-				<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-				<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-				<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
-				<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
-				<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-				<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
-				<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
-				<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-				<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
-				<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
-				<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-				<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
-				<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
-				<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
-				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Text Id="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+				<Text Id="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+				<Text Id="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+				<Text Id="Level2" X="160" Y="108" Font="SMALL"> </Text>
+				<Text Id="Score2" X="224" Y="108" Font="SMALL"> </Text>
+				<Text Id="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+				<Text Id="Level3" X="160" Y="124" Font="SMALL"> </Text>
+				<Text Id="Score3" X="224" Y="124" Font="SMALL"> </Text>
+				<Text Id="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+				<Text Id="Level4" X="160" Y="140" Font="SMALL"> </Text>
+				<Text Id="Score4" X="224" Y="140" Font="SMALL"> </Text>
+				<Text Id="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+				<Text Id="Level5" X="160" Y="156" Font="SMALL"> </Text>
+				<Text Id="Score5" X="224" Y="156" Font="SMALL"> </Text>
+				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
+				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
 				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
 				<OnShow>
@@ -803,7 +788,7 @@ end
 				<!-- WL_INTER.C:Write(TIMEX,TIMEY-2,STR_TOTALTIME) TIMEX=14,TIMEY=8 → pixel (112,48) -->
 				<Text X="112" Y="48" Font="L">TOTAL TIME</Text>
 				<!-- Total time value displayed by Lua -->
-				<Text Name="TotalTimeValue" X="208" Y="64" Font="L">0:00</Text>
+				<Text Id="TotalTimeValue" X="208" Y="64" Font="L">0:00</Text>
 				<!-- WL_INTER.C:Write(12,RATIOY-2,"averages") RATIOY=14 → pixel (96,96) -->
 				<Text X="96" Y="96" Font="L">AVERAGES</Text>
 				<!-- WL_INTER.C:Write(RATIOX+8,RATIOY,"kill    %") RATIOX=6 → pixel (112,112) -->
@@ -2281,15 +2266,22 @@ end
 PlayAdLibSound("PLAYERDEATHSND")
 if GetValue("Lives") > 0 then
 	AddValue("Lives", -1)
-	SetValue("Health", GetInit("Health"))
-	SetValue("Ammo", GetInit("Ammo"))
+	SetValue("Health", 100)
+	SetValue("Ammo", 8)
 	SetValue("Gold Key", 0)
 	SetValue("Silver Key", 0)
-	SetValue("Weapon2", GetInit("Weapon2"))
-	SetValue("Weapon3", GetInit("Weapon3"))
-	SetValue("SelectedWeapon0", GetInit("SelectedWeapon0"))
-	SetValue("SelectedWeapon1", GetInit("SelectedWeapon1"))
-	SetValue("StatusBarWeapon", GetInit("StatusBarWeapon"))
+	SetValue("Weapon2", 0)
+	SetValue("Weapon3", 0)
+	SetValue("SelectedWeapon0", 1)
+	SetValue("SelectedWeapon1", 1)
+	SetValue("StatusBarWeapon", 1)
+	-- Update status bar display
+	SetText("Health", "100")
+	SetText("Ammo", " 8")
+	SetText("Lives", " " .. tostring(GetValue("Lives")))
+	SetPicture("GoldKey", "NOKEYPIC")
+	SetPicture("SilverKey", "NOKEYPIC")
+	SetPicture("WeaponPic", "GUNPIC")
 	return "restart"
 end
 return "HighScores"
@@ -2312,6 +2304,38 @@ end
 local level = math.min(7, math.floor((100 - health) / 16) + 1)
 local frames = {"A", "B", "C"}
 SetPicture("Face", "FACE" .. level .. frames[math.random(1, 3)] .. "PIC")
+]]>
+			</Function>
+			<!-- WL_GAME.C:NewGame — initialize all inventory values, maxes, and status bar display -->
+			<Function Name="OnNewGame">
+				<![CDATA[
+-- Inventory values
+SetValue("Difficulty", 1)
+SetValue("Episode", 1)
+SetValue("Floor", 1)
+SetMax("Health", 100);  SetValue("Health", 100)
+SetMax("Ammo", 99);     SetValue("Ammo", 8)
+SetValue("Lives", 3)
+SetValue("Score", 0)
+SetValue("Gold Key", 0)
+SetValue("Silver Key", 0)
+SetValue("FaceGrinTics", 0)
+SetMax("Weapon0", 1);  SetValue("Weapon0", 1)
+SetMax("Weapon1", 1);  SetValue("Weapon1", 1)
+SetMax("Weapon2", 1);  SetValue("Weapon2", 0)
+SetMax("Weapon3", 1);  SetValue("Weapon3", 0)
+SetValue("SelectedWeapon0", 1)
+SetValue("SelectedWeapon1", 1)
+SetValue("StatusBarWeapon", 1)
+-- Update status bar display
+SetText("Floor", " 1")
+SetText("Score", "     0")
+SetText("Lives", " 3")
+SetText("Health", "100")
+SetText("Ammo", " 8")
+SetPicture("GoldKey", "NOKEYPIC")
+SetPicture("SilverKey", "NOKEYPIC")
+SetPicture("WeaponPic", "GUNPIC")
 ]]>
 			</Function>
 		</Actors>

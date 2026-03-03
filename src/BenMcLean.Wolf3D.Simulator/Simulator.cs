@@ -62,6 +62,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private readonly Microsoft.Extensions.Logging.ILogger logger;
 	// OnDeath ActionFunction name from StatusBar definition (WL_GAME.C:Died)
 	private string onDeathFunctionName;
+	// OnNewGame ActionFunction name from StatusBar definition (WL_GAME.C:NewGame)
+	private string onNewGameFunctionName;
 	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
 	private string onFaceFunctionName;
 	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
@@ -287,6 +289,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Presentation layer swaps the displayed VgaGraph picture for the named element.
 	/// </summary>
 	public event Action<StatusBarPicChangedEvent> StatusBarPicChanged;
+	/// <summary>
+	/// Fired when an action script calls SetText() to update a named status bar text label.
+	/// Presentation layer updates the displayed text for the named element.
+	/// </summary>
+	public event Action<StatusBarTextChangedEvent> StatusBarTextChanged;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -1186,8 +1193,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="savedInventory">Saved inventory from level transition (null for new game)</param>
 	public void InitializeInventory(StatusBarDefinition statusBar, int difficulty, int slotCount, WeaponCollection weapons, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
 	{
-		Inventory.InitializeFromDefinition(statusBar);
 		onDeathFunctionName = statusBar.OnDeath;
+		onNewGameFunctionName = statusBar.OnNewGame;
 		onFaceFunctionName = statusBar.OnFace;
 		faceController = !string.IsNullOrEmpty(onFaceFunctionName)
 			? new FaceController(rng, luaScriptEngine, onFaceFunctionName, statusBar.FaceTics)
@@ -1199,10 +1206,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			LevelRatios.AddRange(savedLevelStats);
 		}
 		if (savedInventory != null)
-		{
 			Inventory.Load(savedInventory);
-			Inventory.OnLevelChange();
-		}
 		// Set difficulty (for new games this overrides the StatusBar Init default;
 		// for level transitions this confirms the saved value)
 		Inventory.SetValue("Difficulty", difficulty);
@@ -2311,6 +2315,43 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Name = name,
 			PicName = picName
 		});
+	}
+
+	/// <summary>
+	/// Emit a StatusBarTextChanged event to update a named status bar text label.
+	/// Called by ActionScriptContext.SetText() from Lua scripts.
+	/// </summary>
+	public void EmitStatusBarTextChanged(string id, string content)
+	{
+		StatusBarTextChanged?.Invoke(new StatusBarTextChangedEvent
+		{
+			Id = id,
+			Content = content
+		});
+	}
+
+	/// <summary>
+	/// Execute the OnNewGame action function to initialize all inventory values and status bar display.
+	/// WL_GAME.C:NewGame — initializes inventory, maxes, and fires SetText/SetPicture for each display.
+	/// Called after the game world is set up and presentation layer is ready to receive events.
+	/// </summary>
+	public void ExecuteOnNewGameScript()
+	{
+		if (!string.IsNullOrEmpty(onNewGameFunctionName))
+		{
+			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+			{
+				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+			};
+			try
+			{
+				luaScriptEngine.ExecuteActionFunction(onNewGameFunctionName, context);
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError(ex, "Error executing OnNewGame function '{FunctionName}'", onNewGameFunctionName);
+			}
+		}
 	}
 
 	/// <summary>

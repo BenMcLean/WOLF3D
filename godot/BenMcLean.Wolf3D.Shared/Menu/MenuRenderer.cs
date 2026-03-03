@@ -332,8 +332,8 @@ public class MenuRenderer
 			_canvas.AddChild(label);
 			label.PivotOffset = Vector2.Zero;
 			// Track named text labels for dynamic updates from Lua
-			if (!string.IsNullOrEmpty(textDef.Name))
-				_namedTextLabels[textDef.Name] = label;
+			if (!string.IsNullOrEmpty(textDef.Id))
+				_namedTextLabels[textDef.Id] = label;
 		}
 	}
 	/// <summary>
@@ -568,9 +568,9 @@ public class MenuRenderer
 	}
 	/// <summary>
 	/// Updates a named text label's content dynamically.
-	/// Called from Lua via SetText(name, value).
+	/// Called from Lua via SetText(id, value).
 	/// </summary>
-	/// <param name="name">The Name attribute of the text element</param>
+	/// <param name="name">The Id attribute of the text element</param>
 	/// <param name="value">New text content</param>
 	public void UpdateText(string name, string value)
 	{

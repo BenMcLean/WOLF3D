@@ -16,11 +16,8 @@ public class StatusBarRenderer
 	private readonly Control _canvas;
 	private readonly StatusBarState _state;
 	private readonly StatusBarDefinition _definition;
-	private readonly Dictionary<string, Label> _numberLabels = [];
-	private readonly Dictionary<string, TextureRect> _keyTextures = [];
+	private readonly Dictionary<string, Label> _textLabels = [];
 	private readonly Dictionary<string, TextureRect> _pictureTextures = [];
-	private TextureRect _weaponTexture;
-	private int _lastWeapon = -1;
 	/// <summary>
 	/// Creates a new StatusBarRenderer with a 320x40 virtual canvas.
 	/// </summary>
@@ -44,7 +41,7 @@ public class StatusBarRenderer
 		};
 		_viewport.AddChild(_canvas);
 		// Subscribe to state changes
-		_state.ValueChanged += OnValueChanged;
+		_state.TextChanged += UpdateText;
 		_state.PicChanged += UpdatePicture;
 		// Initial render
 		RenderAll();
@@ -70,10 +67,8 @@ public class StatusBarRenderer
 	{
 		Clear();
 		RenderBackground();
-		RenderNumbers();
-		RenderKeys();
+		RenderTexts();
 		RenderPictures();
-		RenderWeapon();
 	}
 	/// <summary>
 	/// Clears all rendered elements.
@@ -82,11 +77,8 @@ public class StatusBarRenderer
 	{
 		foreach (Node child in _canvas.GetChildren())
 			child.QueueFree();
-		_numberLabels.Clear();
-		_keyTextures.Clear();
+		_textLabels.Clear();
 		_pictureTextures.Clear();
-		_weaponTexture = null;
-		_lastWeapon = -1;
 	}
 	/// <summary>
 	/// Renders the status bar background image.
@@ -111,69 +103,44 @@ public class StatusBarRenderer
 		_canvas.AddChild(background);
 	}
 	/// <summary>
-	/// Renders all numeric displays.
-	/// Uses the "N" PicFont for digit rendering.
+	/// Renders all text label elements from the StatusBar definition.
+	/// Each label's initial content comes from the definition; runtime updates
+	/// arrive via UpdateText() when the simulator fires StatusBarTextChangedEvent.
 	/// </summary>
-	private void RenderNumbers()
+	private void RenderTexts()
 	{
-		// Get the "N" PicFont theme for number display
-		if (!SharedAssetManager.Themes.TryGetValue("N", out Theme numberTheme))
+		if (_definition.Texts is null || _definition.Texts.Count == 0)
+			return;
+		string fontName = _definition.Font != 0
+			? _definition.Font.ToString()
+			: "N";
+		if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
 		{
-			GD.PrintErr("ERROR: PicFont 'N' not found in SharedAssetManager - cannot render status bar numbers");
+			GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager - cannot render status bar texts");
 			return;
 		}
-		foreach (StatusBarNumberDefinition numberDef in _definition.Numbers)
+		foreach (MenuTextDefinition textDef in _definition.Texts)
 		{
-			// Skip non-rendered values (internal only) and key-style displays
-			if (!numberDef.IsRendered || numberDef.IsKeyDisplay)
-				continue;
-			int value = _state.GetValue(numberDef.Name);
-			string text = FormatNumber(value, numberDef.Digits);
-			// X coordinate in XML is the RIGHT edge of the number field (for right-justified display)
-			// Each digit is 8 pixels wide, so offset left by Digits * 8
-			int startX = numberDef.X.Value - (numberDef.Digits * 8);
+			string content = !string.IsNullOrEmpty(textDef.Id)
+				? _state.GetText(textDef.Id)
+				: textDef.Content;
 			Label label = new()
 			{
-				Text = text,
-				Theme = numberTheme,
-				Position = new Vector2(startX, numberDef.Y.Value),
-				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				Text = content ?? textDef.Content ?? string.Empty,
+				Theme = theme,
 				ZIndex = 10,
+				LabelSettings = new LabelSettings
+				{
+					Font = theme.DefaultFont,
+					FontSize = theme.DefaultFontSize,
+					LineSpacing = 0,
+				}
 			};
+			label.Position = new Vector2(textDef.XValue, textDef.YValue);
 			_canvas.AddChild(label);
-			_numberLabels[numberDef.Name] = label;
-		}
-	}
-	/// <summary>
-	/// Renders key displays (Gold Key, Silver Key).
-	/// Uses Have/Empty pics based on value.
-	/// </summary>
-	private void RenderKeys()
-	{
-		foreach (StatusBarNumberDefinition numberDef in _definition.Numbers)
-		{
-			// Only process key-style displays
-			if (!numberDef.IsRendered || !numberDef.IsKeyDisplay)
-				continue;
-			int value = _state.GetValue(numberDef.Name);
-			string picName = value > 0 ? numberDef.Have : numberDef.Empty;
-			if (string.IsNullOrEmpty(picName))
-				continue;
-			if (!SharedAssetManager.VgaGraph.TryGetValue(picName, out AtlasTexture texture))
-			{
-				GD.PrintErr($"ERROR: Key picture '{picName}' not found in VgaGraph");
-				continue;
-			}
-			TextureRect keyTexture = new()
-			{
-				Texture = texture,
-				Position = new Vector2(numberDef.X.Value, numberDef.Y.Value),
-				Size = texture.Region.Size,
-				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				ZIndex = 10,
-			};
-			_canvas.AddChild(keyTexture);
-			_keyTextures[numberDef.Name] = keyTexture;
+			label.PivotOffset = Vector2.Zero;
+			if (!string.IsNullOrEmpty(textDef.Id))
+				_textLabels[textDef.Id] = label;
 		}
 	}
 	/// <summary>
@@ -209,71 +176,13 @@ public class StatusBarRenderer
 		}
 	}
 	/// <summary>
-	/// Renders the current weapon icon.
+	/// Updates a named text label's content.
+	/// Called when the simulator fires StatusBarTextChangedEvent via _state.TextChanged.
 	/// </summary>
-	private void RenderWeapon()
+	private void UpdateText(string id, string content)
 	{
-		if (_definition.Weapons is null)
-			return;
-		StatusBarWeaponDefinition weaponDef = null;
-		foreach (StatusBarWeaponDefinition w in _definition.Weapons.Weapons)
-			if (w.Number == _state.CurrentWeapon)
-			{
-				weaponDef = w;
-				break;
-			}
-		if (string.IsNullOrEmpty(weaponDef?.Pic))
-			return;
-		if (!SharedAssetManager.VgaGraph.TryGetValue(weaponDef.Pic, out AtlasTexture texture))
-		{
-			GD.PrintErr($"ERROR: Weapon picture '{weaponDef.Pic}' not found in VgaGraph");
-			return;
-		}
-		_weaponTexture = new TextureRect
-		{
-			Texture = texture,
-			Position = new Vector2(_definition.Weapons.X, _definition.Weapons.Y),
-			Size = texture.Region.Size,
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			ZIndex = 10,
-		};
-		_canvas.AddChild(_weaponTexture);
-		_lastWeapon = _state.CurrentWeapon;
-	}
-	/// <summary>
-	/// Updates the display. Call this each frame.
-	/// Efficiently updates only changed elements.
-	/// </summary>
-	public void Update()
-	{
-		// Update weapon if changed
-		if (_state.CurrentWeapon != _lastWeapon)
-			UpdateWeapon();
-	}
-	/// <summary>
-	/// Handles value change events from the state.
-	/// Updates only the affected display element.
-	/// </summary>
-	private void OnValueChanged(string name, int newValue)
-	{
-		// Update number label if exists
-		if (_numberLabels.TryGetValue(name, out Label label))
-		{
-			StatusBarNumberDefinition numberDef = _definition.GetNumber(name);
-			if (numberDef is not null)
-				label.Text = FormatNumber(newValue, numberDef.Digits);
-		}
-		// Update key texture if exists
-		if (_keyTextures.TryGetValue(name, out TextureRect keyTexture))
-		{
-			StatusBarNumberDefinition numberDef = _definition.GetNumber(name);
-			if (numberDef is not null)
-			{
-				string picName = newValue > 0 ? numberDef.Have : numberDef.Empty;
-				if (!string.IsNullOrEmpty(picName) && SharedAssetManager.VgaGraph.TryGetValue(picName, out AtlasTexture texture))
-					keyTexture.Texture = texture;
-			}
-		}
+		if (_textLabels.TryGetValue(id, out Label label))
+			label.Text = content;
 	}
 	/// <summary>
 	/// Updates a named picture texture to a new VgaGraph pic.
@@ -290,46 +199,11 @@ public class StatusBarRenderer
 		}
 	}
 	/// <summary>
-	/// Updates the weapon texture based on current weapon.
-	/// </summary>
-	private void UpdateWeapon()
-	{
-		if (_weaponTexture is null || _definition.Weapons is null)
-			return;
-		StatusBarWeaponDefinition weaponDef = null;
-		foreach (StatusBarWeaponDefinition w in _definition.Weapons.Weapons)
-			if (w.Number == _state.CurrentWeapon)
-			{
-				weaponDef = w;
-				break;
-			}
-		if (weaponDef != null && !string.IsNullOrEmpty(weaponDef.Pic) &&
-			SharedAssetManager.VgaGraph.TryGetValue(weaponDef.Pic, out AtlasTexture texture))
-		{
-			_weaponTexture.Texture = texture;
-			_weaponTexture.Size = texture.Region.Size;
-		}
-		_lastWeapon = _state.CurrentWeapon;
-	}
-	/// <summary>
-	/// Formats a number for display with right-justification.
-	/// Uses space padding to maintain consistent width.
-	/// </summary>
-	/// <param name="value">The numeric value</param>
-	/// <param name="digits">Number of digits to display</param>
-	/// <returns>Formatted string with space padding</returns>
-	private static string FormatNumber(int value, int digits)
-	{
-		if (digits <= 0)
-			return value.ToString();
-		return value.ToString().PadLeft(digits, ' ');
-	}
-	/// <summary>
 	/// Disposes resources and unsubscribes from events.
 	/// </summary>
 	public void Dispose()
 	{
-		_state.ValueChanged -= OnValueChanged;
+		_state.TextChanged -= UpdateText;
 		_state.PicChanged -= UpdatePicture;
 		_viewport?.QueueFree();
 	}

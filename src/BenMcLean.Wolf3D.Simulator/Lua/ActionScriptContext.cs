@@ -58,14 +58,6 @@ public class ActionScriptContext(
 	/// <param name="max">The new maximum value</param>
 	public void SetMax(string name, int max) => simulator.Inventory.SetMax(name, max);
 	/// <summary>
-	/// Get the initial value for any inventory item.
-	/// Used by OnDeath script to reset values to their starting state.
-	/// Examples: GetInit("Health") returns 100, GetInit("Ammo") returns 8
-	/// </summary>
-	/// <param name="name">The inventory item name</param>
-	/// <returns>Initial value, or 0 if not defined</returns>
-	public int GetInit(string name) => simulator.Inventory.GetInit(name);
-	/// <summary>
 	/// Check if player has an inventory item (value > 0).
 	/// Examples: Has("Gold Key"), Has("Weapon2"), Has("Ammo")
 	/// </summary>
@@ -107,5 +99,16 @@ public class ActionScriptContext(
 	/// <param name="picName">New VgaGraph picture name to display (e.g., "FACE1APIC")</param>
 	public void SetPicture(string id, string picName) =>
 		simulator.EmitStatusBarPicChanged(id, picName);
+	#endregion
+	#region Text API (exposed to Lua)
+	/// <summary>
+	/// Update a named status bar text label.
+	/// Exposed to Lua. Used to update displayed values (health, ammo, score, etc.).
+	/// Fires StatusBarTextChangedEvent for the presentation layer.
+	/// </summary>
+	/// <param name="id">Text Id as defined in the StatusBar &lt;Text Id="..."&gt; element</param>
+	/// <param name="content">New text content to display</param>
+	public void SetText(string id, string content) =>
+		simulator.EmitStatusBarTextChanged(id, content);
 	#endregion
 }

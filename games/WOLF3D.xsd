@@ -253,9 +253,8 @@
 	<xs:element name="StatusBar">
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<xs:element ref="Number"/>
+				<xs:element ref="Text"/>
 				<xs:element ref="Picture"/>
-				<xs:element ref="Weapons"/>
 			</xs:choice>
 			<xs:attribute name="Pic" type="xs:string"/>
 			<xs:attribute name="Font" type="xs:string"/>
@@ -286,38 +285,15 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Number">
-		<xs:complexType>
-			<xs:attribute name="Name" type="xs:string" use="required"/>
-			<xs:attribute name="X" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Y" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Digits" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Init" type="xs:integer"/>
-			<xs:attribute name="Max" type="xs:integer"/>
-			<xs:attribute name="Have" type="xs:string"/>
-			<xs:attribute name="Empty" type="xs:string"/>
-			<xs:attribute name="LevelReset" type="xs:integer"/>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Weapons">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="Weapon" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-			<xs:attribute name="X" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Y" type="xs:nonNegativeInteger"/>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Weapon">
-		<xs:complexType>
-			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
-			<xs:attribute name="Pic" type="xs:string"/>
-			<xs:attribute name="Init" type="xs:integer"/>
+			<xs:attribute name="OnNewGame" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the ActionFunction to call when starting a new game.
+						WL_GAME.C:NewGame — initializes all inventory values, maxes, and display.
+						Called after the game world is set up to populate all status bar displays.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -756,9 +732,9 @@
 							<xs:documentation>Text color index (VGA palette 0-255). If not specified, uses menu TextColor, then default TextColor. Example: READHCOLOR = 0x47 (71) for yellow text.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="Name" type="xs:string">
+					<xs:attribute name="Id" type="xs:string">
 						<xs:annotation>
-							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(name, value). Used by intermission screen for floor number, time, par time, bonus values.</xs:documentation>
+							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(id, value). Used by status bar displays, intermission screen for floor number, time, par time, bonus values.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 				</xs:extension>

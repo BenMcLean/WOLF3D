@@ -425,3 +425,16 @@ public struct StatusBarPicChangedEvent
 	/// <summary>New VgaGraph picture name to display (e.g., "FACE1APIC", "GOTGATLINGPIC")</summary>
 	public required string PicName { get; init; }
 }
+
+/// <summary>
+/// A named status bar text label changed (e.g., health, ammo, score display).
+/// Fired when an action script calls SetText().
+/// Presentation layer uses this to update the displayed text.
+/// </summary>
+public struct StatusBarTextChangedEvent
+{
+	/// <summary>Text Id as defined in the StatusBar &lt;Text Id="..."&gt; element</summary>
+	public required string Id { get; init; }
+	/// <summary>New text content to display</summary>
+	public required string Content { get; init; }
+}
