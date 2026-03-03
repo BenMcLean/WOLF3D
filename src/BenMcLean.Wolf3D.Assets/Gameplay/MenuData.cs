@@ -8,7 +8,7 @@ namespace BenMcLean.Wolf3D.Assets.Gameplay;
 
 /// <summary>
 /// Represents a menu function (Lua script) for menu behavior.
-/// Similar to StateFunction but for menus instead of Actor AI.
+/// Similar to ActionFunction but for menus instead of Actor AI.
 /// </summary>
 public class MenuFunction
 {

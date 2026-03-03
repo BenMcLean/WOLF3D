@@ -15,7 +15,7 @@ public class LuaScriptEngine
 {
 	private readonly Script luaScript;
 	private readonly Dictionary<string, DynValue> cachedFunctions = [];
-	private readonly Dictionary<string, DynValue> compiledStateFunctions = [];
+	private readonly Dictionary<string, DynValue> compiledActionFunctions = [];
 	private readonly ILogger logger;
 	private readonly Type[] contextTypes;
 	private Table baseEnvironment;
@@ -104,7 +104,7 @@ public class LuaScriptEngine
 		});
 		proxyEnvironment.MetaTable = proxyMeta;
 		// Initialize base environment early (before compilation)
-		// We'll add compiled functions to it later in CompileAllStateFunctions
+		// We'll add compiled functions to it later in CompileAllActionFunctions
 		baseEnvironment = new Table(luaScript);
 		// Add standard library references as READ-ONLY proxies
 		// This prevents scripts from modifying stdlib tables (e.g., overriding math.random)
@@ -135,13 +135,13 @@ public class LuaScriptEngine
 		proxyMeta["__index"] = baseEnvironment;
 	}
 	/// <summary>
-	/// Add compiled state functions to the base environment.
-	/// Called after CompileAllStateFunctions to make functions available to each other.
+	/// Add compiled action functions to the base environment.
+	/// Called after CompileAllActionFunctions to make functions available to each other.
 	/// </summary>
 	private void AddCompiledFunctionsToBaseEnvironment()
 	{
-		// Add all compiled state functions so they can call each other
-		foreach (KeyValuePair<string, DynValue> kvp in compiledStateFunctions)
+		// Add all compiled action functions so they can call each other
+		foreach (KeyValuePair<string, DynValue> kvp in compiledActionFunctions)
 			if (kvp.Value.Type != DataType.Nil)
 				baseEnvironment[kvp.Key] = kvp.Value;
 	}
@@ -339,31 +339,31 @@ public class LuaScriptEngine
 		}
 	}
 	/// <summary>
-	/// Eagerly compiles all state functions from a StateCollection.
+	/// Eagerly compiles all action functions from a StateCollection.
 	/// Call this once at simulator startup to pre-compile all Lua bytecode.
 	/// </summary>
 	/// <param name="stateCollection">The collection of states and functions to compile</param>
-	public void CompileAllStateFunctions(StateCollection stateCollection)
+	public void CompileAllActionFunctions(StateCollection stateCollection)
 	{
-		compiledStateFunctions.Clear();
-		foreach (StateFunction function in stateCollection.Functions.Values)
-			CompileStateFunction(function.Name, function.Code);
+		compiledActionFunctions.Clear();
+		foreach (ActionFunction function in stateCollection.Functions.Values)
+			CompileActionFunction(function.Name, function.Code);
 		// Add compiled functions to base environment so they can call each other
 		AddCompiledFunctionsToBaseEnvironment();
 	}
 	/// <summary>
-	/// Compiles a single state function to bytecode without executing it.
+	/// Compiles a single action function to bytecode without executing it.
 	/// Validates that the function has no upvalues (captured local variables),
 	/// which would create persistent state across executions.
 	/// </summary>
 	/// <param name="functionName">Unique name for this function (e.g., "T_Stand", "A_DeathScream")</param>
 	/// <param name="luaCode">The Lua code to compile</param>
-	public void CompileStateFunction(string functionName, string luaCode)
+	public void CompileActionFunction(string functionName, string luaCode)
 	{
 		if (string.IsNullOrWhiteSpace(luaCode))
 		{
 			// Empty functions are allowed - just store nil
-			compiledStateFunctions[functionName] = DynValue.Nil;
+			compiledActionFunctions[functionName] = DynValue.Nil;
 			return;
 		}
 		try
@@ -385,7 +385,7 @@ public class LuaScriptEngine
 						"Remove top-level 'local' variables - all state must come from C# via the context API.");
 				}
 			}
-			compiledStateFunctions[functionName] = compiled;
+			compiledActionFunctions[functionName] = compiled;
 		}
 		catch (Exception ex)
 		{
@@ -395,7 +395,7 @@ public class LuaScriptEngine
 	/// <summary>
 	/// Execute Lua code directly without pre-compiling (for menu scripts).
 	/// Uses baseEnvironment (not the read-only proxy) since menu scripts don't require determinism.
-	/// Performance: Slower than ExecuteStateFunction due to parsing overhead.
+	/// Performance: Slower than ExecuteActionFunction due to parsing overhead.
 	/// Use case: Menu actions where code is simple and executed infrequently.
 	/// </summary>
 	/// <param name="luaCode">Lua code to execute</param>
@@ -424,7 +424,7 @@ public class LuaScriptEngine
 		}
 	}
 	/// <summary>
-	/// Executes a pre-compiled state function with the given context.
+	/// Executes a pre-compiled action function with the given context.
 	/// Functions are compiled with a read-only proxy environment that:
 	/// - Allows reads from baseEnvironment (stdlib + compiled functions + context methods)
 	/// - Forbids writes (throws error if script tries to set global variables)
@@ -433,13 +433,13 @@ public class LuaScriptEngine
 	/// <param name="functionName">Name of the function to execute</param>
 	/// <param name="context">Execution context providing game state access</param>
 	/// <returns>The result of the Lua script execution</returns>
-	public DynValue ExecuteStateFunction(string functionName, IScriptContext context)
+	public DynValue ExecuteActionFunction(string functionName, IScriptContext context)
 	{
 		// TODO: In final release, missing functions should throw hard errors with helpful messages for modders.
 		// For now, silently skip missing functions to allow testing with incomplete function sets.
 		// Final behavior should be:
-		//   throw new InvalidOperationException($"State function '{functionName}' not compiled. Did you call CompileAllStateFunctions?");
-		if (!compiledStateFunctions.TryGetValue(functionName, out DynValue compiled))
+		//   throw new InvalidOperationException($"Action function '{functionName}' not compiled. Did you call CompileAllActionFunctions?");
+		if (!compiledActionFunctions.TryGetValue(functionName, out DynValue compiled))
 			// TODO: Restore hard error for final release (see method summary)
 			return DynValue.Nil; // Silently skip missing function for testing
 		if (compiled.Type == DataType.Nil)

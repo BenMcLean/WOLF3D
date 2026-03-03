@@ -147,10 +147,11 @@ public class State
 	}
 }
 /// <summary>
-/// Represents a reusable state function (Think or Action).
+/// Represents a reusable action function (Think or Action).
 /// Allows DRY principle by defining functions once and referencing them by name.
+/// Pre-compiled to bytecode by the Simulator at startup for deterministic execution.
 /// </summary>
-public class StateFunction
+public class ActionFunction
 {
 	/// <summary>
 	/// Unique identifier for this function (e.g., "T_Stand", "A_DeathScream")
@@ -166,17 +167,17 @@ public class StateFunction
 	/// </summary>
 	public string Description { get; set; }
 	/// <summary>
-	/// Creates a StateFunction instance from an XElement.
+	/// Creates an ActionFunction instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing function data (either &lt;Function&gt; or &lt;ThinkFunction&gt;/&lt;ActionFunction&gt;)</param>
-	/// <returns>A new StateFunction instance</returns>
-	public static StateFunction FromXElement(XElement element)
+	/// <returns>A new ActionFunction instance</returns>
+	public static ActionFunction FromXElement(XElement element)
 	{
 		string name = element.Attribute("Name")?.Value ?? throw new ArgumentException($"{element.Name.LocalName} element must have a Name attribute");
 		string code = element.Value?.Trim() ?? string.Empty;
 		string description = element.Attribute("Description")?.Value;
 
-		return new StateFunction
+		return new ActionFunction
 		{
 			Name = name,
 			Code = code,
@@ -278,35 +279,35 @@ public class StateCollection
 	/// </summary>
 	public Dictionary<string, State> States { get; set; } = [];
 	/// <summary>
-	/// All reusable state functions, indexed by name
+	/// All reusable action functions, indexed by name
 	/// </summary>
-	public Dictionary<string, StateFunction> Functions { get; set; } = [];
+	public Dictionary<string, ActionFunction> Functions { get; set; } = [];
 	/// <summary>
 	/// Actor class definitions, indexed by actor type name (e.g., "Guard", "Dog").
 	/// Used to look up death states, chase states, etc.
 	/// </summary>
 	public Dictionary<string, ActorDefinition> ActorDefinitions { get; set; } = [];
 	/// <summary>
-	/// Adds a state function to the collection.
+	/// Adds an action function to the collection.
 	/// </summary>
-	/// <param name="function">The StateFunction to add</param>
-	public void AddFunction(StateFunction function)
+	/// <param name="function">The ActionFunction to add</param>
+	public void AddFunction(ActionFunction function)
 	{
 		if (Functions.ContainsKey(function.Name))
-			throw new InvalidOperationException($"Duplicate state function name: '{function.Name}'");
+			throw new InvalidOperationException($"Duplicate action function name: '{function.Name}'");
 		Functions[function.Name] = function;
 	}
 	/// <summary>
-	/// Adds a state function from an XElement.
+	/// Adds an action function from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing function data</param>
 	public void AddFunctionFromXml(XElement element)
 	{
-		StateFunction function = StateFunction.FromXElement(element);
+		ActionFunction function = ActionFunction.FromXElement(element);
 		AddFunction(function);
 	}
 	/// <summary>
-	/// Loads multiple state functions from XML elements.
+	/// Loads multiple action functions from XML elements.
 	/// </summary>
 	/// <param name="elements">Collection of XElements representing functions</param>
 	public void LoadFunctionsFromXml(IEnumerable<XElement> elements)
@@ -330,12 +331,12 @@ public class StateCollection
 		// Register inline functions if they exist
 		if (thinkFunctionElement != null)
 		{
-			StateFunction thinkFunc = StateFunction.FromXElement(thinkFunctionElement);
+			ActionFunction thinkFunc = ActionFunction.FromXElement(thinkFunctionElement);
 			AddFunction(thinkFunc);
 		}
 		if (actionFunctionElement != null)
 		{
-			StateFunction actionFunc = StateFunction.FromXElement(actionFunctionElement);
+			ActionFunction actionFunc = ActionFunction.FromXElement(actionFunctionElement);
 			AddFunction(actionFunc);
 		}
 

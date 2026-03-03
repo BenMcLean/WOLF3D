@@ -9,7 +9,6 @@ Discrete event simulator for Wolfenstein 3D game logic. This library provides a 
 - **Event-driven**: Outputs events describing what happened, allowing decoupled presentation
 - **Serializable**: Only dynamic state is saved; static level data comes from MapAnalysis
 - **Engine-agnostic**: No dependencies on Godot, Unity, or any specific game engine
-- **Standards-compliant**: Follows DATA_TYPES.md for authentic Wolf3D data representation
 
 ## Architecture Integration
 
@@ -20,94 +19,6 @@ The simulator relies on `MapAnalyzer.MapAnalysis` (from BenMcLean.Wolf3D.Assets)
 - **No duplication** → Static door data (X, Y, FacesEastWest, lock type) lives in MapAnalysis
 
 This matches how the original Wolf3D worked: level data loaded once, only dynamic state saved in save games.
-
-## Current Implementation Status
-
-### ✅ Implemented: Doors
-
-Doors are fully functional with authentic Wolf3D behavior based on WL_ACT1.C:
-
-- **Four states**: Closed, Opening, Open, Closing (WL_DEF.H:doorstruct:action)
-- **Automatic closing**: Doors auto-close after 300 tics ~4.3 seconds (WL_ACT1.C:OPENTICS)
-- **Lock types**: Normal, Lock1-4 (gold/silver keys), Elevator (WL_DEF.H:door_t)
-- **Position tracking**: 16-bit position from 0 (closed) to 0xFFFF (open) (WL_ACT1.C:doorposition)
-- **Movement speed**: `position += tics << 10` per update (WL_ACT1.C:DoorOpening line 739)
-- **Events**: DoorOpening, DoorOpened, DoorClosing, DoorClosed, DoorLocked
-
-### ⚠️ Partially Implemented
-
-Doors have TODOs for:
-- Collision detection (WL_ACT1.C:CloseDoor lines 574-611 - checking if actors/player block door closing)
-- Area connectivity updates (WL_ACT1.C:DoorOpening lines 727-729 - for sound/sight propagation)
-
-### ❌ Not Yet Implemented
-
-- **Pushwalls**: Moving wall segments (WL_ACT1.C:MovePWalls)
-- **Actors**: Enemies, player physics
-- **Area system**: Sound/sight connectivity graph (WL_ACT1.C:areaconnect)
-- **Map data structures**: Tile maps, actor grids
-- **Projectiles**: Bullets, rockets, flames
-
-## Usage Example
-
-```csharp
-using BenMcLean.Wolf3D.Simulator;
-using BenMcLean.Wolf3D.Assets;
-
-// Load map data
-var mapAnalyzer = new MapAnalyzer(xmlDocument);
-var gameMap = /* load GameMap from MAPHEAD/GAMEMAPS */;
-var mapAnalysis = mapAnalyzer.Analyze(gameMap);
-
-// Create simulator and load doors from MapAnalysis
-var simulator = new Simulator();
-
-// Convert MapAnalysis.DoorSpawns to simulator doors
-// You'll need to map door shapes to lock types based on your game XML
-simulator.LoadDoorsFromMapAnalysis(
-    mapAnalysis.Doors.Select(d => (d.Shape, d.X, d.Y, d.FacesEastWest)),
-    shape => DetermineLockType(shape) // Your function to map shape → lock type
-);
-
-// Game loop (60fps rendering, 70Hz simulation)
-double deltaTime = 1.0 / 60.0;
-var events = simulator.Update(deltaTime);
-
-// Process events
-foreach (var evt in events)
-{
-    if (evt is DoorOpeningEvent opening)
-    {
-        // Play OPENDOORSND at (opening.TileX, opening.TileY)
-    }
-    else if (evt is DoorLockedEvent locked)
-    {
-        // Play NOWAYSND (player doesn't have required key)
-    }
-}
-
-// Player presses "use" button near door index 0
-simulator.QueueAction(new OperateDoorAction
-{
-    DoorIndex = 0,
-    PlayerKeys = 0b0001 // Has key for Lock1 (gold key)
-});
-```
-
-## Data Type Standards
-
-All types follow DATA_TYPES.md conventions:
-
-| Field | Wolf3D Type | C# Type | Reference |
-|-------|-------------|---------|-----------|
-| TileX, TileY | `byte` | `ushort` ⚡ | WL_DEF.H:doorstruct:tilex/tiley |
-| FacesEastWest | `vertical` | `bool` | WL_DEF.H:doorstruct:vertical (renamed) |
-| Lock | `byte` | `byte` | WL_DEF.H:doorstruct:lock |
-| Action | `enum` | `DoorAction` (byte) | WL_DEF.H:doorstruct:action |
-| Position | `unsigned` | `ushort` | WL_ACT1.C:doorposition |
-| TicCount | `int` | `short` | WL_DEF.H:doorstruct:ticcount |
-
-⚡ = Intentional extension to support maps > 64×64 for modding
 
 ## Time Handling
 
@@ -164,110 +75,12 @@ This matches original Wolf3D's save game format which only saved dynamic state.
 
 All code is documented with references to original Wolf3D source:
 
-- **WL_ACT1.C**: Door/pushwall logic (lines 370-1082)
-- **WL_DEF.H**: Data structure definitions (doorstruct lines 964-975)
-- **WL_DRAW.C**: CalcTics timing (lines 1518-1563)
+- **WL_ACT1.C**: Door/pushwall logic
+- **WL_DEF.H**: Data structure definitions
+- **WL_DRAW.C**: CalcTics timing
 - **WL_PLAY.C**: Main game loop (PlayLoop)
 
-Comments in code reference specific functions and line numbers for traceability.
-
-## TODO: Missing Pieces for Full Door Simulation
-
-### 1. Collision Detection (WL_ACT1.C:CloseDoor lines 574-611)
-
-Doors need to check if they can close:
-
-```csharp
-bool CanDoorClose(int doorIndex)
-{
-    var door = doors[doorIndex];
-
-    // WL_ACT1.C:574 - check actorat
-    if (actorAt[door.TileX, door.TileY] != null)
-        return false;
-
-    // WL_ACT1.C:577-578 - check player position
-    if (player.TileX == door.TileX && player.TileY == door.TileY)
-        return false;
-
-    // WL_ACT1.C:580-611 - check MINDIST for vertical/horizontal doors
-    if (door.FacesEastWest)
-    {
-        // Check player within MINDIST (0x5800 in fixed-point)
-        if (player.TileY == door.TileY)
-        {
-            if (((player.X + MINDIST) >> 16) == door.TileX) return false;
-            if (((player.X - MINDIST) >> 16) == door.TileX) return false;
-        }
-        // Check actors at adjacent tiles
-        // ...
-    }
-    else // North/South facing
-    {
-        // Similar checks for Y axis
-        // ...
-    }
-
-    return true;
-}
-```
-
-This requires:
-- Actor position tracking (16.16 fixed-point coordinates)
-- `MINDIST` constant (0x5800 = WL_DEF.H:MINDIST)
-- `actorat[,]` grid
-
-### 2. Area Connectivity (WL_ACT1.C:DoorOpening lines 710-733, DoorClosing lines 795-813)
-
-When doors open/close, update area connections:
-
-```csharp
-void UpdateAreaConnections(int doorIndex, bool opening)
-{
-    var door = doors[doorIndex];
-
-    // WL_ACT1.C:717-724 - get areas on each side
-    int area1, area2;
-    if (door.FacesEastWest)
-    {
-        area1 = map.GetArea(door.TileX + 1, door.TileY);
-        area2 = map.GetArea(door.TileX - 1, door.TileY);
-    }
-    else
-    {
-        area1 = map.GetArea(door.TileX, door.TileY - 1);
-        area2 = map.GetArea(door.TileX, door.TileY + 1);
-    }
-
-    // WL_ACT1.C:727-729 - adjust reference counts
-    if (opening)
-    {
-        areaConnect[area1, area2]++;
-        areaConnect[area2, area1]++;
-    }
-    else
-    {
-        areaConnect[area1, area2]--;
-        areaConnect[area2, area1]--;
-    }
-
-    // WL_ACT1.C:729 - recalculate connectivity
-    RecalculateAreasByPlayer();
-}
-```
-
-This requires:
-- Area map data (WL_ACT1.C:mapsegs)
-- Area connection reference count matrix (WL_ACT1.C:areaconnect)
-- Player area tracking (WL_ACT1.C:areabyplayer)
-
-## Next Steps
-
-1. **Add collision detection**: Implement `CanDoorClose()` with actor checking
-2. **Add area system**: Implement area connectivity for sound/sight
-3. **Add pushwalls**: Similar state machine to doors (WL_ACT1.C:MovePWalls)
-4. **Add player physics**: Position, movement, collision
-5. **Add actors**: Enemies with AI state machines
+Comments in code reference specific functions for traceability.
 
 ## Reference
 

@@ -294,7 +294,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		this.logger = logger;
 		// Initialize Lua script engine and compile all state functions
 		luaScriptEngine = new Lua.LuaScriptEngine(logger);
-		luaScriptEngine.CompileAllStateFunctions(stateCollection);
+		luaScriptEngine.CompileAllActionFunctions(stateCollection);
 		// Wire Inventory.ValueChanged to PlayerStateChanged for backwards compatibility
 		Inventory.ValueChanged += (name, value) => EmitPlayerStateChanged();
 	}
@@ -1053,7 +1053,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
-					luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
+					luaScriptEngine.ExecuteActionFunction(actor.CurrentState.Think, context);
 				}
 				catch (Exception ex)
 				{
@@ -1100,7 +1100,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 			try
 			{
-				luaScriptEngine.ExecuteStateFunction(actor.CurrentState.Think, context);
+				luaScriptEngine.ExecuteActionFunction(actor.CurrentState.Think, context);
 			}
 			catch (Exception ex)
 			{
@@ -1139,7 +1139,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 			try
 			{
-				luaScriptEngine.ExecuteStateFunction(nextState.Action, context);
+				luaScriptEngine.ExecuteActionFunction(nextState.Action, context);
 			}
 			catch (Exception ex)
 			{
@@ -1472,7 +1472,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
 				try
 				{
-					luaScriptEngine.ExecuteStateFunction(initialState.Action, context);
+					luaScriptEngine.ExecuteActionFunction(initialState.Action, context);
 				}
 				catch (Exception ex)
 				{

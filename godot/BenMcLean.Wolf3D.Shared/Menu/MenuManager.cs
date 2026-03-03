@@ -173,7 +173,7 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Compiles all menu functions from the MenuCollection.
-	/// Similar to LuaScriptEngine.CompileAllStateFunctions but for menus.
+	/// Similar to LuaScriptEngine.CompileAllActionFunctions but for menus.
 	/// </summary>
 	private void CompileMenuFunctions()
 	{
@@ -181,7 +181,7 @@ public class MenuManager
 			if (!string.IsNullOrEmpty(function.Code))
 				try
 				{
-					_luaEngine.CompileStateFunction(function.Name, function.Code);
+					_luaEngine.CompileActionFunction(function.Name, function.Code);
 					_logger?.LogDebug("Compiled menu function: {name}", function.Name);
 				}
 				catch (Exception ex)

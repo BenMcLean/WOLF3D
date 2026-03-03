@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using BenMcLean.Wolf3D.Assets.Sound;
 using BenMcLean.Wolf3D.Shared.Audio.OPL;
 using Godot;
@@ -10,7 +9,7 @@ namespace BenMcLean.Wolf3D.Shared.Audio;
 
 /// <summary>
 /// Central audio management node for Wolfenstein 3D.
-/// Manages both AdLib/OPL and PC Speaker audio playback.
+/// Manages non-local DigiSound and AdLib/OPL and PC Speaker audio playback.
 /// Automatically routes sounds to the appropriate player based on SoundMode setting.
 /// </summary>
 public partial class SoundBlaster : Node
@@ -138,14 +137,14 @@ public partial class SoundBlaster : Node
 			return;
 		}
 		// Check pre-loaded raw IMF songs (no game/AudioT needed)
-		if (SharedAssetManager.RawImfSongs.TryGetValue(musicName, out Assets.Sound.Imf[] rawImf))
+		if (SharedAssetManager.RawImfSongs.TryGetValue(musicName, out Imf[] rawImf))
 		{
 			ImfSignaller.ImfQueue.Enqueue(rawImf);
 			OplPlayer.AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller);
 			return;
 		}
 		// Look up the music
-		if (SharedAssetManager.CurrentGame?.AudioT?.Songs == null)
+		if (SharedAssetManager.CurrentGame?.AudioT?.Songs is null)
 		{
 			GD.PrintErr($"ERROR: AudioT not loaded");
 			return;
