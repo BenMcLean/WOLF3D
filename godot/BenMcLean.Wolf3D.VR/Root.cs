@@ -205,6 +205,7 @@ public partial class Root : Node3D
 						_currentScene = newStage;
 						_pendingScene = null;
 						AddChild(newStage);
+						OnSceneAdded();
 					}
 					else
 					{
@@ -225,6 +226,7 @@ public partial class Root : Node3D
 						_currentScene = gameOverRoom;
 						_pendingScene = null;
 						AddChild(gameOverRoom);
+						OnSceneAdded();
 						gameOverRoom.SetFadeTransitionHandler(StartMenuFade);
 					}
 				});
@@ -290,6 +292,7 @@ public partial class Root : Node3D
 			_currentScene = menuRoom;
 			_pendingScene = null;
 			AddChild(menuRoom);
+			OnSceneAdded();
 
 			// Wire up fade handler after MenuRoom._Ready has run
 			menuRoom.SetFadeTransitionHandler(StartMenuFade);
@@ -363,6 +366,7 @@ public partial class Root : Node3D
 			_currentScene = _pendingScene;
 			_pendingScene = null;
 			AddChild(_currentScene);
+			OnSceneAdded();
 			(_currentScene as IRoom)?.SetFadeTransitionHandler(StartMenuFade);
 
 			_transitionState = TransitionState.FadingIn;
@@ -382,9 +386,20 @@ public partial class Root : Node3D
 				_currentScene = _pendingScene;
 				_pendingScene = null;
 				AddChild(_currentScene);
+				OnSceneAdded();
 				(_currentScene as IRoom)?.SetFadeTransitionHandler(StartMenuFade);
 			}, skipFadeIn: skipFadeIn);
 		}
+	}
+
+	/// <summary>
+	/// Updates the fade overlay's VR camera reference after a scene is added.
+	/// Every room calls _displayMode.Initialize() in _Ready() (triggered by AddChild),
+	/// so DisplayMode.Camera is valid by the time this runs.
+	/// </summary>
+	private void OnSceneAdded()
+	{
+		_fadeOverlay.SetVRCamera(DisplayMode.IsVRActive ? DisplayMode.Camera : null);
 	}
 
 	/// <summary>
@@ -404,6 +419,7 @@ public partial class Root : Node3D
 
 		_currentScene = newScene;
 		AddChild(_currentScene);
+		OnSceneAdded();
 	}
 
 	/// <summary>

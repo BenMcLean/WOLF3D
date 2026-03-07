@@ -18,6 +18,13 @@ public partial class ScreenFadeOverlay : Node
 	private float targetAlpha;
 	private float rate; // Alpha units per second
 
+	// VR fade: veil quad parented to the XRCamera3D so it is always inside the view frustum.
+	// Vertex shader outputs POSITION in NDC via UV, bypassing projection and near/far clipping.
+	// CanvasLayer handles flatscreen and the VR mirror window.
+	private Camera3D _vrCamera;
+	private MeshInstance3D _vrFadeMesh;
+	private ShaderMaterial _vrFadeMaterial;
+
 	/// <summary>
 	/// True while a fade animation is in progress.
 	/// </summary>
@@ -92,6 +99,63 @@ public partial class ScreenFadeOverlay : Node
 		UpdateVisuals();
 	}
 
+	/// <summary>
+	/// Attaches a veil quad to the given VR camera so fades appear in the headset.
+	/// The quad is a child of the camera (not of this node) so it always stays inside
+	/// the view frustum — parenting to a world-space node causes frustum culling.
+	/// The shader material is created once and reused across camera changes.
+	/// Call after each room transition; pass null to detach.
+	/// </summary>
+	public void SetVRCamera(Camera3D camera)
+	{
+		_vrCamera = camera;
+		_vrFadeMesh = null; // Old mesh was freed with old camera
+
+		if (camera == null)
+			return;
+
+		// Create shader material once; it persists across camera changes because
+		// ScreenFadeOverlay holds the reference.
+		_vrFadeMaterial ??= new ShaderMaterial
+		{
+			Shader = new Shader
+			{
+				// Adapted from Godot 3 FadeCamera.cs:
+				// skip_vertex_transform lets the vertex shader set POSITION directly in NDC.
+				// UV-based position (2*UV-1) maps the (1,1) quad to full clip space [-1,1].
+				// Parenting to the camera keeps the mesh inside the view frustum.
+				Code = """
+shader_type spatial;
+render_mode blend_mix, skip_vertex_transform, cull_disabled, unshaded, depth_draw_never, depth_test_disabled;
+
+uniform vec4 color : source_color;
+
+void vertex() {
+	POSITION = vec4(2.0 * UV - 1.0, 0.0, 1.0);
+}
+
+void fragment() {
+	ALBEDO = color.rgb;
+	ALPHA = color.a;
+}
+""",
+			},
+		};
+
+		_vrFadeMesh = new MeshInstance3D
+		{
+			Name = "VRFadeQuad",
+			Mesh = new QuadMesh { Size = new Vector2(1f, 1f) },
+			MaterialOverride = _vrFadeMaterial,
+			CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+			Visible = alpha > 0f,
+		};
+		camera.AddChild(_vrFadeMesh);
+
+		// Sync current fade state immediately in case a fade is mid-animation
+		_vrFadeMaterial.SetShaderParameter("color", new Color(0f, 0f, 0f, alpha));
+	}
+
 	public override void _Process(double delta)
 	{
 		if (alpha == targetAlpha)
@@ -128,13 +192,26 @@ public partial class ScreenFadeOverlay : Node
 
 	private void UpdateVisuals()
 	{
+		// Flatscreen: CanvasLayer ColorRect (also covers the VR mirror window)
 		if (alpha <= 0f)
 		{
 			colorRect.Visible = false;
-			return;
+		}
+		else
+		{
+			colorRect.Visible = true;
+			colorRect.Color = new Color(0f, 0f, 0f, alpha);
 		}
 
-		colorRect.Visible = true;
-		colorRect.Color = new Color(0f, 0f, 0f, alpha);
+		// VR: veil quad parented to XRCamera3D, visible in both headset eyes
+		if (_vrFadeMesh != null && GodotObject.IsInstanceValid(_vrFadeMesh))
+		{
+			_vrFadeMesh.Visible = alpha > 0f;
+			_vrFadeMaterial.SetShaderParameter("color", new Color(0f, 0f, 0f, alpha));
+		}
+		else if (_vrFadeMesh != null)
+		{
+			_vrFadeMesh = null; // Freed with old camera
+		}
 	}
 }
