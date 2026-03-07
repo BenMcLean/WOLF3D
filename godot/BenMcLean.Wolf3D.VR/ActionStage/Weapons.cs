@@ -19,6 +19,8 @@ public partial class Weapons : Node3D
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials;
 	// Camera reference for positioning weapon sprite
 	private readonly Node3D camera;
+	// When true, skips creating the camera-attached sprite (VR uses WeaponHandMesh on controllers instead)
+	private readonly bool disableVisual;
 	// Current weapon slot being displayed (0 = primary/left, 1 = right)
 	private int currentSlot = 0;
 	// Simulator reference for event subscription
@@ -29,16 +31,26 @@ public partial class Weapons : Node3D
 	/// </summary>
 	/// <param name="spriteMaterials">Dictionary of sprite materials from VRAssetManager.SpriteMaterials</param>
 	/// <param name="camera">Camera node to attach weapon sprite to</param>
+	/// <param name="disableVisual">
+	/// When true, skips creating the camera-attached sprite.
+	/// Use in VR mode where WeaponHandMesh on controllers provides the visual.
+	/// Sound (WeaponFired) is still handled regardless.
+	/// </param>
 	public Weapons(
 		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
-		Node3D camera)
+		Node3D camera,
+		bool disableVisual = false)
 	{
 		this.spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		this.camera = camera ?? throw new ArgumentNullException(nameof(camera));
+		this.disableVisual = disableVisual;
 	}
 
 	public override void _Ready()
 	{
+		if (disableVisual)
+			return;
+
 		// Create weapon sprite node using MeshInstance3D (same as actors)
 		// Position it at bottom-center of camera view (like original Wolf3D)
 		weaponSprite = new MeshInstance3D
@@ -133,10 +145,7 @@ public partial class Weapons : Node3D
 	private void UpdateWeaponSprite(ushort shape)
 	{
 		if (weaponSprite == null)
-		{
-			GD.PrintErr("ERROR: Weapon sprite not initialized");
 			return;
-		}
 		// Get material for this sprite (same as actors do)
 		if (spriteMaterials.TryGetValue(shape, out StandardMaterial3D material))
 		{

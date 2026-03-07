@@ -2362,9 +2362,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (weaponCollection is null || weaponSlots.Count == 0)
 			return;
-		int startingWeaponNumber = Inventory.GetValue("SelectedWeapon0");
-		if (weaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
-			EquipWeapon(0, startWeapon.Name);
+		for (int i = 0; i < weaponSlots.Count; i++)
+		{
+			int startingWeaponNumber = Inventory.GetValue($"SelectedWeapon{i}");
+			if (weaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
+				EquipWeapon(i, startWeapon.Name);
+		}
 	}
 
 	/// <summary>

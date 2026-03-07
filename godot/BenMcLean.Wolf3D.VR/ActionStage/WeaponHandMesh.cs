@@ -12,24 +12,17 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// Each instance owns its own ShaderMaterial so the texture swap is isolated from
 /// other hands or overlapping subscribers.
 /// </summary>
-public partial class WeaponHandMesh : Node3D
+/// <param name="spriteTextures">Sprite textures from VRAssetManager.SpriteTextures.</param>
+/// <param name="slotIndex">Weapon slot index this hand displays (0 = left/primary, 1 = right).</param>
+public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> spriteTextures, int slotIndex) : Node3D
 {
-	private readonly IReadOnlyDictionary<ushort, Texture2D> _spriteTextures;
-	private readonly int _slotIndex;
+	private readonly IReadOnlyDictionary<ushort, Texture2D> _spriteTextures = spriteTextures ?? throw new ArgumentNullException(nameof(spriteTextures));
 	private ShaderMaterial _material;
 	private Simulator.Simulator _simulator;
 
-	/// <param name="spriteTextures">Sprite textures from VRAssetManager.SpriteTextures.</param>
-	/// <param name="slotIndex">Weapon slot index this hand displays (0 = left/primary, 1 = right).</param>
-	public WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> spriteTextures, int slotIndex)
-	{
-		_spriteTextures = spriteTextures ?? throw new ArgumentNullException(nameof(spriteTextures));
-		_slotIndex = slotIndex;
-	}
-
 	public override void _Ready()
 	{
-		Shader voxelShader = new Shader { Code = FileAccess.GetFileAsString("res://Action/WeaponSpriteVoxelDDA.gdshader") };
+		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://ActionStage/WeaponSpriteVoxelDDA.gdshader") };
 		if (voxelShader is null)
 		{
 			GD.PrintErr("Warning: WeaponSpriteVoxelDDA.gdshader not found");
@@ -46,6 +39,7 @@ public partial class WeaponHandMesh : Node3D
 			Scale = Constants.WeaponScale,
 		};
 		AddChild(mesh);
+		Visible = false;  // Hidden until a weapon is equipped in this slot
 	}
 
 	/// <summary>
@@ -72,14 +66,14 @@ public partial class WeaponHandMesh : Node3D
 
 	private void OnWeaponEquipped(WeaponEquippedEvent evt)
 	{
-		if (evt.SlotIndex != _slotIndex)
+		if (evt.SlotIndex != slotIndex)
 			return;
 		UpdateTexture(evt.Shape);
 	}
 
 	private void OnWeaponSpriteChanged(WeaponSpriteChangedEvent evt)
 	{
-		if (evt.SlotIndex != _slotIndex)
+		if (evt.SlotIndex != slotIndex)
 			return;
 		UpdateTexture(evt.Shape);
 	}

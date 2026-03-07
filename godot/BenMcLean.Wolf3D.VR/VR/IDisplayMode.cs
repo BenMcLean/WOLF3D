@@ -59,6 +59,20 @@ public interface IDisplayMode
 	Node3D Origin { get; }
 
 	/// <summary>
+	/// The node representing the primary (right) hand.
+	/// In VR: right XRController3D. In flatscreen: null (no controller node).
+	/// Attach WeaponHandMesh as a child to position it with the hand.
+	/// </summary>
+	Node3D PrimaryHandNode { get; }
+
+	/// <summary>
+	/// The node representing the secondary (left) hand.
+	/// In VR: left XRController3D. In flatscreen: null (no controller node).
+	/// Attach WeaponHandMesh as a child to position it with the hand.
+	/// </summary>
+	Node3D SecondaryHandNode { get; }
+
+	/// <summary>
 	/// Initialize the display mode. Called from _Ready().
 	/// </summary>
 	/// <param name="parent">Parent node to add camera rig to.</param>

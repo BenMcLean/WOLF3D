@@ -230,11 +230,12 @@ void sky() {
 			() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
 		AddChild(_actors);
 
-		// Create weapons display (shows player weapons at bottom of screen like original Wolf3D)
-		// TODO: For VR, weapons should attach to controllers instead of camera
+		// Create weapons: flatscreen shows a camera-attached sprite; VR uses WeaponHandMesh on controllers.
+		// Weapons still subscribes for WeaponFired sound in both modes.
 		_weapons = new Weapons(
-			VRAssetManager.SpriteMaterials,            // Sprite materials for weapon sprites
-			_displayMode.Camera);                      // Attach to camera so weapon moves with player
+			VRAssetManager.SpriteMaterials,
+			_displayMode.Camera,
+			disableVisual: _displayMode.IsVRActive);
 		AddChild(_weapons);
 
 		// Create doors for the current level and add to scene
@@ -338,18 +339,23 @@ void sky() {
 			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
 		}
 
-		// Placeholder: weapon hand mesh for VR controller slot 0, 2 tiles ahead of player start.
-		// TODO: Reposition to actual VR controller transform when controller tracking is wired up.
-		WeaponHandMesh weaponHandMesh0 = new(VRAssetManager.SpriteTextures, 0)
+		// Attach WeaponHandMesh to each VR controller so the weapon renders at the hand position.
+		// Slot 0 = right/primary hand, slot 1 = left/secondary hand.
+		if (_displayMode.IsVRActive)
 		{
-			Name = "WeaponHandMesh0",
-			Position = cameraPosition + new Vector3(
-				-Mathf.Sin(cameraRotationY) * 2f * Constants.TileWidth,
-				0f,
-				-Mathf.Cos(cameraRotationY) * 2f * Constants.TileWidth),
-		};
-		AddChild(weaponHandMesh0);
-		weaponHandMesh0.Subscribe(_simulatorController.Simulator);
+			if (_displayMode.PrimaryHandNode != null)
+			{
+				WeaponHandMesh primaryHand = new(VRAssetManager.SpriteTextures, 0) { Name = "WeaponHandMesh0" };
+				_displayMode.PrimaryHandNode.AddChild(primaryHand);
+				primaryHand.Subscribe(_simulatorController.Simulator);
+			}
+			if (_displayMode.SecondaryHandNode != null)
+			{
+				WeaponHandMesh secondaryHand = new(VRAssetManager.SpriteTextures, 1) { Name = "WeaponHandMesh1" };
+				_displayMode.SecondaryHandNode.AddChild(secondaryHand);
+				secondaryHand.Subscribe(_simulatorController.Simulator);
+			}
+		}
 		_simulatorController.Simulator.EmitWeaponState();
 
 		// Store level index in inventory so save/load can determine which level to restore

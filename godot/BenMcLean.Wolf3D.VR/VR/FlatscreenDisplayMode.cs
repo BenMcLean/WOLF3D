@@ -58,6 +58,10 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 	public Node3D Origin => _cameraHolder;
 
+	public Node3D PrimaryHandNode => null;
+
+	public Node3D SecondaryHandNode => null;
+
 	public void Initialize(Node parent)
 	{
 		_parent = parent;

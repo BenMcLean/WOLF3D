@@ -76,6 +76,10 @@ public class VRDisplayMode : IDisplayMode
 
 	public Node3D Origin => _origin;
 
+	public Node3D PrimaryHandNode => _rightController;
+
+	public Node3D SecondaryHandNode => _leftController;
+
 	public VRDisplayMode(XRInterface xrInterface, VRPlayMode playMode = VRPlayMode.FiveDOF)
 	{
 		_xrInterface = xrInterface;

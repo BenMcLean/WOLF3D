@@ -123,7 +123,7 @@ public partial class SimulatorController : Node3D
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar != null)
-			simulator.InitializeInventory(statusBar, difficulty, 1, weaponCollection, savedInventory, savedLevelStats);
+			simulator.InitializeInventory(statusBar, difficulty, 2, weaponCollection, savedInventory, savedLevelStats);
 
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
