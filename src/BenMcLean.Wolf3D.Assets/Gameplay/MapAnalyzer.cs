@@ -97,9 +97,11 @@ public class MapAnalyzer
 				Sound = sound
 			};
 		}
-		PushableTiles = [.. wallsElement.Elements("Pushable")
-			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
-				?? throw new InvalidDataException("Pushable element missing Tile attribute")))];
+		// Pushwall markers are in the INFO PLANE (StatInfo section), not the wall plane
+		// XSD: <Pushwall Number="N"> where N is the info plane tile value (e.g. PUSHABLETILE=98)
+		PushableTiles = [.. (XML.Element("VSwap")?.Element("StatInfo")?.Elements("Pushwall") ?? Enumerable.Empty<XElement>())
+			.Select(e => ushort.Parse(e.Attribute("Number")?.Value
+				?? throw new InvalidDataException("Pushwall element missing Number attribute")))];
 		ExitTiles = [.. wallsElement.Elements("Exit")
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("Exit element missing Tile attribute")))];
