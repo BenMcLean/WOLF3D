@@ -538,8 +538,8 @@ void sky() {
 	/// </summary>
 	private void OnSecondaryButtonPressed(string buttonName)
 	{
-		// Accept either grip_click (flatscreen right-click) or any secondary button
-		UseObjectPlayerIsFacing();
+		if (buttonName == "grip_click")
+			UseObjectPlayerIsFacing();
 	}
 
 	/// <summary>
@@ -716,6 +716,9 @@ void sky() {
 
 	public override void _Process(double delta)
 	{
+		// Drive display mode each frame: joystick locomotion, snap turn, 5DOF height lock, HMD collision
+		_displayMode.Update(delta);
+
 		// Fixtures updates billboard rotations automatically in its own _Process
 		// Bonuses updates billboard rotations automatically in its own _Process
 		// Doors use two-quad approach with back-face culling - no per-frame updates needed

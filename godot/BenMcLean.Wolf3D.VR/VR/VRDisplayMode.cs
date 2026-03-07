@@ -40,6 +40,16 @@ public class VRDisplayMode : IDisplayMode
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
 	private Vector3 _lastValidHmdPosition;
 
+	// Joystick locomotion speed in meters per second
+	// Wolf3D PLAYERSPEED = 3000 fixed-point units per tic at 70 tics/sec ≈ 7.8 m/s max
+	// Using a moderate speed for VR comfort
+	private const float VRMovementSpeed = 4f;
+
+	// Snap turn: 45-degree increments, threshold at half deflection
+	private const float SnapTurnAngle = Mathf.Pi / 4f;
+	private const float SnapTurnThreshold = 0.5f;
+	private bool _snapTurnReady = true;
+
 	public event Action<string> PrimaryButtonPressed;
 	public event Action<string> PrimaryButtonReleased;
 	public event Action<string> SecondaryButtonPressed;
@@ -121,6 +131,10 @@ public class VRDisplayMode : IDisplayMode
 
 	public void Update(double delta)
 	{
+		// Apply joystick locomotion and snap turn before height and collision corrections
+		ApplyLocomotion((float)delta);
+		ApplySnapTurn();
+
 		// VR tracking is handled automatically by OpenXR
 		// In 5DOF mode, lock the camera height to HalfTileHeight by adjusting the origin Y.
 		// Formula: origin.Y = HalfTileHeight - camera.Position.Y (local Y relative to origin)
@@ -133,6 +147,63 @@ public class VRDisplayMode : IDisplayMode
 
 		// Validate HMD position against collision and push origin back if needed
 		ValidateVRPosition();
+	}
+
+	/// <summary>
+	/// Moves the XROrigin based on the left thumbstick.
+	/// Forward/back on stick Y, strafe on stick X.
+	/// Direction is derived from the camera's horizontal facing (HMD yaw only, ignoring pitch).
+	/// </summary>
+	private void ApplyLocomotion(float delta)
+	{
+		if (_origin == null || _leftController == null || _camera == null)
+			return;
+
+		Vector2 stick = _leftController.GetVector2("primary");
+		if (stick.LengthSquared() < 0.01f)
+			return;
+
+		// Derive horizontal forward/right vectors from the camera's actual world-space basis,
+		// projected onto the XZ plane so head pitch doesn't affect locomotion direction.
+		// Using GlobalBasis directly is more reliable than Euler decomposition for VR poses.
+		Vector3 forward = new Vector3(-_camera.GlobalBasis.Z.X, 0f, -_camera.GlobalBasis.Z.Z).Normalized();
+		Vector3 right = new Vector3(_camera.GlobalBasis.X.X, 0f, _camera.GlobalBasis.X.Z).Normalized();
+
+		Vector3 movement = (forward * stick.Y + right * stick.X) * VRMovementSpeed * delta;
+		_origin.GlobalPosition += movement;
+	}
+
+	/// <summary>
+	/// Rotates the XROrigin by 45° increments based on the right thumbstick.
+	/// Snap turn is debounced: stick must return to center before the next snap fires.
+	/// The rotation is performed around the HMD world position to avoid positional drift.
+	/// </summary>
+	private void ApplySnapTurn()
+	{
+		if (_origin == null || _rightController == null || _camera == null)
+			return;
+
+		float x = _rightController.GetVector2("primary").X;
+
+		if (Mathf.Abs(x) < SnapTurnThreshold)
+		{
+			_snapTurnReady = true;
+			return;
+		}
+
+		if (!_snapTurnReady)
+			return;
+
+		_snapTurnReady = false;
+
+		// Snap by 45° in the direction of stick deflection
+		float angle = x > 0f ? -SnapTurnAngle : SnapTurnAngle;
+
+		// Rotate around the HMD world position so the player's viewpoint doesn't shift
+		Vector3 hmdBefore = _camera.GlobalPosition;
+		_origin.RotateY(angle);
+		Vector3 hmdAfter = _camera.GlobalPosition;
+		_origin.GlobalPosition -= hmdAfter - hmdBefore;
 	}
 
 	/// <summary>
