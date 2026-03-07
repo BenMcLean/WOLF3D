@@ -26,7 +26,7 @@ public class MapAnalyzer
 
 	// Special tiles (from WOLF3D.xsd special tile elements - can have multiple)
 	public Dictionary<ushort, ElevatorConfig> Elevators { get; private set; }
-	public HashSet<ushort> PushableTiles { get; private set; }
+	public Dictionary<ushort, PushwallConfig> PushableTiles { get; private set; }
 	public HashSet<ushort> ExitTiles { get; private set; }
 	public HashSet<ushort> AmbushTiles { get; private set; }
 	public HashSet<ushort> AltElevatorTiles { get; private set; }
@@ -99,9 +99,18 @@ public class MapAnalyzer
 		}
 		// Pushwall markers are in the INFO PLANE (StatInfo section), not the wall plane
 		// XSD: <Pushwall Number="N"> where N is the info plane tile value (e.g. PUSHABLETILE=98)
-		PushableTiles = [.. (XML.Element("VSwap")?.Element("StatInfo")?.Elements("Pushwall") ?? Enumerable.Empty<XElement>())
-			.Select(e => ushort.Parse(e.Attribute("Number")?.Value
-				?? throw new InvalidDataException("Pushwall element missing Number attribute")))];
+		PushableTiles = (XML.Element("VSwap")?.Element("StatInfo")?.Elements("Pushwall") ?? Enumerable.Empty<XElement>())
+			.ToDictionary(
+				e => ushort.Parse(e.Attribute("Number")?.Value
+					?? throw new InvalidDataException("Pushwall element missing Number attribute")),
+				e => new PushwallConfig
+				{
+					DigiSound = e.Attribute("DigiSound")?.Value,
+					// WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D)
+					SoundRepeatTics = e.Attribute("SoundRepeatTics") is XAttribute repeatAttr
+						? (short)ushort.Parse(repeatAttr.Value)
+						: (short?)null,
+				});
 		ExitTiles = [.. wallsElement.Elements("Exit")
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("Exit element missing Tile attribute")))];
@@ -256,7 +265,7 @@ public class MapAnalyzer
 			|| objInfo.ObjectClass != ObClass.block); // Only blocking objects block navigation
 
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
-		(!IsWall(mapData) || PushableTiles.Contains(objectData))
+		(!IsWall(mapData) || PushableTiles.ContainsKey(objectData))
 		&& !Elevators.ContainsKey(mapData);
 
 	public bool IsMappable(GameMap map, ushort x, ushort y) =>
@@ -409,7 +418,7 @@ public class MapAnalyzer
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
 
 		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
-		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y);
+		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y, string DigiSound, short? SoundRepeatTics);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 
 		/// <summary>
@@ -573,13 +582,13 @@ public class MapAnalyzer
 			ushort[] realWalls = new ushort[gameMap.MapData.Length];
 			Array.Copy(gameMap.MapData, realWalls, realWalls.Length);
 			for (int i = 0; i < realWalls.Length; i++)
-				if (mapAnalyzer.PushableTiles.Contains(gameMap.ObjectData[i]))
+				if (mapAnalyzer.PushableTiles.TryGetValue(gameMap.ObjectData[i], out PushwallConfig pwConfig))
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
 					ushort wall = gameMap.MapData[i];
 					ushort page = GetWallPage(wall, false);
 					// VSWAP even/odd pairing: page (even) for one orientation, page+1 (odd) for perpendicular
-					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i)));
+					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i), pwConfig.DigiSound, pwConfig.SoundRepeatTics));
 				}
 			ushort GetMapData(ushort x, ushort y) => realWalls[gameMap.GetIndex(x, y)];
 
@@ -808,4 +817,12 @@ public enum StatType : byte
 	dressing,    // Non-interactive decoration
 	block,       // Blocking object
 	bonus        // Pickup item
+}
+
+// Pushwall type configuration from XML <Pushwall> element
+public record PushwallConfig
+{
+	public string DigiSound { get; init; }     // Sound to play on activation and repeat
+	// WL_ACT1.C:MovePWalls pwallnoise - tics between repeat sounds (null = no repeat, Wolf3D default)
+	public short? SoundRepeatTics { get; init; }
 }

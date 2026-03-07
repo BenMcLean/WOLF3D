@@ -1105,7 +1105,7 @@ return true
 			<ObjectType Number="58" ObClass="bonus" Page="107" Script="missiles_ammo" Name="Watermelons" />
 			<ObjectType Number="59" ObClass="bonus" Page="108" Script="automap" Name="Map" />
 			<!-- Secret door / level triggers -->
-			<Pushwall Number="98" DigiSound="D_PWALLSND" Name="Secret Door" />
+			<Pushwall Number="98" DigiSound="D_PWALLSND" Name="Secret Door" SoundRepeatTics="8" />
 			<!-- 99 is "Secret Door Path" (info-plane marker, not an object) -->
 			<ObjectType Number="100" ObClass="bonus" Script="next_floor" Name="Next level trigger" />
 			<ObjectType Number="101" ObClass="bonus" Script="secret_floor" Name="Secret level trigger" />

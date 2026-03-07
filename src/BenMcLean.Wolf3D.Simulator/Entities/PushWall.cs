@@ -38,6 +38,19 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	/// </summary>
 	public ushort InitialTileY { get; }
 
+	/// <summary>
+	/// DigiSound name to play on activation (and repeat if SoundRepeatTics is set).
+	/// Null means no sound.
+	/// </summary>
+	public string DigiSound { get; }
+
+	/// <summary>
+	/// How often (in tics) to repeat DigiSound during movement.
+	/// Null means play once on activation only (standard Wolf3D behavior).
+	/// N3D uses 8 tics — WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D).
+	/// </summary>
+	public short? SoundRepeatTics { get; }
+
 	// Dynamic state (serialized for save games)
 
 	/// <summary>
@@ -77,16 +90,27 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	public bool HasBeenActivated { get; set; }
 
 	/// <summary>
+	/// Accumulated tics for repeating the pushwall sound during movement.
+	/// WL_ACT1.C:MovePWalls pwallnoise (#ifdef GAMEVER_NOAH3D).
+	/// Only used when SoundRepeatTics is set. Resets to 0 when sound fires.
+	/// </summary>
+	public short SoundNoiseAccumulator { get; set; }
+
+	/// <summary>
 	/// Creates a new PushWall instance at its initial position.
 	/// </summary>
 	/// <param name="shape">Wall texture number (VSWAP page)</param>
 	/// <param name="initialTileX">Starting tile X coordinate</param>
 	/// <param name="initialTileY">Starting tile Y coordinate</param>
-	public PushWall(ushort shape, ushort initialTileX, ushort initialTileY)
+	/// <param name="digiSound">DigiSound name to play (null for no sound)</param>
+	/// <param name="soundRepeatTics">Tics between repeat sounds (null = no repeat)</param>
+	public PushWall(ushort shape, ushort initialTileX, ushort initialTileY, string digiSound = null, short? soundRepeatTics = null)
 	{
 		Shape = shape;
 		InitialTileX = initialTileX;
 		InitialTileY = initialTileY;
+		DigiSound = digiSound;
+		SoundRepeatTics = soundRepeatTics;
 
 		// Start at tile center in fixed-point (tile * 65536 + 32768)
 		X = (initialTileX << 16) + 0x8000;
@@ -125,6 +149,7 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 		X = X,
 		Y = Y,
 		TicCount = TicCount,
+		SoundNoiseAccumulator = SoundNoiseAccumulator,
 	};
 
 	/// <summary>
@@ -138,6 +163,7 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 		X = state.X;
 		Y = state.Y;
 		TicCount = state.TicCount;
+		SoundNoiseAccumulator = state.SoundNoiseAccumulator;
 	}
 }
 

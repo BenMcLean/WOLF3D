@@ -1483,6 +1483,15 @@
 			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string"/>
 			<xs:attribute name="DigiSound" type="xs:string"/>
+			<xs:attribute name="SoundRepeatTics" type="xs:positiveInteger">
+				<xs:annotation>
+					<xs:documentation>
+						How often (in tics) to repeat the DigiSound during pushwall movement.
+						When absent, the sound plays only once at activation (standard Wolf3D behavior).
+						N3D uses 8 tics — WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

@@ -412,7 +412,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		for (int i = 0; i < actors.Count; i++)
 			UpdateActor(i);
 		// WL_AGENT.C:UpdateFace - update status bar face on facecount tick
-		if (faceController != null)
+		if (faceController is not null)
 		{
 			Lua.ActionScriptContext faceContext = new(this, rng, gameClock, logger)
 			{
@@ -570,7 +570,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Bonuses only have tile coordinates, so exact tile match is the only check needed
 		for (int i = 0; i < lastStatObj; i++)
 		{
-			if (StatObjList[i] != null && !StatObjList[i].IsFree
+			if (StatObjList[i] is not null && !StatObjList[i].IsFree
 				&& StatObjList[i].TileX == door.TileX
 				&& StatObjList[i].TileY == door.TileY)
 				return true;
@@ -808,10 +808,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		pushWall.Direction = direction;
 		pushWall.TicCount = (short)(2 * PushWall.PushTics); // 2 tiles × 128 tics/tile = 256 tics
 		pushWall.HasBeenActivated = true; // Track for secret count statistics
+		pushWall.SoundNoiseAccumulator = 0;
 		anyPushWallMoving = true; // Set global lock
 
-		// Play pushwall sound
-		EmitPushWallPlaySound((ushort)pushWallIndex, "PUSHWALLSND");
+		// Play pushwall sound (WL_ACT1.C:PushWall SD_PlaySound(PUSHWALLSND))
+		if (pushWall.DigiSound is not null)
+			EmitPushWallPlaySound((ushort)pushWallIndex, pushWall.DigiSound);
 	}
 
 	/// <summary>
@@ -925,6 +927,17 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Action = pushWall.Action
 		});
 
+		// Repeat sound during movement (WL_ACT1.C:MovePWalls pwallnoise accumulator, #ifdef GAMEVER_NOAH3D)
+		if (pushWall.SoundRepeatTics.HasValue && pushWall.DigiSound is not null)
+		{
+			pushWall.SoundNoiseAccumulator++;
+			if (pushWall.SoundNoiseAccumulator > pushWall.SoundRepeatTics.Value)
+			{
+				EmitPushWallPlaySound((ushort)pushWallIndex, pushWall.DigiSound);
+				pushWall.SoundNoiseAccumulator -= pushWall.SoundRepeatTics.Value;
+			}
+		}
+
 		// Check if movement complete
 		if (pushWall.TicCount <= 0)
 		{
@@ -933,6 +946,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			pushWall.X = (finalX << 16) + 0x8000; // Center in tile
 			pushWall.Y = (finalY << 16) + 0x8000;
 			pushWall.Action = PushWallAction.Idle;
+			pushWall.SoundNoiseAccumulator = 0;
 			anyPushWallMoving = false; // Rule 3: Release global lock
 
 			// Clean up: release the initial tile and middle tile, keep only final tile
@@ -1217,23 +1231,23 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			? new FaceController(rng, luaScriptEngine, onFaceFunctionName, statusBar.FaceTics)
 			: null;
 		// Restore accumulated level stats from previous levels (carries across level transitions)
-		if (savedLevelStats != null)
+		if (savedLevelStats is not null)
 		{
 			LevelRatios.Clear();
 			LevelRatios.AddRange(savedLevelStats);
 		}
-		if (savedInventory != null)
+		if (savedInventory is not null)
 			Inventory.Load(savedInventory);
 		// Set difficulty (for new games this overrides the StatusBar Init default;
 		// for level transitions this confirms the saved value)
 		Inventory.SetValue("Difficulty", difficulty);
 
 		// Initialize weapon slots before equipping (creates slot objects)
-		if (weapons != null)
+		if (weapons is not null)
 			InitializeWeaponSlots(slotCount, weapons);
 
 		// Equip starting weapon from inventory (SelectedWeapon0 is set by XML Init or restored state)
-		if (WeaponCollection != null)
+		if (WeaponCollection is not null)
 		{
 			int startingWeaponNumber = Inventory.GetValue("SelectedWeapon0");
 			if (WeaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
@@ -1307,7 +1321,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		int pushWallIndex = 0;
 		foreach (MapAnalysis.PushWallSpawn spawn in pushWallSpawns)
 		{
-			pushWalls.Add(new PushWall(spawn.Shape, spawn.X, spawn.Y));
+			pushWalls.Add(new PushWall(spawn.Shape, spawn.X, spawn.Y, spawn.DigiSound, spawn.SoundRepeatTics));
 
 			// Update spatial index - pushwall occupies its initial tile
 			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
@@ -1451,7 +1465,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// Look up initial hit points from ActorDefinition
 			short hitPoints = 1; // Default
 			if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition actorDef)
-				&& actorDef.HitPointsByDifficulty != null
+				&& actorDef.HitPointsByDifficulty is not null
 				&& difficulty >= 0 && difficulty < actorDef.HitPointsByDifficulty.Length)
 			{
 				hitPoints = actorDef.GetHitPoints(difficulty);
@@ -1466,7 +1480,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				hitPoints: hitPoints);
 			// Set additional flags from spawn data
 			// WL_ACT1.C:SpawnStand/SpawnPatrol - enemies are FL_SHOOTABLE if they have a death state
-			if (actorDef != null && !string.IsNullOrEmpty(actorDef.DeathState))
+			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 				actor.Flags |= ActorFlags.Shootable;
 			// FL_AMBUSH from spawn tile (N3D info-plane encoding: tile 126 vs 108)
 			// OR from actor class definition (WL_ACT2.C:SpawnBoss always sets FL_AMBUSH)
@@ -1704,7 +1718,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public void AddCompletionStats(LevelCompletionStats stats)
 	{
-		if (stats != null)
+		if (stats is not null)
 			LevelRatios.Add(stats);
 	}
 
@@ -1831,7 +1845,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 						if (hasAmmo)
 						{
 							string fireFrameState = weaponInfo.FireState;
-							if (fireFrameState != null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
+							if (fireFrameState is not null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
 							{
 								slot.CurrentState = fireState;
 								slot.TicCount = fireState.Tics;
@@ -1859,7 +1873,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// We replicate this: if TriggerHeld is set when returning to idle,
 			// and the weapon is auto-mode, immediately start a new attack.
 			if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld)
-				&& slot.WeaponType != null
+				&& slot.WeaponType is not null
 				&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo idleWeaponInfo)
 				&& idleWeaponInfo.RapidFire)
 			{
@@ -2163,7 +2177,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// WL_STATE.C:DamageActor - actor killed
 			actor.HitPoints = 0;
 
-			if (actorDef != null && !string.IsNullOrEmpty(actorDef.DeathState))
+			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 			{
 				TransitionActorStateByName(actorIndex, actorDef.DeathState);
 				// Clear shootable flag - dead actors can't be shot again
@@ -2175,7 +2189,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// WL_STATE.C:DamageActor - actor hurt but alive
 
 			// If not in attack mode, trigger first sighting (wake up)
-			if (!actor.Flags.HasFlag(ActorFlags.AttackMode) && actorDef != null)
+			if (!actor.Flags.HasFlag(ActorFlags.AttackMode) && actorDef is not null)
 			{
 				if (!string.IsNullOrEmpty(actorDef.ChaseState))
 				{
@@ -2189,7 +2203,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 			// Transition to pain state (if actor has one)
 			// WL_STATE.C:DamageActor - alternates between two pain frames based on HP parity
-			if (actorDef != null)
+			if (actorDef is not null)
 			{
 				string painState = (actor.HitPoints & 1) != 0
 					? actorDef.PainState
@@ -2209,7 +2223,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public bool PlayerHasWeapon(string weaponType)
 	{
-		if (weaponCollection != null && weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo))
+		if (weaponCollection is not null && weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo))
 			return Inventory.Has(WeaponCollection.GetInventoryKey(weaponInfo.Number));
 		return false;
 	}
@@ -3188,7 +3202,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		// Capture patrol directions with enum stored as byte
 		Dictionary<uint, byte> patrolDirs = null;
-		if (patrolDirectionAtTile != null)
+		if (patrolDirectionAtTile is not null)
 		{
 			patrolDirs = new Dictionary<uint, byte>(patrolDirectionAtTile.Count);
 			foreach (KeyValuePair<uint, Direction> kvp in patrolDirectionAtTile)
@@ -3262,14 +3276,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		GodMode = snapshot.GodMode;
 
 		// Restore door dynamic state (doors already created by LoadDoorsFromMapAnalysis)
-		if (snapshot.Doors != null)
+		if (snapshot.Doors is not null)
 		{
 			for (int i = 0; i < Math.Min(doors.Count, snapshot.Doors.Length); i++)
 				doors[i].Load(snapshot.Doors[i]);
 		}
 
 		// Restore pushwall dynamic state
-		if (snapshot.PushWalls != null)
+		if (snapshot.PushWalls is not null)
 		{
 			for (int i = 0; i < Math.Min(pushWalls.Count, snapshot.PushWalls.Length); i++)
 				pushWalls[i].Load(snapshot.PushWalls[i]);
@@ -3277,47 +3291,47 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		anyPushWallMoving = snapshot.AnyPushWallMoving;
 
 		// Restore actor state (value fields only)
-		if (snapshot.Actors != null)
+		if (snapshot.Actors is not null)
 		{
 			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
 				actors[i].Load(snapshot.Actors[i]);
 		}
 
 		// Resolve CurrentState references for actors via StateCollection
-		if (snapshot.Actors != null)
+		if (snapshot.Actors is not null)
 		{
 			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
 			{
 				string stateName = snapshot.Actors[i].CurrentStateName;
-				if (stateName != null && stateCollection.States.TryGetValue(stateName, out State state))
+				if (stateName is not null && stateCollection.States.TryGetValue(stateName, out State state))
 					actors[i].CurrentState = state;
 			}
 		}
 
 		// Restore weapon slot state (value fields only)
-		if (snapshot.WeaponSlots != null)
+		if (snapshot.WeaponSlots is not null)
 		{
 			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
 				weaponSlots[i].Load(snapshot.WeaponSlots[i]);
 		}
 
 		// Resolve CurrentState references for weapon slots via StateCollection
-		if (snapshot.WeaponSlots != null)
+		if (snapshot.WeaponSlots is not null)
 		{
 			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
 			{
 				string stateName = snapshot.WeaponSlots[i].CurrentStateName;
-				if (stateName != null && stateCollection.States.TryGetValue(stateName, out State state))
+				if (stateName is not null && stateCollection.States.TryGetValue(stateName, out State state))
 					weaponSlots[i].CurrentState = state;
 			}
 		}
 
 		// Restore StatObjList
-		if (snapshot.StatObjList != null)
+		if (snapshot.StatObjList is not null)
 		{
 			for (int i = 0; i < Math.Min(StatObjList.Length, snapshot.StatObjList.Length); i++)
 			{
-				if (snapshot.StatObjList[i] != null)
+				if (snapshot.StatObjList[i] is not null)
 				{
 					if (StatObjList[i] == null)
 						StatObjList[i] = new StatObj();
@@ -3332,7 +3346,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		lastStatObj = snapshot.LastStatObj;
 
 		// Restore patrol directions
-		if (snapshot.PatrolDirectionAtTile != null)
+		if (snapshot.PatrolDirectionAtTile is not null)
 		{
 			patrolDirectionAtTile = new Dictionary<uint, Direction>(snapshot.PatrolDirectionAtTile.Count);
 			foreach (KeyValuePair<uint, byte> kvp in snapshot.PatrolDirectionAtTile)
@@ -3340,12 +3354,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 
 		// Restore inventory
-		if (snapshot.InventoryValues != null)
+		if (snapshot.InventoryValues is not null)
 			Inventory.Load(snapshot.InventoryValues);
 
 		// Restore accumulated level completion stats
 		LevelRatios.Clear();
-		if (snapshot.CompletedLevelStats != null)
+		if (snapshot.CompletedLevelStats is not null)
 			LevelRatios.AddRange(snapshot.CompletedLevelStats);
 
 		// Restore RNG state
@@ -3353,7 +3367,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		rng.StateB = snapshot.RngStateB;
 
 		// Restore GameClock
-		if (snapshot.GameClock != null)
+		if (snapshot.GameClock is not null)
 			gameClock.Load(snapshot.GameClock);
 
 		// Clear pending actions (transient per-frame queue)

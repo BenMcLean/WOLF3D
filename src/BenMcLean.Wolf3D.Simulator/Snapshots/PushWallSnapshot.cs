@@ -39,4 +39,10 @@ public record PushWallSnapshot
 	/// Counts down from PushTics to 0.
 	/// </summary>
 	public short TicCount { get; init; }
+
+	/// <summary>
+	/// Accumulated tics for repeating the pushwall sound during movement.
+	/// WL_ACT1.C:MovePWalls pwallnoise (#ifdef GAMEVER_NOAH3D).
+	/// </summary>
+	public short SoundNoiseAccumulator { get; init; }
 }
