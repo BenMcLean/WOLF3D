@@ -19,6 +19,10 @@ public class MapAnalyzer
 	// Wall configuration (from WOLF3D.xsd Walls attributes)
 	public ushort MaxWallTiles { get; private set; }
 	public ushort DoorWall { get; private set; }
+	// WL_DRAW.C: doorframe pages (adjacent wall next to a door)
+	// Standard Wolf3D: DOORWALL+2 (horiz) / DOORWALL+3 (vert); N3D: both DOORWALL(1)=DoorWall+4
+	public ushort DoorFrame { get; private set; }
+	public ushort DoorFrame2 { get; private set; }
 
 	// Special tiles (from WOLF3D.xsd special tile elements - can have multiple)
 	public Dictionary<ushort, ElevatorConfig> Elevators { get; private set; }
@@ -60,6 +64,16 @@ public class MapAnalyzer
 			?? throw new InvalidDataException("Missing MaxWallTiles attribute"));
 		DoorWall = ushort.Parse(wallsElement.Attribute("DoorWall")?.Value
 			?? throw new InvalidDataException("Missing DoorWall attribute"));
+		// DoorFrame: optional, defaults to DoorWall+2 (standard Wolf3D: DOORWALL+2)
+		// N3D override: DoorFrame="62" = DOORWALL(1) = DoorWall+4 (WL_DRAW.C HitHorizWall #ifdef GAMEVER_NOAH3D)
+		DoorFrame = ushort.TryParse(wallsElement.Attribute("DoorFrame")?.Value, out ushort df)
+			? df
+			: (ushort)(DoorWall + 2);
+		// DoorFrame2: optional, defaults to DoorFrame+1 (standard Wolf3D: DOORWALL+3)
+		// N3D override: DoorFrame2="62" same as DoorFrame — unique single shared texture (WL_DRAW.C HitVertWall)
+		DoorFrame2 = ushort.TryParse(wallsElement.Attribute("DoorFrame2")?.Value, out ushort df2)
+			? df2
+			: (ushort)(DoorFrame + 1);
 
 		// Parse elevator configurations
 		Elevators = [];
@@ -567,10 +581,11 @@ public class MapAnalyzer
 				}
 			ushort GetMapData(ushort x, ushort y) => realWalls[gameMap.GetIndex(x, y)];
 
-			// Door frames use specific pages near sprite start
-			// In original: doorFrame at DOORWALL+2, but we'll use a calculated value
-			ushort doorFrameHoriz = (ushort)(mapAnalyzer.DoorWall + 2);  // Horizontal door frame
-			ushort doorFrameVert = (ushort)(mapAnalyzer.DoorWall + 3);   // Vertical door frame
+			// WL_DRAW.C HitHorizWall/HitVertWall: doorframe page (wall adjacent to a door)
+			// Standard Wolf3D: DOORWALL+2 (horiz), DOORWALL+3 (vert)
+			// N3D: DOORWALL(1)=DoorWall+4 for both — read from DoorFrame attribute (defaults to DoorWall+2)
+			ushort doorFrameHoriz = mapAnalyzer.DoorFrame;
+			ushort doorFrameVert = mapAnalyzer.DoorFrame2;
 
 			List<WallSpawn> walls = [];
 			List<ElevatorSpawn> elevators = [];

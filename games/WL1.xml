@@ -155,7 +155,7 @@
 		</Pics>
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame">
 			<Text Id="Floor" X="16" Y="16"> 1</Text>
-			<Text Id="Score" X="64" Y="16">     0</Text>
+			<Text Id="Score" X="48" Y="16">     0</Text>
 			<Text Id="Lives" X="112" Y="16"> 3</Text>
 			<Picture Id="Face" Name="FACE1APIC" X="134" Y="5" />
 			<Text Id="Health" X="176" Y="16">100</Text>
@@ -1001,7 +1001,6 @@ StartTicker("AvgTreasureRatio", tr)
 
 			<!-- Special floor tiles -->
 			<Elevator Tile="21" PressedTile="22" Faces="EastWest" Sound="LEVELDONESND" />
-			<Pushable Tile="98" />
 			<Exit Tile="99" />
 			<Ambush Tile="106" />
 			<AltElevator Tile="107" />

@@ -1159,6 +1159,10 @@
 				DoorWall specifies the base VSWAP page for door textures (calculated as
 				PMSpriteStart - 8 in original code, but hardcoded here for modding).
 
+				DoorFrame specifies the horizontal doorframe VSWAP page; DoorFrame2 the vertical.
+				DoorFrame defaults to DoorWall+2; DoorFrame2 defaults to DoorFrame+1.
+				N3D: both are 62 (DOORWALL(1)=DoorWall+4) — unique single shared texture.
+
 				FloorCodeFirst/Last define the range of floor code tiles used for area
 				detection (AREATILE through AREATILE+NUMAREAS-1, typically 107-143).
 			</xs:documentation>
@@ -1166,7 +1170,6 @@
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
 				<xs:element ref="Elevator"/>
-				<xs:element ref="Pushable"/>
 				<xs:element ref="Exit"/>
 				<xs:element ref="Ambush"/>
 				<xs:element ref="AltElevator"/>
@@ -1174,6 +1177,25 @@
 			</xs:choice>
 			<xs:attribute name="MaxWallTiles" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="DoorWall" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="DoorFrame" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Horizontal doorframe VSWAP page (wall tile adjacent to a horizontal door).
+						Defaults to DoorWall+2 when absent (standard Wolf3D: DOORWALL+2).
+						N3D: DoorFrame=62 = DOORWALL(1) = DoorWall+4 (WL_DRAW.C HitHorizWall).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="DoorFrame2" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Vertical doorframe VSWAP page (wall tile adjacent to a vertical door).
+						Defaults to DoorFrame+1 when absent (standard Wolf3D: DOORWALL+3).
+						N3D: DoorFrame2=62 same as DoorFrame — both orientations share one texture
+						(WL_DRAW.C HitVertWall #ifdef GAMEVER_NOAH3D uses DOORWALL(1) for both).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="FloorCodeFirst" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="FloorCodeLast" type="xs:nonNegativeInteger"/>
 		</xs:complexType>
@@ -1227,18 +1249,6 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="Pushable">
-		<xs:annotation>
-			<xs:documentation>
-				Pushable wall marker. Walls marked with this tile can be pushed by the
-				player to reveal secret areas. (PUSHABLETILE = 98)
-			</xs:documentation>
-		</xs:annotation>
-		<xs:complexType>
-			<xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -1462,9 +1472,11 @@
 	<xs:element name="Pushwall">
 		<xs:annotation>
 			<xs:documentation>
-				Pushable secret wall definition. Defines the tile number used as a pushwall
-				marker in the info plane, along with the sound played when pushed.
-				Corresponds to PUSHABLETILE (98) in WL_ACT1.C.
+				Pushable secret wall marker in the info plane. Number is the INFO PLANE tile value
+				(PUSHABLETILE = 98) that Cmd_Use checks (WL_AGENT.C). The wall plane at the same
+				position holds the actual wall texture (any tile) chosen by the level designer —
+				PushWall() reads it as oldtile to display as the wall slides (WL_ACT1.C).
+				DigiSound plays when the player pushes the wall.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>

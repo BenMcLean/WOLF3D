@@ -141,18 +141,17 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="3" >
-			<Number Name="Difficulty" Init="1" />
-			<Number Name="Episode" X="24" Y="16" Digits="1" Init="1" />
-			<Number Name="Floor" X="40" Y="16" Digits="1" Init="1" />
-			<Number Name="Score" X="112" Y="16" Digits="6" Init="0" />
-			<Number Name="Lives" X="142" Y="16" Digits="2" Init="3" Max="9" />
-			<Face X="152" Y="4" />
-			<Number Name="Health" X="208" Y="16" Digits="3" Init="100" Max="100" />
-			<Number Name="Feed" X="248" Y="16" Digits="2" Init="7" Max="299" />
-			<Number Name="Yellow Key" X="256" Y="4" Have="GOLDKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
-			<Number Name="Blue Key" X="256" Y="20" Have="SILVERKEYPIC" Empty="NOKEYPIC" Init="0" LevelReset="0" />
-			<Number Name="Fruit" X="296" Y="16" Digits="2" Init="0" />
+		<StatusBar Pic="STATUSBARPIC" Font="3">
+			<Text Id="Episode" X="24" Y="16">1</Text>
+			<Text Id="Floor" X="40" Y="16">1</Text>
+			<Text Id="Score" X="112" Y="16">     0</Text>
+			<Text Id="Lives" X="142" Y="16"> 3</Text>
+			<Picture Id="Face" Name="FACE1APIC" X="152" Y="4" />
+			<Text Id="Health" X="208" Y="16">100</Text>
+			<Text Id="Feed" X="248" Y="16"> 7</Text>
+			<Picture Id="YellowKey" Name="NOKEYPIC" X="256" Y="4" />
+			<Picture Id="BlueKey" Name="NOKEYPIC" X="256" Y="20" />
+			<Text Id="Fruit" X="296" Y="16"> 0</Text>
 		</StatusBar>
 		<Menus Start="Title" Pause="Main" TextColor="204" Highlight="197" BordColor="217" BkgdColor="221" Deactive="219" Bord2Color="215" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="NOAH01_MUS" ModalColor="204" ModalTextColor="0" ModalHighlight="197" ModalBord2Color="0">
 			<!-- Classic game end strings -->
@@ -593,27 +592,27 @@ end
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
-				<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-				<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-				<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-				<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
-				<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
-				<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-				<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
-				<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
-				<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-				<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
-				<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
-				<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-				<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
-				<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
-				<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
-				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Text Id="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+				<Text Id="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+				<Text Id="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+				<Text Id="Level2" X="160" Y="108" Font="SMALL"> </Text>
+				<Text Id="Score2" X="224" Y="108" Font="SMALL"> </Text>
+				<Text Id="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+				<Text Id="Level3" X="160" Y="124" Font="SMALL"> </Text>
+				<Text Id="Score3" X="224" Y="124" Font="SMALL"> </Text>
+				<Text Id="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+				<Text Id="Level4" X="160" Y="140" Font="SMALL"> </Text>
+				<Text Id="Score4" X="224" Y="140" Font="SMALL"> </Text>
+				<Text Id="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+				<Text Id="Level5" X="160" Y="156" Font="SMALL"> </Text>
+				<Text Id="Score5" X="224" Y="156" Font="SMALL"> </Text>
+				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
+				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
 				<Pause>BackToPreviousMenu()</Pause>
 				<OnShow>
 					<![CDATA[
@@ -637,16 +636,16 @@ end
 					COMPLETED
 				</Text>
 				<!-- Floor number displayed by Lua SetText -->
-				<Text Name="FloorNumber" X="208" Y="16" Font="L"> </Text>
+				<Text Id="FloorNumber" X="208" Y="16" Font="L"> </Text>
 				<!-- WL_INTER.C:Write(14,7,"bonus     0") = pixel (112,56) -->
 				<Text X="112" Y="56" Font="L">BONUS</Text>
-				<Text Name="BonusValue" X="208" Y="56" Font="L">0</Text>
+				<Text Id="BonusValue" X="208" Y="56" Font="L">0</Text>
 				<!-- WL_INTER.C:Write(16,10,"time") = pixel (128,80) -->
 				<Text X="128" Y="80" Font="L">TIME</Text>
-				<Text Name="TimeValue" X="208" Y="80" Font="L">0:00</Text>
+				<Text Id="TimeValue" X="208" Y="80" Font="L">0:00</Text>
 				<!-- WL_INTER.C:Write(16,12," par") = pixel (128,96) -->
 				<Text X="128" Y="96" Font="L"> PAR</Text>
-				<Text Name="ParValue" X="208" Y="96" Font="L">0:00</Text>
+				<Text Id="ParValue" X="208" Y="96" Font="L">0:00</Text>
 				<!-- WL_INTER.C:Write(9,14,"kill ratio    %") = pixel (72,112) -->
 				<Text X="72" Y="112" Font="L">KILL RATIO    %</Text>
 				<!-- WL_INTER.C:Write(5,16,"secret ratio    %") = pixel (40,128) -->
@@ -711,27 +710,27 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
 				<!-- 7 rows at PrintY = 76 + 16*i -->
-				<Text Name="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-				<Text Name="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-				<Text Name="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-				<Text Name="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-				<Text Name="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-				<Text Name="Level2" X="160" Y="108" Font="SMALL"> </Text>
-				<Text Name="Score2" X="224" Y="108" Font="SMALL"> </Text>
-				<Text Name="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-				<Text Name="Level3" X="160" Y="124" Font="SMALL"> </Text>
-				<Text Name="Score3" X="224" Y="124" Font="SMALL"> </Text>
-				<Text Name="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-				<Text Name="Level4" X="160" Y="140" Font="SMALL"> </Text>
-				<Text Name="Score4" X="224" Y="140" Font="SMALL"> </Text>
-				<Text Name="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-				<Text Name="Level5" X="160" Y="156" Font="SMALL"> </Text>
-				<Text Name="Score5" X="224" Y="156" Font="SMALL"> </Text>
-				<Text Name="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-				<Text Name="Level6" X="160" Y="172" Font="SMALL"> </Text>
-				<Text Name="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Text Id="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
+				<Text Id="Level0" X="160" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Score0" X="224" Y="76"  Font="SMALL"> </Text>
+				<Text Id="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
+				<Text Id="Level1" X="160" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Score1" X="224" Y="92"  Font="SMALL"> </Text>
+				<Text Id="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
+				<Text Id="Level2" X="160" Y="108" Font="SMALL"> </Text>
+				<Text Id="Score2" X="224" Y="108" Font="SMALL"> </Text>
+				<Text Id="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
+				<Text Id="Level3" X="160" Y="124" Font="SMALL"> </Text>
+				<Text Id="Score3" X="224" Y="124" Font="SMALL"> </Text>
+				<Text Id="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
+				<Text Id="Level4" X="160" Y="140" Font="SMALL"> </Text>
+				<Text Id="Score4" X="224" Y="140" Font="SMALL"> </Text>
+				<Text Id="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
+				<Text Id="Level5" X="160" Y="156" Font="SMALL"> </Text>
+				<Text Id="Score5" X="224" Y="156" Font="SMALL"> </Text>
+				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
+				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
+				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
 				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
 				<OnShow>
@@ -846,15 +845,16 @@ end
 		<Midi Number="10" Name="NOAH11_MUS" />
 	</Audio>
 	<VSwap Name="vswap.n3d" Sqrt="64" Scale="8" MipMaps="true">
-		<WallPlane MaxWallTiles="32" DoorWall="58" FloorCodeFirst="107" FloorCodeLast="143">
+		<WallPlane MaxWallTiles="32" DoorWall="58" DoorFrame="62" DoorFrame2="62" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-31 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 			<!-- WL_DEF.H #ifdef GAMEVER_NOAH3D: MAXWALLTILES=32 (vs 64 in Wolf3D) -->
 			<!-- WL_GAME.C #ifdef GAMEVER_NOAH3D: tile &= 31 (lower 5 bits); wall tile 89 maps to tile 31 special case -->
 			<!-- DoorWall=58: DOORWALL(x)=(PMSpriteStart-x)-8; PMSpriteStart=71 (first sprite page); DOORWALL(5)=58 for dr_normal -->
-			<!-- WL_DRAW.C #ifdef GAMEVER_NOAH3D: DOORWALL is macro (PMSpriteStart-x)-8; DoorFrame adjacent wall=DOORWALL(1)=62=DoorWall+4 -->
-			<!-- N3D does NOT use ELEVATORTILE, EXITTILE, ALTELEVATORTILE, AMBUSHTILE, or PUSHABLETILE (wall plane) -->
+			<!-- WL_DRAW.C #ifdef GAMEVER_NOAH3D: DoorFrame=DOORWALL(1)=62=DoorWall+4 (HitHorizWall/HitVertWall both use DOORWALL(1)) -->
+			<!-- N3D does NOT use ELEVATORTILE, EXITTILE, ALTELEVATORTILE, or AMBUSHTILE (wall plane) -->
 			<!-- N3D exit: SpawnExit() from info plane tiles 100/101 (WL_ACT1.C #ifdef GAMEVER_NOAH3D) -->
 			<!-- N3D ambush: boolean parameter to SpawnStand() from info plane tile 126 (WL_GAME.C #ifdef GAMEVER_NOAH3D) -->
+
 
 			<!-- Door types: Tile is base (even), Tile+1 (odd) implied for N/S vs E/W orientation -->
 			<!-- N3D lock mapping: WL_GAME.C #ifdef GAMEVER_NOAH3D -->
@@ -885,14 +885,24 @@ return true
 			</BonusScript>
 			<BonusScript Name="feed_bag">
 				<![CDATA[
-AddValue("Feed", 6)
+-- bo_bandolier: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- gamestate.maxammo += 100 (cap 299), GiveAmmo(10), GiveGas(1), GiveMissile(1)
+local newmax = GetMax("Feed") + 100
+if newmax > 299 then newmax = 299 end
+SetMax("Feed", newmax)
+AddValue("Feed", 10)
+AddValue("Gas", 1)
+AddValue("Missile", 1)
+PlayDigiSound("D_BONUSSND")
 return true
 ]]>
 			</BonusScript>
 			<BonusScript Name="feed_trough">
 				<![CDATA[
+-- bo_25clip: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- GiveAmmo(25) if ammo < maxammo
 if GetValue("Feed") < GetMax("Feed") then
-	AddValue("Feed", 5)
+	AddValue("Feed", 25)
 	FlashScreen(0xFFFF00)
 	return true
 end
@@ -940,6 +950,103 @@ FlashScreen(0xFFFF00)
 return true
 ]]>
 			</BonusScript>
+			<BonusScript Name="quiz_scroll">
+				<![CDATA[
+-- bo_alpo (SPR_QUIZ): WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- Not consumed if health >= 100 AND ammo >= maxammo.
+-- Full mechanic: AskQuestion(questionnum), cycling through 99 questions.
+-- In noquestions mode: HealSelf(4).
+-- TODO: Implement full quiz dialog (AskQuiz not yet available - falls back to simple heal).
+if GetValue("Health") >= 100 and GetValue("Feed") >= GetMax("Feed") then
+	return false
+end
+AddValue("Health", 4)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="slingshot_2">
+				<![CDATA[
+-- bo_machinegun: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- gamestate.machinegun = 1; GiveWeapon(wp_machinegun=2); SD_PlaySound(GETMACHINESND=D_BONUSSND)
+GiveWeapon(2)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="slingshot_3">
+				<![CDATA[
+-- bo_chaingun: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- gamestate.chaingun = 1; GiveWeapon(wp_chaingun=3); SD_PlaySound(GETGATLINGSND=D_BONUSSND)
+GiveWeapon(3)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="one_up">
+				<![CDATA[
+-- bo_fullheal: WL_AGENT.C (GAMEVER_WOLFREV > GV_WR_WL920312)
+-- SD_PlaySound(BONUS1UPSND=D_EXTRASND); HealSelf(99); GiveExtraMan(); gamestate.treasurecount++
+-- Note: no GiveAmmo(25) in N3D (#ifndef GAMEVER_NOAH3D guard in source)
+AddValue("Health", 99)
+AddValue("Lives", 1)
+PlayDigiSound("D_EXTRASND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="slingshot_4">
+				<![CDATA[
+-- bo_flamethrower: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- SD_PlaySound(D_BONUSSND); GiveGas(20); GiveWeapon(wp_flamethrower=4)
+AddValue("Gas", 20)
+GiveWeapon(4)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="gascan">
+				<![CDATA[
+-- bo_gascan: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- if (gamestate.gas >= 99) return; SD_PlaySound(D_BONUSSND); GiveGas(14)
+if GetValue("Gas") >= 99 then
+	return false
+end
+AddValue("Gas", 14)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="slingshot_5">
+				<![CDATA[
+-- bo_launcher: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- SD_PlaySound(D_BONUSSND); GiveMissile(5); GiveWeapon(wp_missile=5)
+AddValue("Missile", 5)
+GiveWeapon(5)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="missiles_ammo">
+				<![CDATA[
+-- bo_missiles: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- if (gamestate.missiles >= 99) return; SD_PlaySound(D_BONUSSND); GiveMissile(5)
+if GetValue("Missile") >= 99 then
+	return false
+end
+AddValue("Missile", 5)
+PlayDigiSound("D_BONUSSND")
+return true
+]]>
+			</BonusScript>
+			<BonusScript Name="automap">
+				<![CDATA[
+-- bo_map: WL_AGENT.C #ifdef GAMEVER_NOAH3D
+-- SD_PlaySound(GETKEYSND=D_KEYSND); gamestate.automap = true
+SetValue("AutoMap", 1)
+PlayDigiSound("D_KEYSND")
+return true
+]]>
+			</BonusScript>
 			<BonusScript Name="next_floor">
 				<![CDATA[
 NavigateToNextFloor()
@@ -964,7 +1071,7 @@ return true
 			<ObjectType Number="25" ObClass="block" Page="74" Name="Table" />
 			<ObjectType Number="26" ObClass="block" Page="75" Name="Barrel" />
 			<ObjectType Number="27" ObClass="dressing" Page="76" Walk="true" Name="Debris" />
-			<ObjectType Number="28" ObClass="dressing" Page="77" Walk="true" Name="Question scroll -- maybe?" />
+			<ObjectType Number="28" ObClass="bonus" Page="77" Script="quiz_scroll" Name="Quiz Scroll" />
 			<ObjectType Number="29" ObClass="block" Page="78" Name="Feed bucket" />
 			<ObjectType Number="30" ObClass="block" Page="79" Name="Column 1" />
 			<ObjectType Number="31" ObClass="block" Page="80" Name="Slender column" />
@@ -983,20 +1090,20 @@ return true
 			<ObjectType Number="43" ObClass="bonus" Page="92" Script="bandaid_small" Name="Small band-aid" />
 			<ObjectType Number="44" ObClass="bonus" Page="93" Script="bandaid_large" Name="Large band-aid" />
 			<ObjectType Number="45" ObClass="bonus" Page="94" Script="feed" Name="Feed" />
-			<ObjectType Number="46" ObClass="dressing" Page="95" Walk="true" Name="Slingshot 2" />
-			<ObjectType Number="47" ObClass="dressing" Page="96" Walk="true" Name="Slingshot 3" />
+			<ObjectType Number="46" ObClass="bonus" Page="95" Script="slingshot_2" Name="Slingshot 2" />
+			<ObjectType Number="47" ObClass="bonus" Page="96" Script="slingshot_3" Name="Slingshot 3" />
 			<ObjectType Number="48" ObClass="bonus" Page="97" Script="fruit" Name="Banana" />
 			<ObjectType Number="49" ObClass="bonus" Page="98" Script="fruit" Name="Red apple" />
 			<ObjectType Number="50" ObClass="bonus" Page="99" Script="fruit" Name="Grapes" />
 			<ObjectType Number="51" ObClass="bonus" Page="100" Script="fruit" Name="Peach" />
-			<ObjectType Number="52" ObClass="dressing" Page="101" Walk="true" Name="One Up/Extra Life" />
+			<ObjectType Number="52" ObClass="bonus" Page="101" Script="one_up" Name="One Up/Extra Life" />
 			<ObjectType Number="53" ObClass="block" Page="102" Name="Cage" />
 			<ObjectType Number="54" ObClass="block" Page="103" Name="Column 2" />
-			<ObjectType Number="55" ObClass="dressing" Page="104" Walk="true" Name="Slingshot 4" />
-			<ObjectType Number="56" ObClass="dressing" Page="105" Walk="true" Name="Cantaloupe" />
-			<ObjectType Number="57" ObClass="dressing" Page="106" Walk="true" Name="Slingshot 5" />
-			<ObjectType Number="58" ObClass="dressing" Page="107" Walk="true" Name="Watermelons" />
-			<ObjectType Number="59" ObClass="dressing" Page="108" Walk="true" Name="Map" />
+			<ObjectType Number="55" ObClass="bonus" Page="104" Script="slingshot_4" Name="Slingshot 4" />
+			<ObjectType Number="56" ObClass="bonus" Page="105" Script="gascan" Name="Cantaloupe" />
+			<ObjectType Number="57" ObClass="bonus" Page="106" Script="slingshot_5" Name="Slingshot 5" />
+			<ObjectType Number="58" ObClass="bonus" Page="107" Script="missiles_ammo" Name="Watermelons" />
+			<ObjectType Number="59" ObClass="bonus" Page="108" Script="automap" Name="Map" />
 			<!-- Secret door / level triggers -->
 			<Pushwall Number="98" DigiSound="D_PWALLSND" Name="Secret Door" />
 			<!-- 99 is "Secret Door Path" (info-plane marker, not an object) -->
