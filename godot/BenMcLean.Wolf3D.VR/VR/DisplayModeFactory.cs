@@ -10,11 +10,12 @@ namespace BenMcLean.Wolf3D.VR.VR;
 ///
 /// Supports command-line arguments to override behavior:
 ///   --flatscreen or --no-vr : Force flatscreen mode (skip OpenXR initialization)
-///   --vr                    : Force VR mode (fail if OpenXR unavailable)
+///   --5dof                  : Force VR mode, lock camera height to HalfTileHeight (default for VR)
+///   --roomscale             : Force VR mode, allow real-world head height
 ///
-/// Also checks environment variable WOLF3D_DISPLAY_MODE:
-///   flatscreen : Force flatscreen mode
-///   vr         : Force VR mode
+/// Also checks environment variable WOLF3D_VR_PLAY_MODE:
+///   5dof      : Force VR mode with 5DOF play (default)
+///   roomscale : Force VR mode with roomscale play
 /// </summary>
 public static class DisplayModeFactory
 {
@@ -28,16 +29,33 @@ public static class DisplayModeFactory
 		// Check command-line arguments first (highest priority)
 		string[] args = OS.GetCmdlineArgs();
 		bool forceFlatscreen = args.Contains("--flatscreen") || args.Contains("--no-vr");
-		bool forceVR = args.Contains("--vr");
 
-		// Check environment variable if no command-line override
-		if (!forceFlatscreen && !forceVR)
+		// Determine VR play mode from args, then env var, then default to 5DOF
+		VRPlayMode playMode = VRPlayMode.FiveDOF;
+		bool forceVR = false;
+		if (args.Contains("--roomscale"))
 		{
-			string envMode = System.Environment.GetEnvironmentVariable("WOLF3D_DISPLAY_MODE");
-			if (!string.IsNullOrEmpty(envMode))
+			playMode = VRPlayMode.Roomscale;
+			forceVR = true;
+		}
+		else if (args.Contains("--5dof"))
+		{
+			forceVR = true;
+		}
+		else
+		{
+			string envPlayMode = System.Environment.GetEnvironmentVariable("WOLF3D_VR_PLAY_MODE");
+			if (!string.IsNullOrEmpty(envPlayMode))
 			{
-				forceFlatscreen = envMode.Equals("flatscreen", StringComparison.OrdinalIgnoreCase);
-				forceVR = envMode.Equals("vr", StringComparison.OrdinalIgnoreCase);
+				if (envPlayMode.Equals("roomscale", StringComparison.OrdinalIgnoreCase))
+				{
+					playMode = VRPlayMode.Roomscale;
+					forceVR = true;
+				}
+				else if (envPlayMode.Equals("5dof", StringComparison.OrdinalIgnoreCase))
+				{
+					forceVR = true;
+				}
 			}
 		}
 
@@ -56,24 +74,19 @@ public static class DisplayModeFactory
 			if (xrInterface.Initialize())
 			{
 				GD.Print("OpenXR initialized successfully");
-				return new VRDisplayMode(xrInterface);
+				return new VRDisplayMode(xrInterface, playMode);
 			}
 			else
 			{
 				if (forceVR)
-				{
 					GD.PrintErr("ERROR: VR mode forced but OpenXR failed to initialize");
-					// Could throw here, but falling back is safer for development
-				}
 				GD.PrintErr("Warning: OpenXR found but failed to initialize, falling back to flatscreen mode");
 			}
 		}
 		else
 		{
 			if (forceVR)
-			{
 				GD.PrintErr("ERROR: VR mode forced but OpenXR interface not found");
-			}
 			GD.Print("OpenXR not available, using flatscreen mode");
 		}
 

@@ -329,10 +329,12 @@ void sky() {
 			GD.PrintErr("Warning: No player start found in map!");
 		}
 
-		// Position the display mode's origin (XROrigin or CameraHolder) at player start
+		// Position the display mode's origin (XROrigin or CameraHolder) at player start.
+		// Y is set to 0 (floor level): in 5DOF mode Update() locks camera to HalfTileHeight
+		// each frame; in roomscale mode the origin stays at floor level by design.
 		if (_displayMode.Origin != null)
 		{
-			_displayMode.Origin.Position = cameraPosition;
+			_displayMode.Origin.Position = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
 			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
 		}
 

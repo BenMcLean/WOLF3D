@@ -4,6 +4,25 @@ using Godot;
 namespace BenMcLean.Wolf3D.VR.VR;
 
 /// <summary>
+/// Controls how the VR camera height is handled.
+/// </summary>
+public enum VRPlayMode
+{
+	/// <summary>
+	/// Camera height is locked to Constants.HalfTileHeight regardless of real-world head height.
+	/// XROrigin Y is adjusted each frame to compensate for the tracked HMD height.
+	/// Matches classic Wolfenstein 3D's fixed eye height.
+	/// </summary>
+	FiveDOF,
+
+	/// <summary>
+	/// Camera height tracks the player's real-world head position.
+	/// Allows crouching, standing tall, etc.
+	/// </summary>
+	Roomscale,
+}
+
+/// <summary>
 /// VR display mode implementation using OpenXR.
 /// Creates XROrigin3D with XRCamera3D and controller nodes.
 /// </summary>
@@ -15,6 +34,7 @@ public class VRDisplayMode : IDisplayMode
 	private XRController3D _leftController;
 	private XRController3D _rightController;
 	private Node _parent;
+	private readonly VRPlayMode _playMode;
 
 	// Movement validation for collision detection
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
@@ -46,9 +66,10 @@ public class VRDisplayMode : IDisplayMode
 
 	public Node3D Origin => _origin;
 
-	public VRDisplayMode(XRInterface xrInterface)
+	public VRDisplayMode(XRInterface xrInterface, VRPlayMode playMode = VRPlayMode.FiveDOF)
 	{
 		_xrInterface = xrInterface;
+		_playMode = playMode;
 	}
 
 	public void Initialize(Node parent)
@@ -101,6 +122,15 @@ public class VRDisplayMode : IDisplayMode
 	public void Update(double delta)
 	{
 		// VR tracking is handled automatically by OpenXR
+		// In 5DOF mode, lock the camera height to HalfTileHeight by adjusting the origin Y.
+		// Formula: origin.Y = HalfTileHeight - camera.Position.Y (local Y relative to origin)
+		// This keeps camera.GlobalPosition.Y == HalfTileHeight regardless of real head height.
+		if (_playMode == VRPlayMode.FiveDOF && _origin != null && _camera != null)
+		{
+			Vector3 originPos = _origin.Position;
+			_origin.Position = new Vector3(originPos.X, Constants.HalfTileHeight - _camera.Position.Y, originPos.Z);
+		}
+
 		// Validate HMD position against collision and push origin back if needed
 		ValidateVRPosition();
 	}
