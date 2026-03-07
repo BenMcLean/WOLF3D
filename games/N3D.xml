@@ -269,7 +269,7 @@
 					NavigateToMenu("NewGame")
 				</MenuItem>
 			</Menu>
-			<Menu Name="NewGame" X="8" Y="21">
+			<Menu Name="NewGame" X="50" Y="100">
 				<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H) = (45,90,225,67) -->
 				<Box X="45" Y="90" W="225" H="67" />
 				<!-- WL_MENU.C:1639-1649: US_Print("How tough are you?") at (NM_X+20, NM_Y-32) = (70,68) with READHCOLOR = 0x47 = 71 -->

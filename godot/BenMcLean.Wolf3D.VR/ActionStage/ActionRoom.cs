@@ -394,7 +394,8 @@ void sky() {
 		// Create debug aim indicator (temporary - won't be in final game)
 		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode.Camera);
 		AddChild(_aimIndicator);
-		// Create status bar for flatscreen mode
+		// Wire status bar events for flatscreen mode before OnNewGame script runs.
+		// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
 		if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar != null)
 		{
 			_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
@@ -406,10 +407,25 @@ void sky() {
 			// Wire simulator text events (e.g., health, ammo, score) to status bar state
 			_simulatorController.Simulator.StatusBarTextChanged += evt =>
 				_statusBarState.SetText(evt.Id, evt.Content);
+		}
 
-			// Initialize all inventory values and status bar display via OnNewGame script
+		// Execute OnNewGame script for new games (VR and flatscreen).
+		// WL_GAME.C:NewGame — sets initial inventory values (health, ammo, weapons, etc.)
+		// Must run after status bar events are wired so display updates are received.
+		// Must run before EquipStartingWeapon so weapon ownership is set correctly.
+		if (_existingSimulator == null && _loadSnapshot == null && _savedInventory == null)
 			_simulatorController.Simulator.ExecuteOnNewGameScript();
 
+		// Equip starting weapon based on inventory (new game or level transition).
+		// New game: SelectedWeapon0 set by OnNewGame script above.
+		// Level transition: SelectedWeapon0 restored from savedInventory.
+		if (_existingSimulator == null && _loadSnapshot == null)
+			_simulatorController.Simulator.EquipStartingWeapon();
+
+		// Create status bar display nodes for flatscreen mode.
+		// Fields are populated by the OnNewGame script or restored inventory above.
+		if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar != null)
+		{
 			// Create CanvasLayer to display status bar at bottom of screen
 			_statusBarCanvas = new CanvasLayer
 			{
@@ -442,8 +458,6 @@ void sky() {
 				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			};
 			_statusBarCanvas.AddChild(statusBarDisplay);
-
-			// Floor display is updated by the OnNewGame script via SetText("Floor", ...)
 		}
 		}
 		catch (Exception ex)

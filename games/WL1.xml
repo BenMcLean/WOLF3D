@@ -2315,7 +2315,7 @@ SetMax("Weapon2", 1)
 SetMax("Weapon3", 1)
 -- Inventory values. SetValue auto-updates StatusBar text where Text Id matches inventory key.
 -- Display width comes from the initial XML content length of the matching <Text Id="..."> element.
-SetValue("Difficulty", 1)
+-- Note: Difficulty is set by InitializeInventory from the menu selection, not overridden here.
 SetValue("Episode", 1)
 SetValue("Floor", 1)        -- auto-updates "Floor" text (" 1", width 2)
 SetValue("Health", 100)     -- auto-updates "Health" text ("100", width 3)

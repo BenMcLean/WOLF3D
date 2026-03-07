@@ -1245,14 +1245,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Initialize weapon slots before equipping (creates slot objects)
 		if (weapons is not null)
 			InitializeWeaponSlots(slotCount, weapons);
-
-		// Equip starting weapon from inventory (SelectedWeapon0 is set by XML Init or restored state)
-		if (WeaponCollection is not null)
-		{
-			int startingWeaponNumber = Inventory.GetValue("SelectedWeapon0");
-			if (WeaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
-				EquipWeapon(0, startWeapon.Name);
-		}
 	}
 
 	/// <summary>
@@ -2359,6 +2351,20 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Id = id,
 			Content = content
 		});
+	}
+
+	/// <summary>
+	/// Equip the starting weapon based on the current SelectedWeapon0 inventory value.
+	/// Call this after ExecuteOnNewGameScript (new games) or after inventory is loaded (level transitions).
+	/// WL_GAME.C:NewGame weapon initialization.
+	/// </summary>
+	public void EquipStartingWeapon()
+	{
+		if (weaponCollection is null || weaponSlots.Count == 0)
+			return;
+		int startingWeaponNumber = Inventory.GetValue("SelectedWeapon0");
+		if (weaponCollection.TryGetWeaponByNumber(startingWeaponNumber, out WeaponInfo startWeapon))
+			EquipWeapon(0, startWeapon.Name);
 	}
 
 	/// <summary>
