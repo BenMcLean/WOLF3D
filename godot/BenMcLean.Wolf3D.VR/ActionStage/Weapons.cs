@@ -126,11 +126,7 @@ public partial class Weapons : Node3D
 	/// </summary>
 	private void OnWeaponFired(WeaponFiredEvent evt)
 	{
-		// Only respond to primary weapon slot for now
-		if (evt.SlotIndex != currentSlot)
-			return;
-
-		// Play weapon fire sound
+		// Play weapon fire sound for any slot
 		if (!string.IsNullOrEmpty(evt.SoundName))
 			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
 

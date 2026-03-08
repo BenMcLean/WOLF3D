@@ -6,7 +6,8 @@ namespace BenMcLean.Wolf3D.VR.VR;
 /// <summary>
 /// Flatscreen display mode for desktop gameplay.
 /// Uses FPSCamera for WASD movement and mouse look.
-/// Left click fires weapon, right click uses/pushes objects.
+/// Left click fires weapon (hand 0 trigger_click), right click uses/pushes objects (hand 0 grip_click).
+/// Only hand 0 is used; there is no hand 1 in flatscreen.
 /// </summary>
 public class FlatscreenDisplayMode : IDisplayMode
 {
@@ -14,14 +15,8 @@ public class FlatscreenDisplayMode : IDisplayMode
 	private Node3D _cameraHolder;
 	private Node _parent;
 
-	public event Action<string> PrimaryButtonPressed;
-	public event Action<string> SecondaryButtonPressed;
-
-	/// <summary>
-	/// Event fired when primary button (left click) is released.
-	/// Used for semi-auto weapon trigger release.
-	/// </summary>
-	public event Action<string> PrimaryButtonReleased;
+	public event Action<int, string> HandButtonPressed;
+	public event Action<int, string> HandButtonReleased;
 
 	public bool IsVRActive => false;
 
@@ -29,38 +24,34 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 	public float ViewerYRotation => _camera?.GlobalRotation.Y ?? 0f;
 
-	// In flatscreen mode, "hand" is calculated from camera position
-	// Offset slightly forward and down-right to simulate holding a weapon
-	public Vector3 PrimaryHandPosition
+	// In flatscreen mode, "hand" is calculated from camera position.
+	// Hand 0 is offset slightly forward and down-right to simulate holding a weapon.
+	// Hand 1 is offset to the left for asymmetric dual-wield layout.
+	public Vector3 GetHandPosition(int handIndex)
 	{
-		get
-		{
-			if (_camera == null)
-				return Vector3.Zero;
+		if (_camera == null)
+			return Vector3.Zero;
 
-			// Position hand slightly forward and to the right of camera
-			return _camera.GlobalPosition
-				+ _camera.GlobalBasis.Z * -0.3f   // Forward
-				+ _camera.GlobalBasis.X * 0.2f    // Right
-				+ _camera.GlobalBasis.Y * -0.2f;  // Down
-		}
+		Vector3 base0 = _camera.GlobalPosition
+			+ _camera.GlobalBasis.Z * -0.3f   // Forward
+			+ _camera.GlobalBasis.X * 0.2f    // Right
+			+ _camera.GlobalBasis.Y * -0.2f;  // Down
+
+		return handIndex == 1
+			? base0 + _camera.GlobalBasis.X * -0.4f
+			: base0;
 	}
 
-	public Vector3 PrimaryHandForward => _camera != null
+	public Vector3 GetHandForward(int handIndex) => _camera != null
 		? -_camera.GlobalBasis.Z
 		: Vector3.Forward;
 
-	public Vector3 SecondaryHandPosition => PrimaryHandPosition + (_camera?.GlobalBasis.X ?? Vector3.Right) * -0.4f;
-
-	public Vector3 SecondaryHandForward => PrimaryHandForward;
+	// No controller nodes in flatscreen mode
+	public Node3D GetHandNode(int handIndex) => null;
 
 	public Camera3D Camera => _camera;
 
 	public Node3D Origin => _cameraHolder;
-
-	public Node3D PrimaryHandNode => null;
-
-	public Node3D SecondaryHandNode => null;
 
 	public void Initialize(Node parent)
 	{
@@ -82,12 +73,12 @@ public class FlatscreenDisplayMode : IDisplayMode
 		_cameraHolder.AddChild(_camera);
 
 		// Wire up mouse button events to IDisplayMode events
-		// Left click = primary button (shoot)
-		_camera.LeftClickPressed += () => PrimaryButtonPressed?.Invoke("trigger_click");
-		_camera.LeftClickReleased += () => PrimaryButtonReleased?.Invoke("trigger_click");
+		// Left click = hand 0 trigger (shoot)
+		_camera.LeftClickPressed += () => HandButtonPressed?.Invoke(0, "trigger_click");
+		_camera.LeftClickReleased += () => HandButtonReleased?.Invoke(0, "trigger_click");
 
-		// Right click = secondary button (use/push)
-		_camera.RightClickPressed += () => SecondaryButtonPressed?.Invoke("grip_click");
+		// Right click = hand 0 grip (use/push)
+		_camera.RightClickPressed += () => HandButtonPressed?.Invoke(0, "grip_click");
 	}
 
 	public void Update(double delta)

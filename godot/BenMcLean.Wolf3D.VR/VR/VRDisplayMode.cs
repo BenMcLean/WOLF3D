@@ -25,6 +25,7 @@ public enum VRPlayMode
 /// <summary>
 /// VR display mode implementation using OpenXR.
 /// Creates XROrigin3D with XRCamera3D and controller nodes.
+/// Hand 0 = right controller, hand 1 = left controller.
 /// </summary>
 public class VRDisplayMode : IDisplayMode
 {
@@ -50,9 +51,8 @@ public class VRDisplayMode : IDisplayMode
 	private const float SnapTurnThreshold = 0.5f;
 	private bool _snapTurnReady = true;
 
-	public event Action<string> PrimaryButtonPressed;
-	public event Action<string> PrimaryButtonReleased;
-	public event Action<string> SecondaryButtonPressed;
+	public event Action<int, string> HandButtonPressed;
+	public event Action<int, string> HandButtonReleased;
 
 	public bool IsVRActive => true;
 
@@ -60,25 +60,26 @@ public class VRDisplayMode : IDisplayMode
 
 	public float ViewerYRotation => _camera?.GlobalRotation.Y ?? 0f;
 
-	public Vector3 PrimaryHandPosition => _rightController?.GlobalPosition ?? ViewerPosition;
+	public Vector3 GetHandPosition(int handIndex) => handIndex == 1
+		? _leftController?.GlobalPosition ?? ViewerPosition
+		: _rightController?.GlobalPosition ?? ViewerPosition;
 
-	public Vector3 PrimaryHandForward => _rightController != null
-		? -_rightController.GlobalBasis.Z
-		: _camera != null ? -_camera.GlobalBasis.Z : Vector3.Forward;
+	public Vector3 GetHandForward(int handIndex)
+	{
+		if (handIndex == 1)
+			return _leftController != null
+				? -_leftController.GlobalBasis.Z
+				: _camera != null ? -_camera.GlobalBasis.Z : Vector3.Forward;
+		return _rightController != null
+			? -_rightController.GlobalBasis.Z
+			: _camera != null ? -_camera.GlobalBasis.Z : Vector3.Forward;
+	}
 
-	public Vector3 SecondaryHandPosition => _leftController?.GlobalPosition ?? ViewerPosition;
-
-	public Vector3 SecondaryHandForward => _leftController != null
-		? -_leftController.GlobalBasis.Z
-		: _camera != null ? -_camera.GlobalBasis.Z : Vector3.Forward;
+	public Node3D GetHandNode(int handIndex) => handIndex == 1 ? _leftController : _rightController;
 
 	public Camera3D Camera => _camera;
 
 	public Node3D Origin => _origin;
-
-	public Node3D PrimaryHandNode => _rightController;
-
-	public Node3D SecondaryHandNode => _leftController;
 
 	public VRDisplayMode(XRInterface xrInterface, VRPlayMode playMode = VRPlayMode.FiveDOF)
 	{
@@ -122,9 +123,11 @@ public class VRDisplayMode : IDisplayMode
 		_origin.AddChild(_rightController);
 
 		// Connect to controller button signals for event-driven input
-		_leftController.ButtonPressed += name => SecondaryButtonPressed?.Invoke(name);
-		_rightController.ButtonPressed += name => PrimaryButtonPressed?.Invoke(name);
-		_rightController.ButtonReleased += name => PrimaryButtonReleased?.Invoke(name);
+		// Hand 0 = right controller, hand 1 = left controller
+		_rightController.ButtonPressed += name => HandButtonPressed?.Invoke(0, name);
+		_rightController.ButtonReleased += name => HandButtonReleased?.Invoke(0, name);
+		_leftController.ButtonPressed += name => HandButtonPressed?.Invoke(1, name);
+		_leftController.ButtonReleased += name => HandButtonReleased?.Invoke(1, name);
 
 		// Enable XR on the viewport
 		if (_parent is Node node)

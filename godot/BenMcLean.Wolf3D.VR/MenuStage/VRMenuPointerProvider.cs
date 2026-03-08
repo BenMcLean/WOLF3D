@@ -8,6 +8,7 @@ namespace BenMcLean.Wolf3D.VR.MenuStage;
 /// Pointer provider for VR mode.
 /// Tracks VR controller ray intersections with the menu panel.
 /// Uses event-driven input from XRController3D button signals.
+/// Hand 0 = right controller, hand 1 = left controller.
 /// </summary>
 public class VRMenuPointerProvider : IMenuPointerProvider
 {
@@ -18,11 +19,11 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	private float _panelWidth;
 	private float _panelHeight;
 
-	// Event-driven button states
-	private bool _primarySelectPressed;
-	private bool _primaryCancelPressed;
-	private bool _secondarySelectPressed;
-	private bool _secondaryCancelPressed;
+	// Event-driven button states, indexed by hand (0 = right, 1 = left)
+	private bool _selectPressed0;
+	private bool _cancelPressed0;
+	private bool _selectPressed1;
+	private bool _cancelPressed1;
 
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
@@ -39,24 +40,21 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 		_displayMode = displayMode;
 
 		// Subscribe to controller button events
-		_displayMode.PrimaryButtonPressed += OnPrimaryButtonPressed;
-		_displayMode.SecondaryButtonPressed += OnSecondaryButtonPressed;
+		_displayMode.HandButtonPressed += OnHandButtonPressed;
 	}
 
-	private void OnPrimaryButtonPressed(string buttonName)
+	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
-		if (buttonName == "trigger_click")
-			_primarySelectPressed = true;
-		else if (buttonName == "grip_click")
-			_primaryCancelPressed = true;
-	}
-
-	private void OnSecondaryButtonPressed(string buttonName)
-	{
-		if (buttonName == "trigger_click")
-			_secondarySelectPressed = true;
-		else if (buttonName == "grip_click")
-			_secondaryCancelPressed = true;
+		if (handIndex == 0)
+		{
+			if (buttonName == "trigger_click") _selectPressed0 = true;
+			else if (buttonName == "grip_click") _cancelPressed0 = true;
+		}
+		else if (handIndex == 1)
+		{
+			if (buttonName == "trigger_click") _selectPressed1 = true;
+			else if (buttonName == "grip_click") _cancelPressed1 = true;
+		}
 	}
 
 	/// <summary>
@@ -93,28 +91,26 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 		}
 
 		// Capture and clear button states (they were set by event handlers)
-		bool primarySelect = _primarySelectPressed;
-		bool primaryCancel = _primaryCancelPressed;
-		bool secondarySelect = _secondarySelectPressed;
-		bool secondaryCancel = _secondaryCancelPressed;
-		_primarySelectPressed = false;
-		_primaryCancelPressed = false;
-		_secondarySelectPressed = false;
-		_secondaryCancelPressed = false;
+		bool select0 = _selectPressed0, cancel0 = _cancelPressed0;
+		bool select1 = _selectPressed1, cancel1 = _cancelPressed1;
+		_selectPressed0 = false;
+		_cancelPressed0 = false;
+		_selectPressed1 = false;
+		_cancelPressed1 = false;
 
-		// Cast ray from primary (right) controller
+		// Cast ray from hand 0 (right controller)
 		_primaryPointer = CastControllerRay(
-			_displayMode.PrimaryHandPosition,
-			_displayMode.PrimaryHandForward,
-			primarySelect,
-			primaryCancel);
+			_displayMode.GetHandPosition(0),
+			_displayMode.GetHandForward(0),
+			select0,
+			cancel0);
 
-		// Cast ray from secondary (left) controller
+		// Cast ray from hand 1 (left controller)
 		_secondaryPointer = CastControllerRay(
-			_displayMode.SecondaryHandPosition,
-			_displayMode.SecondaryHandForward,
-			secondarySelect,
-			secondaryCancel);
+			_displayMode.GetHandPosition(1),
+			_displayMode.GetHandForward(1),
+			select1,
+			cancel1);
 	}
 
 	/// <summary>

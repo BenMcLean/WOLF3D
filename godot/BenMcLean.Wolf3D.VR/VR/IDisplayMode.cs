@@ -26,26 +26,27 @@ public interface IDisplayMode
 	float ViewerYRotation { get; }
 
 	/// <summary>
-	/// Gets the primary (right) hand position in world space.
-	/// In VR: Right controller position. In flatscreen: Calculated from camera.
+	/// Gets the world-space position of the specified hand.
+	/// In VR: hand 0 = right controller, hand 1 = left controller.
+	/// In flatscreen: both hands calculated from camera.
 	/// </summary>
-	Vector3 PrimaryHandPosition { get; }
+	/// <param name="handIndex">0 = right/primary, 1 = left/secondary</param>
+	Vector3 GetHandPosition(int handIndex);
 
 	/// <summary>
-	/// Gets the primary hand forward direction (for aiming).
+	/// Gets the forward direction of the specified hand (for aiming).
+	/// In VR: controller orientation. In flatscreen: camera forward.
 	/// </summary>
-	Vector3 PrimaryHandForward { get; }
+	/// <param name="handIndex">0 = right/primary, 1 = left/secondary</param>
+	Vector3 GetHandForward(int handIndex);
 
 	/// <summary>
-	/// Gets the secondary (left) hand position in world space.
-	/// In VR: Left controller position. In flatscreen: Same as primary.
+	/// Gets the scene node for the specified hand.
+	/// In VR: the XRController3D for that hand. In flatscreen: null (no controller node).
+	/// Attach WeaponHandMesh as a child to position it with the hand.
 	/// </summary>
-	Vector3 SecondaryHandPosition { get; }
-
-	/// <summary>
-	/// Gets the secondary hand forward direction.
-	/// </summary>
-	Vector3 SecondaryHandForward { get; }
+	/// <param name="handIndex">0 = right/primary, 1 = left/secondary</param>
+	Node3D GetHandNode(int handIndex);
 
 	/// <summary>
 	/// The camera node (XRCamera3D or Camera3D).
@@ -57,20 +58,6 @@ public interface IDisplayMode
 	/// Position this to move the player in world space.
 	/// </summary>
 	Node3D Origin { get; }
-
-	/// <summary>
-	/// The node representing the primary (right) hand.
-	/// In VR: right XRController3D. In flatscreen: null (no controller node).
-	/// Attach WeaponHandMesh as a child to position it with the hand.
-	/// </summary>
-	Node3D PrimaryHandNode { get; }
-
-	/// <summary>
-	/// The node representing the secondary (left) hand.
-	/// In VR: left XRController3D. In flatscreen: null (no controller node).
-	/// Attach WeaponHandMesh as a child to position it with the hand.
-	/// </summary>
-	Node3D SecondaryHandNode { get; }
 
 	/// <summary>
 	/// Initialize the display mode. Called from _Ready().
@@ -85,25 +72,20 @@ public interface IDisplayMode
 	void Update(double delta);
 
 	/// <summary>
-	/// Event fired when a button is pressed on the primary (right) controller.
-	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
-	/// In flatscreen mode: left click = trigger_click.
+	/// Event fired when a button is pressed on any hand controller.
+	/// In VR: hand 0 = right controller, hand 1 = left controller.
+	/// In flatscreen: left click fires hand 0 trigger_click; right click fires hand 0 grip_click.
+	/// Parameters: handIndex (0/1), buttonName (e.g. "trigger_click", "grip_click").
 	/// </summary>
-	event Action<string> PrimaryButtonPressed;
+	event Action<int, string> HandButtonPressed;
 
 	/// <summary>
-	/// Event fired when a button is released on the primary (right) controller.
-	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
-	/// Used for semi-auto weapon trigger release.
+	/// Event fired when a button is released on any hand controller.
+	/// In VR: hand 0 = right controller, hand 1 = left controller.
+	/// In flatscreen: left click release fires hand 0 trigger_click.
+	/// Parameters: handIndex (0/1), buttonName (e.g. "trigger_click", "grip_click").
 	/// </summary>
-	event Action<string> PrimaryButtonReleased;
-
-	/// <summary>
-	/// Event fired when a button is pressed on the secondary (left) controller.
-	/// Parameter is the button name (e.g., "trigger_click", "grip_click").
-	/// In flatscreen mode: right click = grip_click (use/push).
-	/// </summary>
-	event Action<string> SecondaryButtonPressed;
+	event Action<int, string> HandButtonReleased;
 
 	/// <summary>
 	/// Get movement input vector from thumbstick or keyboard.

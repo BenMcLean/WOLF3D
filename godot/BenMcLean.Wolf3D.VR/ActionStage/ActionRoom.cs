@@ -340,20 +340,18 @@ void sky() {
 		}
 
 		// Attach WeaponHandMesh to each VR controller so the weapon renders at the hand position.
-		// Slot 0 = right/primary hand, slot 1 = left/secondary hand.
+		// Hand 0 = right controller (slot 0), hand 1 = left controller (slot 1).
 		if (_displayMode.IsVRActive)
 		{
-			if (_displayMode.PrimaryHandNode != null)
+			for (int hand = 0; hand <= 1; hand++)
 			{
-				WeaponHandMesh primaryHand = new(VRAssetManager.SpriteTextures, 0) { Name = "WeaponHandMesh0" };
-				_displayMode.PrimaryHandNode.AddChild(primaryHand);
-				primaryHand.Subscribe(_simulatorController.Simulator);
-			}
-			if (_displayMode.SecondaryHandNode != null)
-			{
-				WeaponHandMesh secondaryHand = new(VRAssetManager.SpriteTextures, 1) { Name = "WeaponHandMesh1" };
-				_displayMode.SecondaryHandNode.AddChild(secondaryHand);
-				secondaryHand.Subscribe(_simulatorController.Simulator);
+				Node3D handNode = _displayMode.GetHandNode(hand);
+				if (handNode != null)
+				{
+					WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand) { Name = $"WeaponHandMesh{hand}" };
+					handNode.AddChild(handMesh);
+					handMesh.Subscribe(_simulatorController.Simulator);
+				}
 			}
 		}
 		_simulatorController.Simulator.EmitWeaponState();
@@ -386,11 +384,8 @@ void sky() {
 		_simulatorController.PlayerDied += OnPlayerDied;
 
 		// Subscribe to display mode button events for shooting and using objects
-		// Left click (flatscreen) or right trigger (VR) = shoot
-		_displayMode.PrimaryButtonPressed += OnPrimaryButtonPressed;
-		_displayMode.PrimaryButtonReleased += OnPrimaryButtonReleased;
-		// Right click (flatscreen) or left grip (VR) = use/push
-		_displayMode.SecondaryButtonPressed += OnSecondaryButtonPressed;
+		_displayMode.HandButtonPressed += OnHandButtonPressed;
+		_displayMode.HandButtonReleased += OnHandButtonReleased;
 
 		// Capture mouse for FPS controls in flatscreen mode
 		if (!_displayMode.IsVRActive)
@@ -400,7 +395,7 @@ void sky() {
 		_pixelPerfectAiming = new PixelPerfectAiming(this);
 
 		// Create debug aim indicator (temporary - won't be in final game)
-		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode.Camera);
+		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode);
 		AddChild(_aimIndicator);
 		// Wire status bar events for flatscreen mode before OnNewGame script runs.
 		// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
@@ -519,57 +514,55 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Handles primary button press (left click in flatscreen, right trigger in VR).
-	/// Fires the equipped weapon.
+	/// Handles a button press on any hand controller.
+	/// trigger_click fires that hand's weapon slot; grip_click uses/pushes objects.
 	/// </summary>
-	private void OnPrimaryButtonPressed(string buttonName)
+	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
 		if (buttonName == "trigger_click")
-			FireWeapon();
-	}
-
-	/// <summary>
-	/// Handles primary button release (left click release in flatscreen, trigger release in VR).
-	/// Required for semi-auto weapons to fire again.
-	/// </summary>
-	private void OnPrimaryButtonReleased(string buttonName)
-	{
-		if (buttonName == "trigger_click")
-			ReleaseWeaponTrigger();
-	}
-
-	/// <summary>
-	/// Handles secondary button press (right click in flatscreen, left grip in VR).
-	/// Uses doors, pushwalls, or elevators.
-	/// </summary>
-	private void OnSecondaryButtonPressed(string buttonName)
-	{
-		if (buttonName == "grip_click")
+			FireWeapon(handIndex);
+		else if (buttonName == "grip_click")
 			UseObjectPlayerIsFacing();
 	}
 
 	/// <summary>
-	/// Fires the weapon in the primary slot (slot 0).
+	/// Handles a button release on any hand controller.
+	/// Releases the trigger for the corresponding weapon slot (required for semi-auto).
+	/// </summary>
+	private void OnHandButtonReleased(int handIndex, string buttonName)
+	{
+		if (buttonName == "trigger_click")
+			ReleaseWeaponTrigger(handIndex);
+	}
+
+	/// <summary>
+	/// Fires the weapon in the specified slot.
 	/// Signals the simulator that the trigger was pulled.
 	/// Hit detection is handled by the weapon state machine via HitDetection callback.
 	/// </summary>
-	private void FireWeapon()
+	private void FireWeapon(int slotIndex)
 	{
-		_simulatorController.FireWeapon(0);
+		_simulatorController.FireWeapon(slotIndex);
 	}
 
 	/// <summary>
 	/// Performs a raycast for weapon hit detection.
 	/// Called by the simulator's weapon state machine on fire frames (A_PistolAttack, etc.).
 	/// Based on WL_AGENT.C:GunAttack performing raycast on each fire frame in T_Attack.
+	/// In VR: slot 0 = right controller, slot 1 = left controller.
+	/// In flatscreen: always uses the camera.
 	/// </summary>
 	/// <param name="slotIndex">Weapon slot index</param>
 	/// <returns>Hit actor index, or null if miss</returns>
 	private int? PerformWeaponRaycast(int slotIndex)
 	{
-		Vector3 rayOrigin = _displayMode.Camera.GlobalPosition;
-		Vector3 rayDirection = -_displayMode.Camera.GlobalTransform.Basis.Z;
-		Vector3 cameraForward = rayDirection;
+		Vector3 cameraForward = -_displayMode.Camera.GlobalTransform.Basis.Z;
+		Vector3 rayOrigin = _displayMode.IsVRActive
+			? _displayMode.GetHandPosition(slotIndex)
+			: _displayMode.Camera.GlobalPosition;
+		Vector3 rayDirection = _displayMode.IsVRActive
+			? _displayMode.GetHandForward(slotIndex)
+			: cameraForward;
 
 		PixelPerfectAiming.AimHitResult hitResult = _pixelPerfectAiming.Raycast(rayOrigin, rayDirection, cameraForward);
 
@@ -579,12 +572,12 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Releases the trigger for the primary weapon slot.
+	/// Releases the trigger for the specified weapon slot.
 	/// Required for semi-auto weapons to allow firing again.
 	/// </summary>
-	private void ReleaseWeaponTrigger()
+	private void ReleaseWeaponTrigger(int slotIndex)
 	{
-		_simulatorController.ReleaseWeaponTrigger(0);
+		_simulatorController.ReleaseWeaponTrigger(slotIndex);
 	}
 
 	/// <summary>
@@ -735,9 +728,8 @@ void sky() {
 	{
 		// Unsubscribe from display mode events to prevent ObjectDisposedException
 		// when old ActionStage is freed during level transitions
-		_displayMode.PrimaryButtonPressed -= OnPrimaryButtonPressed;
-		_displayMode.PrimaryButtonReleased -= OnPrimaryButtonReleased;
-		_displayMode.SecondaryButtonPressed -= OnSecondaryButtonPressed;
+		_displayMode.HandButtonPressed -= OnHandButtonPressed;
+		_displayMode.HandButtonReleased -= OnHandButtonReleased;
 
 		// Unsubscribe from simulator events
 		if (_simulatorController != null)
