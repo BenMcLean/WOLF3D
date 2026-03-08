@@ -33,7 +33,7 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 		MeshInstance3D mesh = new()
 		{
 			Name = "Mesh",
-			Mesh = new BoxMesh { Size = Vector3.One },
+			Mesh = new QuadMesh { Size = Vector2.One },
 			MaterialOverride = _material,
 			RotationDegrees = new Vector3(90f, 0f, 0f),
 			Scale = Constants.WeaponScale,

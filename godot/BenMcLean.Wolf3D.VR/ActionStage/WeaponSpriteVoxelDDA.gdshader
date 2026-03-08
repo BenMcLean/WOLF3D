@@ -1,21 +1,40 @@
 shader_type spatial;
-render_mode cull_back, unshaded, depth_draw_always;
+render_mode cull_disabled, unshaded, depth_draw_always;
 
 uniform sampler2D sprite_texture : source_color;
 uniform int resolution = 64;
 
 void vertex() {
-	// Ray construction is fully screen-space in fragment(); no per-vertex data needed.
+	// Billboard: make the quad always face the camera so it is always parallel to the
+	// image plane. A box mesh suffers near-plane clipping when corners point toward the
+	// camera (e.g. weapon held upside-down in VR), creating a straight-line cutoff that
+	// differs per eye. A billboard is never cut diagonally by the near plane.
+	//
+	// Sized at 2× the model scale, which exceeds the unit-cube diagonal (√3 ≈ 1.73),
+	// so the billboard always covers the full box projection from any angle.
+	//
+	// INV_VIEW_MATRIX columns give the camera basis in world space:
+	//   [0] = right, [1] = up, [2] = -forward
+	vec3 cam_right = normalize(INV_VIEW_MATRIX[0].xyz);
+	vec3 cam_up    = normalize(INV_VIEW_MATRIX[1].xyz);
+
+	// Uniform scale from MODEL_MATRIX column length (works even when rotation is present)
+	float scale = length(MODEL_MATRIX[0].xyz);
+
+	vec3 world_center = MODEL_MATRIX[3].xyz;
+	vec3 world_pos = world_center
+		+ VERTEX.x * cam_right * scale * 2.0
+		+ VERTEX.y * cam_up    * scale * 2.0;
+
+	// Convert world_pos back to local space; the pipeline re-applies MODEL_MATRIX to
+	// produce the intended world-space billboard vertex.
+	VERTEX = (inverse(MODEL_MATRIX) * vec4(world_pos, 1.0)).xyz;
 }
 
 void fragment() {
-	// Reconstruct camera ray from screen space for consistent rendering across all box faces.
-	// Using mesh-surface rays (v_vertex_local) causes "glass prism" distortion at edges:
-	// adjacent faces interpolate v_vertex_local differently, producing different ray directions
-	// for the same screen pixel. Screen-space reconstruction gives consistent rays regardless
-	// of which mesh face the fragment belongs to.
-
-	// INV_VIEW_MATRIX and INV_PROJECTION_MATRIX are per-eye in Godot 4 VR multiview.
+	// Reconstruct camera ray from screen space for consistent rendering across all mesh
+	// fragments. INV_VIEW_MATRIX and INV_PROJECTION_MATRIX are per-eye in Godot 4 VR
+	// multiview, so this is VR-safe.
 	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
 
 	vec4 view_ray = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.0, 1.0);
