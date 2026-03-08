@@ -19,6 +19,7 @@ public partial class MenuRoom : Node3D, IRoom
 	private MenuManager _menuManager;
 	private MeshInstance3D _menuPanel;
 	private ColorRect _marginBackground;
+	private WorldEnvironment _worldEnvironment;
 	private bool _menuPanelPositioned;
 	private VRMenuPointerProvider _vrPointerProvider;
 	private FlatscreenMenuPointerProvider _flatscreenPointerProvider;
@@ -268,18 +269,19 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuManager.SetPointerProvider(_vrPointerProvider);
 
 		// Add simple environment lighting for the VR space
-		WorldEnvironment worldEnvironment = new()
+		_worldEnvironment = new()
 		{
 			Environment = new Godot.Environment
 			{
 				BackgroundMode = Godot.Environment.BGMode.Color,
-				BackgroundColor = new Color(0.1f, 0.1f, 0.15f), // Dark blue-gray
+				BackgroundColor = _menuManager.Renderer.CurrentBordColor,
 				AmbientLightSource = Godot.Environment.AmbientSource.Color,
 				AmbientLightColor = Colors.White,
 				AmbientLightEnergy = 0.3f,
 			}
 		};
-		AddChild(worldEnvironment);
+		AddChild(_worldEnvironment);
+		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
 	}
 
 	/// <summary>
@@ -398,6 +400,8 @@ public partial class MenuRoom : Node3D, IRoom
 	{
 		if (_marginBackground != null)
 			_marginBackground.Color = color;
+		if (_worldEnvironment != null)
+			_worldEnvironment.Environment.BackgroundColor = color;
 	}
 
 	public override void _Input(InputEvent @event)

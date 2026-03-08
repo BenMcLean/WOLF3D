@@ -81,6 +81,18 @@ public partial class SetupRoom : Node3D, IRoom
 		if (_displayMode.Camera is null)
 			return;
 
+		AddChild(new WorldEnvironment()
+		{
+			Environment = new Godot.Environment
+			{
+				BackgroundMode = Godot.Environment.BGMode.Color,
+				BackgroundColor = Colors.Black,
+				AmbientLightSource = Godot.Environment.AmbientSource.Color,
+				AmbientLightColor = Colors.White,
+				AmbientLightEnergy = 1.0f,
+			}
+		});
+
 		MeshInstance3D quad = new MeshInstance3D()
 		{
 			Mesh = new QuadMesh()
