@@ -8,8 +8,8 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// Full-screen color overlay for gameplay flash effects (damage, bonus pickups).
 /// WL_PLAY.C:InitRedShifts - bonus flash shifts palette toward (R=64,G=62,B=0) in VGA 6-bit,
 /// which is yellow (0xFFF800 in 8-bit RGB), not white despite the "whiteshifts" variable name.
-/// Uses a CanvasLayer with ColorRect to guarantee the overlay covers everything on screen,
-/// regardless of 3D geometry depth.
+/// Uses a CanvasLayer with ColorRect for flatscreen, and a veil quad parented to the XRCamera3D
+/// for VR (same pattern as ScreenFadeOverlay) so the effect appears in the headset.
 /// Scene transition fading is handled separately by ScreenFadeOverlay (CanvasLayer 101).
 /// </summary>
 public partial class ScreenFlashOverlay : Node
@@ -28,6 +28,12 @@ public partial class ScreenFlashOverlay : Node
 	private float flashAlpha;
 	private float flashDecayRate; // Alpha units per second
 	private Color flashColor;
+
+	// VR flash: veil quad parented to the XRCamera3D so it is always inside the view frustum.
+	// Vertex shader outputs POSITION in NDC via UV, bypassing projection and near/far clipping.
+	// Parenting to the camera keeps the mesh inside the view frustum.
+	private MeshInstance3D _vrFlashMesh;
+	private ShaderMaterial _vrFlashMaterial;
 
 	public override void _Ready()
 	{
@@ -54,6 +60,62 @@ public partial class ScreenFlashOverlay : Node
 			Visible = false,
 		};
 		canvasLayer.AddChild(colorRect);
+	}
+
+	/// <summary>
+	/// Attaches a veil quad to the given VR camera so flash effects appear in the headset.
+	/// The quad is a child of the camera (not of this node) so it always stays inside
+	/// the view frustum — parenting to a world-space node causes frustum culling.
+	/// Call after each room transition; pass null to detach.
+	/// </summary>
+	public void SetVRCamera(Camera3D camera)
+	{
+		_vrFlashMesh = null; // Old mesh was freed with old camera
+
+		if (camera == null)
+			return;
+
+		// Create shader material once; it persists across camera changes because
+		// ScreenFlashOverlay holds the reference.
+		_vrFlashMaterial ??= new ShaderMaterial
+		{
+			Shader = new Shader
+			{
+				// Same pattern as ScreenFadeOverlay:
+				// skip_vertex_transform lets the vertex shader set POSITION directly in NDC.
+				// UV-based position (2*UV-1) maps the (1,1) quad to full clip space [-1,1].
+				// Parenting to the camera keeps the mesh inside the view frustum.
+				Code = """
+shader_type spatial;
+render_mode blend_mix, skip_vertex_transform, cull_disabled, unshaded, depth_draw_never, depth_test_disabled;
+
+uniform vec4 color : source_color;
+
+void vertex() {
+	POSITION = vec4(2.0 * UV - 1.0, 0.0, 1.0);
+}
+
+void fragment() {
+	ALBEDO = color.rgb;
+	ALPHA = color.a;
+}
+""",
+			},
+		};
+
+		_vrFlashMesh = new MeshInstance3D
+		{
+			Name = "VRFlashQuad",
+			Mesh = new QuadMesh { Size = new Vector2(1f, 1f) },
+			MaterialOverride = _vrFlashMaterial,
+			CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+			Visible = false,
+		};
+		camera.AddChild(_vrFlashMesh);
+
+		// Sync current flash state immediately in case a flash is mid-animation
+		_vrFlashMaterial.SetShaderParameter("color", new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha));
+		_vrFlashMesh.Visible = flashAlpha > 0f;
 	}
 
 	/// <summary>
@@ -97,13 +159,26 @@ public partial class ScreenFlashOverlay : Node
 
 	private void UpdateOverlay()
 	{
+		// Flatscreen: CanvasLayer ColorRect (also covers the VR mirror window)
 		if (flashAlpha <= 0f)
 		{
 			colorRect.Visible = false;
-			return;
+		}
+		else
+		{
+			colorRect.Visible = true;
+			colorRect.Color = new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha);
 		}
 
-		colorRect.Visible = true;
-		colorRect.Color = new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha);
+		// VR: veil quad parented to XRCamera3D, visible in both headset eyes
+		if (_vrFlashMesh != null && GodotObject.IsInstanceValid(_vrFlashMesh))
+		{
+			_vrFlashMesh.Visible = flashAlpha > 0f;
+			_vrFlashMaterial.SetShaderParameter("color", new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha));
+		}
+		else if (_vrFlashMesh != null)
+		{
+			_vrFlashMesh = null; // Freed with old camera
+		}
 	}
 }

@@ -370,10 +370,11 @@ void sky() {
 		_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
 
 		// Create screen flash overlay (palette-shift effects: damage flash, bonus flash, fades)
-		// Uses CanvasLayer so it covers everything on screen regardless of 3D depth
+		// Uses CanvasLayer for flatscreen and a veil quad on the XRCamera3D for VR headset
 		_screenFlashOverlay = new ScreenFlashOverlay();
 		AddChild(_screenFlashOverlay);
 		_screenFlashOverlay.Subscribe(_simulatorController);
+		_screenFlashOverlay.SetVRCamera(_displayMode.IsVRActive ? _displayMode.Camera : null);
 
 		// Subscribe to elevator activation for level transitions
 		_simulatorController.ElevatorActivated += OnElevatorActivated;
