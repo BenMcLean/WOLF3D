@@ -12,8 +12,11 @@ varying vec3 v_ray_origin;
 void vertex() {
 	// VERTEX is in local space in vertex() — pass through directly
 	v_vertex_local = VERTEX;
-	// Compute camera-in-local-space once per vertex instead of per fragment
-	v_ray_origin = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+	// Derive per-eye camera position from INV_VIEW_MATRIX for VR correctness.
+	// CAMERA_POSITION_WORLD only reflects the head center, not the per-eye IPD offset.
+	// INV_VIEW_MATRIX[3].xyz is the world-space position of the current eye.
+	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
+	v_ray_origin = (inverse(MODEL_MATRIX) * vec4(camera_world, 1.0)).xyz;
 }
 
 void fragment() {
