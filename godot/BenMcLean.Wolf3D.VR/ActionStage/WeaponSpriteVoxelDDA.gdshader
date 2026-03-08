@@ -1,25 +1,23 @@
 shader_type spatial;
-render_mode cull_disabled, unshaded, depth_draw_always;
+render_mode cull_back, unshaded, depth_draw_always;
 
 uniform sampler2D sprite_texture : source_color;
 uniform int resolution = 64;
 
 // Local-space vertex position, interpolated across each face
 varying vec3 v_vertex_local;
-// Camera position in local space — same for all vertices (depends only on uniforms)
-varying vec3 v_ray_origin;
 
 void vertex() {
 	// VERTEX is in local space in vertex() — pass through directly
 	v_vertex_local = VERTEX;
-	// Derive per-eye camera position from INV_VIEW_MATRIX for VR correctness.
-	// CAMERA_POSITION_WORLD only reflects the head center, not the per-eye IPD offset.
-	// INV_VIEW_MATRIX[3].xyz is the world-space position of the current eye.
-	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
-	v_ray_origin = (inverse(MODEL_MATRIX) * vec4(camera_world, 1.0)).xyz;
 }
 
 void fragment() {
+	// Compute the per-eye camera position in local space here in the fragment shader.
+	// INV_VIEW_MATRIX is per-eye in fragment() in Godot 4 VR multiview.
+	// INV_VIEW_MATRIX[3].xyz is the world-space eye position for the current eye.
+	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
+	vec3 v_ray_origin = (inverse(MODEL_MATRIX) * vec4(camera_world, 1.0)).xyz;
 
 	vec3 ray_dir = normalize(v_vertex_local - v_ray_origin);
 
