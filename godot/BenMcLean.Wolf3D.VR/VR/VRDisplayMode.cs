@@ -51,6 +51,15 @@ public class VRDisplayMode : IDisplayMode
 	private const float SnapTurnThreshold = 0.5f;
 	private bool _snapTurnReady = true;
 
+	// Smooth turn: continuous rotation at up to 90 degrees per second at full stick deflection
+	private const float SmoothTurnSpeed = Mathf.Pi / 2f;
+
+	// Run speed: 2.5× walk speed, matching flatscreen Shift multiplier
+	private const float RunSpeedMultiplier = 2.5f;
+
+	private bool _smoothTurnEnabled = false;
+	private bool _isRunning = false;
+
 	public event Action<int, string> HandButtonPressed;
 	public event Action<int, string> HandButtonReleased;
 
@@ -138,9 +147,9 @@ public class VRDisplayMode : IDisplayMode
 
 	public void Update(double delta)
 	{
-		// Apply joystick locomotion and snap turn before height and collision corrections
+		// Apply joystick locomotion and turning before height and collision corrections
 		ApplyLocomotion((float)delta);
-		ApplySnapTurn();
+		ApplyTurn((float)delta);
 
 		// VR tracking is handled automatically by OpenXR
 		// In 5DOF mode, lock the camera height to HalfTileHeight by adjusting the origin Y.
@@ -176,8 +185,20 @@ public class VRDisplayMode : IDisplayMode
 		Vector3 forward = new Vector3(-_camera.GlobalBasis.Z.X, 0f, -_camera.GlobalBasis.Z.Z).Normalized();
 		Vector3 right = new Vector3(_camera.GlobalBasis.X.X, 0f, _camera.GlobalBasis.X.Z).Normalized();
 
-		Vector3 movement = (forward * stick.Y + right * stick.X) * VRMovementSpeed * delta;
+		float speed = _isRunning ? VRMovementSpeed * RunSpeedMultiplier : VRMovementSpeed;
+		Vector3 movement = (forward * stick.Y + right * stick.X) * speed * delta;
 		_origin.GlobalPosition += movement;
+	}
+
+	/// <summary>
+	/// Dispatches to snap or smooth turning based on the current turn mode.
+	/// </summary>
+	private void ApplyTurn(float delta)
+	{
+		if (_smoothTurnEnabled)
+			ApplySmoothTurn(delta);
+		else
+			ApplySnapTurn();
 	}
 
 	/// <summary>
@@ -211,6 +232,38 @@ public class VRDisplayMode : IDisplayMode
 		_origin.RotateY(angle);
 		Vector3 hmdAfter = _camera.GlobalPosition;
 		_origin.GlobalPosition -= hmdAfter - hmdBefore;
+	}
+
+	/// <summary>
+	/// Continuously rotates the XROrigin based on the right thumbstick at SmoothTurnSpeed.
+	/// The rotation is performed around the HMD world position to avoid positional drift.
+	/// </summary>
+	private void ApplySmoothTurn(float delta)
+	{
+		if (_origin == null || _rightController == null || _camera == null)
+			return;
+
+		float x = _rightController.GetVector2("primary").X;
+
+		if (Mathf.Abs(x) < SnapTurnThreshold)
+			return;
+
+		float angle = -x * SmoothTurnSpeed * delta;
+
+		// Rotate around the HMD world position so the player's viewpoint doesn't shift
+		Vector3 hmdBefore = _camera.GlobalPosition;
+		_origin.RotateY(angle);
+		Vector3 hmdAfter = _camera.GlobalPosition;
+		_origin.GlobalPosition -= hmdAfter - hmdBefore;
+	}
+
+	public void ToggleRunning() => _isRunning = !_isRunning;
+
+	public void ToggleTurnMode()
+	{
+		_smoothTurnEnabled = !_smoothTurnEnabled;
+		// Reset snap turn debounce so the first snap after switching modes fires cleanly
+		_snapTurnReady = true;
 	}
 
 	/// <summary>

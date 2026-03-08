@@ -103,4 +103,17 @@ public interface IDisplayMode
 	/// </summary>
 	/// <param name="validator">Callback that takes (currentX, currentZ, desiredX, desiredZ) and returns validated (X, Z)</param>
 	void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator);
+
+	/// <summary>
+	/// Toggles between walk and run speed.
+	/// In VR: multiplies locomotion speed by RunSpeedMultiplier.
+	/// In flatscreen: no-op (Shift key handles running).
+	/// </summary>
+	void ToggleRunning();
+
+	/// <summary>
+	/// Toggles between snap turn (45° increments, default) and smooth continuous turn.
+	/// In VR: switches turn mode. In flatscreen: no-op.
+	/// </summary>
+	void ToggleTurnMode();
 }

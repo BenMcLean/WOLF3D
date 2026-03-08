@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.StatusBar;
@@ -516,6 +517,9 @@ void sky() {
 	/// <summary>
 	/// Handles a button press on any hand controller.
 	/// trigger_click fires that hand's weapon slot; grip_click uses/pushes objects.
+	/// ax_button cycles weapon backward; by_button cycles weapon forward (per hand).
+	/// menu_button (left hand) returns to main menu.
+	/// primary_click (left hand) toggles running; primary_click (right hand) toggles turn mode.
 	/// In VR, grip uses the controller's own position and pointing direction.
 	/// In flatscreen, grip uses the camera direction (single cursor).
 	/// </summary>
@@ -529,6 +533,19 @@ void sky() {
 				UseObjectHandIsFacing(handIndex);
 			else
 				UseObjectPlayerIsFacing();
+		}
+		else if (buttonName == "ax_button")
+			CycleWeapon(handIndex, -1);
+		else if (buttonName == "by_button")
+			CycleWeapon(handIndex, +1);
+		else if (buttonName == "menu_button" && handIndex == 1)
+			PendingReturnToMenu = true;
+		else if (buttonName == "primary_click")
+		{
+			if (handIndex == 0)
+				_displayMode.ToggleTurnMode();
+			else
+				_displayMode.ToggleRunning();
 		}
 	}
 
@@ -598,6 +615,42 @@ void sky() {
 	}
 
 	/// <summary>
+	/// Cycles to the previous (direction = -1) or next (direction = +1) weapon the player owns
+	/// for the specified hand slot. Wraps around. Skips weapons not in inventory.
+	/// </summary>
+	private void CycleWeapon(int handIndex, int direction)
+	{
+		WeaponCollection collection = _simulatorController.Simulator?.WeaponCollection;
+		if (collection == null)
+			return;
+
+		List<int> weaponNumbers = collection.Weapons.Values
+			.OrderBy(w => w.Number)
+			.Select(w => w.Number)
+			.ToList();
+		if (weaponNumbers.Count == 0)
+			return;
+
+		int currentNumber = _simulatorController.Simulator.Inventory.GetValue($"SelectedWeapon{handIndex}");
+		int currentIdx = weaponNumbers.IndexOf(currentNumber);
+		if (currentIdx < 0)
+			currentIdx = 0;
+
+		// Step through weapons in the requested direction, skipping unowned ones
+		for (int i = 1; i <= weaponNumbers.Count; i++)
+		{
+			int nextIdx = ((currentIdx + direction * i) % weaponNumbers.Count + weaponNumbers.Count) % weaponNumbers.Count;
+			int nextNumber = weaponNumbers[nextIdx];
+			if (collection.TryGetWeaponByNumber(nextNumber, out WeaponInfo weaponInfo)
+				&& _simulatorController.Simulator.Inventory.Has(WeaponCollection.GetInventoryKey(nextNumber)))
+			{
+				_simulatorController.SwitchWeapon(handIndex, weaponInfo.Name);
+				return;
+			}
+		}
+	}
+
+	/// <summary>
 	/// Finds and operates the door, pushwall, or elevator the player is facing.
 	/// Projects 1 WallWidth forward from camera position/rotation and checks that tile.
 	/// WL_AGENT.C:Cmd_Use - checks for doors, pushwalls, and elevators.
@@ -648,16 +701,17 @@ void sky() {
 	/// <summary>
 	/// VR: finds and operates the door, pushwall, or elevator reachable by the specified hand.
 	///
-	/// Scenario 1 — controller in a navigable tile, pointing at the target:
-	///   The controller's pointing direction (snapped to cardinal) selects the adjacent target tile.
-	///   The push direction is the tile-relationship direction (controller tile → target tile),
-	///   which equals the snapped pointing direction.
-	///
-	/// Scenario 2 — controller extended into the target tile itself:
-	///   The controller's tile is not navigable (it is the pushable tile).
+	/// Scenario 2 — controller extended into the target tile itself (checked first):
+	///   The controller's tile contains a door, pushwall, or elevator switch.
 	///   Valid when the headset is in a navigable tile cardinally adjacent to the controller tile.
 	///   Push direction is determined solely by the tile relationship (headset tile → controller tile),
 	///   preventing sideways pushes regardless of where the controller is pointing.
+	///   Note: door tiles are navigable in MapAnalysis, so we must check for objects in the
+	///   controller's tile before falling through to the pointer-based scenario.
+	///
+	/// Scenario 1 — controller in a navigable tile, pointing at the target:
+	///   The controller's pointing direction (snapped to cardinal) selects the adjacent target tile.
+	///   The push direction equals the tile-relationship direction (controller tile → target tile).
 	/// </summary>
 	private void UseObjectHandIsFacing(int handIndex)
 	{
@@ -667,36 +721,43 @@ void sky() {
 			return;
 		ushort handTileX = (ushort)handTileXInt, handTileY = (ushort)handTileYInt;
 
-		if (MapAnalysis.IsNavigable(handTileX, handTileY))
+		// Scenario 2: controller is in the target tile itself.
+		// Checked first because door tiles are navigable, and we must not look past them.
+		if (HasUsableObject(handTileX, handTileY))
 		{
-			// Scenario 1: controller in a navigable tile — find target via pointing direction
-			Vector3 horizontal = new Vector3(_displayMode.GetHandForward(handIndex).X, 0f, _displayMode.GetHandForward(handIndex).Z);
-			if (horizontal.LengthSquared() < 0.0001f)
-				return; // Pointing straight up or down
-
-			Direction dir = horizontal.ToCardinalDirection();
-			if (TryGetAdjacentTile(handTileX, handTileY, dir, out ushort targetX, out ushort targetY))
-				TryUseObjectAtTile(targetX, targetY, dir);
-		}
-		else
-		{
-			// Scenario 2: controller extended into the target tile itself.
-			// The headset must be in a navigable tile cardinally adjacent to the controller tile.
-			// Push direction is from headset tile → controller tile (tile relationship only).
 			Vector3 viewerPos = _displayMode.ViewerPosition;
 			int viewerTileXInt = viewerPos.X.ToTile(), viewerTileYInt = viewerPos.Z.ToTile();
-			if (viewerTileXInt < 0 || viewerTileYInt < 0)
-				return;
-			ushort viewerTileX = (ushort)viewerTileXInt, viewerTileY = (ushort)viewerTileYInt;
-
-			if (!MapAnalysis.IsNavigable(viewerTileX, viewerTileY))
-				return;
-
-			// Direction from headset tile to controller tile must be cardinal
-			if (GetCardinalDirection(viewerTileX, viewerTileY, handTileX, handTileY) is Direction pushDir)
-				TryUseObjectAtTile(handTileX, handTileY, pushDir);
+			if (viewerTileXInt >= 0 && viewerTileYInt >= 0)
+			{
+				ushort viewerTileX = (ushort)viewerTileXInt, viewerTileY = (ushort)viewerTileYInt;
+				if (MapAnalysis.IsNavigable(viewerTileX, viewerTileY)
+					&& GetCardinalDirection(viewerTileX, viewerTileY, handTileX, handTileY) is Direction pushDir)
+					TryUseObjectAtTile(handTileX, handTileY, pushDir);
+			}
+			return; // Controller is in an object tile; Scenario 1 does not apply
 		}
+
+		// Scenario 1: controller in a navigable tile, pointing at the adjacent target.
+		if (!MapAnalysis.IsNavigable(handTileX, handTileY))
+			return;
+
+		Vector3 handForward = _displayMode.GetHandForward(handIndex);
+		Vector3 horizontal = new Vector3(handForward.X, 0f, handForward.Z);
+		if (horizontal.LengthSquared() < 0.0001f)
+			return; // Pointing straight up or down
+
+		Direction dir = horizontal.ToCardinalDirection();
+		if (TryGetAdjacentTile(handTileX, handTileY, dir, out ushort targetX, out ushort targetY))
+			TryUseObjectAtTile(targetX, targetY, dir);
 	}
+
+	/// <summary>
+	/// Returns true if the given tile contains a door, pushwall, or elevator switch.
+	/// </summary>
+	private bool HasUsableObject(ushort tileX, ushort tileY) =>
+		FindDoorAtTile(tileX, tileY).HasValue
+		|| FindPushWallAtTile(tileX, tileY).HasValue
+		|| IsElevatorAtTile(tileX, tileY);
 
 	/// <summary>
 	/// Tries to operate a door, pushwall, or elevator at the given tile.

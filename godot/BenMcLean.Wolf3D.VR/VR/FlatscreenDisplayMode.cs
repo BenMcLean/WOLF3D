@@ -109,4 +109,10 @@ public class FlatscreenDisplayMode : IDisplayMode
 	{
 		_camera?.SetMovementValidator(validator);
 	}
+
+	// Running is handled by Shift key in flatscreen mode
+	public void ToggleRunning() { }
+
+	// Turn mode only applies in VR
+	public void ToggleTurnMode() { }
 }
