@@ -4,22 +4,27 @@ render_mode cull_back, unshaded, depth_draw_always;
 uniform sampler2D sprite_texture : source_color;
 uniform int resolution = 64;
 
-// Local-space vertex position, interpolated across each face
-varying vec3 v_vertex_local;
-
 void vertex() {
-	// VERTEX is in local space in vertex() — pass through directly
-	v_vertex_local = VERTEX;
+	// Ray construction is fully screen-space in fragment(); no per-vertex data needed.
 }
 
 void fragment() {
-	// Compute the per-eye camera position in local space here in the fragment shader.
-	// INV_VIEW_MATRIX is per-eye in fragment() in Godot 4 VR multiview.
-	// INV_VIEW_MATRIX[3].xyz is the world-space eye position for the current eye.
-	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
-	vec3 v_ray_origin = (inverse(MODEL_MATRIX) * vec4(camera_world, 1.0)).xyz;
+	// Reconstruct camera ray from screen space for consistent rendering across all box faces.
+	// Using mesh-surface rays (v_vertex_local) causes "glass prism" distortion at edges:
+	// adjacent faces interpolate v_vertex_local differently, producing different ray directions
+	// for the same screen pixel. Screen-space reconstruction gives consistent rays regardless
+	// of which mesh face the fragment belongs to.
 
-	vec3 ray_dir = normalize(v_vertex_local - v_ray_origin);
+	// INV_VIEW_MATRIX and INV_PROJECTION_MATRIX are per-eye in Godot 4 VR multiview.
+	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
+
+	vec4 view_ray = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.0, 1.0);
+	view_ray.xyz /= view_ray.w;
+	vec3 ray_dir_world = normalize((INV_VIEW_MATRIX * vec4(view_ray.xyz, 0.0)).xyz);
+
+	mat4 inv_model = inverse(MODEL_MATRIX);
+	vec3 v_ray_origin = (inv_model * vec4(camera_world, 1.0)).xyz;
+	vec3 ray_dir = normalize((inv_model * vec4(ray_dir_world, 0.0)).xyz);
 
 	// --- Ray-AABB intersection ---
 	vec3 box_min = vec3(-0.5);
