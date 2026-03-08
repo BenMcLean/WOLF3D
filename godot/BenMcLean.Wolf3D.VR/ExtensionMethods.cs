@@ -45,6 +45,16 @@ public static class ExtensionMethods
 	#endregion Coordinates
 	#region Angles
 	/// <summary>
+	/// Converts a horizontal forward vector to a cardinal Direction.
+	/// Projects the vector onto the XZ plane and snaps to the nearest cardinal direction: N, E, S, or W.
+	/// Godot convention: -Z = North, -X = West, +Z = South, +X = East.
+	/// </summary>
+	/// <param name="horizontalForward">Forward vector (Y component is ignored)</param>
+	/// <returns>Cardinal direction (N, E, S, or W)</returns>
+	public static Direction ToCardinalDirection(this Vector3 horizontalForward) =>
+		Mathf.Atan2(-horizontalForward.X, -horizontalForward.Z).ToCardinalDirection();
+
+	/// <summary>
 	/// Converts Godot camera Y rotation to a cardinal Direction (for pushwall movement).
 	/// Snaps to the nearest cardinal direction: N, E, S, or W.
 	/// Godot Y rotation: 0=North(-Z), π/2=West(-X), π=South(+Z), 3π/2=East(+X)

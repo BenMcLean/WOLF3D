@@ -516,13 +516,20 @@ void sky() {
 	/// <summary>
 	/// Handles a button press on any hand controller.
 	/// trigger_click fires that hand's weapon slot; grip_click uses/pushes objects.
+	/// In VR, grip uses the controller's own position and pointing direction.
+	/// In flatscreen, grip uses the camera direction (single cursor).
 	/// </summary>
 	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
 		if (buttonName == "trigger_click")
 			FireWeapon(handIndex);
 		else if (buttonName == "grip_click")
-			UseObjectPlayerIsFacing();
+		{
+			if (_displayMode.IsVRActive)
+				UseObjectHandIsFacing(handIndex);
+			else
+				UseObjectPlayerIsFacing();
+		}
 	}
 
 	/// <summary>
@@ -636,6 +643,127 @@ void sky() {
 		// Try elevator third
 		if (IsElevatorAtTile(tileX, tileY))
 			_simulatorController.ActivateElevator(tileX, tileY, dir);
+	}
+
+	/// <summary>
+	/// VR: finds and operates the door, pushwall, or elevator reachable by the specified hand.
+	///
+	/// Scenario 1 — controller in a navigable tile, pointing at the target:
+	///   The controller's pointing direction (snapped to cardinal) selects the adjacent target tile.
+	///   The push direction is the tile-relationship direction (controller tile → target tile),
+	///   which equals the snapped pointing direction.
+	///
+	/// Scenario 2 — controller extended into the target tile itself:
+	///   The controller's tile is not navigable (it is the pushable tile).
+	///   Valid when the headset is in a navigable tile cardinally adjacent to the controller tile.
+	///   Push direction is determined solely by the tile relationship (headset tile → controller tile),
+	///   preventing sideways pushes regardless of where the controller is pointing.
+	/// </summary>
+	private void UseObjectHandIsFacing(int handIndex)
+	{
+		Vector3 handPos = _displayMode.GetHandPosition(handIndex);
+		int handTileXInt = handPos.X.ToTile(), handTileYInt = handPos.Z.ToTile();
+		if (handTileXInt < 0 || handTileYInt < 0)
+			return;
+		ushort handTileX = (ushort)handTileXInt, handTileY = (ushort)handTileYInt;
+
+		if (MapAnalysis.IsNavigable(handTileX, handTileY))
+		{
+			// Scenario 1: controller in a navigable tile — find target via pointing direction
+			Vector3 horizontal = new Vector3(_displayMode.GetHandForward(handIndex).X, 0f, _displayMode.GetHandForward(handIndex).Z);
+			if (horizontal.LengthSquared() < 0.0001f)
+				return; // Pointing straight up or down
+
+			Direction dir = horizontal.ToCardinalDirection();
+			if (TryGetAdjacentTile(handTileX, handTileY, dir, out ushort targetX, out ushort targetY))
+				TryUseObjectAtTile(targetX, targetY, dir);
+		}
+		else
+		{
+			// Scenario 2: controller extended into the target tile itself.
+			// The headset must be in a navigable tile cardinally adjacent to the controller tile.
+			// Push direction is from headset tile → controller tile (tile relationship only).
+			Vector3 viewerPos = _displayMode.ViewerPosition;
+			int viewerTileXInt = viewerPos.X.ToTile(), viewerTileYInt = viewerPos.Z.ToTile();
+			if (viewerTileXInt < 0 || viewerTileYInt < 0)
+				return;
+			ushort viewerTileX = (ushort)viewerTileXInt, viewerTileY = (ushort)viewerTileYInt;
+
+			if (!MapAnalysis.IsNavigable(viewerTileX, viewerTileY))
+				return;
+
+			// Direction from headset tile to controller tile must be cardinal
+			if (GetCardinalDirection(viewerTileX, viewerTileY, handTileX, handTileY) is Direction pushDir)
+				TryUseObjectAtTile(handTileX, handTileY, pushDir);
+		}
+	}
+
+	/// <summary>
+	/// Tries to operate a door, pushwall, or elevator at the given tile.
+	/// Returns true if something was found and activated.
+	/// </summary>
+	private bool TryUseObjectAtTile(ushort tileX, ushort tileY, Direction dir)
+	{
+		ushort? doorIndex = FindDoorAtTile(tileX, tileY);
+		if (doorIndex.HasValue)
+		{
+			_simulatorController.OperateDoor(doorIndex.Value);
+			return true;
+		}
+
+		ushort? pushWallIndex = FindPushWallAtTile(tileX, tileY);
+		if (pushWallIndex.HasValue)
+		{
+			_simulatorController.ActivatePushWall(tileX, tileY, dir);
+			return true;
+		}
+
+		if (IsElevatorAtTile(tileX, tileY))
+		{
+			_simulatorController.ActivateElevator(tileX, tileY, dir);
+			return true;
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// Returns the cardinal direction from one tile to an immediately adjacent tile.
+	/// Returns null if the tiles are not cardinally adjacent (diagonal or non-adjacent).
+	/// </summary>
+	private static Direction? GetCardinalDirection(ushort fromX, ushort fromY, ushort toX, ushort toY)
+	{
+		int dx = (int)toX - fromX, dy = (int)toY - fromY;
+		if (dx == 1 && dy == 0) return Direction.E;
+		if (dx == -1 && dy == 0) return Direction.W;
+		if (dx == 0 && dy == -1) return Direction.N;
+		if (dx == 0 && dy == 1) return Direction.S;
+		return null;
+	}
+
+	/// <summary>
+	/// Returns the tile one step in the given cardinal direction, if in bounds.
+	/// Returns false for diagonal directions or when the step would go out of bounds.
+	/// </summary>
+	private static bool TryGetAdjacentTile(ushort tileX, ushort tileY, Direction dir, out ushort adjX, out ushort adjY)
+	{
+		int ax = tileX, ay = tileY;
+		switch (dir)
+		{
+			case Direction.E: ax++; break;
+			case Direction.W: ax--; break;
+			case Direction.N: ay--; break;
+			case Direction.S: ay++; break;
+			default: adjX = tileX; adjY = tileY; return false;
+		}
+		if (ax < 0 || ay < 0)
+		{
+			adjX = 0; adjY = 0;
+			return false;
+		}
+		adjX = (ushort)ax;
+		adjY = (ushort)ay;
+		return true;
 	}
 
 	/// <summary>
