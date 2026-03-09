@@ -278,11 +278,12 @@ public partial class MenuRoom : Node3D, IRoom
 			Name = "MenuPanel",
 			Mesh = quadMesh,
 			MaterialOverride = material,
-			// Fixed world position: one tile ahead of spawn, top edge at TileHeight
-			GlobalPosition = MenuPanelWorldPos,
 		};
 
+		// GlobalPosition requires the node to be in the scene tree.
+		// Add first, then position.
 		AddChild(_menuPanel);
+		_menuPanel.GlobalPosition = MenuPanelWorldPos;
 
 		// Create VR pointer provider for crosshair tracking
 		_vrPointerProvider = new VRMenuPointerProvider(_displayMode);

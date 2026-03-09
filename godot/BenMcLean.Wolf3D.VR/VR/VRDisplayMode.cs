@@ -206,8 +206,10 @@ public class VRDisplayMode : IDisplayMode
 	}
 
 	/// <summary>
-	/// Dispatches to snap or smooth turning, or enters teleportation mode when the right
-	/// thumbstick Y axis is pushed beyond TeleportThreshold.
+	/// Dispatches to snap or smooth turning, or enters teleportation mode.
+	/// Teleportation mode requires the thumbstick to be pushed beyond TeleportThreshold
+	/// on the Y axis AND within TeleportThreshold on the X axis. This prevents accidental
+	/// teleport activation when the player pushes slightly forward while turning.
 	/// When teleportation mode is active, turning is suppressed entirely.
 	/// </summary>
 	private void ApplyTurn(float delta)
@@ -215,16 +217,17 @@ public class VRDisplayMode : IDisplayMode
 		if (_rightController == null)
 			return;
 
-		float stickY = _rightController.GetVector2("primary").Y;
+		Vector2 stick = _rightController.GetVector2("primary");
 
-		if (Mathf.Abs(stickY) > TeleportThreshold)
+		if (Mathf.Abs(stick.Y) > TeleportThreshold && Mathf.Abs(stick.X) < TeleportThreshold)
 		{
-			// Thumbstick pushed forward or backward — enter teleport mode, suppress turning
+			// Thumbstick pushed forward or backward with little horizontal deflection —
+			// enter teleport mode, suppress turning
 			_teleportModeActive = true;
 			return;
 		}
 
-		// Thumbstick Y returned to center — exit teleport mode
+		// Thumbstick Y returned to center (or X exceeded threshold) — exit teleport mode
 		_teleportModeActive = false;
 
 		if (_smoothTurnEnabled)

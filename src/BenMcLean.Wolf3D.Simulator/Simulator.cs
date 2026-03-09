@@ -2898,6 +2898,84 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
 
 	/// <summary>
+	/// Checks if a straight-line teleportation path between two tile positions is clear.
+	/// Uses the same Bresenham DDA and corner-prevention logic as HasLineOfSight.
+	/// Every tile along the path (excluding the starting tile, including the destination)
+	/// must be passable: no walls, no closed doors, no pushwalls, no living actors.
+	/// Living actors "lock" their tiles — the path cannot pass through an occupied tile.
+	/// </summary>
+	public bool HasClearTeleportPath(ushort fromX, ushort fromY, ushort toX, ushort toY)
+	{
+		int dx = Math.Abs(toX - fromX),
+			dy = Math.Abs(toY - fromY),
+			sx = fromX < toX ? 1 : -1,
+			sy = fromY < toY ? 1 : -1,
+			err = dx - dy,
+			x = fromX,
+			y = fromY;
+		while (true)
+		{
+			if (x == toX && y == toY)
+				return true;
+			if (!(x == fromX && y == fromY)
+				&& !IsTilePassableForTeleport((ushort)x, (ushort)y))
+				return false;
+			int e2 = 2 * err;
+			bool movedX = false, movedY = false;
+			if (e2 > -dy)
+			{
+				err -= dy;
+				x += sx;
+				movedX = true;
+			}
+			if (e2 < dx)
+			{
+				err += dx;
+				y += sy;
+				movedY = true;
+			}
+			// Prevent teleporting through corners, matching HasLineOfSight
+			if (movedX && movedY)
+			{
+				if (!IsTilePassableForTeleport((ushort)(x - sx), (ushort)y))
+					return false;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Checks whether a tile is passable for teleportation path purposes.
+	/// Blocks on walls, closed doors, pushwalls, and living actors.
+	/// Does NOT apply the player-tile exclusion used by IsTileNavigable (which is for actors).
+	/// </summary>
+	private bool IsTilePassableForTeleport(ushort x, ushort y)
+	{
+		// 1. Walls and other static impassable tiles
+		if (!mapAnalysis.IsNavigable(x, y))
+			return false;
+
+		int tileIdx = GetTileIndex(x, y);
+
+		// 2. Closed doors block the path (open or opening doors are passable)
+		if (doorAtTile[tileIdx] >= 0)
+		{
+			Door door = doors[doorAtTile[tileIdx]];
+			if (door.Action == DoorAction.Closed)
+				return false;
+		}
+
+		// 3. Pushwalls block the path
+		if (pushWallAtTile[tileIdx] >= 0)
+			return false;
+
+		// 4. Living actors lock their tiles — cannot teleport through an occupied tile
+		if (actorAtTile[tileIdx] >= 0 && actors[actorAtTile[tileIdx]].HitPoints > 0)
+			return false;
+
+		return true;
+	}
+
+	/// <summary>
 	/// Bresenham tile-based line-of-sight check between two tile positions.
 	/// Based on WL_STATE.C:CheckLine.
 	/// </summary>

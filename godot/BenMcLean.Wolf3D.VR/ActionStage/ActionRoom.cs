@@ -966,11 +966,15 @@ void sky() {
 			{
 				Vector3 controllerPos = _displayMode.GetHandPosition(0);   // Right controller
 				Vector3 controllerForward = _displayMode.GetHandForward(0);
+				Vector3 viewerPos = _displayMode.ViewerPosition;
+				ushort playerTileX = (ushort)Mathf.Max(0, viewerPos.X.ToTile());
+				ushort playerTileZ = (ushort)Mathf.Max(0, viewerPos.Z.ToTile());
 				_teleportOverlay.UpdateOverlay(
 					controllerPos,
 					controllerForward,
 					(x, z) => x < MapAnalysis.Width && z < MapAnalysis.Depth
-						&& _simulatorController.IsTileNavigable(x, z));
+						&& _simulatorController.IsTileNavigable(x, z)
+						&& _simulatorController.HasClearTeleportPath(playerTileX, playerTileZ, x, z));
 			}
 			else
 			{

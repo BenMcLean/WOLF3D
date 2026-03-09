@@ -440,6 +440,14 @@ public partial class SimulatorController : Node3D
 	/// <returns>True if the tile can currently be entered by the player</returns>
 	public bool IsTileNavigable(ushort tileX, ushort tileZ) =>
 		simulator?.IsTileNavigable(tileX, tileZ) ?? false;
+
+	/// <summary>
+	/// Checks whether a straight-line path between two tiles is clear for teleportation.
+	/// Blocks on walls, closed doors, pushwalls, living actors, and corners.
+	/// Both tile coordinates use the Godot convention (Z = Wolf3D Y).
+	/// </summary>
+	public bool HasClearTeleportPath(ushort fromTileX, ushort fromTileZ, ushort toTileX, ushort toTileZ) =>
+		simulator?.HasClearTeleportPath(fromTileX, fromTileZ, toTileX, toTileZ) ?? false;
 	#endregion
 
 	/// <summary>
