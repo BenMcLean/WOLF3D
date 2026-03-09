@@ -20,13 +20,19 @@ public partial class MenuRoom : Node3D, IRoom
 	private MeshInstance3D _menuPanel;
 	private ColorRect _marginBackground;
 	private WorldEnvironment _worldEnvironment;
-	private bool _menuPanelPositioned;
+	private bool _playerOriented;
 	private VRMenuPointerProvider _vrPointerProvider;
 	private FlatscreenMenuPointerProvider _flatscreenPointerProvider;
 
 	// Menu panel sizing in VR (in meters)
 	private const float PanelWidth = Constants.TileWidth;                // One tile wide
 	private const float PanelHeight = Constants.TileWidth * 3f / 4f;     // 4:3 aspect ratio
+
+	// Fixed world-space positions for VR menu room.
+	// Panel is vertically centred at HalfTileHeight (eye level).
+	// Spawn is at world origin; panel is one tile in front (−Z).
+	private static readonly Vector3 MenuPanelWorldPos = new(0f, Constants.HalfTileHeight, -Constants.TileWidth);
+	private static readonly Vector3 SpawnWorldPos = Vector3.Zero;
 
 	/// <summary>
 	/// True when the menu signals to start the game.
@@ -153,6 +159,20 @@ public partial class MenuRoom : Node3D, IRoom
 		// Initialize the display mode camera rig
 		_displayMode.Initialize(this);
 
+		// No thumbstick locomotion or turning in the menu room
+		_displayMode.LocomotionEnabled = false;
+
+		if (_displayMode.IsVRActive)
+		{
+			// Constrain room-scale physical movement to one TileWidth square centred at origin
+			_displayMode.SetMovementValidator((fromX, fromZ, toX, toZ) =>
+				(Mathf.Clamp(toX, -Constants.HalfTileWidth, Constants.HalfTileWidth),
+				 Mathf.Clamp(toZ, -Constants.HalfTileWidth, Constants.HalfTileWidth)));
+
+			// Left controller menu button resets position to face the virtual screen
+			_displayMode.HandButtonPressed += OnHandButtonPressed;
+		}
+
 		// Create menu manager
 		// MenuCollectionOverride allows procedural menus (e.g., game selection screen)
 		// without requiring a fully-loaded game.
@@ -258,9 +278,10 @@ public partial class MenuRoom : Node3D, IRoom
 			Name = "MenuPanel",
 			Mesh = quadMesh,
 			MaterialOverride = material,
+			// Fixed world position: one tile ahead of spawn, top edge at TileHeight
+			GlobalPosition = MenuPanelWorldPos,
 		};
 
-		// Add panel to scene; position will be set once XR tracking is active
 		AddChild(_menuPanel);
 
 		// Create VR pointer provider for crosshair tracking
@@ -350,30 +371,12 @@ public partial class MenuRoom : Node3D, IRoom
 	}
 
 	/// <summary>
-	/// Positions the menu panel in front of the VR camera.
-	/// Called once after XR tracking becomes active.
+	/// Handles left controller menu button: resets player position to face the virtual screen.
 	/// </summary>
-	private void PositionMenuPanel()
+	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
-		if (_menuPanel == null || _displayMode.Camera == null)
-			return;
-
-		// Get initial camera position and forward direction
-		Vector3 cameraPos = _displayMode.ViewerPosition;
-		float cameraYRotation = _displayMode.ViewerYRotation;
-
-		// Calculate panel position: one tile width in front of camera's initial position
-		Vector3 forward = new Vector3(
-			Mathf.Sin(cameraYRotation),
-			0,
-			-Mathf.Cos(cameraYRotation)
-		).Normalized();
-
-		Vector3 panelPosition = cameraPos + forward * Constants.TileWidth;
-		// Center panel between floor (0) and ceiling (TileHeight)
-		panelPosition.Y = Constants.HalfTileHeight;
-
-		_menuPanel.GlobalPosition = panelPosition;
+		if (handIndex == 1 && buttonName == "menu_button")
+			_displayMode.ResetPositionFacing(MenuPanelWorldPos, SpawnWorldPos);
 	}
 
 	/// <summary>
@@ -451,16 +454,16 @@ public partial class MenuRoom : Node3D, IRoom
 			PendingLevelTransition = LevelTransition;
 		}
 
-		// In VR mode, position the menu panel once after XR tracking is active
+		// In VR mode, orient the player toward the panel once after XR tracking is active
 		// (Camera position is zero until tracking starts)
-		if (_displayMode.IsVRActive && !_menuPanelPositioned && _displayMode.ViewerPosition != Vector3.Zero)
+		if (_displayMode.IsVRActive && !_playerOriented && _displayMode.ViewerPosition != Vector3.Zero)
 		{
-			PositionMenuPanel();
-			_menuPanelPositioned = true;
+			_displayMode.ResetPositionFacing(MenuPanelWorldPos, SpawnWorldPos);
+			_playerOriented = true;
 		}
 
 		// Rotate panel to face camera every frame (true billboard)
-		if (_displayMode.IsVRActive && _menuPanelPositioned)
+		if (_displayMode.IsVRActive && _menuPanel != null)
 		{
 			UpdateMenuPanelRotation();
 		}

@@ -17,6 +17,11 @@ public partial class FPSCamera : Camera3D
 	public float Sensitivity { get; set; } = 0.25f;
 
 	/// <summary>
+	/// When false, WASD movement and mouse look are disabled.
+	/// </summary>
+	public bool MovementEnabled { get; set; } = true;
+
+	/// <summary>
 	/// Event fired when left mouse button is pressed (shoot).
 	/// </summary>
 	public event Action LeftClickPressed;
@@ -143,6 +148,8 @@ public partial class FPSCamera : Camera3D
 	/// </summary>
 	private void UpdateMouseLook()
 	{
+		if (!MovementEnabled)
+			return;
 		if (Input.MouseMode != Input.MouseModeEnum.Captured)
 			return;
 
@@ -167,6 +174,9 @@ public partial class FPSCamera : Camera3D
 	/// </summary>
 	private void UpdateMovement(float delta)
 	{
+		if (!MovementEnabled)
+			return;
+
 		// Compute desired direction from key states (horizontal only)
 		Vector3 direction = Vector3.Zero;
 		if (_d) direction.X += 1.0f;

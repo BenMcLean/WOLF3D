@@ -58,6 +58,7 @@ public partial class SetupRoom : Node3D, IRoom
 	public override void _Ready()
 	{
 		_displayMode.Initialize(this);
+		_displayMode.LocomotionEnabled = false;
 
 		_dosScreen = new DosScreen();
 		AddChild(_dosScreen);

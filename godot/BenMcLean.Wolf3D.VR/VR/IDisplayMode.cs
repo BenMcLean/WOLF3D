@@ -116,4 +116,19 @@ public interface IDisplayMode
 	/// In VR: switches turn mode. In flatscreen: no-op.
 	/// </summary>
 	void ToggleTurnMode();
+
+	/// <summary>
+	/// When false, thumbstick locomotion and turning are disabled.
+	/// In VR, room-scale physical movement may still occur subject to the movement validator.
+	/// Default: true.
+	/// </summary>
+	bool LocomotionEnabled { get; set; }
+
+	/// <summary>
+	/// Resets the player's position and orientation so the viewer ends up at spawnWorldPos
+	/// facing toward panelWorldPos.
+	/// In VR: adjusts XROrigin to place the HMD at spawnWorldPos and face the panel.
+	/// In flatscreen: no-op.
+	/// </summary>
+	void ResetPositionFacing(Vector3 panelWorldPos, Vector3 spawnWorldPos);
 }

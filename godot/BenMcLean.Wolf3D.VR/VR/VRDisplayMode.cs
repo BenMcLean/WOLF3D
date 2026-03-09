@@ -60,6 +60,8 @@ public class VRDisplayMode : IDisplayMode
 	private bool _smoothTurnEnabled = false;
 	private bool _isRunning = false;
 
+	public bool LocomotionEnabled { get; set; } = true;
+
 	public event Action<int, string> HandButtonPressed;
 	public event Action<int, string> HandButtonReleased;
 
@@ -148,8 +150,11 @@ public class VRDisplayMode : IDisplayMode
 	public void Update(double delta)
 	{
 		// Apply joystick locomotion and turning before height and collision corrections
-		ApplyLocomotion((float)delta);
-		ApplyTurn((float)delta);
+		if (LocomotionEnabled)
+		{
+			ApplyLocomotion((float)delta);
+			ApplyTurn((float)delta);
+		}
 
 		// VR tracking is handled automatically by OpenXR
 		// In 5DOF mode, lock the camera height to HalfTileHeight by adjusting the origin Y.
@@ -330,6 +335,35 @@ public class VRDisplayMode : IDisplayMode
 	{
 		_validateMovement = validator;
 		// Reset last valid position so it gets initialized on next Update
+		_lastValidHmdPosition = Vector3.Zero;
+	}
+
+	/// <summary>
+	/// Adjusts XROrigin rotation and position so the HMD ends up at spawnWorldPos facing panelWorldPos.
+	/// Used to reset the player's orientation when entering the MenuRoom or pressing the menu button.
+	/// </summary>
+	public void ResetPositionFacing(Vector3 panelWorldPos, Vector3 spawnWorldPos)
+	{
+		if (_origin == null || _camera == null)
+			return;
+
+		// Desired yaw: camera should face from spawn toward panel (XZ plane only)
+		float desiredYaw = Mathf.Atan2(
+			panelWorldPos.X - spawnWorldPos.X,
+			-(panelWorldPos.Z - spawnWorldPos.Z));
+
+		// Set origin yaw so camera's global yaw = desiredYaw
+		// camera.GlobalRotation.Y ≈ origin.Rotation.Y + camera.Rotation.Y
+		_origin.Rotation = new Vector3(0f, desiredYaw - _camera.Rotation.Y, 0f);
+
+		// Adjust origin XZ so camera global XZ lands on spawnWorldPos XZ
+		Vector3 rotatedOffset = _origin.Basis * _camera.Position;
+		_origin.Position = new Vector3(
+			spawnWorldPos.X - rotatedOffset.X,
+			_origin.Position.Y,
+			spawnWorldPos.Z - rotatedOffset.Z);
+
+		// Reset so ValidateVRPosition re-initializes from the new position
 		_lastValidHmdPosition = Vector3.Zero;
 	}
 }

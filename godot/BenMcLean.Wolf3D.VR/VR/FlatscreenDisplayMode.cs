@@ -14,6 +14,7 @@ public class FlatscreenDisplayMode : IDisplayMode
 	private FPSCamera _camera;
 	private Node3D _cameraHolder;
 	private Node _parent;
+	private bool _locomotionEnabled = true;
 
 	public event Action<int, string> HandButtonPressed;
 	public event Action<int, string> HandButtonReleased;
@@ -72,6 +73,9 @@ public class FlatscreenDisplayMode : IDisplayMode
 		};
 		_cameraHolder.AddChild(_camera);
 
+		// Apply any locomotion state that was set before Initialize was called
+		_camera.MovementEnabled = _locomotionEnabled;
+
 		// Wire up mouse button events to IDisplayMode events
 		// Left click = hand 0 trigger (shoot)
 		_camera.LeftClickPressed += () => HandButtonPressed?.Invoke(0, "trigger_click");
@@ -115,4 +119,18 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 	// Turn mode only applies in VR
 	public void ToggleTurnMode() { }
+
+	public bool LocomotionEnabled
+	{
+		get => _locomotionEnabled;
+		set
+		{
+			_locomotionEnabled = value;
+			if (_camera != null)
+				_camera.MovementEnabled = value;
+		}
+	}
+
+	// Position reset only applies in VR
+	public void ResetPositionFacing(Vector3 panelWorldPos, Vector3 spawnWorldPos) { }
 }

@@ -194,6 +194,7 @@ void sky() {
 
 		// Initialize display mode camera rig
 		_displayMode.Initialize(this);
+		_displayMode.LocomotionEnabled = true;
 
 		// Camera positioning is deferred until after simulator initialization
 		// so that LoadState/resume can override the spawn position
