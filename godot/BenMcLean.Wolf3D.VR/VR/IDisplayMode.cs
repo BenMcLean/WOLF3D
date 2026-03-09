@@ -131,4 +131,11 @@ public interface IDisplayMode
 	/// In flatscreen: no-op.
 	/// </summary>
 	void ResetPositionFacing(Vector3 panelWorldPos, Vector3 spawnWorldPos);
+
+	/// <summary>
+	/// True when the right thumbstick Y axis is pushed beyond the teleportation threshold,
+	/// indicating the player is aiming a teleport. Turning is suppressed in this state.
+	/// Always false in flatscreen mode.
+	/// </summary>
+	bool IsTeleportModeActive { get; }
 }

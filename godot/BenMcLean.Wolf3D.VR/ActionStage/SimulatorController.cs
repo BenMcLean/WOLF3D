@@ -417,6 +417,29 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	/// <returns>True if NoClip is enabled</returns>
 	public bool GetNoClip() => simulator?.NoClip ?? false;
+
+	/// <summary>
+	/// Teleports the player to a new position, sweeping all tiles along the straight-line
+	/// path from the previous position to the destination for item pickup.
+	/// Use for VR teleportation. Use Simulator.PlacePlayer for system-driven repositioning.
+	/// </summary>
+	/// <param name="playerX">Player X position in 16.16 fixed-point (Godot X = Wolf3D X)</param>
+	/// <param name="playerZ">Player Z position in 16.16 fixed-point (Godot Z = Wolf3D Y)</param>
+	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
+	public void TeleportPlayer(int playerX, int playerZ, short playerAngle) =>
+		simulator?.TeleportPlayer(playerX, playerZ, playerAngle);
+
+	/// <summary>
+	/// Checks whether a tile is currently navigable, accounting for dynamic state:
+	/// walls, closed doors, pushwalls, living actors, and the player's position.
+	/// Use this for teleportation destination validation rather than MapAnalysis.IsNavigable,
+	/// which only reflects static map data.
+	/// </summary>
+	/// <param name="tileX">Tile X coordinate (Godot X = Wolf3D X)</param>
+	/// <param name="tileZ">Tile Z coordinate (Godot Z = Wolf3D Y)</param>
+	/// <returns>True if the tile can currently be entered by the player</returns>
+	public bool IsTileNavigable(ushort tileX, ushort tileZ) =>
+		simulator?.IsTileNavigable(tileX, tileZ) ?? false;
 	#endregion
 
 	/// <summary>

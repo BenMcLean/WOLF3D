@@ -59,8 +59,18 @@ public class VRDisplayMode : IDisplayMode
 
 	private bool _smoothTurnEnabled = false;
 	private bool _isRunning = false;
+	private bool _teleportModeActive = false;
+
+	// Teleportation mode activates when right thumbstick Y exceeds this threshold
+	private const float TeleportThreshold = 0.5f;
 
 	public bool LocomotionEnabled { get; set; } = true;
+
+	/// <summary>
+	/// True when the right thumbstick Y axis is pushed beyond TeleportThreshold.
+	/// Turning is suppressed while teleportation mode is active.
+	/// </summary>
+	public bool IsTeleportModeActive => _teleportModeActive;
 
 	public event Action<int, string> HandButtonPressed;
 	public event Action<int, string> HandButtonReleased;
@@ -196,10 +206,27 @@ public class VRDisplayMode : IDisplayMode
 	}
 
 	/// <summary>
-	/// Dispatches to snap or smooth turning based on the current turn mode.
+	/// Dispatches to snap or smooth turning, or enters teleportation mode when the right
+	/// thumbstick Y axis is pushed beyond TeleportThreshold.
+	/// When teleportation mode is active, turning is suppressed entirely.
 	/// </summary>
 	private void ApplyTurn(float delta)
 	{
+		if (_rightController == null)
+			return;
+
+		float stickY = _rightController.GetVector2("primary").Y;
+
+		if (Mathf.Abs(stickY) > TeleportThreshold)
+		{
+			// Thumbstick pushed forward or backward — enter teleport mode, suppress turning
+			_teleportModeActive = true;
+			return;
+		}
+
+		// Thumbstick Y returned to center — exit teleport mode
+		_teleportModeActive = false;
+
 		if (_smoothTurnEnabled)
 			ApplySmoothTurn(delta);
 		else

@@ -133,4 +133,7 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 	// Position reset only applies in VR
 	public void ResetPositionFacing(Vector3 panelWorldPos, Vector3 spawnWorldPos) { }
+
+	// Teleportation only applies in VR
+	public bool IsTeleportModeActive => false;
 }

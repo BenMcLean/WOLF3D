@@ -371,8 +371,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Use for initial spawn, level transitions, and any other case where the system is
 	/// positioning the player rather than the player traveling there themselves.
 	/// Checks pickups only at the destination tile; never traverses the path from the
-	/// previous position (contrast with VR teleportation, which is player-initiated travel
-	/// and should use Update so items along the path are collected).
+	/// previous position (contrast with TeleportPlayer, which is player-initiated travel
+	/// and uses a DDA sweep to collect items along the path).
 	/// </summary>
 	/// <param name="playerX">Player X position in 16.16 fixed-point</param>
 	/// <param name="playerY">Player Y position in 16.16 fixed-point</param>
@@ -383,6 +383,26 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		PlayerY = playerY;
 		PlayerAngle = playerAngle;
 		CheckItemPickups();
+	}
+
+	/// <summary>
+	/// Teleports the player to a new position as a player-initiated action.
+	/// Uses a Bresenham DDA sweep from the previous position to the destination
+	/// to collect all items along the straight-line path, matching the behavior
+	/// of normal locomotion via Update().
+	/// Use for VR teleportation. Use PlacePlayer for system-driven repositioning.
+	/// </summary>
+	/// <param name="playerX">Player X position in 16.16 fixed-point</param>
+	/// <param name="playerY">Player Y position in 16.16 fixed-point</param>
+	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
+	public void TeleportPlayer(int playerX, int playerY, short playerAngle)
+	{
+		int prevX = PlayerX;
+		int prevY = PlayerY;
+		PlayerX = playerX;
+		PlayerY = playerY;
+		PlayerAngle = playerAngle;
+		CheckItemPickupsAlongPath(prevX, prevY);
 	}
 
 	/// <summary>

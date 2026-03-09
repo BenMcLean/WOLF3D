@@ -124,6 +124,7 @@ void sky() {
 	private ScreenFlashOverlay _screenFlashOverlay;
 	private PixelPerfectAiming _pixelPerfectAiming;
 	private AimIndicator _aimIndicator;
+	private TeleportationOverlay _teleportOverlay;
 	private StatusBarState _statusBarState;
 	private StatusBarRenderer _statusBarRenderer;
 	private CanvasLayer _statusBarCanvas;
@@ -400,6 +401,14 @@ void sky() {
 		// Create debug aim indicator (temporary - won't be in final game)
 		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode);
 		AddChild(_aimIndicator);
+
+		// Create VR teleportation overlay (arc and circle showing teleport destination)
+		// Only needed in VR mode; flatscreen has no thumbstick teleportation
+		if (_displayMode.IsVRActive)
+		{
+			_teleportOverlay = new TeleportationOverlay();
+			AddChild(_teleportOverlay);
+		}
 		// Wire status bar events for flatscreen mode before OnNewGame script runs.
 		// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
 		if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar != null)
@@ -545,7 +554,15 @@ void sky() {
 		else if (buttonName == "primary_click")
 		{
 			if (handIndex == 0)
-				_displayMode.ToggleTurnMode();
+			{
+				if (_teleportOverlay != null
+					&& _displayMode.IsTeleportModeActive
+					&& _teleportOverlay.DestinationTile.HasValue
+					&& _teleportOverlay.IsDestinationNavigable)
+					ExecuteTeleport(_teleportOverlay.DestinationTile.Value);
+				else
+					_displayMode.ToggleTurnMode();
+			}
 			else
 				_displayMode.ToggleRunning();
 		}
@@ -650,6 +667,39 @@ void sky() {
 				return;
 			}
 		}
+	}
+
+	/// <summary>
+	/// Teleports the player to the center of the destination tile.
+	/// Moves the XROrigin so the HMD lands at the tile center, then registers
+	/// the new position with the simulator (triggering item pickup at the destination).
+	/// </summary>
+	/// <param name="destTile">Destination tile (X = Godot X = Wolf3D X, Z = Godot Z = Wolf3D Y)</param>
+	private void ExecuteTeleport((ushort X, ushort Z) destTile)
+	{
+		float destWorldX = destTile.X.ToMetersCentered();
+		float destWorldZ = destTile.Z.ToMetersCentered();
+
+		// Shift XROrigin so the HMD ends up at the tile center (XZ only; Y is height-locked)
+		Vector3 hmdPos = _displayMode.ViewerPosition;
+		Vector3 originPos = _displayMode.Origin.GlobalPosition;
+		_displayMode.Origin.GlobalPosition = new Vector3(
+			originPos.X + (destWorldX - hmdPos.X),
+			originPos.Y,
+			originPos.Z + (destWorldZ - hmdPos.Z));
+
+		// Register the new position with the simulator via TeleportPlayer, which sweeps
+		// all tiles along the straight-line path from the previous position using a
+		// Bresenham DDA, collecting items along the way.
+		short currentAngle = _displayMode.ViewerYRotation.ToWolf3DAngle();
+		_simulatorController.TeleportPlayer(
+			destWorldX.ToFixedPoint(),
+			destWorldZ.ToFixedPoint(),
+			currentAngle);
+
+		// Reset movement validation so ValidateVRPosition re-initializes from the new location,
+		// preventing it from attempting to validate the large positional jump as a wall collision.
+		_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
 	}
 
 	/// <summary>
@@ -908,6 +958,25 @@ void sky() {
 	{
 		// Drive display mode each frame: joystick locomotion, snap turn, 5DOF height lock, HMD collision
 		_displayMode.Update(delta);
+
+		// Update teleportation overlay when in VR teleport mode
+		if (_teleportOverlay != null)
+		{
+			if (_displayMode.IsTeleportModeActive)
+			{
+				Vector3 controllerPos = _displayMode.GetHandPosition(0);   // Right controller
+				Vector3 controllerForward = _displayMode.GetHandForward(0);
+				_teleportOverlay.UpdateOverlay(
+					controllerPos,
+					controllerForward,
+					(x, z) => x < MapAnalysis.Width && z < MapAnalysis.Depth
+						&& _simulatorController.IsTileNavigable(x, z));
+			}
+			else
+			{
+				_teleportOverlay.HideOverlay();
+			}
+		}
 
 		// Fixtures updates billboard rotations automatically in its own _Process
 		// Bonuses updates billboard rotations automatically in its own _Process
