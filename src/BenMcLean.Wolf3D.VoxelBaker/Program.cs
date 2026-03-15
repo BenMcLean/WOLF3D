@@ -39,23 +39,23 @@ public class Program
 	public static void Main(string[] args)
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
-		uint[]? palette = null;
-		Dictionary<string, IModel> models = [];
-		foreach (KeyValuePair<string, ImmutableArray<SpriteMapping>> grouping in SpriteMap)
-		{
-			string path = Path.Combine(folderPath, grouping.Key + ".vox");
-			using FileStream fs = new(
-				path: path,
-				mode: FileMode.Open,
-				access: FileAccess.Read);
-			models[grouping.Key] = Models(fs, out uint[] currentPalette)[0];
-			if (palette is null)
-				palette = currentPalette;
-			else if (!palette.SequenceEqual(currentPalette))
-				throw new InvalidDataException($"Palette doesn't match for {path}");
-		}
-		if (palette is null)
-			throw new NullReferenceException("Missing palette!");
+		(string Key, IModel Model, uint[] Palette)[] loaded = SpriteMap.Keys
+			.AsParallel()
+			.Select(key =>
+			{
+				string path = Path.Combine(folderPath, key + ".vox");
+				using FileStream fs = new(
+					path: path,
+					mode: FileMode.Open,
+					access: FileAccess.Read);
+				IModel model = Models(fs, out uint[] currentPalette)[0];
+				return (Key: key, Model: model, Palette: currentPalette);
+			})
+			.ToArray();
+		uint[] palette = loaded[0].Palette;
+		if (loaded.FirstOrDefault(x => !palette.SequenceEqual(x.Palette)).Key is string mismatch)
+			throw new InvalidDataException($"Palette doesn't match for {Path.Combine(folderPath, mismatch + ".vox")}");
+		Dictionary<string, IModel> models = loaded.ToDictionary(x => x.Key, x => x.Model);
 		if (palette.Length == 255)
 		{
 			uint[] destination = new uint[256];
@@ -106,7 +106,7 @@ public class Program
 				int ax = placement.X + voxel.LocalPosition.X,
 					ay = placement.Y + voxel.LocalPosition.Y,
 					az = placement.Z + voxel.LocalPosition.Z;
-				atlas[ax + ay * width + az * (width * height)] = (byte)voxel.ColorIndex;
+				atlas[ax + ay * width + az * width * height] = (byte)voxel.ColorIndex;
 			}
 		});
 		return atlas;
