@@ -54,6 +54,19 @@ public class Program
 			else if (!palette.SequenceEqual(currentPalette))
 				throw new InvalidDataException($"Palette doesn't match for {path}");
 		}
+		if (palette is null)
+			throw new NullReferenceException("Missing palette!");
+		if (palette.Length == 255)
+		{
+			uint[] destination = new uint[256];
+			Array.Copy(
+				sourceArray: palette,
+				sourceIndex: 0,
+				destinationArray: destination,
+				destinationIndex: 1,
+				length: palette.Length);
+			palette = destination;
+		}
 		VoxelAtlasPacker<string>.PackResult packResult = VoxelAtlasPacker<string>.Pack(models
 			.Select(kvp => new VoxelAtlasPacker<string>.Cuboid(
 				Id: kvp.Key,
@@ -136,7 +149,7 @@ public class Program
 	{
 		ArgumentNullException.ThrowIfNull(palette);
 		if (palette.Length < 256)
-			throw new ArgumentException("Palette too short.", nameof(palette));
+			throw new ArgumentException($"Palette too short. Actual: {palette.Length}, Expected: 256.", nameof(palette));
 		Span<byte> buffer = stackalloc byte[768];
 		for (int i = 0, offset = 0; i < 256; i++, offset += 3)
 		{
