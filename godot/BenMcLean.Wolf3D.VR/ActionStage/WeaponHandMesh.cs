@@ -57,7 +57,7 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 	/// <summary>Unsubscribe from simulator weapon events.</summary>
 	public void Unsubscribe()
 	{
-		if (_simulator != null)
+		if (_simulator is not null)
 		{
 			_simulator.WeaponEquipped -= OnWeaponEquipped;
 			_simulator.WeaponSpriteChanged -= OnWeaponSpriteChanged;

@@ -140,7 +140,7 @@ void sky() {
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
-		_difficulty = savedInventory?.Values != null && savedInventory.Values.TryGetValue("Difficulty", out int savedDifficulty)
+		_difficulty = savedInventory?.Values is not null && savedInventory.Values.TryGetValue("Difficulty", out int savedDifficulty)
 			? savedDifficulty
 			: difficulty;
 		_savedInventory = savedInventory;
@@ -173,9 +173,9 @@ void sky() {
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 		// Level index and difficulty are stored in the snapshot's inventory
-		_initialLevelIndex = snapshot.InventoryValues?.Values != null
+		_initialLevelIndex = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
-		_difficulty = snapshot.InventoryValues?.Values != null
+		_difficulty = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("Difficulty", out int d) ? d : 2;
 	}
 
@@ -186,294 +186,289 @@ void sky() {
 			// Get current level analysis
 			MapAnalysis = Shared.SharedAssetManager.CurrentGame.MapAnalyses[_initialLevelIndex];
 
-		// Play level music
-		if (!string.IsNullOrWhiteSpace(MapAnalysis.Music))
-			Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, MapAnalysis.Music);
+			// Play level music
+			if (!string.IsNullOrWhiteSpace(MapAnalysis.Music))
+				Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, MapAnalysis.Music);
 
-		// Setup sky with floor/ceiling colors from map
-		SetupSky(MapAnalysis);
+			// Setup sky with floor/ceiling colors from map
+			SetupSky(MapAnalysis);
 
-		// Initialize display mode camera rig
-		_displayMode.Initialize(this);
-		_displayMode.LocomotionEnabled = true;
+			// Initialize display mode camera rig
+			_displayMode.Initialize(this);
+			_displayMode.LocomotionEnabled = true;
 
-		// Camera positioning is deferred until after simulator initialization
-		// so that LoadState/resume can override the spawn position
+			// Camera positioning is deferred until after simulator initialization
+			// so that LoadState/resume can override the spawn position
 
-		// Create walls for the current level and add to scene
-		_walls = new Walls(
-			VRAssetManager.OpaqueMaterials,
-			MapAnalysis,
-			Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
-		AddChild(_walls);
-
-		// Create debug markers for patrol points and ambush actors
-		_debugMarkers = new DebugMarkers(MapAnalysis);
-		AddChild(_debugMarkers);
-
-		// Create fixtures (billboarded sprites) for the current level and add to scene
-		_fixtures = new Fixtures(
-			VRAssetManager.SpriteMaterials,
-			MapAnalysis.StaticSpawns,
-			() => _displayMode.ViewerYRotation,  // Delegate returns camera Y rotation for billboard effect
-			Shared.SharedAssetManager.CurrentGame.VSwap.SpritePage);
-		AddChild(_fixtures);
-
-		// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
-		_bonuses = new Bonuses(
-			VRAssetManager.SpriteMaterials,
-			() => _displayMode.ViewerYRotation);  // Delegate returns camera Y rotation for billboard effect
-		AddChild(_bonuses);
-
-		// Create actors (dynamic actor sprites with game logic) for the current level and add to scene
-		_actors = new Actors(
-			VRAssetManager.SpriteMaterials,
-			Shared.SharedAssetManager.DigiSounds,      // Digi sounds for actor alert sounds
-			() => _displayMode.ViewerPosition,         // Viewer position for directional sprites
-			() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
-		AddChild(_actors);
-
-		// Create weapons: flatscreen shows a camera-attached sprite; VR uses WeaponHandMesh on controllers.
-		// Weapons still subscribes for WeaponFired sound in both modes.
-		_weapons = new Weapons(
-			VRAssetManager.SpriteMaterials,
-			_displayMode.Camera,
-			disableVisual: _displayMode.IsVRActive);
-		AddChild(_weapons);
-
-		// Create doors for the current level and add to scene
-		IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(MapAnalysis.Doors);
-		Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = VRAssetManager.CreateFlippedMaterialsForDoors(doorTextureIndices);
-		_doors = new Doors(
-			VRAssetManager.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
-			flippedDoorMaterials,  // Flipped materials (only for door textures)
-			MapAnalysis.Doors,
-			Shared.SharedAssetManager.DigiSounds);  // Sound library for door sounds
-		AddChild(_doors);
-
-		// Create simulator controller
-		_simulatorController = new SimulatorController();
-		AddChild(_simulatorController);
-
-		if (_existingSimulator != null)
-		{
-			// Resuming from suspended game - reuse existing simulator
-			_simulatorController.InitializeFromExisting(
-				_existingSimulator,
-				_doors,
-				_walls,
-				_bonuses,
-				_actors,
-				_weapons,
-				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()));
-		}
-		else
-		{
-			// New game, level transition, or loading saved game - create fresh simulator
-			_simulatorController.Initialize(
-				Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
+			// Create walls for the current level and add to scene
+			_walls = new Walls(
+				VRAssetManager.OpaqueMaterials,
 				MapAnalysis,
-				_doors,
-				_walls,
-				_bonuses,
-				_actors,
-				_weapons,
-				Shared.SharedAssetManager.CurrentGame.StateCollection,
-				Shared.SharedAssetManager.CurrentGame.WeaponCollection,
-				() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()),
-				SharedAssetManager.StatusBar,
-				_difficulty,
-				_savedInventory,
-				_savedLevelStats);
+				Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
+			AddChild(_walls);
 
-			// If loading from a saved game, apply the snapshot on top of fresh state
-			// then re-emit all entity state so presentation layer syncs with restored state
-			if (_loadSnapshot != null)
+			// Create debug markers for patrol points and ambush actors
+			_debugMarkers = new DebugMarkers(MapAnalysis);
+			AddChild(_debugMarkers);
+
+			// Create fixtures (billboarded sprites) for the current level and add to scene
+			_fixtures = new Fixtures(
+				VRAssetManager.SpriteMaterials,
+				MapAnalysis.StaticSpawns,
+				() => _displayMode.ViewerYRotation,  // Delegate returns camera Y rotation for billboard effect
+				Shared.SharedAssetManager.CurrentGame.VSwap.SpritePage);
+			AddChild(_fixtures);
+
+			// Create bonuses (bonus/pickup items with game logic) for the current level and add to scene
+			_bonuses = new Bonuses(
+				VRAssetManager.SpriteMaterials,
+				() => _displayMode.ViewerYRotation);  // Delegate returns camera Y rotation for billboard effect
+			AddChild(_bonuses);
+
+			// Create actors (dynamic actor sprites with game logic) for the current level and add to scene
+			_actors = new Actors(
+				VRAssetManager.SpriteMaterials,
+				Shared.SharedAssetManager.DigiSounds,      // Digi sounds for actor alert sounds
+				() => _displayMode.ViewerPosition,         // Viewer position for directional sprites
+				() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
+			AddChild(_actors);
+
+			// Create weapons: flatscreen shows a camera-attached sprite; VR uses WeaponHandMesh on controllers.
+			// Weapons still subscribes for WeaponFired sound in both modes.
+			_weapons = new Weapons(
+				VRAssetManager.SpriteMaterials,
+				_displayMode.Camera,
+				disableVisual: _displayMode.IsVRActive);
+			AddChild(_weapons);
+
+			// Create doors for the current level and add to scene
+			IEnumerable<ushort> doorTextureIndices = Doors.GetRequiredTextureIndices(MapAnalysis.Doors);
+			Dictionary<ushort, ShaderMaterial> flippedDoorMaterials = VRAssetManager.CreateFlippedMaterialsForDoors(doorTextureIndices);
+			_doors = new Doors(
+				VRAssetManager.OpaqueMaterials,  // Materials with normal UVs (shared with walls)
+				flippedDoorMaterials,  // Flipped materials (only for door textures)
+				MapAnalysis.Doors,
+				Shared.SharedAssetManager.DigiSounds);  // Sound library for door sounds
+			AddChild(_doors);
+
+			// Create simulator controller
+			_simulatorController = new SimulatorController();
+			AddChild(_simulatorController);
+
+			if (_existingSimulator is not null)
 			{
-				_simulatorController.Simulator.Load(_loadSnapshot);
-				_simulatorController.Simulator.EmitAllEntityState();
+				// Resuming from suspended game - reuse existing simulator
+				_simulatorController.InitializeFromExisting(
+					_existingSimulator,
+					_doors,
+					_walls,
+					_bonuses,
+					_actors,
+					_weapons,
+					() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()));
 			}
-		}
-
-		// Position camera: use restored state (load/resume) or map spawn point
-		Vector3 cameraPosition;
-		float cameraRotationY = 0f;
-		if (_existingSimulator != null || _loadSnapshot != null)
-		{
-			// Restore position/angle from simulator (which has been loaded/resumed)
-			cameraPosition = new Vector3(
-				_simulatorController.Simulator.PlayerX.ToMeters(),
-				Constants.HalfTileHeight,
-				_simulatorController.Simulator.PlayerY.ToMeters());
-			cameraRotationY = _simulatorController.Simulator.PlayerAngle.ToGodotYRotation();
-		}
-		else if (MapAnalysis.PlayerStart.HasValue)
-		{
-			MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
-			// Center of the player's starting grid square
-			cameraPosition = new Vector3(
-				playerStart.X.ToMetersCentered(),
-				Constants.HalfTileHeight,
-				playerStart.Y.ToMetersCentered());
-			// Convert Direction enum to Godot rotation using ToAngle extension method
-			// Handles Wolf3D coordinate system → Godot coordinate system conversion
-			cameraRotationY = playerStart.Facing.ToAngle();
-			// Pre-warm the simulator's player position so the first Update() call sees no
-			// positional delta and doesn't sweep the path from (0,0) to the spawn point.
-			// PlacePlayer is the right call here: this is system-driven placement, not travel.
-			_simulatorController.Simulator.PlacePlayer(
-				playerStart.X.ToMetersCentered().ToFixedPoint(),
-				playerStart.Y.ToMetersCentered().ToFixedPoint(),
-				cameraRotationY.ToWolf3DAngle());
-		}
-		else
-		{
-			// Fallback to origin if no player start found
-			cameraPosition = new Vector3(0, Constants.HalfTileHeight, 0);
-			GD.PrintErr("Warning: No player start found in map!");
-		}
-
-		// Position the display mode's origin (XROrigin or CameraHolder) at player start.
-		// Y is set to 0 (floor level): in 5DOF mode Update() locks camera to HalfTileHeight
-		// each frame; in roomscale mode the origin stays at floor level by design.
-		if (_displayMode.Origin != null)
-		{
-			_displayMode.Origin.Position = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
-			_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
-		}
-
-		// Attach WeaponHandMesh to each VR controller so the weapon renders at the hand position.
-		// Hand 0 = right controller (slot 0), hand 1 = left controller (slot 1).
-		if (_displayMode.IsVRActive)
-		{
-			for (int hand = 0; hand <= 1; hand++)
+			else
 			{
-				Node3D handNode = _displayMode.GetHandNode(hand);
-				if (handNode != null)
+				// New game, level transition, or loading saved game - create fresh simulator
+				_simulatorController.Initialize(
+					Shared.SharedAssetManager.CurrentGame.MapAnalyzer,
+					MapAnalysis,
+					_doors,
+					_walls,
+					_bonuses,
+					_actors,
+					_weapons,
+					Shared.SharedAssetManager.CurrentGame.StateCollection,
+					Shared.SharedAssetManager.CurrentGame.WeaponCollection,
+					() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()),
+					SharedAssetManager.StatusBar,
+					_difficulty,
+					_savedInventory,
+					_savedLevelStats);
+
+				// If loading from a saved game, apply the snapshot on top of fresh state
+				// then re-emit all entity state so presentation layer syncs with restored state
+				if (_loadSnapshot is not null)
 				{
-					WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand) { Name = $"WeaponHandMesh{hand}" };
-					handNode.AddChild(handMesh);
-					handMesh.Subscribe(_simulatorController.Simulator);
+					_simulatorController.Simulator.Load(_loadSnapshot);
+					_simulatorController.Simulator.EmitAllEntityState();
 				}
 			}
-		}
-		_simulatorController.Simulator.EmitWeaponState();
 
-		// Store level index in inventory so save/load can determine which level to restore
-		// WL_DEF.H:gamestate.mapon
-		_simulatorController.Simulator.Inventory.SetValue("MapOn", _initialLevelIndex);
-
-		// Wire up hit detection callback for weapon state machine
-		// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
-		_simulatorController.Simulator.HitDetection = PerformWeaponRaycast;
-
-		// Wire up movement validation for collision detection
-		// This enables wall collision and wall-sliding behavior
-		_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
-
-		// Create screen flash overlay (palette-shift effects: damage flash, bonus flash, fades)
-		// Uses CanvasLayer for flatscreen and a veil quad on the XRCamera3D for VR headset
-		_screenFlashOverlay = new ScreenFlashOverlay();
-		AddChild(_screenFlashOverlay);
-		_screenFlashOverlay.Subscribe(_simulatorController);
-		_screenFlashOverlay.SetVRCamera(_displayMode.IsVRActive ? _displayMode.Camera : null);
-
-		// Subscribe to elevator activation for level transitions
-		_simulatorController.ElevatorActivated += OnElevatorActivated;
-
-		// Subscribe to menu navigation events (VictoryTile, quiz triggers, etc.)
-		_simulatorController.NavigateToMenu += OnNavigateToMenu;
-
-		// Subscribe to player death events
-		_simulatorController.PlayerDied += OnPlayerDied;
-
-		// Subscribe to display mode button events for shooting and using objects
-		_displayMode.HandButtonPressed += OnHandButtonPressed;
-		_displayMode.HandButtonReleased += OnHandButtonReleased;
-
-		// Capture mouse for FPS controls in flatscreen mode
-		if (!_displayMode.IsVRActive)
-			Input.MouseMode = Input.MouseModeEnum.Captured;
-
-		// Create pixel-perfect aiming system
-		_pixelPerfectAiming = new PixelPerfectAiming(this);
-
-		// Create debug aim indicator (temporary - won't be in final game)
-		_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode);
-		AddChild(_aimIndicator);
-
-		// Create VR teleportation overlay (arc and circle showing teleport destination)
-		// Only needed in VR mode; flatscreen has no thumbstick teleportation
-		if (_displayMode.IsVRActive)
-		{
-			_teleportOverlay = new TeleportationOverlay();
-			AddChild(_teleportOverlay);
-		}
-		// Wire status bar events for flatscreen mode before OnNewGame script runs.
-		// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
-		if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar != null)
-		{
-			_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
-			_statusBarRenderer = new StatusBarRenderer(_statusBarState);
-
-			// Wire simulator picture events (e.g., face updates from OnFace Lua) to status bar state
-			_simulatorController.Simulator.StatusBarPicChanged += evt =>
-				_statusBarState.SetPic(evt.Name, evt.PicName);
-			// Wire simulator text events (e.g., health, ammo, score) to status bar state
-			_simulatorController.Simulator.StatusBarTextChanged += evt =>
-				_statusBarState.SetText(evt.Id, evt.Content);
-		}
-
-		// Execute OnNewGame script for new games (VR and flatscreen).
-		// WL_GAME.C:NewGame — sets initial inventory values (health, ammo, weapons, etc.)
-		// Must run after status bar events are wired so display updates are received.
-		// Must run before EquipStartingWeapon so weapon ownership is set correctly.
-		if (_existingSimulator == null && _loadSnapshot == null && _savedInventory == null)
-			_simulatorController.Simulator.ExecuteOnNewGameScript();
-
-		// Equip starting weapon based on inventory (new game or level transition).
-		// New game: SelectedWeapon0 set by OnNewGame script above.
-		// Level transition: SelectedWeapon0 restored from savedInventory.
-		if (_existingSimulator == null && _loadSnapshot == null)
-			_simulatorController.Simulator.EquipStartingWeapon();
-
-		// Create status bar display nodes for flatscreen mode.
-		// Fields are populated by the OnNewGame script or restored inventory above.
-		if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar != null)
-		{
-			// Create CanvasLayer to display status bar at bottom of screen
-			_statusBarCanvas = new CanvasLayer
+			// Position camera: use restored state (load/resume) or map spawn point
+			Vector3 cameraPosition;
+			float cameraRotationY = 0f;
+			if (_existingSimulator is not null || _loadSnapshot is not null)
 			{
-				Name = "StatusBarCanvas",
-				Layer = 10 // On top of game view
-			};
-			AddChild(_statusBarCanvas);
-
-			// Add the status bar viewport as a child so it processes
-			_statusBarCanvas.AddChild(_statusBarRenderer.Viewport);
-
-			// Create TextureRect to display the status bar viewport texture
-			TextureRect statusBarDisplay = new()
+				// Restore position/angle from simulator (which has been loaded/resumed)
+				cameraPosition = new Vector3(
+					_simulatorController.Simulator.PlayerX.ToMeters(),
+					Constants.HalfTileHeight,
+					_simulatorController.Simulator.PlayerY.ToMeters());
+				cameraRotationY = _simulatorController.Simulator.PlayerAngle.ToGodotYRotation();
+			}
+			else if (MapAnalysis.PlayerStart.HasValue)
 			{
-				Name = "StatusBarDisplay",
-				Texture = _statusBarRenderer.ViewportTexture,
-				// Anchor to bottom of screen, centered horizontally
-				AnchorLeft = 0.5f,
-				AnchorRight = 0.5f,
-				AnchorTop = 1.0f,
-				AnchorBottom = 1.0f,
-				// Scale 3x for visibility (320x40 -> 960x120)
-				CustomMinimumSize = new Vector2(960, 120),
-				Size = new Vector2(960, 120),
-				// Center horizontally, position at bottom
-				OffsetLeft = -480,
-				OffsetRight = 480,
-				OffsetTop = -120,
-				OffsetBottom = 0,
-				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			};
-			_statusBarCanvas.AddChild(statusBarDisplay);
-		}
+				MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
+				// Center of the player's starting grid square
+				cameraPosition = new Vector3(
+					playerStart.X.ToMetersCentered(),
+					Constants.HalfTileHeight,
+					playerStart.Y.ToMetersCentered());
+				// Convert Direction enum to Godot rotation using ToAngle extension method
+				// Handles Wolf3D coordinate system → Godot coordinate system conversion
+				cameraRotationY = playerStart.Facing.ToAngle();
+				// Pre-warm the simulator's player position so the first Update() call sees no
+				// positional delta and doesn't sweep the path from (0,0) to the spawn point.
+				// PlacePlayer is the right call here: this is system-driven placement, not travel.
+				_simulatorController.Simulator.PlacePlayer(
+					playerStart.X.ToMetersCentered().ToFixedPoint(),
+					playerStart.Y.ToMetersCentered().ToFixedPoint(),
+					cameraRotationY.ToWolf3DAngle());
+			}
+			else
+			{
+				// Fallback to origin if no player start found
+				cameraPosition = new Vector3(0, Constants.HalfTileHeight, 0);
+				GD.PrintErr("Warning: No player start found in map!");
+			}
+
+			// Position the display mode's origin (XROrigin or CameraHolder) at player start.
+			// Y is set to 0 (floor level): in 5DOF mode Update() locks camera to HalfTileHeight
+			// each frame; in roomscale mode the origin stays at floor level by design.
+			if (_displayMode.Origin is not null)
+			{
+				_displayMode.Origin.Position = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
+				_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
+			}
+
+			// Attach WeaponHandMesh to each VR controller so the weapon renders at the hand position.
+			// Hand 0 = right controller (slot 0), hand 1 = left controller (slot 1).
+			if (_displayMode.IsVRActive)
+				for (int hand = 0; hand <= 1; hand++)
+					if (_displayMode.GetHandNode(hand) is Node3D handNode)
+					{
+						WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand) { Name = $"WeaponHandMesh{hand}" };
+						handNode.AddChild(handMesh);
+						handMesh.Subscribe(_simulatorController.Simulator);
+					}
+			_simulatorController.Simulator.EmitWeaponState();
+
+			// Store level index in inventory so save/load can determine which level to restore
+			// WL_DEF.H:gamestate.mapon
+			_simulatorController.Simulator.Inventory.SetValue("MapOn", _initialLevelIndex);
+
+			// Wire up hit detection callback for weapon state machine
+			// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
+			_simulatorController.Simulator.HitDetection = PerformWeaponRaycast;
+
+			// Wire up movement validation for collision detection
+			// This enables wall collision and wall-sliding behavior
+			_displayMode.SetMovementValidator(_simulatorController.ValidateMovement);
+
+			// Create screen flash overlay (palette-shift effects: damage flash, bonus flash, fades)
+			// Uses CanvasLayer for flatscreen and a veil quad on the XRCamera3D for VR headset
+			_screenFlashOverlay = new ScreenFlashOverlay();
+			AddChild(_screenFlashOverlay);
+			_screenFlashOverlay.Subscribe(_simulatorController);
+			_screenFlashOverlay.SetVRCamera(_displayMode.IsVRActive ? _displayMode.Camera : null);
+
+			// Subscribe to elevator activation for level transitions
+			_simulatorController.ElevatorActivated += OnElevatorActivated;
+
+			// Subscribe to menu navigation events (VictoryTile, quiz triggers, etc.)
+			_simulatorController.NavigateToMenu += OnNavigateToMenu;
+
+			// Subscribe to player death events
+			_simulatorController.PlayerDied += OnPlayerDied;
+
+			// Subscribe to display mode button events for shooting and using objects
+			_displayMode.HandButtonPressed += OnHandButtonPressed;
+			_displayMode.HandButtonReleased += OnHandButtonReleased;
+
+			// Capture mouse for FPS controls in flatscreen mode
+			if (!_displayMode.IsVRActive)
+				Input.MouseMode = Input.MouseModeEnum.Captured;
+
+			// Create pixel-perfect aiming system
+			_pixelPerfectAiming = new PixelPerfectAiming(this);
+
+			// Create debug aim indicator (temporary - won't be in final game)
+			_aimIndicator = new AimIndicator(_pixelPerfectAiming, _displayMode);
+			AddChild(_aimIndicator);
+
+			// Create VR teleportation overlay (arc and circle showing teleport destination)
+			// Only needed in VR mode; flatscreen has no thumbstick teleportation
+			if (_displayMode.IsVRActive)
+			{
+				_teleportOverlay = new TeleportationOverlay();
+				AddChild(_teleportOverlay);
+			}
+			// Wire status bar events for flatscreen mode before OnNewGame script runs.
+			// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
+			if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar is not null)
+			{
+				_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
+				_statusBarRenderer = new StatusBarRenderer(_statusBarState);
+
+				// Wire simulator picture events (e.g., face updates from OnFace Lua) to status bar state
+				_simulatorController.Simulator.StatusBarPicChanged += evt =>
+					_statusBarState.SetPic(evt.Name, evt.PicName);
+				// Wire simulator text events (e.g., health, ammo, score) to status bar state
+				_simulatorController.Simulator.StatusBarTextChanged += evt =>
+					_statusBarState.SetText(evt.Id, evt.Content);
+			}
+
+			// Execute OnNewGame script for new games (VR and flatscreen).
+			// WL_GAME.C:NewGame — sets initial inventory values (health, ammo, weapons, etc.)
+			// Must run after status bar events are wired so display updates are received.
+			// Must run before EquipStartingWeapon so weapon ownership is set correctly.
+			if (_existingSimulator == null && _loadSnapshot == null && _savedInventory == null)
+				_simulatorController.Simulator.ExecuteOnNewGameScript();
+
+			// Equip starting weapon based on inventory (new game or level transition).
+			// New game: SelectedWeapon0 set by OnNewGame script above.
+			// Level transition: SelectedWeapon0 restored from savedInventory.
+			if (_existingSimulator == null && _loadSnapshot == null)
+				_simulatorController.Simulator.EquipStartingWeapon();
+
+			// Create status bar display nodes for flatscreen mode.
+			// Fields are populated by the OnNewGame script or restored inventory above.
+			if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar is not null)
+			{
+				// Create CanvasLayer to display status bar at bottom of screen
+				_statusBarCanvas = new CanvasLayer
+				{
+					Name = "StatusBarCanvas",
+					Layer = 10 // On top of game view
+				};
+				AddChild(_statusBarCanvas);
+
+				// Add the status bar viewport as a child so it processes
+				_statusBarCanvas.AddChild(_statusBarRenderer.Viewport);
+
+				// Create TextureRect to display the status bar viewport texture
+				TextureRect statusBarDisplay = new()
+				{
+					Name = "StatusBarDisplay",
+					Texture = _statusBarRenderer.ViewportTexture,
+					// Anchor to bottom of screen, centered horizontally
+					AnchorLeft = 0.5f,
+					AnchorRight = 0.5f,
+					AnchorTop = 1.0f,
+					AnchorBottom = 1.0f,
+					// Scale 3x for visibility (320x40 -> 960x120)
+					CustomMinimumSize = new Vector2(960, 120),
+					Size = new Vector2(960, 120),
+					// Center horizontally, position at bottom
+					OffsetLeft = -480,
+					OffsetRight = 480,
+					OffsetTop = -120,
+					OffsetBottom = 0,
+					TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				};
+				_statusBarCanvas.AddChild(statusBarDisplay);
+			}
 		}
 		catch (Exception ex)
 		{
@@ -493,20 +488,20 @@ void sky() {
 			}
 
 			// Cheat: N skips to next level (like activating the elevator)
-		if (keyEvent.Keycode == Key.N)
-		{
-			InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
-			byte destinationLevel = MapAnalysis.ElevatorTo;
-			LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
-				_initialLevelIndex + 1, false, MapAnalysis.Par);
-			_simulatorController?.Simulator?.AddCompletionStats(stats);
-			PendingTransition = new LevelTransitionRequest(
-				destinationLevel, savedInventory, stats,
-				allLevelStats: _simulatorController?.Simulator?.LevelRatios);
-			return;
-		}
+			if (keyEvent.Keycode == Key.N)
+			{
+				InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
+				byte destinationLevel = MapAnalysis.ElevatorTo;
+				LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
+					_initialLevelIndex + 1, false, MapAnalysis.Par);
+				_simulatorController?.Simulator?.AddCompletionStats(stats);
+				PendingTransition = new LevelTransitionRequest(
+					destinationLevel, savedInventory, stats,
+					allLevelStats: _simulatorController?.Simulator?.LevelRatios);
+				return;
+			}
 
-		// Weapon switching - number keys map to weapon numbers from XML
+			// Weapon switching - number keys map to weapon numbers from XML
 			// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 			int weaponNumber = keyEvent.Keycode switch
 			{
@@ -517,7 +512,7 @@ void sky() {
 				_ => -1
 			};
 			if (weaponNumber >= 0
-				&& _simulatorController.Simulator?.WeaponCollection != null
+				&& _simulatorController.Simulator?.WeaponCollection is not null
 				&& _simulatorController.Simulator.WeaponCollection.TryGetWeaponByNumber(weaponNumber, out WeaponInfo weaponInfo))
 			{
 				SwitchWeapon(weaponInfo.Name);
@@ -555,7 +550,7 @@ void sky() {
 		{
 			if (handIndex == 0)
 			{
-				if (_teleportOverlay != null
+				if (_teleportOverlay is not null
 					&& _displayMode.IsTeleportModeActive
 					&& _teleportOverlay.DestinationTile.HasValue
 					&& _teleportOverlay.IsDestinationNavigable)
@@ -935,7 +930,7 @@ void sky() {
 		// Get floor and ceiling colors from map, or use defaults
 		Color floorColor = level.Floor is byte floor ? palette[floor].ToColor() : new Color(0.33f, 0.33f, 0.33f), // Default: dark gray
 			ceilingColor = level.Ceiling is byte ceiling ? palette[ceiling].ToColor() : new Color(0.2f, 0.2f, 0.2f); // Default: darker gray
-		// Create world environment with divided skybox
+																													 // Create world environment with divided skybox
 		WorldEnvironment worldEnvironment = new()
 		{
 			Environment = new()
@@ -960,7 +955,7 @@ void sky() {
 		_displayMode.Update(delta);
 
 		// Update teleportation overlay when in VR teleport mode
-		if (_teleportOverlay != null)
+		if (_teleportOverlay is not null)
 		{
 			if (_displayMode.IsTeleportModeActive)
 			{
@@ -996,7 +991,7 @@ void sky() {
 		_displayMode.HandButtonReleased -= OnHandButtonReleased;
 
 		// Unsubscribe from simulator events
-		if (_simulatorController != null)
+		if (_simulatorController is not null)
 		{
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
 			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
@@ -1004,7 +999,7 @@ void sky() {
 		}
 
 		// Clear HitDetection delegate (points at this ActionStage's method)
-		if (_simulatorController?.Simulator != null)
+		if (_simulatorController?.Simulator is not null)
 			_simulatorController.Simulator.HitDetection = null;
 
 

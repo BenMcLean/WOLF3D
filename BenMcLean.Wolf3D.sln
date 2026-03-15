@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenMcLean.Wolf3D.Simulator"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NScumm.Audio", "src\ThirdParty\NScumm.Audio\NScumm.Audio.csproj", "{A6551C3F-F932-E824-84F4-A1A3C2647456}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenMcLean.Wolf3D.VoxelBaker", "src\BenMcLean.Wolf3D.VoxelBaker\BenMcLean.Wolf3D.VoxelBaker.csproj", "{C7060293-5409-4859-BD5E-9665AEEF1480}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{A6551C3F-F932-E824-84F4-A1A3C2647456}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6551C3F-F932-E824-84F4-A1A3C2647456}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6551C3F-F932-E824-84F4-A1A3C2647456}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7060293-5409-4859-BD5E-9665AEEF1480}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7060293-5409-4859-BD5E-9665AEEF1480}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7060293-5409-4859-BD5E-9665AEEF1480}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7060293-5409-4859-BD5E-9665AEEF1480}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
