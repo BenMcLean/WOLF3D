@@ -1,4 +1,7 @@
 using System.Buffers.Binary;
+using System.Collections.Immutable;
+using System.Text;
+using System.Text.Json;
 using VoxReader.Interfaces;
 
 namespace BenMcLean.Wolf3D.VoxelBaker;
@@ -6,7 +9,7 @@ namespace BenMcLean.Wolf3D.VoxelBaker;
 public class Program
 {
 	public record SpriteMapping(ushort Page, string Name);
-	public static readonly ILookup<string, SpriteMapping> SpriteMap = new Dictionary<string, SpriteMapping[]>()
+	public static readonly IReadOnlyDictionary<string, ImmutableArray<SpriteMapping>> SpriteMap = new Dictionary<string, ImmutableArray<SpriteMapping>>()
 	{
 		["knife"] = [
 			new(522,"SPR_KNIFEREADY"),
@@ -32,15 +35,13 @@ public class Program
 			new(539,"SPR_CHAINATK2"),
 			new(540,"SPR_CHAINATK3"),
 			new(541,"SPR_CHAINATK4")]
-	}
-	.SelectMany(pair => pair.Value, (pair, mapping) => new { pair.Key, mapping })
-	.ToLookup(x => x.Key, x => x.mapping);
+	};
 	public static void Main(string[] args)
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 		uint[]? palette = null;
 		Dictionary<string, IModel> models = [];
-		foreach (IGrouping<string, SpriteMapping> grouping in SpriteMap)
+		foreach (KeyValuePair<string, ImmutableArray<SpriteMapping>> grouping in SpriteMap)
 		{
 			string path = Path.Combine(folderPath, grouping.Key + ".vox");
 			using FileStream fs = new(
@@ -59,8 +60,17 @@ public class Program
 				Width: kvp.Value.GlobalSize.X,
 				Height: kvp.Value.GlobalSize.Y,
 				Depth: kvp.Value.GlobalSize.Z)));
-		byte[] atlasBytes = BakeAtlas(packResult, models);
-		Console.WriteLine($"Atlas: {packResult.Width}x{packResult.Height}x{packResult.Depth} = {atlasBytes.Length} bytes");
+		string outputPath = Path.Combine(folderPath, "VOXELS.W3D");
+		using FileStream output = new(
+			path: outputPath,
+			mode: FileMode.OpenOrCreate,
+			access: FileAccess.Write);
+		BinaryWriter writer = new(output);
+		WriteString(writer, JsonSerializer.Serialize(SpriteMap));
+		WriteString(writer, JsonSerializer.Serialize(packResult));
+		WriteVgaPalette(output, palette);
+		output.Write(BakeAtlas(packResult, models));
+		Console.WriteLine($"{models.Count} models in atlas size {packResult.Width}, {packResult.Height}, {packResult.Depth} written to {outputPath}");
 	}
 	/// <summary>
 	/// Bake all packed voxel models into a flat byte array for a 3D texture.
@@ -122,8 +132,9 @@ public class Program
 			0xFFu;
 		return palette;
 	}
-	public static void WriteVgaPalette(Stream stream, uint[] palette)
+	public static void WriteVgaPalette(Stream stream, uint[]? palette)
 	{
+		ArgumentNullException.ThrowIfNull(palette);
 		if (palette.Length < 256)
 			throw new ArgumentException("Palette too short.", nameof(palette));
 		Span<byte> buffer = stackalloc byte[768];
@@ -136,17 +147,13 @@ public class Program
 		stream.Write(buffer);
 	}
 	#endregion Palette
-	/// <summary>
-	/// Compute power of two greater than or equal to n.
-	/// </summary>
-	public static ushort NextPowerOf2(ushort n)
+	#region Utilities
+	public static string ReadString(BinaryReader reader) => Encoding.UTF8.GetString(reader.ReadBytes((int)reader.ReadUInt32()));
+	public static void WriteString(BinaryWriter writer, string s)
 	{
-		if (n == 0) return 1;
-		n--;
-		n |= (ushort)(n >> 1);
-		n |= (ushort)(n >> 2);
-		n |= (ushort)(n >> 4);
-		n |= (ushort)(n >> 8);
-		return (ushort)(n + 1);
+		byte[] bytes = Encoding.UTF8.GetBytes(s);
+		writer.Write((uint)bytes.Length);
+		writer.Write(bytes);
 	}
+	#endregion Utilities
 }
