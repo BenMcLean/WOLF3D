@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using VoxReader.Interfaces;
 
 namespace BenMcLean.Wolf3D.VoxelBaker;
@@ -5,7 +6,7 @@ namespace BenMcLean.Wolf3D.VoxelBaker;
 public class Program
 {
 	public record SpriteMapping(ushort Page, string Name);
-	public static readonly ILookup<string, SpriteMapping> Map = new Dictionary<string, SpriteMapping[]>()
+	public static readonly ILookup<string, SpriteMapping> SpriteMap = new Dictionary<string, SpriteMapping[]>()
 	{
 		["knife"] = [
 			new(522,"SPR_KNIFEREADY"),
@@ -37,45 +38,35 @@ public class Program
 	public static void Main(string[] args)
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
-		string[] files = Directory.GetFiles(folderPath, "*.vox");
-		uint[]? referencePalette = null;
-		int filesChecked = 0;
-		foreach (string file in files)
+		uint[]? palette = null;
+		Dictionary<string, IModel> models = [];
+		foreach (IGrouping<string, SpriteMapping> grouping in SpriteMap)
 		{
-			try
-			{
-				using FileStream stream = File.OpenRead(file);
-				IModel[] models = Models(stream, out uint[] currentPalette);
-				// 1. Check frame count
-				//if (models.Length != 1)
-				//{
-				//	Console.WriteLine($"\nFail: '{Path.GetFileName(file)}' has {models.Length} frames (expected 1).");
-				//	return;
-				//}
-				// 2. Check palette consistency
-				if (referencePalette is null)
-					referencePalette = currentPalette;
-				else if (!currentPalette.SequenceEqual(referencePalette))
-				{
-					Console.WriteLine($"\nFail: '{Path.GetFileName(file)}' has a different palette than previous files.");
-					return;
-				}
-				filesChecked++;
-				Console.Write($"\rChecked {filesChecked} files...");
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"\nError reading '{Path.GetFileName(file)}': {ex.Message}");
-				return;
-			}
+			string path = Path.Combine(folderPath, grouping.Key + ".vox");
+			using FileStream fs = new(
+				path: path,
+				mode: FileMode.Open,
+				access: FileAccess.Read);
+			models[grouping.Key] = Models(fs, out uint[] currentPalette)[0];
+			if (palette is null)
+				palette = currentPalette;
+			else if (!palette.SequenceEqual(currentPalette))
+				throw new InvalidDataException($"Palette doesn't match for {path}");
 		}
-		Console.WriteLine($"\nSuccess! All {filesChecked} files passed.");
+		VoxelAtlasPacker<string>.PackResult packResult = VoxelAtlasPacker<string>.Pack(models
+			.Select(kvp => new VoxelAtlasPacker<string>.Cuboid(
+				Id: kvp.Key,
+				Width: kvp.Value.GlobalSize.X,
+				Height: kvp.Value.GlobalSize.Y,
+				Depth: kvp.Value.GlobalSize.Z)));
+		//TODO create a byte[] which can be written to file and read verbatim to create a 3D texture in Godot 4
 	}
-	/// <param name="argb">argb8888, Big Endian</param>
-	/// <returns>rgba8888, Big Endian</returns>
-	public static uint Argb2rgba(uint argb) => argb << 8 | argb >> 24;
+	#region VoxReader
 	public static uint ToRgba(VoxReader.Color color) =>
-		Argb2rgba((uint)color.A << 24 | (uint)color.R << 16 | (uint)color.G << 8 | color.B);
+		(uint)color.R << 24 |
+		(uint)color.G << 16 |
+		(uint)color.B << 8 |
+		color.A;
 	public static IModel[] Models(Stream stream, out uint[] palette)
 	{
 		using MemoryStream ms = new();
@@ -83,5 +74,52 @@ public class Program
 		IVoxFile voxFile = VoxReader.VoxReader.Read(ms.ToArray());
 		palette = [.. voxFile.Palette.Colors.Select(ToRgba)];
 		return voxFile.Models;
+	}
+	#endregion VoxReader
+	#region Palette
+	public static uint[] ReadVgaPalette(Stream stream)
+	{
+		Span<byte> buffer = stackalloc byte[768];
+		if (stream.Read(buffer) < 768)
+			throw new EndOfStreamException();
+		return ParseVgaPalette(buffer);
+	}
+	public static uint[] ParseVgaPalette(ReadOnlySpan<byte> chunk)
+	{
+		uint[] palette = new uint[256];
+		for (int index = 0, offset = 0; index < 255; index++, offset += 3)
+			palette[index] = BinaryPrimitives.ReadUInt32BigEndian(chunk[offset..]) << 2 & 0xFCFCFC00u | 0xFFu;
+		palette[255] = (uint)chunk[765] << 26 |
+			(uint)chunk[766] << 18 |
+			(uint)chunk[767] << 10 |
+			0xFFu;
+		return palette;
+	}
+	public static void WriteVgaPalette(Stream stream, uint[] palette)
+	{
+		if (palette.Length < 256)
+			throw new ArgumentException("Palette too short.", nameof(palette));
+		Span<byte> buffer = stackalloc byte[768];
+		for (int i = 0, offset = 0; i < 256; i++, offset += 3)
+		{
+			buffer[offset] = (byte)((palette[i] >> 26) & 0x3F);
+			buffer[offset + 1] = (byte)((palette[i] >> 18) & 0x3F);
+			buffer[offset + 2] = (byte)((palette[i] >> 10) & 0x3F);
+		}
+		stream.Write(buffer);
+	}
+	#endregion Palette
+	/// <summary>
+	/// Compute power of two greater than or equal to n.
+	/// </summary>
+	public static ushort NextPowerOf2(ushort n)
+	{
+		if (n == 0) return 1;
+		n--;
+		n |= (ushort)(n >> 1);
+		n |= (ushort)(n >> 2);
+		n |= (ushort)(n >> 4);
+		n |= (ushort)(n >> 8);
+		return (ushort)(n + 1);
 	}
 }

@@ -2,7 +2,7 @@
   "profiles": {
     "BenMcLean.Wolf3D.VoxelBaker": {
       "commandName": "Project",
-      "commandLineArgs": "\"C:\\Users\\mclea\\source\\repos\\wolf3d\\BenMcLean.Wolf3D\\src\\BenMcLean.Wolf3D.VoxelBaker\\WIP\""
+      "commandLineArgs": "..\\..\\.."
     }
   }
 }

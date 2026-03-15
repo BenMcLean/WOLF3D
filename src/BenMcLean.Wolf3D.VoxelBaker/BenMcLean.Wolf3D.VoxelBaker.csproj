@@ -8,7 +8,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Sharp3DBinPacking" Version="2.0.0" />
 		<PackageReference Include="VoxReader" Version="5.0.6" />
 	</ItemGroup>
 

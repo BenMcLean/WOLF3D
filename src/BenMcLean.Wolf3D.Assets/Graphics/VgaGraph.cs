@@ -141,7 +141,7 @@ public sealed class VgaGraph
 			palette[index] = BinaryPrimitives.ReadUInt32BigEndian(chunk[offset..]) << 2 & 0xFCFCFC00u | 0xFFu;
 		palette[255] = (uint)chunk[765] << 26 |
 			(uint)chunk[766] << 18 |
-			(uint)chunk[767] << 10;
+			(uint)chunk[767] << 10; // Last color is transparent
 		return palette;
 	}
 	public static uint[] ParseHead(Stream stream)
