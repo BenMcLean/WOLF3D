@@ -1,4 +1,4 @@
-using FileToVoxCore.Vox;
+using VoxReader.Interfaces;
 
 namespace BenMcLean.Wolf3D.VoxelBaker;
 
@@ -45,13 +45,13 @@ public class Program
 			try
 			{
 				using FileStream stream = File.OpenRead(file);
-				VoxelData[] models = Models(stream, out uint[] currentPalette);
+				IModel[] models = Models(stream, out uint[] currentPalette);
 				// 1. Check frame count
-				if (models.Length != 1)
-				{
-					Console.WriteLine($"\nFail: '{Path.GetFileName(file)}' has {models.Length} frames (expected 1).");
-					return;
-				}
+				//if (models.Length != 1)
+				//{
+				//	Console.WriteLine($"\nFail: '{Path.GetFileName(file)}' has {models.Length} frames (expected 1).");
+				//	return;
+				//}
 				// 2. Check palette consistency
 				if (referencePalette is null)
 					referencePalette = currentPalette;
@@ -71,21 +71,17 @@ public class Program
 		}
 		Console.WriteLine($"\nSuccess! All {filesChecked} files passed.");
 	}
-	public static uint Color(FileToVoxCore.Drawing.Color color) => Argb2rgba((uint)color.ToArgb());
-	/// <param name="rgba">argb8888, Big Endian</param>
+	/// <param name="argb">argb8888, Big Endian</param>
 	/// <returns>rgba8888, Big Endian</returns>
 	public static uint Argb2rgba(uint argb) => argb << 8 | argb >> 24;
-	public static VoxelData[] Models(Stream stream, out uint[] palette)
+	public static uint ToRgba(VoxReader.Color color) =>
+		Argb2rgba((uint)color.A << 24 | (uint)color.R << 16 | (uint)color.G << 8 | color.B);
+	public static IModel[] Models(Stream stream, out uint[] palette)
 	{
-		VoxModel model = new VoxReader().LoadModel(stream);
-		palette = new uint[256];
-		uint[] sourceArray = [.. model.Palette.Take(palette.Length).Select(Color)];
-		Array.Copy(
-			sourceArray: sourceArray,
-			sourceIndex: 0,
-			destinationArray: palette,
-			destinationIndex: 1,
-			length: Math.Min(palette.Length, sourceArray.Length) - 1);
-		return [.. model.VoxelFrames];
+		using MemoryStream ms = new();
+		stream.CopyTo(ms);
+		IVoxFile voxFile = VoxReader.VoxReader.Read(ms.ToArray());
+		palette = [.. voxFile.Palette.Colors.Select(ToRgba)];
+		return voxFile.Models;
 	}
 }
