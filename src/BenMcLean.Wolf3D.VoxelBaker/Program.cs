@@ -59,7 +59,34 @@ public class Program
 				Width: kvp.Value.GlobalSize.X,
 				Height: kvp.Value.GlobalSize.Y,
 				Depth: kvp.Value.GlobalSize.Z)));
-		//TODO create a byte[] which can be written to file and read verbatim to create a 3D texture in Godot 4
+		byte[] atlasBytes = BakeAtlas(packResult, models);
+		Console.WriteLine($"Atlas: {packResult.Width}x{packResult.Height}x{packResult.Depth} = {atlasBytes.Length} bytes");
+	}
+	/// <summary>
+	/// Bake all packed voxel models into a flat byte array for a 3D texture.
+	/// Layout: index = x + y * width + z * (width * height)
+	/// 0 = transparent, 1-255 = palette color index.
+	/// </summary>
+	public static byte[] BakeAtlas(
+		VoxelAtlasPacker<string>.PackResult packResult,
+		Dictionary<string, IModel> models)
+	{
+		int width = packResult.Width,
+			height = packResult.Height,
+			depth = packResult.Depth;
+		byte[] atlas = new byte[width * height * depth];
+		Parallel.ForEach(packResult.Placements, placement =>
+		{
+			IModel model = models[placement.Id];
+			foreach (VoxReader.Voxel voxel in model.Voxels)
+			{
+				int ax = placement.X + voxel.LocalPosition.X,
+					ay = placement.Y + voxel.LocalPosition.Y,
+					az = placement.Z + voxel.LocalPosition.Z;
+				atlas[ax + ay * width + az * (width * height)] = (byte)voxel.ColorIndex;
+			}
+		});
+		return atlas;
 	}
 	#region VoxReader
 	public static uint ToRgba(VoxReader.Color color) =>
