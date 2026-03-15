@@ -1,5 +1,5 @@
 using System.Buffers.Binary;
-using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using VoxReader.Interfaces;
@@ -8,34 +8,43 @@ namespace BenMcLean.Wolf3D.VoxelBaker;
 
 public class Program
 {
-	public record SpriteMapping(ushort Page, string Name);
-	public static readonly IReadOnlyDictionary<string, ImmutableArray<SpriteMapping>> SpriteMap = new Dictionary<string, ImmutableArray<SpriteMapping>>()
+	public static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ushort>> SpriteMap =
+	new Dictionary<string, IReadOnlyDictionary<string, ushort>>
 	{
-		["knife"] = [
-			new(522,"SPR_KNIFEREADY"),
-			new(523,"SPR_KNIFEATK1"),
-			new(524,"SPR_KNIFEATK2"),
-			new(525,"SPR_KNIFEATK3"),
-			new(526,"SPR_KNIFEATK4")],
-		["pistol"] = [
-			new(527,"SPR_PISTOLREADY"),
-			new(528,"SPR_PISTOLATK1"),
-			new(529,"SPR_PISTOLATK2"),
-			new(530,"SPR_PISTOLATK3"),
-			new(531,"SPR_PISTOLATK4")],
-		["machinegun"] = [
-			new(532,"SPR_MACHINEGUNREADY"),
-			new(533,"SPR_MACHINEGUNATK1"),
-			new(534,"SPR_MACHINEGUNATK2"),
-			new(535,"SPR_MACHINEGUNATK3"),
-			new(536,"SPR_MACHINEGUNATK4")],
-		["chaingun"] = [
-			new(537,"SPR_CHAINREADY"),
-			new(538,"SPR_CHAINATK1"),
-			new(539,"SPR_CHAINATK2"),
-			new(540,"SPR_CHAINATK3"),
-			new(541,"SPR_CHAINATK4")]
-	};
+		["knife"] = new Dictionary<string, ushort>()
+		{
+			["SPR_KNIFEREADY"] = 522,
+			["SPR_KNIFEATK1"] = 523,
+			["SPR_KNIFEATK2"] = 524,
+			["SPR_KNIFEATK3"] = 525,
+			["SPR_KNIFEATK4"] = 526,
+		}.AsReadOnly(),
+		["pistol"] = new Dictionary<string, ushort>()
+		{
+			["SPR_PISTOLREADY"] = 527,
+			["SPR_PISTOLATK1"] = 528,
+			["SPR_PISTOLATK2"] = 529,
+			["SPR_PISTOLATK3"] = 530,
+			["SPR_PISTOLATK4"] = 531,
+		}.AsReadOnly(),
+		["machinegun"] = new Dictionary<string, ushort>()
+		{
+			["SPR_MACHINEGUNREADY"] = 532,
+			["SPR_MACHINEGUNATK1"] = 533,
+			["SPR_MACHINEGUNATK2"] = 534,
+			["SPR_MACHINEGUNATK3"] = 535,
+			["SPR_MACHINEGUNATK4"] = 536,
+		}.AsReadOnly(),
+		["chaingun"] = new Dictionary<string, ushort>()
+		{
+			["SPR_CHAINREADY"] = 537,
+			["SPR_CHAINATK1"] = 538,
+			["SPR_CHAINATK2"] = 539,
+			["SPR_CHAINATK3"] = 540,
+			["SPR_CHAINATK4"] = 541,
+		}.AsReadOnly(),
+	}.AsReadOnly();
+	public record Model(ushort[] XYZ, Dictionary<string, ushort> Names);
 	public static void Main(string[] args)
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
@@ -70,24 +79,45 @@ public class Program
 		VoxelAtlasPacker<string>.PackResult packResult = VoxelAtlasPacker<string>.Pack(models
 			.Select(kvp => new VoxelAtlasPacker<string>.Cuboid(
 				Id: kvp.Key,
-				Width: kvp.Value.GlobalSize.X,
-				Height: kvp.Value.GlobalSize.Y,
-				Depth: kvp.Value.GlobalSize.Z)));
+				X: kvp.Value.GlobalSize.X,
+				Y: kvp.Value.GlobalSize.Y,
+				Z: kvp.Value.GlobalSize.Z)));
 		string outputPath = Path.Combine(folderPath, "VOXELS.W3D");
 		using FileStream output = new(
 			path: outputPath,
 			mode: FileMode.OpenOrCreate,
 			access: FileAccess.Write);
 		BinaryWriter writer = new(output);
-		WriteString(writer, JsonSerializer.Serialize(SpriteMap));
-		WriteString(writer, JsonSerializer.Serialize(packResult));
+		Console.WriteLine("Writing metadata.");
+		Dictionary<string, ushort[]> placements = packResult.Placements
+			.Select(cuboid => new KeyValuePair<string, ushort[]>(cuboid.Id, [(ushort)cuboid.X, (ushort)cuboid.Y, (ushort)cuboid.Z]))
+			.ToDictionary();
+		writer.Write(JsonSerializer.Serialize(SpriteMap.Select(kvp =>
+		{
+			IModel model = models[kvp.Key];
+			ushort[] placement = placements[kvp.Key];
+			return new KeyValuePair<string, Model>(kvp.Key, new Model(
+				XYZ: [
+					(ushort)model.GlobalPosition.X,
+					(ushort)model.GlobalPosition.Y,
+					(ushort)model.GlobalPosition.Z,
+					placement[0],
+					placement[1],
+					placement[2]],
+				Names: kvp.Value.ToDictionary()));
+		}).ToDictionary()));
+		Console.WriteLine("Writing palette.");
 		WriteVgaPalette(output, palette);
+		Console.WriteLine("Writing atlas.");
+		writer.Write(packResult.Width);
+		writer.Write(packResult.Depth);
+		writer.Write(packResult.Height);
 		output.Write(BakeAtlas(packResult, models));
-		Console.WriteLine($"{models.Count} models in atlas size {packResult.Width}, {packResult.Height}, {packResult.Depth} written to {outputPath}");
+		Console.WriteLine($"{models.Count} models packed in atlas size {packResult.Width}, {packResult.Depth}, {packResult.Height} written to {outputPath}");
 	}
 	/// <summary>
 	/// Bake all packed voxel models into a flat byte array for a 3D texture.
-	/// Layout: index = x + y * width + z * (width * height)
+	/// Layout: index = x + y * width + z * (width * depth)
 	/// 0 = transparent, 1-255 = palette color index.
 	/// </summary>
 	public static byte[] BakeAtlas(
@@ -95,9 +125,9 @@ public class Program
 		Dictionary<string, IModel> models)
 	{
 		int width = packResult.Width,
-			height = packResult.Height,
-			depth = packResult.Depth;
-		byte[] atlas = new byte[width * height * depth];
+			depth = packResult.Depth,
+			height = packResult.Height;
+		byte[] atlas = new byte[width * depth * height];
 		Parallel.ForEach(packResult.Placements, placement =>
 		{
 			IModel model = models[placement.Id];
@@ -106,7 +136,7 @@ public class Program
 				int ax = placement.X + voxel.LocalPosition.X,
 					ay = placement.Y + voxel.LocalPosition.Y,
 					az = placement.Z + voxel.LocalPosition.Z;
-				atlas[ax + ay * width + az * width * height] = (byte)voxel.ColorIndex;
+				atlas[ax + ay * width + az * width * depth] = (byte)voxel.ColorIndex;
 			}
 		});
 		return atlas;
