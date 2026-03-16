@@ -78,13 +78,13 @@ void fragment() {
 		ScaleFactor = scaleFactor;
 		_flippedOpaqueMaterials = [];
 		using (MemoryStream ms = new(Godot.FileAccess.GetFileAsBytes("res://Resources/VOXELS.W3D")))
-			VoxelAtlas = new VoxelAtlas(ms);
+			VoxelAtlas = new VoxelAtlas(ms, _vswap.SpritesByName);
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
 		// Only process pages that actually exist in the VSwap (skip null entries)
 		OpaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)
 			.Where(pageNumber => _vswap.Pages[pageNumber] is not null)
 			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateOpaqueMaterial((ushort)pageNumber)))
-			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			.ToDictionary();
 		// Eagerly convert all sprite textures using parallelization
 		// Only process sprite pages that actually exist in the VSwap (skip null entries)
 		int spriteCount = _vswap.Pages.Length - _vswap.SpritePage;
@@ -92,7 +92,7 @@ void fragment() {
 			.Where(pageNumber => _vswap.Pages[pageNumber] is not null)
 			.Parallelize(pageNumber => new KeyValuePair<ushort, Texture2D>((ushort)pageNumber, CreateSpriteTexture((ushort)pageNumber)))
 			.Where(kvp => kvp.Value is not null)
-			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			.ToDictionary();
 		// Eagerly convert all sprite materials from the pre-created textures
 		SpriteMaterials = SpriteTextures
 			.Parallelize(kvp => new KeyValuePair<ushort, StandardMaterial3D>(kvp.Key, new()
@@ -111,8 +111,7 @@ void fragment() {
 				// Alpha scissor allows normal depth testing for proper occlusion
 				NoDepthTest = false,
 				DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Always,
-			}))
-			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			})).ToDictionary();
 	}
 	/// <summary>
 	/// Eagerly creates flipped materials for the specified door texture indices.

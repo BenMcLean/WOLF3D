@@ -84,12 +84,11 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 	{
 		if (_material is null || _boxMesh is null)
 			return;
-		if (!_voxelAtlas.ModelBySprite.TryGetValue(shape, out VoxelAtlas.Model model))
+		if (!_voxelAtlas.Models.TryGetValue(shape, out int[] xyz))
 		{
 			Visible = false;
 			return;
 		}
-		int[] xyz = model.XYZ;
 		// xyz[0..2] = atlas origin (MagicaVoxel X, Y, Z); xyz[3..5] = model size (MagicaVoxel X, Y, Z)
 		_material.SetShaderParameter("model_offset", new Vector3I(xyz[0], xyz[1], xyz[2]));
 		_material.SetShaderParameter("model_size", new Vector3I(xyz[3], xyz[4], xyz[5]));

@@ -15,10 +15,12 @@ public class VoxelAtlas : IDisposable
 {
 	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
 	/// <summary>
-	/// Reverse lookup: sprite page number → the Model that contains it.
-	/// Built eagerly from Metadata at load time for O(1) access in UpdateModel.
+	/// Game-specific reverse lookup: sprite page number → the Model that contains it.
+	/// Built eagerly in the constructor. For each sprite name in the atlas, the key is the
+	/// game XML page number from <paramref name="spritesByName"/> when present, falling back
+	/// to the atlas's own baked-in page number so the atlas works without game data.
 	/// </summary>
-	public Dictionary<ushort, Model> ModelBySprite { get; }
+	public Dictionary<ushort, int[]> Models { get; }
 	/// <summary>R8 3D texture of raw palette indices. 0 = transparent, 1-255 = palette index.</summary>
 	public ImageTexture3D Texture { get; }
 	/// <summary>256x1 RGBA8 palette LUT. Sample with index/255.0 in shader.</summary>
@@ -31,7 +33,7 @@ public class VoxelAtlas : IDisposable
 			access: System.IO.FileAccess.Read);
 		return new VoxelAtlas(fileStream);
 	}
-	public VoxelAtlas(Stream stream)
+	public VoxelAtlas(Stream stream, IReadOnlyDictionary<string, ushort> spritesByName = null)
 	{
 		using BinaryReader reader = new(
 			input: stream,
@@ -53,8 +55,13 @@ public class VoxelAtlas : IDisposable
 		using BinaryReader decompressedReader = new(
 			input: decompressedStream,
 			encoding: Encoding.UTF8);
-		ModelBySprite = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader)).Values
-			.SelectMany(model => model.Sprites.Values.Select(pageNumber => new KeyValuePair<ushort, Model>(pageNumber, model)))
+		Models = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader))
+			.Values
+			.SelectMany(model => model.Sprites.Select(sprite => new KeyValuePair<ushort, int[]>(
+				key: spritesByName?.TryGetValue(sprite.Key, out ushort page) ?? false
+					? page
+					: sprite.Value,
+				value: model.XYZ)))
 			.ToDictionary();
 		PaletteTexture = BuildPaletteTexture(ReadVgaPalette(decompressedStream));
 		int width = decompressedReader.ReadInt32(),
@@ -123,13 +130,12 @@ public class VoxelAtlas : IDisposable
 		Span<byte> span = imageData;
 		for (int i = 0; i < 256; i++)
 			BinaryPrimitives.WriteUInt32BigEndian(span[(i << 2)..], palette[i]);
-		return ImageTexture.CreateFromImage(
-			Image.CreateFromData(
-				width: 256,
-				height: 1,
-				useMipmaps: false,
-				format: Image.Format.Rgba8,
-				data: imageData));
+		return ImageTexture.CreateFromImage(Image.CreateFromData(
+			width: 256,
+			height: 1,
+			useMipmaps: false,
+			format: Image.Format.Rgba8,
+			data: imageData));
 	}
 	#endregion Textures
 	#region Palette
