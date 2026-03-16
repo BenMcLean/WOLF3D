@@ -6,7 +6,7 @@ using VoxReader.Interfaces;
 
 namespace BenMcLean.Wolf3D.VoxelBaker;
 
-public class Program
+public static class Program
 {
 	public static readonly Dictionary<string, Dictionary<string, ushort>> Sprites =
 	new()
@@ -126,7 +126,7 @@ public class Program
 		BinaryWriter writer = new(output);
 		writer.Write(Encoding.UTF8.GetBytes("W3DV"));
 		WriteString(writer, "0");//Version
-		writer.Write(compressedStream.Length);//64 bits
+		writer.Write((int)compressedStream.Length);
 		writer.Write(compressedStream.ToArray());
 		Console.WriteLine($"{models.Count} models packed in atlas size {packResult.Width}, {packResult.Depth}, {packResult.Height} written to {outputPath}");
 	}
