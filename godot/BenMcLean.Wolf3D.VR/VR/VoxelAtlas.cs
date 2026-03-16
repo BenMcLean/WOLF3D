@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -13,7 +14,11 @@ namespace BenMcLean.Wolf3D.VR.VR;
 public class VoxelAtlas : IDisposable
 {
 	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
-	public Dictionary<string, Model> Metadata { get; }
+	/// <summary>
+	/// Reverse lookup: sprite page number → the Model that contains it.
+	/// Built eagerly from Metadata at load time for O(1) access in UpdateModel.
+	/// </summary>
+	public Dictionary<ushort, Model> ModelBySprite { get; }
 	/// <summary>R8 3D texture of raw palette indices. 0 = transparent, 1-255 = palette index.</summary>
 	public ImageTexture3D Texture { get; }
 	/// <summary>256x1 RGBA8 palette LUT. Sample with index/255.0 in shader.</summary>
@@ -48,7 +53,9 @@ public class VoxelAtlas : IDisposable
 		using BinaryReader decompressedReader = new(
 			input: decompressedStream,
 			encoding: Encoding.UTF8);
-		Metadata = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader));
+		ModelBySprite = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader)).Values
+			.SelectMany(model => model.Sprites.Values.Select(pageNumber => new KeyValuePair<ushort, Model>(pageNumber, model)))
+			.ToDictionary();
 		PaletteTexture = BuildPaletteTexture(ReadVgaPalette(decompressedStream));
 		int width = decompressedReader.ReadInt32(),
 			depth = decompressedReader.ReadInt32(),
