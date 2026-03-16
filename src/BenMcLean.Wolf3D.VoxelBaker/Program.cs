@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using VoxReader.Interfaces;
@@ -8,47 +7,47 @@ namespace BenMcLean.Wolf3D.VoxelBaker;
 
 public class Program
 {
-	public static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ushort>> SpriteMap =
-	new Dictionary<string, IReadOnlyDictionary<string, ushort>>
+	public static readonly Dictionary<string, Dictionary<string, ushort>> Sprites =
+	new()
 	{
-		["knife"] = new Dictionary<string, ushort>()
+		["knife"] = new()
 		{
 			["SPR_KNIFEREADY"] = 522,
 			["SPR_KNIFEATK1"] = 523,
 			["SPR_KNIFEATK2"] = 524,
 			["SPR_KNIFEATK3"] = 525,
 			["SPR_KNIFEATK4"] = 526,
-		}.AsReadOnly(),
-		["pistol"] = new Dictionary<string, ushort>()
+		},
+		["pistol"] = new()
 		{
 			["SPR_PISTOLREADY"] = 527,
 			["SPR_PISTOLATK1"] = 528,
 			["SPR_PISTOLATK2"] = 529,
 			["SPR_PISTOLATK3"] = 530,
 			["SPR_PISTOLATK4"] = 531,
-		}.AsReadOnly(),
-		["machinegun"] = new Dictionary<string, ushort>()
+		},
+		["machinegun"] = new()
 		{
 			["SPR_MACHINEGUNREADY"] = 532,
 			["SPR_MACHINEGUNATK1"] = 533,
 			["SPR_MACHINEGUNATK2"] = 534,
 			["SPR_MACHINEGUNATK3"] = 535,
 			["SPR_MACHINEGUNATK4"] = 536,
-		}.AsReadOnly(),
-		["chaingun"] = new Dictionary<string, ushort>()
+		},
+		["chaingun"] = new()
 		{
 			["SPR_CHAINREADY"] = 537,
 			["SPR_CHAINATK1"] = 538,
 			["SPR_CHAINATK2"] = 539,
 			["SPR_CHAINATK3"] = 540,
 			["SPR_CHAINATK4"] = 541,
-		}.AsReadOnly(),
-	}.AsReadOnly();
-	public record Model(ushort[] XYZ, Dictionary<string, ushort> Names);
+		},
+	};
+	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
 	public static void Main(string[] args)
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
-		(string Key, IModel Model, uint[] Palette)[] loaded = SpriteMap.Keys
+		(string Key, IModel Model, uint[] Palette)[] loaded = Sprites.Keys
 			.AsParallel()
 			.Select(key =>
 			{
@@ -64,7 +63,6 @@ public class Program
 		uint[] palette = loaded[0].Palette;
 		if (loaded.FirstOrDefault(x => !palette.SequenceEqual(x.Palette)).Key is string mismatch)
 			throw new InvalidDataException($"Palette doesn't match for {Path.Combine(folderPath, mismatch + ".vox")}");
-		Dictionary<string, IModel> models = loaded.ToDictionary(x => x.Key, x => x.Model);
 		if (palette.Length == 255)
 		{
 			uint[] destination = new uint[256];
@@ -76,36 +74,35 @@ public class Program
 				length: palette.Length);
 			palette = destination;
 		}
+		Dictionary<string, IModel> models = loaded.ToDictionary(x => x.Key, x => x.Model);
 		VoxelAtlasPacker<string>.PackResult packResult = VoxelAtlasPacker<string>.Pack(models
 			.Select(kvp => new VoxelAtlasPacker<string>.Cuboid(
 				Id: kvp.Key,
-				X: kvp.Value.GlobalSize.X,
-				Y: kvp.Value.GlobalSize.Y,
-				Z: kvp.Value.GlobalSize.Z)));
+				X: kvp.Value.LocalSize.X,
+				Y: kvp.Value.LocalSize.Y,
+				Z: kvp.Value.LocalSize.Z)));
 		string outputPath = Path.Combine(folderPath, "VOXELS.W3D");
+		Console.WriteLine($"Opening {outputPath} for writing.");
 		using FileStream output = new(
 			path: outputPath,
 			mode: FileMode.OpenOrCreate,
 			access: FileAccess.Write);
 		BinaryWriter writer = new(output);
 		Console.WriteLine("Writing metadata.");
-		Dictionary<string, ushort[]> placements = packResult.Placements
-			.Select(cuboid => new KeyValuePair<string, ushort[]>(cuboid.Id, [(ushort)cuboid.X, (ushort)cuboid.Y, (ushort)cuboid.Z]))
-			.ToDictionary();
-		writer.Write(JsonSerializer.Serialize(SpriteMap.Select(kvp =>
-		{
-			IModel model = models[kvp.Key];
-			ushort[] placement = placements[kvp.Key];
-			return new KeyValuePair<string, Model>(kvp.Key, new Model(
-				XYZ: [
-					(ushort)model.GlobalPosition.X,
-					(ushort)model.GlobalPosition.Y,
-					(ushort)model.GlobalPosition.Z,
-					placement[0],
-					placement[1],
-					placement[2]],
-				Names: kvp.Value.ToDictionary()));
-		}).ToDictionary()));
+		writer.Write(JsonSerializer.Serialize(
+			packResult.Placements.ToDictionary(
+				c => c.Id,
+				c => new Model(
+					XYZ: [
+						c.X,
+						c.Y,
+						c.Z,
+						models[c.Id].LocalSize.X,
+						models[c.Id].LocalSize.Y,
+						models[c.Id].LocalSize.Z,
+						//TODO: Add grip point here
+					],
+					Sprites: Sprites[c.Id]))));
 		Console.WriteLine("Writing palette.");
 		WriteVgaPalette(output, palette);
 		Console.WriteLine("Writing atlas.");

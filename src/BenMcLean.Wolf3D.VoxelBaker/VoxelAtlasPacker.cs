@@ -2,7 +2,7 @@ namespace BenMcLean.Wolf3D.VoxelBaker;
 
 public static class VoxelAtlasPacker<T> where T : notnull
 {
-	public const int Brick = 2, // Alignment requirement
+	public const byte Brick = 2, // Alignment requirement
 		Gap = 2; // Minimum spacing requirement
 	private class Node(int x, int y, int z, int w, int d, int h)
 	{
