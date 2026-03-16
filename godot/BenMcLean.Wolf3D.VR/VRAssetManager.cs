@@ -1,8 +1,10 @@
 using BenMcLean.Wolf3D.Assets;
 using BenMcLean.Wolf3D.Assets.Graphics;
+using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace BenMcLean.Wolf3D.VR;
@@ -32,6 +34,11 @@ public static class VRAssetManager
 	/// </summary>
 	public static IReadOnlyDictionary<ushort, Texture2D> SpriteTextures { get; private set; }
 	/// <summary>
+	/// Voxel atlas loaded from res://Resources/VOXELS.W3D.
+	/// Contains 3D model geometry for VR weapons
+	/// </summary>
+	public static VoxelAtlas VoxelAtlas { get; private set; }
+	/// <summary>
 	/// Cache of flipped opaque materials with horizontally mirrored UVs.
 	/// Only contains materials for door textures. Used with negative scale for correct handle orientation.
 	/// </summary>
@@ -48,10 +55,9 @@ render_mode unshaded, cull_back;
 uniform sampler2D albedo_texture : source_color, filter_nearest, repeat_disable;
 
 void fragment() {
-	vec2 uv = vec2(1.0 - UV.x, UV.y);  // Flip UVs horizontally to compensate for geometry flip
+	vec2 uv = vec2(1.0 - UV.x, UV.y);//Flip UVs horizontally to compensate for geometry flip
 	vec4 tex = texture(albedo_texture, uv);
-	ALBEDO = tex.rgb;
-	// Don't set ALPHA - doors are opaque and shouldn't use alpha blending
+	ALBEDO = tex.rgb;//Don't set ALPHA - doors are opaque and shouldn't use alpha blending
 }
 ", };
 	/// <summary>
@@ -71,6 +77,8 @@ void fragment() {
 			?? throw new InvalidOperationException("SharedAssetManager.CurrentGame.VSwap is null. Load a game first.");
 		ScaleFactor = scaleFactor;
 		_flippedOpaqueMaterials = [];
+		using (MemoryStream ms = new(Godot.FileAccess.GetFileAsBytes("res://Resources/VOXELS.W3D")))
+			VoxelAtlas = new VoxelAtlas(ms);
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
 		// Only process pages that actually exist in the VSwap (skip null entries)
 		OpaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)
@@ -268,5 +276,7 @@ void fragment() {
 				material?.Dispose();
 		_flippedOpaqueMaterials?.Clear();
 		_vswap = null;
+		VoxelAtlas?.Dispose();
+		VoxelAtlas = null;
 	}
 }
