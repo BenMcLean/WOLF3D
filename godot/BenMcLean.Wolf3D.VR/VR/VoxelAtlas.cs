@@ -6,10 +6,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace BenMcLean.Wolf3D.VR.VR;
 
-public class VoxelAtlas
+public class VoxelAtlas : IDisposable
 {
 	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
 	public Dictionary<string, Model> Metadata { get; }
@@ -56,18 +57,34 @@ public class VoxelAtlas
 		decompressedReader.Read(atlas);
 		Texture = BuildTexture3D(atlas, width, depth, height);
 	}
+	public void Dispose()
+	{
+		Texture.Dispose();
+		PaletteTexture.Dispose();
+		GC.SuppressFinalize(this);
+	}
+	#region Textures
 	/// <summary>
 	/// Builds an R8 ImageTexture3D storing raw palette indices.
 	/// Atlas layout: index = x + y * width + z * (width * depth)
 	/// 0 = transparent, 1-255 = palette index. Shader does palette lookup via PaletteTexture.
 	/// Godot slices: height layers of width x depth (atlas depth = Godot slice height).
+	///
+	/// Coordinate system: W3DV uses MagicaVoxel's Z-up convention. The texture axes map as:
+	///   Texture U (Godot width)        = W3DV width  = MagicaVoxel X = Godot world X  (no swap)
+	///   Texture V (Godot height)       = W3DV depth  = MagicaVoxel Y = Godot world Z  (horizontal depth)
+	///   Texture W (Godot depth/slices) = W3DV height = MagicaVoxel Z = Godot world Y  (up)
+	/// MagicaVoxel's up axis (Z) ends up in the texture's slice/W axis, which maps to Godot's Y (up).
+	/// In the DDA shader, swap Y and Z when converting Godot local-space position to texture UVW:
+	///   vec3 uvw = vec3(local.x / atlas.x, local.z / atlas.z, local.y / atlas.y);
+	/// The same swap applies to Metadata offsets and sizes, which are stored in MagicaVoxel (X, Y, Z) order.
 	/// </summary>
 	public static ImageTexture3D BuildTexture3D(byte[] atlas, int width, int depth, int height)
 	{
 		int sliceSize = width * depth;
-		Godot.Collections.Array<Image> images = [];
-		for (int z = 0; z < height; z++)
-			images.Add(Image.CreateFromData(
+		Image[] images = new Image[height];
+		Parallel.For(0, height, z =>
+			images[z] = Image.CreateFromData(
 				width: width,
 				height: depth,
 				useMipmaps: false,
@@ -80,7 +97,9 @@ public class VoxelAtlas
 			height: depth,
 			depth: height,
 			useMipmaps: false,
-			data: images);
+			data: [.. images]);
+		foreach (Image image in images)
+			image.Dispose();
 		return texture;
 	}
 	/// <summary>
@@ -98,8 +117,14 @@ public class VoxelAtlas
 		for (int i = 0; i < 256; i++)
 			BinaryPrimitives.WriteUInt32BigEndian(span[(i << 2)..], palette[i]);
 		return ImageTexture.CreateFromImage(
-			Image.CreateFromData(256, 1, false, Image.Format.Rgba8, imageData));
+			Image.CreateFromData(
+				width: 256,
+				height: 1,
+				useMipmaps: false,
+				format: Image.Format.Rgba8,
+				data: imageData));
 	}
+	#endregion Textures
 	#region Palette
 	public static uint[] ReadVgaPalette(Stream stream)
 	{
