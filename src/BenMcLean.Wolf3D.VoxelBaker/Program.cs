@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using VoxReader.Interfaces;
@@ -47,6 +48,7 @@ public class Program
 	public static void Main(string[] args)
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
+		Console.WriteLine("Reading .vox files.");
 		(string Key, IModel Model, uint[] Palette)[] loaded = Sprites.Keys
 			.AsParallel()
 			.Select(key =>
@@ -60,6 +62,7 @@ public class Program
 				return (Key: key, Model: model, Palette: currentPalette);
 			})
 			.ToArray();
+		Console.WriteLine("Done reading .vox files.");
 		uint[] palette = loaded[0].Palette;
 		if (loaded.FirstOrDefault(x => !palette.SequenceEqual(x.Palette)).Key is string mismatch)
 			throw new InvalidDataException($"Palette doesn't match for {Path.Combine(folderPath, mismatch + ".vox")}");
@@ -82,34 +85,49 @@ public class Program
 				Y: kvp.Value.LocalSize.Y,
 				Z: kvp.Value.LocalSize.Z)));
 		string outputPath = Path.Combine(folderPath, "VOXELS.W3D");
+		using MemoryStream compressedStream = new();
+		using (DeflateStream deflateStream = new(
+			stream: compressedStream,
+			compressionLevel: CompressionLevel.SmallestSize,
+			leaveOpen: true))
+		using (BinaryWriter deflateWriter = new(
+			output: deflateStream,
+			encoding: Encoding.UTF8,
+			leaveOpen: true))
+		{
+			Console.WriteLine("Compressing metadata.");
+			WriteString(deflateWriter, JsonSerializer.Serialize(
+				packResult.Placements.ToDictionary(
+					c => c.Id,
+					c => new Model(
+						XYZ: [
+							c.X,
+							c.Y,
+							c.Z,
+							models[c.Id].LocalSize.X,
+							models[c.Id].LocalSize.Y,
+							models[c.Id].LocalSize.Z,
+							//TODO: Add grip point here
+						],
+						Sprites: Sprites[c.Id]))));
+			Console.WriteLine("Compressing palette.");
+			WriteVgaPalette(deflateStream, palette);
+			Console.WriteLine("Compressing atlas.");
+			deflateWriter.Write(packResult.Width);
+			deflateWriter.Write(packResult.Depth);
+			deflateWriter.Write(packResult.Height);
+			deflateWriter.Write(BakeAtlas(packResult, models));
+		}
 		Console.WriteLine($"Opening {outputPath} for writing.");
 		using FileStream output = new(
 			path: outputPath,
-			mode: FileMode.OpenOrCreate,
+			mode: FileMode.Create,
 			access: FileAccess.Write);
 		BinaryWriter writer = new(output);
-		Console.WriteLine("Writing metadata.");
-		writer.Write(JsonSerializer.Serialize(
-			packResult.Placements.ToDictionary(
-				c => c.Id,
-				c => new Model(
-					XYZ: [
-						c.X,
-						c.Y,
-						c.Z,
-						models[c.Id].LocalSize.X,
-						models[c.Id].LocalSize.Y,
-						models[c.Id].LocalSize.Z,
-						//TODO: Add grip point here
-					],
-					Sprites: Sprites[c.Id]))));
-		Console.WriteLine("Writing palette.");
-		WriteVgaPalette(output, palette);
-		Console.WriteLine("Writing atlas.");
-		writer.Write(packResult.Width);
-		writer.Write(packResult.Depth);
-		writer.Write(packResult.Height);
-		output.Write(BakeAtlas(packResult, models));
+		writer.Write(Encoding.UTF8.GetBytes("W3DV"));
+		WriteString(writer, "0");//Version
+		writer.Write(compressedStream.Length);//64 bits
+		writer.Write(compressedStream.ToArray());
 		Console.WriteLine($"{models.Count} models packed in atlas size {packResult.Width}, {packResult.Depth}, {packResult.Height} written to {outputPath}");
 	}
 	/// <summary>
