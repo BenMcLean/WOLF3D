@@ -1,13 +1,16 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 
 namespace BenMcLean.Wolf3D.VR.VR;
 
 public class VoxelAtlas
 {
+	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
 	public static VoxelAtlas Load(string path)
 	{
 		using FileStream fileStream = new(
@@ -38,7 +41,7 @@ public class VoxelAtlas
 		using BinaryReader decompressedReader = new(
 			input: decompressedStream,
 			encoding: Encoding.UTF8);
-		string json = ReadString(decompressedReader);
+		Dictionary<string, Model> metadata = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader));
 		uint[] palette = ReadVgaPalette(decompressedStream);
 		int width = decompressedReader.ReadInt32(),
 			depth = decompressedReader.ReadInt32(),
