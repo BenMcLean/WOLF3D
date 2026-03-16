@@ -1,3 +1,4 @@
+using Godot;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -11,12 +12,17 @@ namespace BenMcLean.Wolf3D.VR.VR;
 public class VoxelAtlas
 {
 	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
+	public Dictionary<string, Model> Metadata { get; }
+	/// <summary>R8 3D texture of raw palette indices. 0 = transparent, 1-255 = palette index.</summary>
+	public ImageTexture3D Texture { get; }
+	/// <summary>256x1 RGBA8 palette LUT. Sample with index/255.0 in shader.</summary>
+	public ImageTexture PaletteTexture { get; }
 	public static VoxelAtlas Load(string path)
 	{
 		using FileStream fileStream = new(
 			path: path,
 			mode: FileMode.Open,
-			access: FileAccess.Read);
+			access: System.IO.FileAccess.Read);
 		return new VoxelAtlas(fileStream);
 	}
 	public VoxelAtlas(Stream stream)
@@ -41,13 +47,58 @@ public class VoxelAtlas
 		using BinaryReader decompressedReader = new(
 			input: decompressedStream,
 			encoding: Encoding.UTF8);
-		Dictionary<string, Model> metadata = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader));
-		uint[] palette = ReadVgaPalette(decompressedStream);
+		Metadata = JsonSerializer.Deserialize<Dictionary<string, Model>>(ReadString(decompressedReader));
+		PaletteTexture = BuildPaletteTexture(ReadVgaPalette(decompressedStream));
 		int width = decompressedReader.ReadInt32(),
 			depth = decompressedReader.ReadInt32(),
 			height = decompressedReader.ReadInt32();
 		byte[] atlas = new byte[width * depth * height];
 		decompressedReader.Read(atlas);
+		Texture = BuildTexture3D(atlas, width, depth, height);
+	}
+	/// <summary>
+	/// Builds an R8 ImageTexture3D storing raw palette indices.
+	/// Atlas layout: index = x + y * width + z * (width * depth)
+	/// 0 = transparent, 1-255 = palette index. Shader does palette lookup via PaletteTexture.
+	/// Godot slices: height layers of width x depth (atlas depth = Godot slice height).
+	/// </summary>
+	public static ImageTexture3D BuildTexture3D(byte[] atlas, int width, int depth, int height)
+	{
+		int sliceSize = width * depth;
+		Godot.Collections.Array<Image> images = [];
+		for (int z = 0; z < height; z++)
+			images.Add(Image.CreateFromData(
+				width: width,
+				height: depth,
+				useMipmaps: false,
+				format: Image.Format.R8,
+				data: atlas[(z * sliceSize)..((z + 1) * sliceSize)]));
+		ImageTexture3D texture = new();
+		texture.Create(
+			format: Image.Format.R8,
+			width: width,
+			height: depth,
+			depth: height,
+			useMipmaps: false,
+			data: images);
+		return texture;
+	}
+	/// <summary>
+	/// Builds a 256x1 Rgba8 palette LUT texture.
+	/// Each uint 0xRRGGBBAA is written big-endian → bytes [RR, GG, BB, AA] matching Godot's Rgba8 layout.
+	/// Transparency (index 0) must be handled in the shader by checking the 3D texture index,
+	/// since all palette entries have AA=0xFF (from ParseVgaPalette's | 0xFFu).
+	/// In shader: float idx = texture(voxel_atlas, uvw).r; if (idx == 0.0) discard;
+	///            vec4 color = texture(palette, vec2(idx, 0.5));
+	/// </summary>
+	public static ImageTexture BuildPaletteTexture(uint[] palette)
+	{
+		byte[] imageData = new byte[256 << 2];
+		Span<byte> span = imageData;
+		for (int i = 0; i < 256; i++)
+			BinaryPrimitives.WriteUInt32BigEndian(span[(i << 2)..], palette[i]);
+		return ImageTexture.CreateFromImage(
+			Image.CreateFromData(256, 1, false, Image.Format.Rgba8, imageData));
 	}
 	#region Palette
 	public static uint[] ReadVgaPalette(Stream stream)
