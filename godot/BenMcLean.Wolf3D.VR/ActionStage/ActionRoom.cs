@@ -341,6 +341,16 @@ void sky() {
 				_displayMode.Origin.Position = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
 				_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
 			}
+			// In VR, compensate for the physical HMD Y rotation so the camera faces the correct
+			// spawn direction regardless of which way the player is physically facing.
+			// ResetPositionFacing subtracts camera.Rotation.Y from the desired yaw, matching
+			// the same compensation used when entering the MenuRoom.
+			// In flatscreen mode this is a no-op.
+			// Panel direction vector for cameraRotationY: (sin θ, 0, -cos θ)
+			Vector3 spawnXZ = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
+			_displayMode.ResetPositionFacing(
+				spawnXZ + new Vector3(Mathf.Sin(cameraRotationY), 0f, -Mathf.Cos(cameraRotationY)),
+				spawnXZ);
 
 			// Attach WeaponHandMesh to each VR controller so the weapon renders at the hand position.
 			// Hand 0 = right controller (slot 0), hand 1 = left controller (slot 1).

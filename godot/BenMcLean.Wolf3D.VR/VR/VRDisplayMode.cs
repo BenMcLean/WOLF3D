@@ -123,7 +123,7 @@ public class VRDisplayMode : IDisplayMode
 		_camera = new XRCamera3D
 		{
 			Name = "XRCamera",
-			Current = true
+			Current = true,
 		};
 		_origin.AddChild(_camera);
 
@@ -131,7 +131,8 @@ public class VRDisplayMode : IDisplayMode
 		_leftController = new XRController3D
 		{
 			Name = "LeftController",
-			Tracker = "left_hand"
+			Tracker = "left_hand",
+			Pose = "aim",
 		};
 		_origin.AddChild(_leftController);
 
@@ -139,7 +140,8 @@ public class VRDisplayMode : IDisplayMode
 		_rightController = new XRController3D
 		{
 			Name = "RightController",
-			Tracker = "right_hand"
+			Tracker = "right_hand",
+			Pose = "aim",
 		};
 		_origin.AddChild(_rightController);
 

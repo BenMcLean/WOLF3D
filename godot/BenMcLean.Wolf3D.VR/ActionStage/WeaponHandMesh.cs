@@ -37,6 +37,11 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 			MaterialOverride = _material,
 			RotationDegrees = new Vector3(90f, 0f, 0f),
 			Scale = Constants.WeaponScale,
+			// Shift up so the aim pose tracking point aligns with 75% down the sprite.
+			// The sprite center is at the mesh origin; 75% down is 25% below center
+			// (world -Y = model +Z after RotateX(90°)), so shifting up by 25% of
+			// WeaponHeight moves that point to the origin.
+			Position = new Vector3(0f, Constants.WeaponHeight * 0.25f, 0f),
 		};
 		AddChild(mesh);
 		Visible = false;  // Hidden until a weapon is equipped in this slot
