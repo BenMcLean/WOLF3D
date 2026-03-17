@@ -30,13 +30,18 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 		}
 		_material = new ShaderMaterial { Shader = voxelShader };
 		_material.SetShaderParameter("resolution", 64);
+		// Left hand (slot 1) mirrors the sprite horizontally: negate X scale.
+		// Rotation cannot achieve a mirror (det=+1), but negative scale can (det=-1).
+		// The shader's billboard uses length(MODEL_MATRIX[0]) so the billboard size is
+		// unaffected by the sign, and cull_disabled means no backface issues.
+		float xScale = slotIndex == 1 ? -Constants.WeaponWidth : Constants.WeaponWidth;
 		MeshInstance3D mesh = new()
 		{
 			Name = "Mesh",
 			Mesh = new QuadMesh { Size = Vector2.One },
 			MaterialOverride = _material,
 			RotationDegrees = new Vector3(90f, 0f, 0f),
-			Scale = Constants.WeaponScale,
+			Scale = new Vector3(xScale, Constants.WeaponMetersPerPixel, Constants.WeaponHeight),
 			// Shift up so the aim pose tracking point aligns with 75% down the sprite.
 			// The sprite center is at the mesh origin; 75% down is 25% below center
 			// (world -Y = model +Z after RotateX(90°)), so shifting up by 25% of
