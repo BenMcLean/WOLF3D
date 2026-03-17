@@ -13,7 +13,7 @@ namespace BenMcLean.Wolf3D.VR.VR;
 
 public class VoxelAtlas : IDisposable
 {
-	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
+	private record Model(int[] XYZ, Dictionary<string, ushort> Sprites);
 	/// <summary>
 	/// Game-specific reverse lookup: sprite page number → the Model that contains it.
 	/// Built eagerly in the constructor. For each sprite name in the atlas, the key is the
@@ -25,13 +25,13 @@ public class VoxelAtlas : IDisposable
 	public ImageTexture3D Texture { get; }
 	/// <summary>256x1 RGBA8 palette LUT. Sample with index/255.0 in shader.</summary>
 	public ImageTexture PaletteTexture { get; }
-	public static VoxelAtlas Load(string path)
+	public static VoxelAtlas Load(string path, IReadOnlyDictionary<string, ushort> spritesByName = null)
 	{
 		using FileStream fileStream = new(
 			path: path,
 			mode: FileMode.Open,
 			access: System.IO.FileAccess.Read);
-		return new VoxelAtlas(fileStream);
+		return new VoxelAtlas(fileStream, spritesByName);
 	}
 	public VoxelAtlas(Stream stream, IReadOnlyDictionary<string, ushort> spritesByName = null)
 	{
@@ -63,7 +63,7 @@ public class VoxelAtlas : IDisposable
 					: sprite.Value,
 				value: model.XYZ)))
 			.ToDictionary();
-		PaletteTexture = BuildPaletteTexture(ReadVgaPalette(decompressedStream));
+		PaletteTexture = BuildPaletteTexture(ReadVgaPalette(decompressedReader));
 		int width = decompressedReader.ReadInt32(),
 			depth = decompressedReader.ReadInt32(),
 			height = decompressedReader.ReadInt32();
@@ -139,10 +139,10 @@ public class VoxelAtlas : IDisposable
 	}
 	#endregion Textures
 	#region Palette
-	public static uint[] ReadVgaPalette(Stream stream)
+	public static uint[] ReadVgaPalette(BinaryReader reader)
 	{
 		Span<byte> buffer = stackalloc byte[768];
-		if (stream.Read(buffer) < 768)
+		if (reader.Read(buffer) < 768)
 			throw new EndOfStreamException();
 		return ParseVgaPalette(buffer);
 	}

@@ -49,7 +49,7 @@ public static class Program
 	{
 		string folderPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 		Console.WriteLine("Reading .vox files.");
-		(string Key, IModel Model, uint[] Palette)[] loaded = Sprites.Keys
+		(string Key, IModel Model, uint[] Palette)[] loaded = [.. Sprites.Keys
 			.AsParallel()
 			.Select(key =>
 			{
@@ -60,8 +60,7 @@ public static class Program
 					access: FileAccess.Read);
 				IModel model = Models(fs, out uint[] currentPalette)[0];
 				return (Key: key, Model: model, Palette: currentPalette);
-			})
-			.ToArray();
+			})];
 		Console.WriteLine("Done reading .vox files.");
 		uint[] palette = loaded[0].Palette;
 		if (loaded.FirstOrDefault(x => !palette.SequenceEqual(x.Palette)).Key is string mismatch)
@@ -111,7 +110,7 @@ public static class Program
 						],
 						Sprites: Sprites[c.Id]))));
 			Console.WriteLine("Compressing palette.");
-			WriteVgaPalette(deflateStream, palette);
+			WriteVgaPalette(deflateWriter, palette);
 			Console.WriteLine("Compressing atlas.");
 			deflateWriter.Write(packResult.Width);
 			deflateWriter.Write(packResult.Depth);
@@ -172,10 +171,10 @@ public static class Program
 	}
 	#endregion VoxReader
 	#region Palette
-	public static uint[] ReadVgaPalette(Stream stream)
+	public static uint[] ReadVgaPalette(BinaryReader reader)
 	{
 		Span<byte> buffer = stackalloc byte[768];
-		if (stream.Read(buffer) < 768)
+		if (reader.Read(buffer) < 768)
 			throw new EndOfStreamException();
 		return ParseVgaPalette(buffer);
 	}
@@ -190,7 +189,7 @@ public static class Program
 			0xFFu;
 		return palette;
 	}
-	public static void WriteVgaPalette(Stream stream, uint[]? palette)
+	public static void WriteVgaPalette(BinaryWriter writer, uint[]? palette)
 	{
 		ArgumentNullException.ThrowIfNull(palette);
 		if (palette.Length < 256)
@@ -202,7 +201,7 @@ public static class Program
 			buffer[offset + 1] = (byte)((palette[i] >> 18) & 0x3F);
 			buffer[offset + 2] = (byte)((palette[i] >> 10) & 0x3F);
 		}
-		stream.Write(buffer);
+		writer.Write(buffer);
 	}
 	#endregion Palette
 	#region Utilities
