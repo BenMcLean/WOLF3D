@@ -114,6 +114,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public bool GodMode { get; set; } = false;
 	/// <summary>
+	/// Field of view for enemy player detection, in radians.
+	/// Original Wolf3D uses a half-plane system (WL_STATE.C:CheckSight):
+	/// facing north → detects any player not to the south, etc. — effectively 180°.
+	/// Default matches the original (Math.PI). Reduce for easier debugging.
+	/// </summary>
+	public double EnemyFovRadians { get; set; } = Math.PI;
+	/// <summary>
 	/// True after player health reaches zero.
 	/// Guards DamagePlayer (no duplicate deaths) and ProcessTic (stops simulation).
 	/// WL_AGENT.C:TakeDamage → playstate = ex_died

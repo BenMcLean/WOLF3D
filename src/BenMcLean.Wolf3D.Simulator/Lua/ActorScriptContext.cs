@@ -327,7 +327,10 @@ public class ActorScriptContext(
 			actorTileY = actor.TileY,
 			playerTileX = simulator.PlayerTileX,
 			playerTileY = simulator.PlayerTileY;
-		// Check field of view (90 degrees centered on facing direction)
+		// Check field of view centered on facing direction.
+		// Original Wolf3D (WL_STATE.C:CheckSight) uses a half-plane: facing north → detects
+		// any player not to the south (deltay <= 0), which is effectively 180°.
+		// Simulator.EnemyFovRadians defaults to Math.PI (180°) to match the original.
 		if (actor.Facing.HasValue)
 		{
 			// Calculate angle from actor to player
@@ -348,8 +351,8 @@ public class ActorScriptContext(
 			// Normalize to [-PI, PI]
 			while (angleDiff > System.Math.PI) angleDiff -= (float)(2f * System.Math.PI);
 			while (angleDiff < -System.Math.PI) angleDiff += (float)(2f * System.Math.PI);
-			// Check if within 90-degree FOV (45 degrees on each side)
-			if (System.Math.Abs(angleDiff) > System.Math.PI / 4)
+			// Check if within FOV (half-angle on each side of facing direction)
+			if (System.Math.Abs(angleDiff) > simulator.EnemyFovRadians / 2.0)
 				return false; // Player is outside field of view
 		}
 		// Bresenham's line algorithm to walk from actor to player
