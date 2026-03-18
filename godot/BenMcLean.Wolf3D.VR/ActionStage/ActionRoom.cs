@@ -334,11 +334,14 @@ void sky() {
 			}
 
 			// Position the display mode's origin (XROrigin or CameraHolder) at player start.
-			// Y is set to 0 (floor level): in 5DOF mode Update() locks camera to HalfTileHeight
+			// VR: Y is set to 0 (floor level): in 5DOF mode Update() locks camera to HalfTileHeight
 			// each frame; in roomscale mode the origin stays at floor level by design.
+			// Flatscreen: Y is set to cameraPosition.Y (HalfTileHeight) because CameraHolder IS
+			// the camera's parent and there is no HMD offset to provide vertical elevation.
 			if (_displayMode.Origin is not null)
 			{
-				_displayMode.Origin.Position = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
+				float originY = _displayMode.IsVRActive ? 0f : cameraPosition.Y;
+				_displayMode.Origin.Position = new Vector3(cameraPosition.X, originY, cameraPosition.Z);
 				_displayMode.Origin.RotationDegrees = new Vector3(0, Mathf.RadToDeg(cameraRotationY), 0);
 			}
 			// In VR, compensate for the physical HMD Y rotation so the camera faces the correct

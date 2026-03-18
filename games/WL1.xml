@@ -662,10 +662,7 @@ end
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC" FrameInterval="0.5" />
 				<!-- WL_INTER.C:Write(14,2,"floor\ncompleted") = pixel (112,16) -->
-				<Text X="112" Y="16" Font="L">
-					FLOOR
-					COMPLETED
-				</Text>
+				<Text X="112" Y="16" Font="L">FLOOR&#10;COMPLETED</Text>
 				<!-- Floor number displayed by Lua SetText -->
 				<Text Id="FloorNumber" X="208" Y="16" Font="L"> </Text>
 				<!-- WL_INTER.C:Write(14,7,"bonus     0") = pixel (112,56) -->
