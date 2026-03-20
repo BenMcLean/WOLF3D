@@ -88,13 +88,28 @@ public sealed class VSwap
 				stream.Seek(pageOffsets[page], SeekOrigin.Begin);
 				rawPages[page] = binaryReader.ReadBytes(pageLengths[page]);
 			}
+		// Build per-page palette lookup from WallPaletteRanges
+		uint[][] wallPalettes = new uint[SpritePage][];
+		{
+			Dictionary<string, uint[]> namedPalettes = LoadNamedPalettes(xml);
+			foreach (XElement rangeEl in xml.Element("VSwap")?.Element("WallPaletteRanges")?.Elements("WallPaletteRange") ?? [])
+			{
+				if (!ushort.TryParse(rangeEl.Attribute("First")?.Value, out ushort first)
+					|| rangeEl.Attribute("Palette")?.Value is not { Length: > 0 } paletteName
+					|| !namedPalettes.TryGetValue(paletteName, out uint[] pal))
+					continue;
+				ushort last = ushort.TryParse(rangeEl.Attribute("Last")?.Value, out ushort l) ? l : first;
+				for (int p = first; p <= last && p < SpritePage; p++)
+					wallPalettes[p] = pal;
+			}
+		}
 		Enumerable.Range(0, SoundPage)
 			.AsParallel()
 			.ForAll(page =>
 			{
 				if (rawPages[page] is null) return;
 				if (page < SpritePage)
-					Pages[page] = ProcessWall(rawPages[page], palette, TileSqrt);
+					Pages[page] = ProcessWall(rawPages[page], wallPalettes[page] ?? palette, TileSqrt);
 				else
 				{
 					(byte[] rgba, BitArray mask) = ProcessSprite(rawPages[page], palette, TileSqrt);
@@ -289,8 +304,23 @@ public sealed class VSwap
 	#region Palette
 	public static uint[] LoadPalette(XElement xml)
 	{
-		if (xml.Element("Palette") is not XElement paletteElement)
-			throw new InvalidDataException("No <Palette> element found in game XML.");
+		// Default palette: the Palette inside Palettes with no Name attribute
+		XElement paletteElement = xml.Element("Palettes")
+			?.Elements("Palette")
+			.FirstOrDefault(p => p.Attribute("Name") is null);
+		if (paletteElement is null)
+			throw new InvalidDataException("No default <Palette> (without a Name attribute) found inside <Palettes> in game XML.");
+		return ParsePaletteElement(paletteElement);
+	}
+	public static Dictionary<string, uint[]> LoadNamedPalettes(XElement xml) =>
+		(xml.Element("Palettes")?.Elements("Palette") ?? [])
+		.Where(p => p.Attribute("Name")?.Value is { Length: > 0 })
+		.ToDictionary(
+			p => p.Attribute("Name").Value,
+			p => ParsePaletteElement(p),
+			StringComparer.OrdinalIgnoreCase);
+	private static uint[] ParsePaletteElement(XElement paletteElement)
+	{
 		uint[] result = new uint[256];
 		int i = 0;
 		foreach (XElement colorElement in paletteElement.Elements("Color"))
@@ -305,7 +335,7 @@ public sealed class VSwap
 			i++;
 		}
 		if (i < 256)
-			throw new InvalidDataException($"Only found {i} colors in pallete. Expected 256.");
+			throw new InvalidDataException($"Only found {i} colors in palette. Expected 256.");
 		result[255] &= 0xFFFFFF00u;
 		return result;
 	}

@@ -110,10 +110,16 @@ public partial class Root : Node3D
 			else
 			{
 				// Selected game assets loaded → initialize VR materials, play music, enter game
-				// scaleFactor: 4 for better performance, 8 for maximum quality
 				try
 				{
-					VRAssetManager.Initialize(scaleFactor: 8);
+					VSwap vswap = Shared.SharedAssetManager.CurrentGame.VSwap;
+					byte scaleFactor = byte.TryParse(
+						Shared.SharedAssetManager.CurrentGame.XML
+							.Element("VSwap")?.Attribute("Scale")?.Value,
+						out byte xmlScale)
+						? xmlScale
+						: (byte)Math.Max(1, 512 / vswap.TileSqrt);
+					VRAssetManager.Initialize(scaleFactor: scaleFactor);
 					string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
 					if (!string.IsNullOrWhiteSpace(songName))
 						Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);

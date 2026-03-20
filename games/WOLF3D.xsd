@@ -18,7 +18,7 @@
 				<xs:element ref="Maps" minOccurs="0"/>
 				<xs:element ref="Audio" minOccurs="0"/>
 				<xs:element ref="VSwap" minOccurs="0"/>
-				<xs:element ref="Palette" minOccurs="0"/>
+				<xs:element ref="Palettes" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Version" type="xs:string">
@@ -1136,11 +1136,43 @@
 				<xs:element ref="GameplayWeapons" minOccurs="0"/>
 				<xs:element ref="Sprites" minOccurs="0"/>
 				<xs:element ref="DigiSounds" minOccurs="0"/>
+				<xs:element ref="WallPaletteRanges" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Sqrt" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Scale" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="MipMaps" type="xs:boolean"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="WallPaletteRanges">
+		<xs:annotation>
+			<xs:documentation>
+				Assigns named palettes to ranges of VSWAP wall page numbers.
+				Each wall page is decoded once at load time using its assigned palette.
+				Pages not covered by any range use the default palette (the Palette without a Name).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="WallPaletteRange" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="WallPaletteRange">
+		<xs:annotation>
+			<xs:documentation>
+				Maps a range of VSWAP wall page numbers to a named palette.
+				First and Last are absolute VSWAP page numbers (0-based).
+				Last is optional; when absent, the range covers only the single page given by First.
+				Palette must match the Name attribute of a Palette inside Palettes.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="First" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Last" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="Palette" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -1745,6 +1777,21 @@
 	<!-- ============================================ -->
 	<!-- Palette Section                              -->
 	<!-- ============================================ -->
+
+	<xs:element name="Palettes">
+		<xs:annotation>
+			<xs:documentation>
+				Container for one or more Palette elements.
+				The Palette without a Name attribute is the default palette.
+				Named palettes can be referenced by maps or individual wall/sprite pages.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Palette" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
 
 	<xs:element name="Palette">
 		<xs:annotation>
