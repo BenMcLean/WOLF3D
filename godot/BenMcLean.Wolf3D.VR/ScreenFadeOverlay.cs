@@ -148,7 +148,10 @@ void fragment() {
 			Mesh = new QuadMesh { Size = new Vector2(1f, 1f) },
 			MaterialOverride = _vrFadeMaterial,
 			CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-			Visible = alpha > 0f,
+			// Always visible — shader alpha=0 means transparent.
+			// Toggling Visible on/off has multi-frame latency in the OpenXR compositor,
+			// which would cause the level to show unobscured at the start of every fade-to-black.
+			Visible = true,
 		};
 		camera.AddChild(_vrFadeMesh);
 
@@ -203,10 +206,10 @@ void fragment() {
 			colorRect.Color = new Color(0f, 0f, 0f, alpha);
 		}
 
-		// VR: veil quad parented to XRCamera3D, visible in both headset eyes
+		// VR: veil quad parented to XRCamera3D, visible in both headset eyes.
+		// Mesh stays Visible=true always; shader alpha controls opacity.
 		if (_vrFadeMesh != null && GodotObject.IsInstanceValid(_vrFadeMesh))
 		{
-			_vrFadeMesh.Visible = alpha > 0f;
 			_vrFadeMaterial.SetShaderParameter("color", new Color(0f, 0f, 0f, alpha));
 		}
 		else if (_vrFadeMesh != null)
