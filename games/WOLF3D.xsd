@@ -1575,6 +1575,29 @@
 			<xs:attribute name="Alive" type="xs:boolean"/>
 			<xs:attribute name="Mark" type="xs:boolean"/>
 			<xs:attribute name="DigiSound" type="xs:string"/>
+			<xs:attribute name="CollidableScript" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the Lua function to execute when the player enters CollidableRadius of
+						an actor in this state. Fires continuously on every player movement (including
+						along the DDA path of a VR teleport) while the player remains in range.
+						Scripts use the same ActorScriptContext as Think and Action functions.
+						Introduced to support consuming food enemies in The Swedish Chef's Kitchens of
+						Doom total conversion, where cooked food actors become edible bonus items at
+						their non-grid-aligned positions. Applicable to any actor-player proximity
+						interaction: damage auras, quest triggers, dialogue, etc.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CollidableRadius" type="xs:decimal">
+				<xs:annotation>
+					<xs:documentation>
+						Radius in tile fractions within which the player triggers CollidableScript.
+						0.5 = half a tile (default), 1.0 = full tile width.
+						Only meaningful when CollidableScript is set.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

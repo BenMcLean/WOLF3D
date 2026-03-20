@@ -64,6 +64,20 @@ public class State
 	/// </summary>
 	public int Speed { get; set; } = 0;
 	/// <summary>
+	/// Name of the Lua function to execute when the player is within CollidableRadius of the actor.
+	/// When set, the simulator maintains this actor in the collidable actor list and fires this
+	/// script continuously on every player movement while the player remains within range.
+	/// Scripts receive the same ActorScriptContext as Think and Action functions.
+	/// Null means this state is not collidable.
+	/// </summary>
+	public string CollidableScript { get; set; }
+	/// <summary>
+	/// Radius in tile fractions within which the player triggers CollidableScript.
+	/// 1.0 = full tile width, 0.5 = half tile (default).
+	/// Only meaningful when CollidableScript is set.
+	/// </summary>
+	public float CollidableRadius { get; set; } = 0.5f;
+	/// <summary>
 	/// Additional custom properties that can be defined in XML.
 	/// Allows for extensibility without modifying the core State class.
 	/// </summary>
@@ -85,7 +99,12 @@ public class State
 			Tics = short.TryParse(element.Attribute("Tics")?.Value, out short tics) ? tics : (short)0,
 			Think = element.Attribute("Think")?.Value,
 			Action = element.Attribute("Action")?.Value,
-			Speed = int.TryParse(element.Attribute("Speed")?.Value, out int speed) ? speed : 0
+			Speed = int.TryParse(element.Attribute("Speed")?.Value, out int speed) ? speed : 0,
+			CollidableScript = element.Attribute("CollidableScript")?.Value,
+			CollidableRadius = float.TryParse(element.Attribute("CollidableRadius")?.Value,
+				System.Globalization.NumberStyles.Float,
+				System.Globalization.CultureInfo.InvariantCulture,
+				out float collidableRadius) ? collidableRadius : 0.5f
 		};
 
 		// Handle Shape attribute - can be either a number or a sprite name
@@ -137,7 +156,7 @@ public class State
 		{
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
-			if (attrName is not ("Name" or "Rotate" or "Shape" or "Tics" or "Think" or "Action" or "Speed" or "Next"))
+			if (attrName is not ("Name" or "Rotate" or "Shape" or "Tics" or "Think" or "Action" or "Speed" or "Next" or "CollidableScript" or "CollidableRadius"))
 			{
 				state.CustomProperties[attrName] = attr.Value;
 			}

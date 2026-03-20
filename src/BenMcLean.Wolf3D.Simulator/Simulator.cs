@@ -40,6 +40,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// Using List instead of fixed array for modern flexibility
 	public IReadOnlyList<Actor> Actors => actors;
 	private readonly List<Actor> actors = [];
+	// Indices of actors currently in a Collidable state (CollidableScript is set).
+	// Maintained by TransitionActorState and LoadActorsFromMapAnalysis.
+	// Used by CheckCollidableActors() during player movement.
+	private readonly List<int> _collidableActors = [];
 	// Weapon slots (configurable count - VR uses 2, traditional uses 1)
 	// Based on WL_DEF.H:gametype:weapon/attackframe/attackcount
 	public IReadOnlyList<WeaponSlot> WeaponSlots => weaponSlots;
@@ -1207,6 +1211,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void TransitionActorState(int actorIndex, State nextState)
 	{
 		Actor actor = actors[actorIndex];
+		// Maintain collidable actor list
+		bool wasCollidable = !string.IsNullOrEmpty(actor.CurrentState?.CollidableScript);
+		bool isCollidable = !string.IsNullOrEmpty(nextState.CollidableScript);
+		if (wasCollidable && !isCollidable)
+			_collidableActors.Remove(actorIndex);
+		else if (!wasCollidable && isCollidable)
+			_collidableActors.Add(actorIndex);
 		// Update state
 		actor.CurrentState = nextState;
 		actor.TicCount = nextState.Tics;
@@ -1453,6 +1464,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		// Note: mapAnalysis, mapWidth, mapHeight, and spatial arrays are already initialized by LoadDoorsFromMapAnalysis
 		actors.Clear();
+		_collidableActors.Clear();
 		int difficulty = Inventory.GetValue("Difficulty");
 		int actorIndex = 0;
 		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
@@ -1511,6 +1523,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (spawn.Patrol)
 				actor.Flags |= ActorFlags.Patrolling;
 			actors.Add(actor);
+			if (!string.IsNullOrEmpty(initialState.CollidableScript))
+				_collidableActors.Add(actorIndex);
 
 			// WL_ACT2.C: Two spawn patterns based on initial state's movement properties
 			// SpawnPatrol (line 1246): Speed > 0, initializes for immediate movement
@@ -2644,6 +2658,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (fromTileX == toTileX && fromTileY == toTileY)
 		{
 			CheckItemPickups();
+			CheckCollidableActors(PlayerX, PlayerY);
 			return;
 		}
 
@@ -2663,13 +2678,73 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (e2 > -dy) { err -= dy; x += sx; }
 			if (e2 < dx) { err += dx; y += sy; }
 
+			int tileCenterX = (x << 16) + 0x8000;
+			int tileCenterY = (y << 16) + 0x8000;
+			CheckCollidableActors(tileCenterX, tileCenterY);
 			if (PickupItemsAtTile((ushort)x, (ushort)y))
 			{
 				// Level transition triggered - snap player to this tile's center and stop
-				PlayerX = (x << 16) + 0x8000;
-				PlayerY = (y << 16) + 0x8000;
+				PlayerX = tileCenterX;
+				PlayerY = tileCenterY;
 				return;
 			}
+		}
+		// Check at exact destination (may differ from tile center during normal movement)
+		CheckCollidableActors(PlayerX, PlayerY);
+	}
+
+	/// <summary>
+	/// Checks all actors in collidable states for player proximity at the given position
+	/// and fires their CollidableScript if the player is within radius.
+	/// Uses circular (Euclidean) distance, unlike the square box used for static bonuses.
+	/// Called on every player movement, including at each DDA step during teleportation.
+	/// </summary>
+	/// <param name="posX">Player X position to test (16.16 fixed-point)</param>
+	/// <param name="posY">Player Y position to test (16.16 fixed-point)</param>
+	private void CheckCollidableActors(int posX, int posY)
+	{
+		if (_collidableActors.Count == 0)
+			return;
+		// Snapshot the list: the script may call ChangeState(), modifying _collidableActors
+		int[] snapshot = _collidableActors.ToArray();
+		foreach (int actorIndex in snapshot)
+		{
+			Actor actor = actors[actorIndex];
+			State state = actor.CurrentState;
+			// Guard against a state change having removed CollidableScript since snapshot
+			if (string.IsNullOrEmpty(state?.CollidableScript))
+				continue;
+			// Radius in fixed-point units (tile fraction * 65536)
+			long radius = (long)(state.CollidableRadius * 65536f);
+			long dx = posX - actor.X;
+			long dy = posY - actor.Y;
+			if (dx * dx + dy * dy < radius * radius)
+			{
+				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+				try
+				{
+					luaScriptEngine.ExecuteActionFunction(state.CollidableScript, context);
+				}
+				catch (Exception ex)
+				{
+					logger?.LogError(ex, "Error executing CollidableScript '{Script}' for actor {ActorIndex}", state.CollidableScript, actorIndex);
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Rebuilds the collidable actor index from scratch by scanning all actors.
+	/// Called after save game load, where actor states are restored without going
+	/// through TransitionActorState.
+	/// </summary>
+	private void RebuildCollidableActorsList()
+	{
+		_collidableActors.Clear();
+		for (int i = 0; i < actors.Count; i++)
+		{
+			if (!string.IsNullOrEmpty(actors[i].CurrentState?.CollidableScript))
+				_collidableActors.Add(i);
 		}
 	}
 	#endregion
@@ -3442,6 +3517,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					actors[i].CurrentState = state;
 			}
 		}
+		RebuildCollidableActorsList();
 
 		// Restore weapon slot state (value fields only)
 		if (snapshot.WeaponSlots is not null)
