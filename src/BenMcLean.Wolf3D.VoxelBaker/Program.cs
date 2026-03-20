@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
@@ -170,25 +169,7 @@ public static class Program
 		return voxFile.Models;
 	}
 	#endregion VoxReader
-	#region Palette
-	public static uint[] ReadVgaPalette(BinaryReader reader)
-	{
-		Span<byte> buffer = stackalloc byte[768];
-		if (reader.Read(buffer) < 768)
-			throw new EndOfStreamException();
-		return ParseVgaPalette(buffer);
-	}
-	public static uint[] ParseVgaPalette(ReadOnlySpan<byte> chunk)
-	{
-		uint[] palette = new uint[256];
-		for (int index = 0, offset = 0; index < 255; index++, offset += 3)
-			palette[index] = BinaryPrimitives.ReadUInt32BigEndian(chunk[offset..]) << 2 & 0xFCFCFC00u | 0xFFu;
-		palette[255] = (uint)chunk[765] << 26 |
-			(uint)chunk[766] << 18 |
-			(uint)chunk[767] << 10 |
-			0xFFu;
-		return palette;
-	}
+	#region Utilities
 	public static void WriteVgaPalette(BinaryWriter writer, uint[]? palette)
 	{
 		ArgumentNullException.ThrowIfNull(palette);
@@ -203,13 +184,10 @@ public static class Program
 		}
 		writer.Write(buffer);
 	}
-	#endregion Palette
-	#region Utilities
-	public static string ReadString(BinaryReader reader) => Encoding.UTF8.GetString(reader.ReadBytes((int)reader.ReadUInt32()));
 	public static void WriteString(BinaryWriter writer, string s)
 	{
 		byte[] bytes = Encoding.UTF8.GetBytes(s);
-		writer.Write((uint)bytes.Length);
+		writer.Write(bytes.Length);
 		writer.Write(bytes);
 	}
 	#endregion Utilities

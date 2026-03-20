@@ -138,7 +138,7 @@ public class VoxelAtlas : IDisposable
 			data: imageData));
 	}
 	#endregion Textures
-	#region Palette
+	#region Utilities
 	public static uint[] ReadVgaPalette(BinaryReader reader)
 	{
 		Span<byte> buffer = stackalloc byte[768];
@@ -157,6 +157,6 @@ public class VoxelAtlas : IDisposable
 			0xFFu;
 		return palette;
 	}
-	#endregion Palette
-	public static string ReadString(BinaryReader reader) => Encoding.UTF8.GetString(reader.ReadBytes((int)reader.ReadUInt32()));
+	public static string ReadString(BinaryReader reader) => Encoding.UTF8.GetString(reader.ReadBytes(reader.ReadInt32()));
+	#endregion Utilities
 }
