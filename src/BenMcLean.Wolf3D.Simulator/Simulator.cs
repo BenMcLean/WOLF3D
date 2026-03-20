@@ -70,6 +70,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// When Inventory.ValueChanged fires for a name in this dict, auto-emits StatusBarTextChanged
 	// with the value right-justified to the stored width. Width is fixed at game load from XML.
 	private readonly Dictionary<string, int> _statusBarTextWidths = [];
+	// Tracks the last-emitted pic name per StatusBar picture Id.
+	// Used by SyncStatusBarState() to replay current pic values to a newly created status bar.
+	private readonly Dictionary<string, string> _currentStatusBarPics = [];
 	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
 	private FaceController faceController;
 	// Map analyzer for accessing door metadata (sounds, etc.)
@@ -2360,6 +2363,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public void EmitStatusBarPicChanged(string name, string picName)
 	{
+		_currentStatusBarPics[name] = picName;
 		StatusBarPicChanged?.Invoke(new StatusBarPicChangedEvent
 		{
 			Name = name,
@@ -2378,6 +2382,23 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Id = id,
 			Content = content
 		});
+	}
+
+	/// <summary>
+	/// Re-emits all current status bar text and picture values to bring a newly created
+	/// status bar up to date. Call this after subscribing to StatusBarTextChanged and
+	/// StatusBarPicChanged on a newly created status bar (e.g., after a level load or
+	/// game load creates a fresh StatusBarState).
+	/// </summary>
+	public void SyncStatusBarState()
+	{
+		foreach (KeyValuePair<string, int> kvp in _statusBarTextWidths)
+		{
+			int value = Inventory.GetValue(kvp.Key);
+			EmitStatusBarTextChanged(kvp.Key, value.ToString().PadLeft(kvp.Value));
+		}
+		foreach (KeyValuePair<string, string> kvp in _currentStatusBarPics)
+			EmitStatusBarPicChanged(kvp.Key, kvp.Value);
 	}
 
 	/// <summary>

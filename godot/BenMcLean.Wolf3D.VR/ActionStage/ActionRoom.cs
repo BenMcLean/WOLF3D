@@ -430,6 +430,10 @@ void sky() {
 				// Wire simulator text events (e.g., health, ammo, score) to status bar state
 				_simulatorController.Simulator.StatusBarTextChanged += evt =>
 					_statusBarState.SetText(evt.Id, evt.Content);
+				// Sync current simulator state to the newly created status bar.
+				// Without this, a status bar created during level load or game load would show
+				// stale XML defaults instead of the actual current inventory and pic values.
+				_simulatorController.Simulator.SyncStatusBarState();
 			}
 
 			// Execute OnNewGame script for new games (VR and flatscreen).
