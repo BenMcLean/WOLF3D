@@ -82,6 +82,7 @@ public partial class ActionRoom : Node3D, IRoom
 	public Doors Doors => _doors;
 	public SimulatorController SimulatorController => _simulatorController;
 	public Actors Actors => _actors;
+	public Projectiles Projectiles => _projectiles;
 	public Fixtures Fixtures => _fixtures;
 	public Bonuses Bonuses => _bonuses;
 	public static IReadOnlyDictionary<ushort, StandardMaterial3D> SpriteMaterials => VRAssetManager.SpriteMaterials;
@@ -118,6 +119,7 @@ void sky() {
 	private Fixtures _fixtures;
 	private Bonuses _bonuses;
 	private Actors _actors;
+	private Projectiles _projectiles;
 	private Doors _doors;
 	private Weapons _weapons;
 	private SimulatorController _simulatorController;
@@ -235,6 +237,13 @@ void sky() {
 				() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
 			AddChild(_actors);
 
+			// Create projectiles (in-flight rockets, needles, fireballs, etc.) for the current level
+			_projectiles = new Projectiles(
+				VRAssetManager.SpriteMaterials,
+				() => _displayMode.ViewerPosition,         // Viewer position for directional sprites
+				() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
+			AddChild(_projectiles);
+
 			// Create weapons: flatscreen shows a camera-attached sprite; VR uses WeaponHandMesh on controllers.
 			// Weapons still subscribes for WeaponFired sound in both modes.
 			_weapons = new Weapons(
@@ -267,6 +276,7 @@ void sky() {
 					_bonuses,
 					_actors,
 					_weapons,
+					_projectiles,
 					() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()));
 			}
 			else
@@ -280,6 +290,7 @@ void sky() {
 					_bonuses,
 					_actors,
 					_weapons,
+					_projectiles,
 					Shared.SharedAssetManager.CurrentGame.StateCollection,
 					Shared.SharedAssetManager.CurrentGame.WeaponCollection,
 					() => (_displayMode.ViewerPosition.X.ToFixedPoint(), _displayMode.ViewerPosition.Z.ToFixedPoint(), _displayMode.ViewerYRotation.ToWolf3DAngle()),

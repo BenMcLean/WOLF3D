@@ -27,6 +27,7 @@ public partial class SimulatorController : Node3D
 	private Bonuses bonuses;
 	private Actors actors;
 	private Weapons weapons;
+	private Projectiles projectiles;
 	private Func<(int X, int Y, short Angle)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates and angle (0-359)
 
 	// Named event handlers for cleanup in _ExitTree
@@ -47,6 +48,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="bonusesNode">The Bonuses node that will render bonus items</param>
 	/// <param name="actorsNode">The Actors node that will render actors</param>
 	/// <param name="weaponsNode">The Weapons node that will render player weapons</param>
+	/// <param name="projectilesNode">The Projectiles node that will render in-flight projectiles</param>
 	/// <param name="stateCollection">State collection loaded from game XML (e.g., WL1.xml)</param>
 	/// <param name="weaponCollection">Weapon collection loaded from game XML (e.g., WL1.xml)</param>
 	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y) and angle (0-359)</param>
@@ -58,6 +60,7 @@ public partial class SimulatorController : Node3D
 		Bonuses bonusesNode,
 		Actors actorsNode,
 		Weapons weaponsNode,
+		Projectiles projectilesNode,
 		StateCollection stateCollection,
 		WeaponCollection weaponCollection,
 		Func<(int X, int Y, short Angle)> getPlayerPosition,
@@ -90,6 +93,7 @@ public partial class SimulatorController : Node3D
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
 		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
 		weapons = weaponsNode ?? throw new ArgumentNullException(nameof(weaponsNode));
+		projectiles = projectilesNode ?? throw new ArgumentNullException(nameof(projectilesNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
 
 		// CRITICAL: Subscribe presentation layers to simulator events BEFORE loading data
@@ -99,6 +103,7 @@ public partial class SimulatorController : Node3D
 		bonuses.Subscribe(simulator);
 		actors.Subscribe(simulator);
 		weapons.Subscribe(simulator);
+		projectiles.Subscribe(simulator);
 
 		// Subscribe to elevator activation for level transitions
 		_elevatorHandler = e => ElevatorActivated?.Invoke(e);
@@ -165,6 +170,7 @@ public partial class SimulatorController : Node3D
 		Bonuses bonusesNode,
 		Actors actorsNode,
 		Weapons weaponsNode,
+		Projectiles projectilesNode,
 		Func<(int X, int Y, short Angle)> getPlayerPosition)
 	{
 		// Simulation pauses during fade transitions while presentation layer keeps rendering
@@ -176,6 +182,7 @@ public partial class SimulatorController : Node3D
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
 		actors = actorsNode ?? throw new ArgumentNullException(nameof(actorsNode));
 		weapons = weaponsNode ?? throw new ArgumentNullException(nameof(weaponsNode));
+		projectiles = projectilesNode ?? throw new ArgumentNullException(nameof(projectilesNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
 
 		// Subscribe presentation layers to existing simulator
@@ -184,6 +191,7 @@ public partial class SimulatorController : Node3D
 		bonuses.Subscribe(simulator);
 		actors.Subscribe(simulator);
 		weapons.Subscribe(simulator);
+		projectiles.Subscribe(simulator);
 
 		// Subscribe event forwarding handlers
 		_elevatorHandler = e => ElevatorActivated?.Invoke(e);
