@@ -109,6 +109,18 @@ public record SimulatorSnapshot
 	public ActorSnapshot[] Actors { get; init; }
 
 	/// <summary>
+	/// State of all in-flight projectiles at the time of save.
+	/// Projectiles are transient; this list may be empty if none were in flight.
+	/// CurrentStateName is resolved to State references via StateCollection on restore.
+	/// </summary>
+	public ProjectileSnapshot[] Projectiles { get; init; }
+
+	/// <summary>
+	/// Counter for generating unique ProjectileIds. Restored to preserve determinism.
+	/// </summary>
+	public long NextProjectileId { get; init; }
+
+	/// <summary>
 	/// State of all weapon slots. Matched by SlotIndex.
 	/// CurrentStateName is resolved to State references via StateCollection on restore.
 	/// </summary>

@@ -794,4 +794,40 @@ public class ActorScriptContext(
 		// TODO: Implement actor despawning
 	}
 	#endregion ActionScriptContext Abstract Method Implementations
+	#region Projectile Spawning
+	/// <summary>
+	/// Calculate the angle from this actor toward the player (0-359 degrees).
+	/// WL_ACT2.C:T_Launch - angle = atan2(deltay, deltax) / (PI*2) * ANGLES.
+	/// Use this result as the angle parameter for SpawnProjectile.
+	/// </summary>
+	public int GetAngleToPlayer()
+	{
+		double dx = simulator.PlayerX - actor.X;
+		// Negate dy: Wolf3D Y increases downward, but angle 0=east, 90=north (math convention)
+		double dy = -(simulator.PlayerY - actor.Y);
+		double radians = System.Math.Atan2(dy, dx);
+		int angle = (int)(radians / (System.Math.PI * 2.0) * 360.0);
+		if (angle < 0)
+			angle += 360;
+		return angle;
+	}
+
+	/// <summary>
+	/// Spawn a projectile from this actor's position aimed in the given direction.
+	/// WL_ACT2.C:T_Launch (rockets), T_SchabbThrow (needles), T_GiftThrow, T_FakeFire (fireballs).
+	/// The projectile spawns slightly ahead of the actor to avoid self-collision.
+	/// </summary>
+	/// <param name="projectileType">Projectile type name (must match a Projectile XML element)</param>
+	/// <param name="angle">Direction of travel in degrees 0-359 (use GetAngleToPlayer())</param>
+	public void SpawnProjectile(string projectileType, int angle)
+	{
+		double radians = angle * System.Math.PI / 180.0;
+		// WL_ACT2.C:T_Launch: new->x = ob->x + (costable[ob->angle] >> 2)
+		// costable returns fixed-point 1.0 = 0x10000; >>2 = 0x4000 = 0.25 tiles forward
+		int offsetX = (int)(0x4000 * System.Math.Cos(radians));
+		int offsetY = -(int)(0x4000 * System.Math.Sin(radians));
+		simulator.SpawnProjectile(projectileType, actor.X + offsetX, actor.Y + offsetY,
+			(short)(angle % 360), isPlayerOwned: false);
+	}
+	#endregion Projectile Spawning
 }

@@ -184,6 +184,27 @@ public class WeaponScriptContext(
 			weaponSlot.WeaponType);
 	}
 	#endregion Attack Requests
+	#region Projectile Spawning
+	/// <summary>
+	/// Spawn a player-fired projectile from the player's position aimed in the player's direction.
+	/// WL_AGENT.C:MissileAttack (watermelon), FlameAttack (cantaloupe).
+	/// Ammo should be consumed separately via ConsumeAmmo() before calling this.
+	/// The projectile spawns slightly ahead of the player to avoid immediate self-collision.
+	/// </summary>
+	/// <param name="projectileType">Projectile type name (must match a Projectile XML element)</param>
+	public void SpawnProjectile(string projectileType)
+	{
+		short angle = simulator.PlayerAngle;
+		double radians = angle * System.Math.PI / 180.0;
+		// WL_AGENT.C:MissileAttack: new->x = ob->x + (costable[ob->angle] >> 2)
+		int offsetX = (int)(0x4000 * System.Math.Cos(radians));
+		int offsetY = -(int)(0x4000 * System.Math.Sin(radians));
+		simulator.SpawnProjectile(projectileType,
+			simulator.PlayerX + offsetX, simulator.PlayerY + offsetY,
+			angle, isPlayerOwned: true);
+	}
+	#endregion Projectile Spawning
+
 	#region Weapon Switching
 	/// <summary>
 	/// Switch to the lowest-numbered weapon (out of ammo fallback).

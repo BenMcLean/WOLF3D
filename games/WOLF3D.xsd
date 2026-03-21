@@ -1134,6 +1134,7 @@
 				<xs:element ref="StatInfo" minOccurs="0"/>
 				<xs:element ref="Actors" minOccurs="0"/>
 				<xs:element ref="GameplayWeapons" minOccurs="0"/>
+				<xs:element ref="Projectiles" minOccurs="0"/>
 				<xs:element ref="Sprites" minOccurs="0"/>
 				<xs:element ref="DigiSounds" minOccurs="0"/>
 				<xs:element ref="WallPaletteRanges" minOccurs="0"/>
@@ -1746,6 +1747,105 @@
 				<xs:annotation>
 					<xs:documentation>
 						Sound name to play when firing (e.g., "ATKKNIFESND", "ATKPISTOLSND", "ATKGATGUNSND").
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- Projectiles (projectile definitions for simulation) -->
+
+	<xs:element name="Projectiles">
+		<xs:annotation>
+			<xs:documentation>
+				Projectile definitions for gameplay (simulation layer).
+				Covers both enemy-fired projectiles (WL_FPROJ.C:T_Projectile: rockets, needles,
+				fireballs, sparks) and player-fired projectiles (WL_ACT2.C:T_Missile: watermelons,
+				cantaloupes in S3DNA).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Projectile" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Projectile">
+		<xs:annotation>
+			<xs:documentation>
+				Individual projectile type definition.
+				Projectiles are spawned by actor Lua scripts (enemy attacks) or weapon Lua scripts
+				(player attacks). Movement and collision are handled by the Simulator each tic.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Unique projectile type identifier (e.g., "rocket", "needle", "fireball",
+						"watermelon", "cantaloupe").
+						Referenced by SpawnProjectile() calls in Lua scripts.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="InitialState" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						State name for active flight (e.g., "s_rocket", "s_needle1", "s_fire1").
+						Must reference a State element defined in the same game XML.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ExplodeState" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						State name to transition to on wall collision (e.g., "s_boom1").
+						If absent, the projectile despawns immediately on wall hit.
+						WL_FPROJ.C:T_Projectile: rockets transition to s_boom1; needles/fireballs do not.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="MinDamage" type="xs:short" default="0">
+				<xs:annotation>
+					<xs:documentation>
+						Minimum damage dealt per hit. Actual damage is randomized in [MinDamage, MaxDamage].
+						WL_FPROJ.C reference ranges: needle 20-51, rocket 30-61, fire 0-31.
+						WL_ACT2.C reference ranges: player missile 16-64, player flame 1-16.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="MaxDamage" type="xs:short" default="0">
+				<xs:annotation>
+					<xs:documentation>
+						Maximum damage dealt per hit. Actual damage is randomized in [MinDamage, MaxDamage].
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Speed" type="xs:integer" default="8192">
+				<xs:annotation>
+					<xs:documentation>
+						Movement speed per tic in 16.16 fixed-point (decimal).
+						WL_FPROJ.C: rocketobj/needleobj/sparkobj = 8192 (0x2000),
+						fireobj = 4608 (0x1200).
+						WL_ACT2.C: player missileobj/flameobj = 12288 (0x3000).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="WallCollisionSize" type="xs:integer" default="8192">
+				<xs:annotation>
+					<xs:documentation>
+						Half-size of the wall collision bounding box in 16.16 fixed-point (decimal).
+						WL_FPROJ.C:PROJSIZE = 8192 (0x2000). Rarely needs to be changed.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ActorCollisionSize" type="xs:integer" default="49152">
+				<xs:annotation>
+					<xs:documentation>
+						Proximity radius for hitting actors or the player in 16.16 fixed-point (decimal).
+						WL_FPROJ.C:PROJECTILESIZE = 49152 (0xC000) for enemy projectiles hitting player.
+						WL_ACT2.C:MINMISSILEDIST = 32768 (0x8000) for player projectiles hitting actors.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

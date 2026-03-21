@@ -307,6 +307,11 @@ public class StateCollection
 	/// </summary>
 	public Dictionary<string, ActorDefinition> ActorDefinitions { get; set; } = [];
 	/// <summary>
+	/// Projectile type definitions, indexed by projectile type name (e.g., "rocket", "needle").
+	/// Used by the Simulator to look up damage, speed, collision size, and state names.
+	/// </summary>
+	public Dictionary<string, ProjectileDefinition> ProjectileDefinitions { get; set; } = [];
+	/// <summary>
 	/// Adds an action function to the collection.
 	/// </summary>
 	/// <param name="function">The ActionFunction to add</param>
@@ -446,6 +451,18 @@ public class StateCollection
 		{
 			ActorDefinition actorDef = ActorDefinition.FromXElement(element);
 			ActorDefinitions[actorDef.Name] = actorDef;
+		}
+	}
+	/// <summary>
+	/// Loads projectile definitions from XML Projectile elements.
+	/// </summary>
+	/// <param name="elements">Collection of Projectile XElements</param>
+	public void LoadProjectileDefinitionsFromXml(IEnumerable<XElement> elements)
+	{
+		foreach (XElement element in elements)
+		{
+			ProjectileDefinition def = ProjectileDefinition.FromXElement(element);
+			ProjectileDefinitions[def.Name] = def;
 		}
 	}
 }

@@ -44,6 +44,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// Maintained by TransitionActorState and LoadActorsFromMapAnalysis.
 	// Used by CheckCollidableActors() during player movement.
 	private readonly List<int> _collidableActors = [];
+	// WL_FPROJ.C / WL_ACT2.C:T_Missile - active projectiles (rockets, needles, fireballs, etc.)
+	// Removed from list when they despawn (unlike actors which stay in list after death).
+	// Identity tracked by ProjectileId, not list index.
+	public IReadOnlyList<Entities.Projectile> Projectiles => projectiles;
+	private readonly List<Entities.Projectile> projectiles = [];
+	// Monotonically increasing counter for assigning unique ProjectileIds.
+	private long _nextProjectileId;
 	// Weapon slots (configurable count - VR uses 2, traditional uses 1)
 	// Based on WL_DEF.H:gametype:weapon/attackframe/attackcount
 	public IReadOnlyList<WeaponSlot> WeaponSlots => weaponSlots;
@@ -312,6 +319,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Presentation layer updates the displayed text for the named element.
 	/// </summary>
 	public event Action<StatusBarTextChangedEvent> StatusBarTextChanged;
+	/// <summary>A projectile was spawned. WL_ACT2.C:T_Launch / MissileAttack equivalents.</summary>
+	public event Action<ProjectileSpawnedEvent> ProjectileSpawned;
+	/// <summary>A projectile moved. Fired every tic during flight.</summary>
+	public event Action<ProjectileMovedEvent> ProjectileMoved;
+	/// <summary>A projectile's sprite changed (explosion frame). WL_FPROJ.C:s_boom states.</summary>
+	public event Action<ProjectileSpriteChangedEvent> ProjectileSpriteChanged;
+	/// <summary>A projectile was removed. WL_FPROJ.C:T_Projectile ob->state = NULL.</summary>
+	public event Action<ProjectileDespawnedEvent> ProjectileDespawned;
 	#endregion
 	/// <summary>
 	/// Creates a new Simulator instance.
@@ -445,6 +460,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// WL_ACT2.C:DoActor - update all actors
 		for (int i = 0; i < actors.Count; i++)
 			UpdateActor(i);
+		// WL_FPROJ.C:T_Projectile / WL_ACT2.C:T_Missile - update all projectiles
+		// Iterate backwards to allow safe removal during iteration
+		for (int i = projectiles.Count - 1; i >= 0; i--)
+			UpdateProjectile(i);
 		// WL_AGENT.C:UpdateFace - update status bar face on facecount tick
 		if (faceController is not null)
 		{
@@ -1614,6 +1633,293 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		direction = default;
 		return false;
 	}
+
+	#region Projectile Management
+	/// <summary>
+	/// Spawns a new projectile.
+	/// WL_ACT2.C:T_Launch (enemy rockets), T_SchabbThrow (needles), T_FakeFire (fireballs),
+	/// MissileAttack (player watermelon), FlameAttack (player cantaloupe).
+	/// </summary>
+	/// <param name="projectileType">Projectile type name matching a ProjectileDefinition</param>
+	/// <param name="x">Spawn X in 16.16 fixed-point</param>
+	/// <param name="y">Spawn Y in 16.16 fixed-point</param>
+	/// <param name="angle">Direction of travel in degrees 0-359</param>
+	/// <param name="isPlayerOwned">True = player fired, False = enemy fired</param>
+	/// <returns>The spawned projectile, or null if type not found</returns>
+	public Entities.Projectile SpawnProjectile(string projectileType, int x, int y, short angle, bool isPlayerOwned)
+	{
+		if (!stateCollection.ProjectileDefinitions.TryGetValue(projectileType, out Assets.Gameplay.ProjectileDefinition def))
+		{
+			logger?.LogError("ERROR: Unknown projectile type '{ProjectileType}'", projectileType);
+			return null;
+		}
+		if (!stateCollection.States.TryGetValue(def.InitialState, out State initialState))
+		{
+			logger?.LogError("ERROR: Projectile '{ProjectileType}' references unknown state '{InitialState}'",
+				projectileType, def.InitialState);
+			return null;
+		}
+		Entities.Projectile proj = new()
+		{
+			ProjectileId = _nextProjectileId++,
+			ProjectileType = projectileType,
+			X = x,
+			Y = y,
+			TileX = (ushort)(x >> 16),
+			TileY = (ushort)(y >> 16),
+			Angle = angle,
+			Speed = def.Speed,
+			IsPlayerOwned = isPlayerOwned,
+			CurrentState = initialState,
+			TicCount = initialState.Tics,
+			IsExploding = false,
+		};
+		projectiles.Add(proj);
+		ProjectileSpawned?.Invoke(new ProjectileSpawnedEvent
+		{
+			ProjectileId = proj.ProjectileId,
+			ProjectileType = projectileType,
+			X = x,
+			Y = y,
+			Angle = angle,
+			Shape = (ushort)Math.Max(0, (int)initialState.Shape),
+			IsRotated = initialState.Rotate,
+		});
+		return proj;
+	}
+
+	/// <summary>
+	/// Updates a single projectile for one tic.
+	/// Handles state machine timing, movement, wall collision, and entity hit detection.
+	/// WL_FPROJ.C:T_Projectile (enemy) + WL_ACT2.C:T_Missile (player).
+	/// </summary>
+	private void UpdateProjectile(int index)
+	{
+		Entities.Projectile proj = projectiles[index];
+
+		// State machine: advance transitional states (explosion animation, flight timing)
+		if (proj.TicCount > 0)
+		{
+			proj.TicCount--;
+			if (proj.TicCount <= 0)
+			{
+				if (proj.CurrentState.Next is null)
+				{
+					// End of state chain (explosion finished) - despawn
+					DespawnProjectile(index);
+					return;
+				}
+				proj.CurrentState = proj.CurrentState.Next;
+				proj.TicCount = proj.CurrentState.Tics;
+				ProjectileSpriteChanged?.Invoke(new ProjectileSpriteChangedEvent
+				{
+					ProjectileId = proj.ProjectileId,
+					Shape = (ushort)Math.Max(0, (int)proj.CurrentState.Shape),
+					IsRotated = proj.CurrentState.Rotate,
+				});
+				if (proj.CurrentState.Tics == 0)
+					proj.TicCount = 0; // Non-transitional (flight), clear countdown
+			}
+		}
+
+		// No movement while exploding
+		if (proj.IsExploding)
+			return;
+
+		// WL_FPROJ.C:T_Projectile - move projectile by speed * cos/sin(angle)
+		double radians = proj.Angle * Math.PI / 180.0;
+		long deltax = (long)(proj.Speed * Math.Cos(radians));
+		long deltay = -(long)(proj.Speed * Math.Sin(radians));
+		// WL_FPROJ.C:T_Projectile cap (prevents clipping through thin geometry at high speed)
+		if (deltax > 0x10000L) deltax = 0x10000L;
+		if (deltay > 0x10000L) deltay = 0x10000L;
+		proj.X += (int)deltax;
+		proj.Y += (int)deltay;
+
+		// Wall collision check - WL_FPROJ.C:ProjectileTryMove
+		stateCollection.ProjectileDefinitions.TryGetValue(proj.ProjectileType, out Assets.Gameplay.ProjectileDefinition projDef);
+		if (!ProjectileCanMove(proj, projDef))
+		{
+			if (projDef?.ExplodeState is not null
+				&& stateCollection.States.TryGetValue(projDef.ExplodeState, out State explodeState))
+			{
+				proj.CurrentState = explodeState;
+				proj.TicCount = explodeState.Tics;
+				proj.IsExploding = true;
+				ProjectileSpriteChanged?.Invoke(new ProjectileSpriteChangedEvent
+				{
+					ProjectileId = proj.ProjectileId,
+					Shape = (ushort)Math.Max(0, (int)explodeState.Shape),
+					IsRotated = explodeState.Rotate,
+				});
+			}
+			else
+			{
+				DespawnProjectile(index);
+			}
+			return;
+		}
+
+		// Update tile coordinates
+		proj.TileX = (ushort)(proj.X >> 16);
+		proj.TileY = (ushort)(proj.Y >> 16);
+
+		// Entity hit detection
+		int collisionSize = projDef?.ActorCollisionSize ?? 0xC000;
+		if (proj.IsPlayerOwned)
+		{
+			// WL_ACT2.C:MissileTryMove - check each shootable actor
+			for (int i = 0; i < actors.Count; i++)
+			{
+				Actor actor = actors[i];
+				if (!actor.Flags.HasFlag(ActorFlags.Shootable))
+					continue;
+				long adx = Math.Abs((long)proj.X - actor.X);
+				long ady = Math.Abs((long)proj.Y - actor.Y);
+				if (adx < collisionSize && ady < collisionSize)
+				{
+					short damage = ComputeProjectileDamage(projDef, rng);
+					ApplyProjectileDamage(i, damage);
+					DespawnProjectile(index);
+					return;
+				}
+			}
+		}
+		else
+		{
+			// WL_FPROJ.C:T_Projectile - check player proximity
+			long pdx = Math.Abs((long)proj.X - PlayerX);
+			long pdy = Math.Abs((long)proj.Y - PlayerY);
+			if (pdx < collisionSize && pdy < collisionSize)
+			{
+				short damage = ComputeProjectileDamage(projDef, rng);
+				DamagePlayer(damage);
+				DespawnProjectile(index);
+				return;
+			}
+		}
+
+		ProjectileMoved?.Invoke(new ProjectileMovedEvent
+		{
+			ProjectileId = proj.ProjectileId,
+			X = proj.X,
+			Y = proj.Y,
+		});
+	}
+
+	/// <summary>
+	/// Checks whether a projectile can move to its current position without hitting a wall.
+	/// WL_FPROJ.C:ProjectileTryMove - checks bounding box tiles for solid geometry.
+	/// </summary>
+	private bool ProjectileCanMove(Entities.Projectile proj, Assets.Gameplay.ProjectileDefinition def)
+	{
+		int collisionSize = def?.WallCollisionSize ?? 0x2000;
+		int xl = (proj.X - collisionSize) >> 16;
+		int yl = (proj.Y - collisionSize) >> 16;
+		int xh = (proj.X + collisionSize) >> 16;
+		int yh = (proj.Y + collisionSize) >> 16;
+		for (int y = yl; y <= yh; y++)
+		{
+			for (int x = xl; x <= xh; x++)
+			{
+				if (IsProjectileBlockedAt(x, y))
+					return false;
+			}
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// Returns true if a projectile is blocked at the given tile (wall, closed door, pushwall).
+	/// Actors do not block projectiles (projectiles detect actors via proximity check).
+	/// </summary>
+	private bool IsProjectileBlockedAt(int x, int y)
+	{
+		// mapAnalysis.IsNavigable already handles out-of-bounds (returns false)
+		if (!mapAnalysis.IsNavigable(x, y))
+			return true;
+		int tileIdx = GetTileIndex((ushort)x, (ushort)y);
+		if (pushWallAtTile[tileIdx] >= 0)
+			return true;
+		if (doorAtTile[tileIdx] >= 0)
+		{
+			Door door = doors[doorAtTile[tileIdx]];
+			if (door.Action != DoorAction.Open)
+				return true;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Removes a projectile from the list and fires the despawn event.
+	/// Safe to call during backwards iteration of the projectiles list.
+	/// </summary>
+	private void DespawnProjectile(int index)
+	{
+		Entities.Projectile proj = projectiles[index];
+		ProjectileDespawned?.Invoke(new ProjectileDespawnedEvent { ProjectileId = proj.ProjectileId });
+		projectiles.RemoveAt(index);
+	}
+
+	/// <summary>
+	/// Computes randomized damage for a projectile hit.
+	/// WL_FPROJ.C: damage = (US_RndT() >> 3) + base, approximated as MinDamage + RNG(range).
+	/// </summary>
+	private static short ComputeProjectileDamage(Assets.Gameplay.ProjectileDefinition def, RNG rng)
+	{
+		if (def is null || def.MaxDamage <= def.MinDamage)
+			return def?.MinDamage ?? 0;
+		return (short)(def.MinDamage + rng.NextInt(def.MaxDamage - def.MinDamage + 1));
+	}
+
+	/// <summary>
+	/// Applies damage from a projectile hit to an actor.
+	/// Same death/pain state transitions as ApplyWeaponDamage but without weapon-specific
+	/// damage calculation or hitscan surprise bonus.
+	/// WL_STATE.C:DamageActor (called from T_Projectile / MissileTryMove).
+	/// </summary>
+	private void ApplyProjectileDamage(int actorIndex, short damage)
+	{
+		if (actorIndex < 0 || actorIndex >= actors.Count)
+			return;
+		Actor actor = actors[actorIndex];
+		if (!actor.Flags.HasFlag(ActorFlags.Shootable))
+			return;
+		// WL_STATE.C:DamageActor - surprise bonus (unaware actor takes double damage)
+		if (!actor.Flags.HasFlag(ActorFlags.AttackMode))
+			damage = (short)(damage * 2);
+		actor.HitPoints -= damage;
+		stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef);
+		if (actor.HitPoints <= 0)
+		{
+			actor.HitPoints = 0;
+			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
+			{
+				TransitionActorStateByName(actorIndex, actorDef.DeathState);
+				actor.Flags &= ~ActorFlags.Shootable;
+			}
+		}
+		else
+		{
+			if (!actor.Flags.HasFlag(ActorFlags.AttackMode) && actorDef is not null
+				&& !string.IsNullOrEmpty(actorDef.ChaseState))
+			{
+				TransitionActorStateByName(actorIndex, actorDef.ChaseState);
+				actor.Flags |= ActorFlags.AttackMode;
+				if (!string.IsNullOrEmpty(actorDef.AlertDigiSound))
+					EmitActorPlaySound(actorIndex, actorDef.AlertDigiSound);
+			}
+			if (actorDef is not null)
+			{
+				string painState = (actor.HitPoints & 1) != 0
+					? actorDef.PainState
+					: actorDef.PainState1 ?? actorDef.PainState;
+				if (!string.IsNullOrEmpty(painState))
+					TransitionActorStateByName(actorIndex, painState);
+			}
+		}
+	}
+	#endregion Projectile Management
 
 	#region Weapon Slot Management
 	/// <summary>
@@ -2862,6 +3168,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			});
 		}
 
+		// Emit spawn events for all in-flight projectiles
+		EmitProjectileState();
+
 		// Emit weapon equipped events for all active weapon slots
 		for (int i = 0; i < weaponSlots.Count; i++)
 		{
@@ -2889,10 +3198,26 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 
 	/// <summary>
-	/// Emits current weapon-equipped and weapon-sprite-changed events for all active slots.
-	/// Use after subscribing a new weapon observer to bring it up to date
-	/// without re-emitting all entity state.
+	/// Emits spawn events for all in-flight projectiles.
+	/// Called by EmitAllEntityState and can be called independently after load.
 	/// </summary>
+	public void EmitProjectileState()
+	{
+		for (int i = 0; i < projectiles.Count; i++)
+		{
+			Entities.Projectile proj = projectiles[i];
+			ProjectileSpawned?.Invoke(new ProjectileSpawnedEvent
+			{
+				ProjectileId = proj.ProjectileId,
+				ProjectileType = proj.ProjectileType,
+				X = proj.X,
+				Y = proj.Y,
+				Angle = proj.Angle,
+				Shape = (ushort)Math.Max(0, (int)(proj.CurrentState?.Shape ?? 0)),
+				IsRotated = proj.CurrentState?.Rotate ?? false,
+			});
+		}
+	}
 	public void EmitWeaponState()
 	{
 		for (int i = 0; i < weaponSlots.Count; i++)
@@ -3400,6 +3725,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		for (int i = 0; i < actors.Count; i++)
 			actorSnapshots[i] = actors[i].Save();
 
+		// Capture in-flight projectile state
+		ProjectileSnapshot[] projectileSnapshots = new ProjectileSnapshot[projectiles.Count];
+		for (int i = 0; i < projectiles.Count; i++)
+			projectileSnapshots[i] = projectiles[i].Save();
+
 		// Capture weapon slot state (CurrentStateName resolved on restore)
 		WeaponSlotSnapshot[] weaponSlotSnapshots = new WeaponSlotSnapshot[weaponSlots.Count];
 		for (int i = 0; i < weaponSlots.Count; i++)
@@ -3433,6 +3763,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			PushWalls = pushWallSnapshots,
 			AnyPushWallMoving = anyPushWallMoving,
 			Actors = actorSnapshots,
+			Projectiles = projectileSnapshots,
+			NextProjectileId = _nextProjectileId,
 			WeaponSlots = weaponSlotSnapshots,
 			StatObjList = statObjSnapshots,
 			LastStatObj = lastStatObj,
@@ -3518,6 +3850,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 		RebuildCollidableActorsList();
+
+		// Restore in-flight projectiles
+		projectiles.Clear();
+		if (snapshot.Projectiles is not null)
+		{
+			foreach (ProjectileSnapshot projSnap in snapshot.Projectiles)
+			{
+				Entities.Projectile proj = new()
+				{
+					ProjectileId = projSnap.ProjectileId,
+					ProjectileType = projSnap.ProjectileType,
+				};
+				proj.Load(projSnap);
+				// Resolve CurrentState via StateCollection
+				if (projSnap.CurrentStateName is not null
+					&& stateCollection.States.TryGetValue(projSnap.CurrentStateName, out State projState))
+				{
+					proj.CurrentState = projState;
+				}
+				projectiles.Add(proj);
+			}
+		}
+		_nextProjectileId = snapshot.NextProjectileId;
 
 		// Restore weapon slot state (value fields only)
 		if (snapshot.WeaponSlots is not null)

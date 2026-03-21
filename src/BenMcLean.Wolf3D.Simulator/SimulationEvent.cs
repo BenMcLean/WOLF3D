@@ -438,3 +438,68 @@ public struct StatusBarTextChangedEvent
 	/// <summary>New text content to display</summary>
 	public required string Content { get; init; }
 }
+
+/// <summary>
+/// A projectile was spawned (rocket fired, needle thrown, etc.).
+/// Triggered by SpawnProjectile() from actor or weapon Lua scripts.
+/// Presentation layer creates a sprite node for this projectile.
+/// WL_ACT2.C:T_Launch, T_SchabbThrow, T_GiftThrow, T_FakeFire, MissileAttack, FlameAttack equivalents.
+/// </summary>
+public struct ProjectileSpawnedEvent
+{
+	/// <summary>Unique projectile identifier. Stable for this projectile's lifetime.</summary>
+	public required long ProjectileId { get; init; }
+	/// <summary>Projectile type name (e.g., "rocket", "needle", "watermelon").</summary>
+	public required string ProjectileType { get; init; }
+	/// <summary>Spawn X in 16.16 fixed-point.</summary>
+	public required int X { get; init; }
+	/// <summary>Spawn Y in 16.16 fixed-point.</summary>
+	public required int Y { get; init; }
+	/// <summary>Direction of travel in degrees 0-359.</summary>
+	public required short Angle { get; init; }
+	/// <summary>Initial sprite page number.</summary>
+	public required ushort Shape { get; init; }
+	/// <summary>True = 8-directional sprite group, False = single sprite.</summary>
+	public required bool IsRotated { get; init; }
+}
+
+/// <summary>
+/// A projectile moved to a new position.
+/// Fired every tic while the projectile is in flight (WL_FPROJ.C:T_Projectile movement).
+/// Presentation layer updates the sprite node position.
+/// </summary>
+public struct ProjectileMovedEvent
+{
+	/// <summary>Unique projectile identifier.</summary>
+	public required long ProjectileId { get; init; }
+	/// <summary>New X in 16.16 fixed-point.</summary>
+	public required int X { get; init; }
+	/// <summary>New Y in 16.16 fixed-point.</summary>
+	public required int Y { get; init; }
+}
+
+/// <summary>
+/// A projectile's sprite changed (e.g., explosion animation frame).
+/// Fired when the projectile state machine transitions to a new state.
+/// Presentation layer swaps the sprite.
+/// </summary>
+public struct ProjectileSpriteChangedEvent
+{
+	/// <summary>Unique projectile identifier.</summary>
+	public required long ProjectileId { get; init; }
+	/// <summary>New sprite page number.</summary>
+	public required ushort Shape { get; init; }
+	/// <summary>True = 8-directional sprite group, False = single sprite.</summary>
+	public required bool IsRotated { get; init; }
+}
+
+/// <summary>
+/// A projectile was removed (hit wall, hit target, or explosion finished).
+/// Presentation layer removes the sprite node.
+/// WL_FPROJ.C:T_Projectile: ob->state = NULL removes from object list.
+/// </summary>
+public struct ProjectileDespawnedEvent
+{
+	/// <summary>Unique projectile identifier.</summary>
+	public required long ProjectileId { get; init; }
+}

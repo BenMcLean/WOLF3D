@@ -128,6 +128,8 @@ void sky() {
 	private StatusBarState _statusBarState;
 	private StatusBarRenderer _statusBarRenderer;
 	private CanvasLayer _statusBarCanvas;
+	private Action<StatusBarPicChangedEvent> _onStatusBarPicChanged;
+	private Action<StatusBarTextChangedEvent> _onStatusBarTextChanged;
 
 	/// <summary>
 	/// Creates a new ActionStage with the specified display mode.
@@ -425,11 +427,11 @@ void sky() {
 				_statusBarRenderer = new StatusBarRenderer(_statusBarState);
 
 				// Wire simulator picture events (e.g., face updates from OnFace Lua) to status bar state
-				_simulatorController.Simulator.StatusBarPicChanged += evt =>
-					_statusBarState.SetPic(evt.Name, evt.PicName);
+				_onStatusBarPicChanged = evt => _statusBarState.SetPic(evt.Name, evt.PicName);
+				_simulatorController.Simulator.StatusBarPicChanged += _onStatusBarPicChanged;
 				// Wire simulator text events (e.g., health, ammo, score) to status bar state
-				_simulatorController.Simulator.StatusBarTextChanged += evt =>
-					_statusBarState.SetText(evt.Id, evt.Content);
+				_onStatusBarTextChanged = evt => _statusBarState.SetText(evt.Id, evt.Content);
+				_simulatorController.Simulator.StatusBarTextChanged += _onStatusBarTextChanged;
 				// Sync current simulator state to the newly created status bar.
 				// Without this, a status bar created during level load or game load would show
 				// stale XML defaults instead of the actual current inventory and pic values.
@@ -1013,6 +1015,17 @@ void sky() {
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
 			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
 			_simulatorController.PlayerDied -= OnPlayerDied;
+		}
+
+		// Unsubscribe from simulator status bar events to prevent ObjectDisposedException
+		// when the ActionRoom exits the scene (e.g., pausing to menu) while the simulator
+		// is retained. Without this, the old lambdas fire against disposed Godot Labels.
+		if (_simulatorController?.Simulator is not null)
+		{
+			if (_onStatusBarPicChanged is not null)
+				_simulatorController.Simulator.StatusBarPicChanged -= _onStatusBarPicChanged;
+			if (_onStatusBarTextChanged is not null)
+				_simulatorController.Simulator.StatusBarTextChanged -= _onStatusBarTextChanged;
 		}
 
 		// Clear HitDetection delegate (points at this ActionStage's method)
