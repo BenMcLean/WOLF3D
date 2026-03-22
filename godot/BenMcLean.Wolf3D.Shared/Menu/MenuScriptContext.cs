@@ -41,11 +41,6 @@ public class MenuScriptContext(
 	/// </summary>
 	public Action<string> NavigateToMenuAction { get; set; }
 	/// <summary>
-	/// Delegate for navigating back to previous menu.
-	/// Set by MenuManager after context creation.
-	/// </summary>
-	public Action BackToPreviousMenuAction { get; set; }
-	/// <summary>
 	/// Delegate for closing all menus and returning to game.
 	/// Set by MenuManager after context creation.
 	/// </summary>
@@ -61,11 +56,6 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <param name="menuName">Name of menu to navigate to (e.g., "Main", "Episodes")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
-	/// <summary>
-	/// Navigate back to the previous menu.
-	/// Exposed to Lua. Delegates to MenuManager.
-	/// </summary>
-	public void BackToPreviousMenu() => BackToPreviousMenuAction?.Invoke();
 	/// <summary>
 	/// Close all menus and return to game.
 	/// Exposed to Lua. Delegates to MenuManager.

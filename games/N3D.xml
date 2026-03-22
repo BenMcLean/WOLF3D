@@ -227,6 +227,7 @@
 					PlayAdLibSound('SHOOTSND')
 					RequestQuit()
 				</MenuItem>
+				<OnCancel>if IsGameInProgress() then ResumeGame() else RequestQuit() end</OnCancel>
 			</Menu>
 			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
@@ -278,7 +279,7 @@
 				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
 				<Picture Id="DifficultyFace" Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
-					BackToPreviousMenu()
+					NavigateToMenu("Main")
 				</Picture>
 				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
 				<OnSelectionChanged>
@@ -296,6 +297,7 @@ elseif index == 3 then
 end
 ]]>
 				</OnSelectionChanged>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
 				<MenuItem Text="Super Easy">
 					PlayAdLibSound('SHOOTDOORSND')
 					SetDifficulty(0)
@@ -335,7 +337,7 @@ end
 				<Picture Name="C_DIGITITLEPIC" X="100" Y="65" />
 				<Picture Name="C_MUSICTITLEPIC" X="100" Y="130" />
 				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
-					BackToPreviousMenu()
+					NavigateToMenu("Main")
 				</Picture>
 
 				<!-- Toggle switch pictures - 7 total (WL_MENU.C:1895-1897) -->
@@ -419,6 +421,7 @@ else
 end
 ]]>
 				</OnSelectionChanged>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
 
 				<!-- Menu Items (WL_MENU.C:164-195) -->
 				<!-- Sound Effects section (items 0-2) -->
@@ -459,9 +462,10 @@ end
 			</Menu>
 
 			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="Mouse Enabled">BackToPreviousMenu()</MenuItem>
-				<MenuItem Text="Joystick Enabled">BackToPreviousMenu()</MenuItem>
-				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
+				<MenuItem Text="Mouse Enabled">NavigateToMenu("Main")</MenuItem>
+				<MenuItem Text="Joystick Enabled">NavigateToMenu("Main")</MenuItem>
+				<MenuItem Text="Back">NavigateToMenu("Main")</MenuItem>
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
@@ -579,9 +583,10 @@ end
 			</Menu>
 
 			<Menu Name="ChangeView" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<MenuItem Text="Size 1">BackToPreviousMenu()</MenuItem>
-				<MenuItem Text="Size 2">BackToPreviousMenu()</MenuItem>
-				<MenuItem Text="Back">BackToPreviousMenu()</MenuItem>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
+				<MenuItem Text="Size 1">NavigateToMenu("Main")</MenuItem>
+				<MenuItem Text="Size 2">NavigateToMenu("Main")</MenuItem>
+				<MenuItem Text="Back">NavigateToMenu("Main")</MenuItem>
 			</Menu>
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
@@ -613,7 +618,8 @@ end
 				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
 				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
 				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
-				<Pause>BackToPreviousMenu()</Pause>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
+				<Pause>NavigateToMenu("Main")</Pause>
 				<OnShow>
 					<![CDATA[
 for i = 0, GetHighScoreCount() - 1 do

@@ -542,6 +542,11 @@ public class MenuDefinition
 	/// </summary>
 	public string OnShow { get; set; }
 	/// <summary>
+	/// Lua script to execute when the player presses ESC/Cancel on this menu.
+	/// If absent, pressing cancel does nothing.
+	/// </summary>
+	public string OnCancel { get; set; }
+	/// <summary>
 	/// 3D beveled boxes to display (WL_MENU.C:DrawWindow)
 	/// </summary>
 	public List<MenuBoxDefinition> Boxes { get; set; } = [];
@@ -587,7 +592,8 @@ public class MenuDefinition
 			CursorPic = element.Attribute("CursorPic")?.Value,
 			CursorMoveSound = element.Attribute("CursorMoveSound")?.Value,
 			OnSelectionChanged = element.Element("OnSelectionChanged")?.Value?.Trim(),
-			OnShow = element.Element("OnShow")?.Value?.Trim()
+			OnShow = element.Element("OnShow")?.Value?.Trim(),
+			OnCancel = element.Element("OnCancel")?.Value?.Trim()
 		};
 
 		// Parse color attributes using semantic names from WL_MENU.H

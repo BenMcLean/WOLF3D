@@ -25,7 +25,6 @@ public class MenuManager
 	private readonly IMenuInput _input;
 	private readonly MenuScriptContext _scriptContext;
 	private readonly ILogger _logger;
-	private readonly Stack<string> _menuStack = new();
 	private string _currentMenuName;
 	private int _selectedItemIndex = 0;
 	private string _currentMenuMusic = null;
@@ -47,11 +46,6 @@ public class MenuManager
 	/// </summary>
 	public MenuScriptContext ScriptContext => _scriptContext;
 	#region Flags
-	/// <summary>
-	/// Set when ESC/Cancel is pressed at the root menu (no parent to go back to).
-	/// Consumer must clear via <see cref="ClearCancelAtRoot"/>.
-	/// </summary>
-	public bool CancelAtRootRequested { get; private set; }
 	/// <summary>
 	/// Set when the user confirmed the quit dialog.
 	/// Consumer (MenuRoom) polls this and calls GetTree().Quit().
@@ -123,7 +117,6 @@ public class MenuManager
 		{
 			// Wire up script context delegates
 			NavigateToMenuAction = NavigateToMenu,
-			BackToPreviousMenuAction = BackToPreviousMenu,
 			CloseAllMenusAction = CloseAllMenus,
 			// IsGameInProgressFunc is wired up by MenuRoom after construction
 			ShowConfirmFunc = ShowConfirm,
@@ -192,7 +185,6 @@ public class MenuManager
 	/// <summary>
 	/// Navigate to a menu by name.
 	/// If FadeTransitionCallback is set, wraps the navigation in a fade transition.
-	/// Pushes the current menu onto the stack and displays the new menu.
 	/// Automatically plays the menu's music if defined.
 	/// </summary>
 	/// <param name="menuName">Name of menu to navigate to</param>
@@ -241,9 +233,6 @@ public class MenuManager
 	{
 		if (!_menuCollection.Menus.TryGetValue(menuName, out MenuDefinition menuDef))
 			return;
-		// Push current menu onto stack if not empty
-		if (!string.IsNullOrEmpty(_currentMenuName))
-			_menuStack.Push(_currentMenuName);
 		// Set new current menu
 		_currentMenuName = menuName;
 		_selectedItemIndex = 0; // Reset to first item
@@ -277,37 +266,22 @@ public class MenuManager
 		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);
 	}
 	/// <summary>
-	/// Navigate back to the previous menu.
-	/// If FadeTransitionCallback is set, wraps the navigation in a fade transition.
-	/// Pops the menu stack.
+	/// Execute the OnCancel Lua script for a menu.
+	/// If no OnCancel script is defined, pressing cancel does nothing.
 	/// </summary>
-	public void BackToPreviousMenu()
+	/// <param name="menuDef">Menu definition containing OnCancel script</param>
+	private void ExecuteOnCancel(MenuDefinition menuDef)
 	{
-		if (_menuStack.Count == 0)
-		{
-			CancelAtRootRequested = true;
+		if (string.IsNullOrEmpty(menuDef.OnCancel))
 			return;
-		}
-		if (FadeTransitionCallback is not null)
+		try
 		{
-			FadeTransitionCallback(BackToPreviousMenuImmediate);
-			return;
+			_luaEngine.DoString(menuDef.OnCancel, _scriptContext);
 		}
-		BackToPreviousMenuImmediate();
-	}
-	/// <summary>
-	/// Navigate back immediately without fading.
-	/// </summary>
-	private void BackToPreviousMenuImmediate()
-	{
-		if (_menuStack.Count > 0)
+		catch (Exception ex)
 		{
-			_currentMenuName = _menuStack.Pop();
-			_selectedItemIndex = 0;
-			if (_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
-				ApplyMenuMusic(menuDef);
-			RefreshMenu();
-			_logger?.LogDebug("Navigated back to menu: {menuName}", _currentMenuName);
+			GD.PrintErr($"ERROR: Failed to execute OnCancel for menu '{menuDef.Name}': {ex.Message}");
+			_logger?.LogError(ex, "Failed to execute OnCancel for menu '{name}'", menuDef.Name);
 		}
 	}
 	/// <summary>
@@ -315,7 +289,6 @@ public class MenuManager
 	/// </summary>
 	public void CloseAllMenus()
 	{
-		_menuStack.Clear();
 		_currentMenuName = null;
 		_logger?.LogDebug("Closed all menus");
 		// TODO: Signal to Root.cs or game manager that menus are closed?
@@ -449,10 +422,6 @@ public class MenuManager
 	/// Handles input and executes menu actions.
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds</param>
-	/// <summary>
-	/// Clears the <see cref="CancelAtRootRequested"/> flag after the consumer has acted on it.
-	/// </summary>
-	public void ClearCancelAtRoot() => CancelAtRootRequested = false;
 	public void Update(float delta)
 	{
 		if (string.IsNullOrEmpty(_currentMenuName))
@@ -541,7 +510,7 @@ public class MenuManager
 			ExecuteMenuItemAction(_currentVisibleItems[_selectedItemIndex]);
 		// Handle cancel/back
 		if (inputState.CancelPressed)
-			BackToPreviousMenu();
+			ExecuteOnCancel(menuDef);
 	}
 	/// <summary>
 	/// Activates a modal dialog over the current menu.
@@ -597,7 +566,7 @@ public class MenuManager
 		// Check for cancel from either pointer (works regardless of position)
 		if (primary.CancelPressed || secondary.CancelPressed)
 		{
-			BackToPreviousMenu();
+			ExecuteOnCancel(menuDef);
 			return;
 		}
 

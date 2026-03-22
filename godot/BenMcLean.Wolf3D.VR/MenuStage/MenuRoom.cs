@@ -48,7 +48,7 @@ public partial class MenuRoom : Node3D, IRoom
 
 	/// <summary>
 	/// Set when the player wants to resume a suspended game.
-	/// Set when ESC/Cancel is pressed at the root menu while HasSuspendedGame is true.
+	/// Set when the player chooses to resume a suspended game (via ResumeGame() Lua call).
 	/// Polled by Root._Process(); Root is responsible for acting on this.
 	/// </summary>
 	public bool PendingResumeGame { get; private set; }
@@ -437,18 +437,6 @@ public partial class MenuRoom : Node3D, IRoom
 			_menuManager.ClearPendingEndGame();
 			PendingEndGame = true;
 		}
-		// ESC at root menu:
-		//   - If a game is suspended → resume it
-		//   - Otherwise → show quit confirmation dialog (original Wolf3D behavior)
-		if (_menuManager?.CancelAtRootRequested == true)
-		{
-			_menuManager.ClearCancelAtRoot();
-			if (HasSuspendedGame)
-				PendingResumeGame = true;
-			else
-				_menuManager.ScriptContext.RequestQuit();
-		}
-
 		// Check if intermission screen was dismissed (Lua called ContinueToNextLevel)
 		if (_menuManager?.ScriptContext?.ContinueToNextLevelRequested == true && LevelTransition != null)
 		{

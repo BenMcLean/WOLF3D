@@ -460,6 +460,15 @@
 						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
+				<xs:element name="OnCancel" type="xs:string" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>
+							Optional Lua script to execute when the player presses ESC/Cancel on this menu.
+							If absent, pressing cancel does nothing.
+							Examples: NavigateToMenu("Main"), ResumeGame(), RequestQuit()
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
 			</xs:choice>
 			<xs:attribute name="Name" type="xs:string" use="required">
 				<xs:annotation>
