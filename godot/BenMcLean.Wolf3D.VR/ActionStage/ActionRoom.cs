@@ -981,8 +981,9 @@ void sky() {
 
 	public override void _Process(double delta)
 	{
-		// Drive display mode each frame: joystick locomotion, snap turn, 5DOF height lock, HMD collision
-		_displayMode.Update(delta);
+		// DisplayMode.Update is called from Root._Process (ProcessMode.Always) so it continues
+		// during fade transitions. Calling it here too would apply locomotion twice per frame,
+		// causing the player to drift away from the level while the fade plays.
 
 		// Update teleportation overlay when in VR teleport mode
 		if (_teleportOverlay is not null)

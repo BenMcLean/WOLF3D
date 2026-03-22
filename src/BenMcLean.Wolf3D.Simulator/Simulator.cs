@@ -18,6 +18,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public const double TicRate = 70.0, // Hz
 		TicDuration = 1.0 / TicRate; // ~14.2857ms
 	public const int MaxTicsPerUpdate = 10; // Prevent spiral of death
+	/// <summary>
+	/// When true, Update() is a no-op. Set by the presentation layer during scene
+	/// transitions so the Godot scene tree never needs to be paused, keeping VR
+	/// rendering uninterrupted.
+	/// </summary>
+	public static bool Paused { get; set; }
 	private double accumulatedTime;
 	/// <summary>
 	/// Game identifier (from XML Game Name attribute, e.g., "Wolfenstein 3-D").
@@ -366,6 +372,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
 	public void Update(double deltaTime, int playerX, int playerY, short playerAngle)
 	{
+		if (Paused)
+			return;
+
 		// Store previous position before update
 		int prevX = PlayerX;
 		int prevY = PlayerY;

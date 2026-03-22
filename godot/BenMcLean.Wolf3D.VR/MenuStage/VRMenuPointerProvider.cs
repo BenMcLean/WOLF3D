@@ -38,9 +38,15 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	public VRMenuPointerProvider(IDisplayMode displayMode)
 	{
 		_displayMode = displayMode;
-
-		// Subscribe to controller button events
 		_displayMode.HandButtonPressed += OnHandButtonPressed;
+	}
+
+	/// <summary>
+	/// Unsubscribes from display mode events. Call when the owning MenuRoom exits the tree.
+	/// </summary>
+	public void Dispose()
+	{
+		_displayMode.HandButtonPressed -= OnHandButtonPressed;
 	}
 
 	private void OnHandButtonPressed(int handIndex, string buttonName)

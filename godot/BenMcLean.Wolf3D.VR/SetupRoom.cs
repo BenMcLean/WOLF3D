@@ -164,7 +164,8 @@ public partial class SetupRoom : Node3D, IRoom
 
 	public override void _Process(double delta)
 	{
-		_displayMode.Update(delta);
+		// DisplayMode.Update is called from Root._Process (ProcessMode.Always).
+		// Calling it here too would apply turning and position validation twice per frame.
 
 		switch (_phase)
 		{

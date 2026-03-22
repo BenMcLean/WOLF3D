@@ -6,7 +6,9 @@ namespace BenMcLean.Wolf3D.VR;
 /// <summary>
 /// Full-screen black overlay for scene transition fading.
 /// VW_FadeOut/VW_FadeIn from WL_DRAW.C - 30 steps at 70Hz (~0.4286 seconds).
-/// Uses CanvasLayer 101 to render above ScreenFlashOverlay (layer 100).
+/// Flatscreen: CanvasLayer 101 (above ScreenFlashOverlay at 100) with a full-screen ColorRect.
+/// VR: StandardMaterial3D sphere parented to XRCamera3D, seen from inside (CullMode.Front,
+/// NoDepthTest) so it renders over the scene in both headset eyes via Godot's stereo pipeline.
 /// ProcessMode is Always so it continues animating while the scene tree is paused.
 /// </summary>
 public partial class ScreenFadeOverlay : Node
@@ -18,12 +20,13 @@ public partial class ScreenFadeOverlay : Node
 	private float targetAlpha;
 	private float rate; // Alpha units per second
 
-	// VR fade: veil quad parented to the XRCamera3D so it is always inside the view frustum.
-	// Vertex shader outputs POSITION in NDC via UV, bypassing projection and near/far clipping.
+	// VR fade: veil sphere parented to the XRCamera3D so it is always at the camera origin.
+	// StandardMaterial3D with CullMode.Front renders the sphere's inside faces in both eyes.
+	// NoDepthTest ensures it renders over the entire scene regardless of depth.
 	// CanvasLayer handles flatscreen and the VR mirror window.
 	private Camera3D _vrCamera;
 	private MeshInstance3D _vrFadeMesh;
-	private ShaderMaterial _vrFadeMaterial;
+	private StandardMaterial3D _vrFadeMaterial;
 
 	/// <summary>
 	/// True while a fade animation is in progress.
@@ -100,10 +103,11 @@ public partial class ScreenFadeOverlay : Node
 	}
 
 	/// <summary>
-	/// Attaches a veil quad to the given VR camera so fades appear in the headset.
-	/// The quad is a child of the camera (not of this node) so it always stays inside
-	/// the view frustum — parenting to a world-space node causes frustum culling.
-	/// The shader material is created once and reused across camera changes.
+	/// Attaches a veil sphere to the given VR camera so fades appear in the headset.
+	/// The sphere is a child of the camera so it is always centered on the viewer.
+	/// StandardMaterial3D with CullMode.Front and NoDepthTest is used so the inside
+	/// faces render over the entire scene in both eyes using Godot's stereo pipeline.
+	/// The material is created once and reused across camera changes.
 	/// Call after each room transition; pass null to detach.
 	/// </summary>
 	public void SetVRCamera(Camera3D camera)
@@ -114,41 +118,29 @@ public partial class ScreenFadeOverlay : Node
 		if (camera == null)
 			return;
 
-		// Create shader material once; it persists across camera changes because
+		// Create material once; it persists across camera changes because
 		// ScreenFadeOverlay holds the reference.
-		_vrFadeMaterial ??= new ShaderMaterial
+		// CullMode.Front renders back faces = inside of the sphere is visible.
+		// NoDepthTest renders over the entire scene regardless of depth.
+		// Unshaded so lighting does not affect the black color.
+		_vrFadeMaterial ??= new StandardMaterial3D
 		{
-			Shader = new Shader
-			{
-				// Adapted from Godot 3 FadeCamera.cs:
-				// skip_vertex_transform lets the vertex shader set POSITION directly in NDC.
-				// UV-based position (2*UV-1) maps the (1,1) quad to full clip space [-1,1].
-				// Parenting to the camera keeps the mesh inside the view frustum.
-				Code = """
-shader_type spatial;
-render_mode blend_mix, skip_vertex_transform, cull_disabled, unshaded, depth_draw_never, depth_test_disabled;
-
-uniform vec4 color : source_color;
-
-void vertex() {
-	POSITION = vec4(2.0 * UV - 1.0, 0.0, 1.0);
-}
-
-void fragment() {
-	ALBEDO = color.rgb;
-	ALPHA = color.a;
-}
-""",
-			},
+			Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+			CullMode = BaseMaterial3D.CullModeEnum.Front,
+			NoDepthTest = true,
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			AlbedoColor = new Color(0f, 0f, 0f, 0f),
 		};
 
 		_vrFadeMesh = new MeshInstance3D
 		{
-			Name = "VRFadeQuad",
-			Mesh = new QuadMesh { Size = new Vector2(1f, 1f) },
+			Name = "VRFadeSphere",
+			// Radius 0.5m: large enough to be well past the near clip plane (~0.05m),
+			// small enough to avoid precision issues. Size irrelevant with NoDepthTest.
+			Mesh = new SphereMesh { Radius = 0.5f, Height = 1f },
 			MaterialOverride = _vrFadeMaterial,
 			CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-			// Always visible — shader alpha=0 means transparent.
+			// Always visible — material alpha=0 means transparent.
 			// Toggling Visible on/off has multi-frame latency in the OpenXR compositor,
 			// which would cause the level to show unobscured at the start of every fade-to-black.
 			Visible = true,
@@ -156,7 +148,7 @@ void fragment() {
 		camera.AddChild(_vrFadeMesh);
 
 		// Sync current fade state immediately in case a fade is mid-animation
-		_vrFadeMaterial.SetShaderParameter("color", new Color(0f, 0f, 0f, alpha));
+		_vrFadeMaterial.AlbedoColor = new Color(0f, 0f, 0f, alpha);
 	}
 
 	public override void _Process(double delta)
@@ -206,11 +198,11 @@ void fragment() {
 			colorRect.Color = new Color(0f, 0f, 0f, alpha);
 		}
 
-		// VR: veil quad parented to XRCamera3D, visible in both headset eyes.
-		// Mesh stays Visible=true always; shader alpha controls opacity.
+		// VR: veil sphere parented to XRCamera3D, visible in both headset eyes.
+		// Mesh stays Visible=true always; material alpha controls opacity.
 		if (_vrFadeMesh != null && GodotObject.IsInstanceValid(_vrFadeMesh))
 		{
-			_vrFadeMaterial.SetShaderParameter("color", new Color(0f, 0f, 0f, alpha));
+			_vrFadeMaterial.AlbedoColor = new Color(0f, 0f, 0f, alpha);
 		}
 		else if (_vrFadeMesh != null)
 		{

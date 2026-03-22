@@ -371,6 +371,19 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuManager.SetPointerProvider(_flatscreenPointerProvider);
 	}
 
+	public override void _ExitTree()
+	{
+		// Unsubscribe from display mode events so stale delegates cannot fire against
+		// freed scenes. Without this, freed MenuRoom instances keep receiving
+		// HandButtonPressed signals and call ResetPositionFacing(), which teleports
+		// the XROrigin to Vector3.Zero while the ActionRoom is still in view.
+		if (_displayMode.IsVRActive)
+		{
+			_displayMode.HandButtonPressed -= OnHandButtonPressed;
+			_vrPointerProvider?.Dispose();
+		}
+	}
+
 	/// <summary>
 	/// Handles left controller menu button: resets player position to face the virtual screen.
 	/// </summary>

@@ -77,10 +77,6 @@ public partial class SimulatorController : Node3D
 			stateCollection = new StateCollection();
 		}
 
-		// Simulation pauses during fade transitions while presentation layer keeps rendering
-		// (VR head tracking and camera must continue, only gameplay logic pauses)
-		ProcessMode = ProcessModeEnum.Pausable;
-
 		// Create deterministic RNG and GameClock
 		RNG rng = new(0); // TODO: Use seed from game settings or save file
 		GameClock gameClock = new();
@@ -173,9 +169,6 @@ public partial class SimulatorController : Node3D
 		Projectiles projectilesNode,
 		Func<(int X, int Y, short Angle)> getPlayerPosition)
 	{
-		// Simulation pauses during fade transitions while presentation layer keeps rendering
-		ProcessMode = ProcessModeEnum.Pausable;
-
 		simulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
