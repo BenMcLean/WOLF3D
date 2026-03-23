@@ -6,7 +6,7 @@ render_mode unshaded, depth_draw_always, cull_back;
 // Texture axes: U=MagicaVoxel X=Godot X, V=MagicaVoxel Y=Godot Z, W/slices=MagicaVoxel Z=Godot Y(up)
 uniform sampler3D voxel_atlas : filter_nearest, repeat_disable;
 // VoxelAtlas.PaletteTexture: 256x1 RGBA8 LUT. Index n is at texel (n, 0).
-uniform sampler2D palette : filter_nearest, repeat_disable;
+uniform sampler2D palette : filter_nearest, repeat_disable, source_color;
 
 // From Model.XYZ[0..2]: atlas origin in MagicaVoxel coordinates (X, Y, Z).
 uniform ivec3 model_offset = ivec3(0, 0, 0);
