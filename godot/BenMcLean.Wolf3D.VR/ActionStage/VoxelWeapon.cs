@@ -6,11 +6,15 @@ using Godot;
 namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
-/// A BoxMesh rendered with the voxel_atlas_raymarch shader, intended to be attached
+/// A QuadMesh rendered with the voxel_atlas_raymarch shader, intended to be attached
 /// to a VR controller "hand". Subscribes to weapon events for one slot and swaps
 /// to the matching voxel model whenever the weapon sprite changes.
 /// Each instance owns its own ShaderMaterial so model swaps are isolated from
 /// other hands or overlapping subscribers.
+/// A QuadMesh is used instead of BoxMesh so that all rasterized fragments lie on one
+/// flat plane, giving consistent vertex_world-based ray directions with no face-seam
+/// distortion. The quad is sized to the bounding sphere diameter so it covers the
+/// weapon silhouette from any viewing angle without needing per-frame updates.
 /// </summary>
 /// <param name="voxelAtlas">Voxel atlas from VRAssetManager.VoxelAtlas.</param>
 /// <param name="slotIndex">Weapon slot index this hand displays (0 = left/primary, 1 = right).</param>
@@ -18,7 +22,7 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 {
 	private readonly VoxelAtlas _voxelAtlas = voxelAtlas ?? throw new ArgumentNullException(nameof(voxelAtlas));
 	private ShaderMaterial _material;
-	private BoxMesh _boxMesh;
+	private QuadMesh _quadMesh;
 	private MeshInstance3D _meshInstance;
 	private Simulator.Simulator _simulator;
 
@@ -33,11 +37,11 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		_material = new ShaderMaterial { Shader = voxelShader };
 		_material.SetShaderParameter("voxel_atlas", _voxelAtlas.Texture);
 		_material.SetShaderParameter("palette", _voxelAtlas.PaletteTexture);
-		_boxMesh = new BoxMesh { Size = Vector3.One };
+		_quadMesh = new QuadMesh { Size = Vector2.One };
 		_meshInstance = new MeshInstance3D
 		{
 			Name = "Mesh",
-			Mesh = _boxMesh,
+			Mesh = _quadMesh,
 			MaterialOverride = _material,
 		};
 		// Rotate 180° on world X, then 90° CCW on world Y, then 90° on world Z (right operand applied first)
@@ -85,7 +89,7 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 
 	private void UpdateModel(ushort shape)
 	{
-		if (_material is null || _boxMesh is null || _meshInstance is null)
+		if (_material is null || _quadMesh is null || _meshInstance is null)
 			return;
 		if (!_voxelAtlas.Models.TryGetValue(shape, out int[] xyz))
 		{
@@ -95,10 +99,14 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		// xyz[0..2] = atlas origin (MagicaVoxel X, Y, Z); xyz[3..5] = model size; xyz[6..8] = grip origin (MagicaVoxel X, Y, Z)
 		_material.SetShaderParameter("model_offset", new Vector3I(xyz[0], xyz[1], xyz[2]));
 		_material.SetShaderParameter("model_size", new Vector3I(xyz[3], xyz[4], xyz[5]));
-		// BoxMesh size in Godot units: X=MagicaVoxel X, Y=MagicaVoxel Z (Godot up), Z=MagicaVoxel Y (Godot depth)
-		_boxMesh.Size = new Vector3(xyz[3], xyz[5], xyz[4]);
+		// QuadMesh size: 2× bounding sphere diameter in voxel units.
+		// 2× because the grip origin can be at the edge of the model, so the billboard
+		// must extend a full diagonal in every direction from the grip point to guarantee
+		// the entire weapon silhouette is covered. Scale converts voxels → metres.
+		float diagonal = Mathf.Sqrt(xyz[3] * xyz[3] + xyz[4] * xyz[4] + xyz[5] * xyz[5]);
+		_quadMesh.Size = new Vector2(2f * diagonal, 2f * diagonal);
 		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at the controller's grip point (local origin).
-		// Grip voxel center in BoxMesh local space (MagicaVoxel Z → Godot Y, MagicaVoxel Y → Godot Z):
+		// Grip voxel center in QuadMesh local space (MagicaVoxel Z → Godot Y, MagicaVoxel Y → Godot Z):
 		//   Godot local X = gripMvX + 0.5 - sizeX / 2
 		//   Godot local Y = gripMvZ + 0.5 - sizeZ / 2
 		//   Godot local Z = gripMvY + 0.5 - sizeY / 2
@@ -112,6 +120,14 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 				-scale.Z * (xyz[7] + 0.5f - xyz[4] * 0.5f));
 		}
 		Visible = true;
+	}
+
+	public override void _Process(double delta)
+	{
+		if (_material is null) return;
+		Camera3D camera = GetViewport().GetCamera3D();
+		if (camera is not null)
+			_material.SetShaderParameter("camera_world_center", camera.GlobalPosition);
 	}
 
 	public override void _ExitTree()

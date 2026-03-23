@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, depth_draw_always, cull_disabled;
+render_mode unshaded, depth_draw_always, cull_back;
 
 // VoxelAtlas.Texture: R8 3D texture storing raw palette indices.
 // 0 = transparent, 1-255 = palette color index.
@@ -39,7 +39,7 @@ int fetch_voxel(ivec3 local_pos) {
 	return int(round(texelFetch(voxel_atlas, atlas_coord, 0).r * 255.0));
 }
 
-// DDA raymarcher operating in Godot local object space (Y-up).
+// DDA raymarcher operating in voxel index space [0, model_size).
 vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
 	ivec3 voxel_pos = ivec3(floor(ray_origin));
 	vec3 delta_dist = abs(vec3(1.0) / ray_dir);
@@ -86,28 +86,72 @@ vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
 	return vec4(0.0);
 }
 
-varying vec3 local_vertex;
-// Computed per-vertex so the per-eye INV_VIEW_MATRIX is used in both multipass and multiview VR.
-varying vec3 camera_local;
+// HMD centre position in world space, updated each frame by VoxelWeapon._Process.
+// Eye-independent so this varying is consistent across both VR eyes.
+uniform vec3 camera_world_center = vec3(0.0, 1.7, 0.0);
+
+// Billboarded world-space quad position — eye-independent, interpolates correctly in VR multiview.
+varying vec3 vertex_world;
 
 void vertex() {
-	local_vertex = VERTEX;
-	vec3 camera_world = (INV_VIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-	camera_local = (inverse(MODEL_MATRIX) * vec4(camera_world, 1.0)).xyz;
+	// Billboard: build a camera-facing quad from translation + uniform scale only.
+	// MODEL_MATRIX rotation is deliberately ignored here so the quad always faces the
+	// camera. The unmodified MODEL_MATRIX is still used in the fragment shader to
+	// define the voxel coordinate space for AABB intersection.
+	vec3 world_origin = MODEL_MATRIX[3].xyz;
+	vec3 to_cam = normalize(camera_world_center - world_origin);
+	// Build right/up axes perpendicular to to_cam.
+	// Fall back to Z as reference when to_cam is near-vertical to avoid a degenerate cross product.
+	vec3 ref_up = abs(to_cam.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+	vec3 right = normalize(cross(ref_up, to_cam));
+	vec3 up    = normalize(cross(to_cam, right));
+	// VoxelWeaponScale is uniform, so all three MODEL_MATRIX column lengths are equal.
+	float s = length(MODEL_MATRIX[0].xyz);
+	// VERTEX.xy are the quad local half-extents; s converts voxels to metres.
+	vertex_world = world_origin + right * (VERTEX.x * s) + up * (VERTEX.y * s);
+	// Override clip-space position with the billboarded world position.
+	// PROJECTION_MATRIX and VIEW_MATRIX are per-eye in VR multiview vertex shader.
+	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(vertex_world, 1.0);
 }
 
 void fragment() {
-	// BoxMesh local space is centered: X in [-sizeX/2, +sizeX/2], etc.
-	// The DDA expects voxel-index space: X in [0, model_size.x), etc.
-	// Shift ray origin by +half_size to convert between the two.
+	// Per-eye camera position in world space (INV_VIEW_MATRIX is per-eye in fragment shader).
+	vec3 camera_world = (INV_VIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+
+	// Per-eye ray direction: camera → surface point in world space.
+	// vertex_world is world-space geometry (same for both eyes); camera_world differs per eye.
+	vec3 ray_world_dir = normalize(vertex_world - camera_world);
+
+	// Transform camera position and ray direction to object local space.
+	mat4 inv_model = inverse(MODEL_MATRIX);
+	vec3 camera_local = (inv_model * vec4(camera_world, 1.0)).xyz;
+	vec3 ray_dir = normalize((inv_model * vec4(ray_world_dir, 0.0)).xyz);
+
+	// Shift from BoxMesh-centered local space [-size/2, +size/2] to voxel [0, model_size) space.
 	// model_size is MagicaVoxel (X, Y, Z); BoxMesh.Size is Godot (X=MvX, Y=MvZ, Z=MvY),
-	// so half_size must swizzle model_size accordingly.
+	// so the Y/Z swizzle is needed for the per-axis half-extents.
 	vec3 half_size = vec3(float(model_size.x), float(model_size.z), float(model_size.y)) * 0.5;
-	vec3 ray_dir = normalize(local_vertex - camera_local);
-	vec3 ray_origin = (FRONT_FACING ? local_vertex : camera_local) + half_size;
-	// Push slightly inward so entry faces (where ray_origin lands exactly on an integer boundary)
-	// don't immediately fail the voxel bounds check and produce transparent fragments.
-	ray_origin += ray_dir * 0.0001;
+	vec3 camera_voxel = camera_local + half_size;
+
+	// Ray-AABB intersection with voxel volume [0, 2*half_size).
+	// Gives the exact entry point regardless of which BoxMesh face this fragment came from.
+	vec3 box_max = 2.0 * half_size;
+	vec3 inv_dir = 1.0 / ray_dir;
+	vec3 t0 = (vec3(0.0) - camera_voxel) * inv_dir;
+	vec3 t1 = (box_max - camera_voxel) * inv_dir;
+	vec3 tmin_v = min(t0, t1);
+	vec3 tmax_v = max(t0, t1);
+	float t_enter = max(max(tmin_v.x, tmin_v.y), tmin_v.z);
+	float t_exit  = min(min(tmax_v.x, tmax_v.y), tmax_v.z);
+
+	if (t_enter >= t_exit || t_exit < 0.0) discard;
+	// Clamp to strictly inside [0, box_max) rather than nudging along the ray direction.
+	// An epsilon push in t-space is directionally biased and can land boundary-entry rays
+	// in the wrong voxel on edge faces. Axis-aligned clamping handles the float-precision
+	// boundary case (floor(model_size.x) == model_size.x) without any directional skew.
+	vec3 ray_origin = clamp(
+		camera_voxel + ray_dir * max(t_enter, 0.0),
+		vec3(0.0), box_max - vec3(1e-6));
 
 	vec4 color = raymarch(ray_origin, ray_dir);
 	if (color.a < 0.5) discard;
