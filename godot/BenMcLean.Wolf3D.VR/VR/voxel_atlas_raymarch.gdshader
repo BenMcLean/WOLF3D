@@ -4,9 +4,9 @@ render_mode unshaded, depth_draw_always, cull_disabled;
 // VoxelAtlas.Texture: R8 3D texture storing raw palette indices.
 // 0 = transparent, 1-255 = palette color index.
 // Texture axes: U=MagicaVoxel X=Godot X, V=MagicaVoxel Y=Godot Z, W/slices=MagicaVoxel Z=Godot Y(up)
-uniform sampler3D voxel_atlas : filter_nearest, repeat_disabled;
+uniform sampler3D voxel_atlas : filter_nearest, repeat_disable;
 // VoxelAtlas.PaletteTexture: 256x1 RGBA8 LUT. Index n is at texel (n, 0).
-uniform sampler2D palette : filter_nearest, repeat_disabled;
+uniform sampler2D palette : filter_nearest, repeat_disable;
 
 // From Model.XYZ[0..2]: atlas origin in MagicaVoxel coordinates (X, Y, Z).
 uniform ivec3 model_offset = ivec3(0, 0, 0);
@@ -97,8 +97,14 @@ void vertex() {
 }
 
 void fragment() {
+	// BoxMesh local space is centered: X in [-sizeX/2, +sizeX/2], etc.
+	// The DDA expects voxel-index space: X in [0, model_size.x), etc.
+	// Shift ray origin by +half_size to convert between the two.
+	// model_size is MagicaVoxel (X, Y, Z); BoxMesh.Size is Godot (X=MvX, Y=MvZ, Z=MvY),
+	// so half_size must swizzle model_size accordingly.
+	vec3 half_size = vec3(float(model_size.x), float(model_size.z), float(model_size.y)) * 0.5;
 	vec3 ray_dir = normalize(local_vertex - camera_local);
-	vec3 ray_origin = FRONT_FACING ? local_vertex : camera_local;
+	vec3 ray_origin = (FRONT_FACING ? local_vertex : camera_local) + half_size;
 
 	vec4 color = raymarch(ray_origin, ray_dir);
 	if (color.a < 0.5) discard;

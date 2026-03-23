@@ -105,7 +105,9 @@ public static class Program
 							models[c.Id].LocalSize.X,
 							models[c.Id].LocalSize.Y,
 							models[c.Id].LocalSize.Z,
-							//TODO: Add grip point here
+							Math.Abs(models[c.Id].GlobalPosition.X),
+							Math.Abs(models[c.Id].GlobalPosition.Y),
+							Math.Abs(models[c.Id].GlobalPosition.Z),
 						],
 						Sprites: Sprites[c.Id]))));
 			Console.WriteLine("Compressing palette.");

@@ -57,6 +57,7 @@ public static class Constants
 	};
 	public static readonly Vector3 Scale = new(1f, 1.2f, 1f),
 		WeaponScale = new(WeaponWidth, WeaponMetersPerPixel, WeaponHeight),
+		VoxelWeaponScale = new(WeaponMetersPerPixel, WeaponMetersPerPixel, WeaponMetersPerPixel),
 		Rotate90 = new(0, HalfPi, 0);
 	public static readonly Color White = Godot.Color.Color8(255, 255, 255, 255);
 }

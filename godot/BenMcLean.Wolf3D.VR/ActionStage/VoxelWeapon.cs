@@ -19,6 +19,7 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 	private readonly VoxelAtlas _voxelAtlas = voxelAtlas ?? throw new ArgumentNullException(nameof(voxelAtlas));
 	private ShaderMaterial _material;
 	private BoxMesh _boxMesh;
+	private MeshInstance3D _meshInstance;
 	private Simulator.Simulator _simulator;
 
 	public override void _Ready()
@@ -33,14 +34,14 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		_material.SetShaderParameter("voxel_atlas", _voxelAtlas.Texture);
 		_material.SetShaderParameter("palette", _voxelAtlas.PaletteTexture);
 		_boxMesh = new BoxMesh { Size = Vector3.One };
-		MeshInstance3D mesh = new()
+		_meshInstance = new MeshInstance3D
 		{
 			Name = "Mesh",
 			Mesh = _boxMesh,
 			MaterialOverride = _material,
-			Scale = Constants.WeaponScale,
+			Scale = Constants.VoxelWeaponScale,
 		};
-		AddChild(mesh);
+		AddChild(_meshInstance);
 		Visible = false;  // Hidden until a weapon is equipped in this slot
 	}
 
@@ -82,18 +83,32 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 
 	private void UpdateModel(ushort shape)
 	{
-		if (_material is null || _boxMesh is null)
+		if (_material is null || _boxMesh is null || _meshInstance is null)
 			return;
 		if (!_voxelAtlas.Models.TryGetValue(shape, out int[] xyz))
 		{
 			Visible = false;
 			return;
 		}
-		// xyz[0..2] = atlas origin (MagicaVoxel X, Y, Z); xyz[3..5] = model size (MagicaVoxel X, Y, Z)
+		// xyz[0..2] = atlas origin (MagicaVoxel X, Y, Z); xyz[3..5] = model size; xyz[6..8] = grip origin (MagicaVoxel X, Y, Z)
 		_material.SetShaderParameter("model_offset", new Vector3I(xyz[0], xyz[1], xyz[2]));
 		_material.SetShaderParameter("model_size", new Vector3I(xyz[3], xyz[4], xyz[5]));
 		// BoxMesh size in Godot units: X=MagicaVoxel X, Y=MagicaVoxel Z (Godot up), Z=MagicaVoxel Y (Godot depth)
 		_boxMesh.Size = new Vector3(xyz[3], xyz[5], xyz[4]);
+		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at the controller's grip point (local origin).
+		// Grip voxel center in BoxMesh local space (MagicaVoxel Z → Godot Y, MagicaVoxel Y → Godot Z):
+		//   Godot local X = gripMvX + 0.5 - sizeX / 2
+		//   Godot local Y = gripMvZ + 0.5 - sizeZ / 2
+		//   Godot local Z = gripMvY + 0.5 - sizeY / 2
+		// Negate and multiply by per-axis scale to get the offset in parent (controller) space.
+		if (xyz.Length >= 9)
+		{
+			Vector3 scale = _meshInstance.Scale;
+			_meshInstance.Position = new Vector3(
+				-scale.X * (xyz[6] + 0.5f - xyz[3] * 0.5f),
+				-scale.Y * (xyz[8] + 0.5f - xyz[5] * 0.5f),
+				-scale.Z * (xyz[7] + 0.5f - xyz[4] * 0.5f));
+		}
 		Visible = true;
 	}
 

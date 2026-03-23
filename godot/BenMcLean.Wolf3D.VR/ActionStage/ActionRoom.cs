@@ -361,16 +361,24 @@ void sky() {
 				spawnXZ + new Vector3(Mathf.Sin(cameraRotationY), 0f, -Mathf.Cos(cameraRotationY)),
 				spawnXZ);
 
-			// Attach WeaponHandMesh to each VR controller so the weapon renders at the hand position.
+			// Attach weapon mesh to each VR controller so the weapon renders at the hand position.
+			// Uses VoxelWeapon (3D grip-pose) when VoxelAtlas is available, WeaponHandMesh (sprite aim-pose) otherwise.
 			// Hand 0 = right controller (slot 0), hand 1 = left controller (slot 1).
 			if (_displayMode.IsVRActive)
 				for (int hand = 0; hand <= 1; hand++)
 					if (_displayMode.GetHandNode(hand) is Node3D handNode)
-					{
-						WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand) { Name = $"WeaponHandMesh{hand}" };
-						handNode.AddChild(handMesh);
-						handMesh.Subscribe(_simulatorController.Simulator);
-					}
+						if (VRAssetManager.VoxelAtlas is not null)
+						{
+							VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand) { Name = $"VoxelWeapon{hand}" };
+							handNode.AddChild(voxelWeapon);
+							voxelWeapon.Subscribe(_simulatorController.Simulator);
+						}
+						else
+						{
+							WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand) { Name = $"WeaponHandMesh{hand}" };
+							handNode.AddChild(handMesh);
+							handMesh.Subscribe(_simulatorController.Simulator);
+						}
 			_simulatorController.Simulator.EmitWeaponState();
 
 			// Store level index in inventory so save/load can determine which level to restore
