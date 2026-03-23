@@ -1394,7 +1394,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Initialize static bonus objects from MapAnalyzer data.
 	/// Based on WL_GAME.C:ScanInfoPlane and WL_ACT1.C:InitStaticList
 	/// Populates StatObjList for gameplay (collision/pickup detection).
-	/// Emits BonusSpawnedEvent for each bonus so VR layer can display them.
+	/// Does not emit events - call EmitAllEntityState() afterward to notify the presentation layer.
 	/// </summary>
 	public void LoadBonusesFromMapAnalysis(MapAnalysis mapAnalysis)
 	{
@@ -1420,18 +1420,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				spawn.Shape,  // short: -2 = invisible trigger, >= 0 = visible sprite page
 				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
 				(byte)spawn.ObjectCode);  // itemnumber - ObjectType Number for script lookup
-
-			// Emit spawn event for VR layer to display the bonus
-			// Shape values: -2 = invisible trigger (Noah's Ark, VictoryTile), >= 0 = visible
-			BonusSpawned?.Invoke(new BonusSpawnedEvent
-			{
-				StatObjIndex = lastStatObj,
-				Shape = spawn.Shape,
-				TileX = spawn.X,
-				TileY = spawn.Y,
-				ItemNumber = (byte)spawn.ObjectCode
-			});
-
 			lastStatObj++;
 		}
 	}

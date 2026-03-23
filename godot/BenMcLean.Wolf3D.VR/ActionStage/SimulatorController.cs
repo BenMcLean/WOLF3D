@@ -52,6 +52,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="stateCollection">State collection loaded from game XML (e.g., WL1.xml)</param>
 	/// <param name="weaponCollection">Weapon collection loaded from game XML (e.g., WL1.xml)</param>
 	/// <param name="getPlayerPosition">Delegate that returns player position in Wolf3D 16.16 fixed-point coordinates (X, Y) and angle (0-359)</param>
+	/// <param name="snapshotToLoad">Optional saved game snapshot. When provided, bonus spawn events are suppressed during map loading; Load() restores StatObjList and EmitAllEntityState() fires the events. This ensures the presentation layer only ever receives bonus state from the simulator, never from raw map data.</param>
 	public void Initialize(
 		MapAnalyzer mapAnalyzer,
 		MapAnalyzer.MapAnalysis mapAnalysis,
@@ -67,7 +68,8 @@ public partial class SimulatorController : Node3D
 		StatusBarDefinition statusBar,
 		int difficulty,
 		InventorySnapshot savedInventory = null,
-		IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
+		IReadOnlyList<LevelCompletionStats> savedLevelStats = null,
+		SimulatorSnapshot snapshotToLoad = null)
 	{
 		// TODO: Load stateCollection from WL1.xml or game data file
 		// For now, create a placeholder if none provided
@@ -138,8 +140,8 @@ public partial class SimulatorController : Node3D
 		 System.Collections.Generic.Dictionary<byte, string> itemNumberToScript) = mapAnalyzer.GetItemScripts();
 		simulator.LoadItemScripts(scripts, itemNumberToScript);
 
-		// Load bonuses into simulator - emits BonusSpawnedEvent for each bonus
-		// VR layer receives these events and displays bonuses
+		// Load bonuses into simulator (populates StatObjList only - no events emitted).
+		// Always called regardless of snapshot; if loading, Load() will overwrite StatObjList afterward.
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
 
 		// VR uses pixel-perfect aiming - disable distance-based miss chance
@@ -152,6 +154,15 @@ public partial class SimulatorController : Node3D
 
 		if (weaponCollection == null || weaponCollection.Weapons.Count == 0)
 			GD.PrintErr("WARNING: No WeaponCollection provided - weapons will not function");
+
+		// When loading a saved game, restore simulator state before emitting.
+		if (snapshotToLoad is not null)
+			simulator.Load(snapshotToLoad);
+
+		// Always emit all entity state after initialization.
+		// EmitAllEntityState() is the sole source of bonus spawn events for the presentation layer -
+		// LoadBonusesFromMapAnalysis() does not emit events.
+		simulator.EmitAllEntityState();
 	}
 
 	/// <summary>

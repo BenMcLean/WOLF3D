@@ -297,15 +297,8 @@ void sky() {
 					SharedAssetManager.StatusBar,
 					_difficulty,
 					_savedInventory,
-					_savedLevelStats);
-
-				// If loading from a saved game, apply the snapshot on top of fresh state
-				// then re-emit all entity state so presentation layer syncs with restored state
-				if (_loadSnapshot is not null)
-				{
-					_simulatorController.Simulator.Load(_loadSnapshot);
-					_simulatorController.Simulator.EmitAllEntityState();
-				}
+					_savedLevelStats,
+					_loadSnapshot);
 			}
 
 			// Position camera: use restored state (load/resume) or map spawn point
