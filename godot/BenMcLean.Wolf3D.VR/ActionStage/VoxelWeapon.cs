@@ -39,8 +39,10 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 			Name = "Mesh",
 			Mesh = _boxMesh,
 			MaterialOverride = _material,
-			Scale = Constants.VoxelWeaponScale,
 		};
+		// Rotate 180° on world X, then 90° CCW on world Y, then 90° on world Z (right operand applied first)
+		_meshInstance.Basis = new Basis(Vector3.Back, -Mathf.Pi / 2f) * new Basis(Vector3.Up, Mathf.Pi / 2f) * new Basis(Vector3.Right, Mathf.Pi);
+		_meshInstance.Scale = Constants.VoxelWeaponScale;
 		AddChild(_meshInstance);
 		Visible = false;  // Hidden until a weapon is equipped in this slot
 	}

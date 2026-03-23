@@ -105,6 +105,9 @@ void fragment() {
 	vec3 half_size = vec3(float(model_size.x), float(model_size.z), float(model_size.y)) * 0.5;
 	vec3 ray_dir = normalize(local_vertex - camera_local);
 	vec3 ray_origin = (FRONT_FACING ? local_vertex : camera_local) + half_size;
+	// Push slightly inward so entry faces (where ray_origin lands exactly on an integer boundary)
+	// don't immediately fail the voxel bounds check and produce transparent fragments.
+	ray_origin += ray_dir * 0.0001;
 
 	vec4 color = raymarch(ray_origin, ray_dir);
 	if (color.a < 0.5) discard;
