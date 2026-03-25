@@ -1,3 +1,4 @@
+using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using Godot;
 using System;
@@ -554,15 +555,14 @@ public class PixelPerfectAiming
 		if (!_materialToPage.TryGetValue(material, out ushort pageNumber))
 			return new RayHit { IsHit = false }; // Material not found, treat as miss
 		// Convert UV to pixel coordinates in original sprite space (before upscaling)
-		// Sprites are TileSqrt x TileSqrt (usually 64x64)
-		int pixelX = Mathf.Clamp((int)(u * SharedAssetManager.CurrentGame.VSwap.TileSqrt), 0, SharedAssetManager.CurrentGame.VSwap.TileSqrt - 1),
-			pixelY = Mathf.Clamp((int)(v * SharedAssetManager.CurrentGame.VSwap.TileSqrt), 0, SharedAssetManager.CurrentGame.VSwap.TileSqrt - 1);
-		// Check pixel transparency using VSwap's pre-computed masks
-		// Note: VSwap.IsTransparent returns true for OPAQUE pixels (alpha > 128)
-		// despite the confusing method name - likely due to Wolf3D's alpha channel convention
-		if (!SharedAssetManager.CurrentGame.VSwap.IsTransparent(pageNumber, (ushort)pixelX, (ushort)pixelY))
-			return new RayHit { IsHit = false }; // Transparent pixel (IsTransparent=false), ray continues
-		// Opaque pixel (IsTransparent=true), we have a hit
+		VSwap vSwap = SharedAssetManager.CurrentGame.VSwap;
+		ushort pageSqrt = vSwap.GetPageSqrt(pageNumber);
+		int pixelX = Mathf.Clamp((int)(u * pageSqrt), 0, pageSqrt - 1),
+			pixelY = Mathf.Clamp((int)(v * pageSqrt), 0, pageSqrt - 1);
+		// Use pre-computed sprite mask: true = opaque pixel
+		if (!vSwap.Masks[pageNumber - vSwap.SpritePage][pixelY * pageSqrt + pixelX])
+			return new RayHit { IsHit = false };
+		// Opaque pixel — we have a hit
 		return new RayHit
 		{
 			IsHit = true,

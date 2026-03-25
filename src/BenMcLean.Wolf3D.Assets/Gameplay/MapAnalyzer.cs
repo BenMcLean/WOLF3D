@@ -23,6 +23,9 @@ public class MapAnalyzer
 	// Standard Wolf3D: DOORWALL+2 (horiz) / DOORWALL+3 (vert); N3D: both DOORWALL(1)=DoorWall+4
 	public ushort DoorFrame { get; private set; }
 	public ushort DoorFrame2 { get; private set; }
+	// When true, wall tile numbers map directly to VSWAP pages (tile - 1), same texture on all sides.
+	// Default false: Wolf3D paired formula (horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1).
+	public bool UniformWallTextures { get; private set; }
 
 	// Special tiles (from WOLF3D.xsd special tile elements - can have multiple)
 	public Dictionary<ushort, ElevatorConfig> Elevators { get; private set; }
@@ -74,6 +77,7 @@ public class MapAnalyzer
 		DoorFrame2 = ushort.TryParse(wallsElement.Attribute("DoorFrame2")?.Value, out ushort df2)
 			? df2
 			: (ushort)(DoorFrame + 1);
+		UniformWallTextures = wallsElement.Attribute("UniformWallTextures")?.Value == "true";
 
 		// Parse elevator configurations
 		Elevators = [];
@@ -253,8 +257,14 @@ public class MapAnalyzer
 	// Wall formula from WL_MAIN.C SetupWalls():
 	// horizwall[i] = (i-1) * 2
 	// vertwall[i] = (i-1) * 2 + 1
-	public static ushort GetWallPage(ushort wall, bool facesEastWest) =>
+	public static ushort GetWallPagePaired(ushort wall, bool facesEastWest = false) =>
 		(ushort)((wall - 1) * 2 + (facesEastWest ? 1 : 0));
+
+	// Resolves wall tile to VSWAP page, respecting UniformWallTextures.
+	// Uniform: tile maps directly (tile - 1), same on all sides.
+	// Paired (default): Wolf3D light/dark formula.
+	public ushort GetWallPage(ushort wall, bool facesEastWest = false) =>
+		UniformWallTextures ? (ushort)(wall - 1) : GetWallPagePaired(wall, facesEastWest);
 
 	// Check if tile number is a wall
 	public bool IsWall(ushort tile) => tile > 0 && tile <= MaxWallTiles;
@@ -586,7 +596,7 @@ public class MapAnalyzer
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
 					ushort wall = gameMap.MapData[i];
-					ushort page = GetWallPage(wall, false);
+					ushort page = mapAnalyzer.GetWallPage(wall, false);
 					// VSWAP even/odd pairing: page (even) for one orientation, page+1 (odd) for perpendicular
 					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i), pwConfig.DigiSound, pwConfig.SoundRepeatTics));
 				}
@@ -612,10 +622,10 @@ public class MapAnalyzer
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(GetWallPage(wall, true), true, (ushort)(x + 1), y, false));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x + 1), y, false));
 				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(GetWallPage(wall, true), true, (ushort)(x - 1), y, true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x - 1), y, true));
 			}
 
 			void NorthSouth(ushort x, ushort y)
@@ -626,10 +636,10 @@ public class MapAnalyzer
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (y > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y - 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(GetWallPage(wall, false), false, x, (ushort)(y - 1), false));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y - 1), false));
 				if (y < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y + 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(GetWallPage(wall, false), false, x, (ushort)(y + 1), true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y + 1), true));
 			}
 
 			// Scan wall plane (MapData) for doors, walls, and elevators

@@ -1149,9 +1149,36 @@
 				<xs:element ref="WallPaletteRanges" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
-			<xs:attribute name="Sqrt" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="Sqrt" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Canvas size for RLE sprite pages (RleSprites="true", the default). Defaults to 64.
+						Not needed for walls (sqrt derived per-page from page length) or raw sprites
+						(RleSprites="false", sqrt also derived per-page from page length). Only set this
+						when using RLE sprites larger than 64×64.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Scale" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="MipMaps" type="xs:boolean"/>
+			<xs:attribute name="RleSprites" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						When false, sprite pages are stored as raw column-major palette-indexed
+						square data rather than Wolf3D's column RLE format. The sprite sqrt is
+						then derived per-page from pageLengths. Defaults to true.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="FourBytePageLengths" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						When true, page lengths in the VSWAP header are stored as uint (4 bytes)
+						instead of the standard ushort (2 bytes). Use for files with page sizes
+						exceeding 65535 bytes (e.g. 256×256 = 65536). Defaults to false.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -1207,6 +1234,11 @@
 
 				FloorCodeFirst/Last define the range of floor code tiles used for area
 				detection (AREATILE through AREATILE+NUMAREAS-1, typically 107-143).
+
+				When UniformWallTextures="true", the paired formula is replaced by a direct
+				mapping: tile n maps to VSWAP page (n - 1), same texture on all four sides.
+				Use for games like Kitchens of Doom that store one texture per wall tile
+				rather than light/dark pairs. Default false (Wolf3D paired formula).
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -1240,6 +1272,16 @@
 			</xs:attribute>
 			<xs:attribute name="FloorCodeFirst" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="FloorCodeLast" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="UniformWallTextures" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						When true, wall tile n maps directly to VSWAP page (n - 1), same texture
+						on all four sides. Use for games like Kitchens of Doom that store one
+						texture per wall tile rather than light/dark pairs.
+						Default false: Wolf3D paired formula (horizwall/vertwall even/odd pages).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

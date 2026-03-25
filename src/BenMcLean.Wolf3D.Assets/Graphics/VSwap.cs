@@ -27,7 +27,9 @@ public sealed class VSwap
 			xml: xml,
 			palette: LoadPalette(xml),
 			stream: vSwap,
-			tileSqrt: ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort tileSqrt) ? tileSqrt : (ushort)64);
+			tileSqrt: ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort sqrt) ? sqrt : (ushort)64,
+			fourBytePageLengths: bool.TryParse(xml?.Element("VSwap")?.Attribute("FourBytePageLengths")?.Value, out bool fourBytePageLengths) && fourBytePageLengths,
+			rleSprites: !bool.TryParse(xml?.Element("VSwap")?.Attribute("RleSprites")?.Value, out bool rleSprites) || rleSprites);
 	}
 	#region Data
 	public uint[] Palette { get; private init; }
@@ -40,25 +42,32 @@ public sealed class VSwap
 	public ushort NumPages { get; private init; }
 	public int SoundPage => Pages.Length;
 	public ushort TileSqrt { get; private init; } = 64;
+	/// <summary>
+	/// Returns the sqrt (width and height) of any processed page, derived from its RGBA byte length.
+	/// Works for walls, raw sprites, and RLE sprites regardless of whether sizes are uniform.
+	/// </summary>
+	public ushort GetPageSqrt(int page) => (ushort)Math.Round(Math.Sqrt(Pages[page].Length >> 2));
+	/// <summary>
+	/// When true, page lengths in the VSWAP header are stored as uint (4 bytes) instead of ushort (2 bytes).
+	/// Standard Wolf3D files use false. Set via XML FourBytePageLengths="true" to support
+	/// page sizes exceeding 65535 bytes (e.g. 256×256 = 65536).
+	/// </summary>
+	public bool FourBytePageLengths { get; private init; } = false;
+	/// <summary>
+	/// When true (default), sprite pages use Wolf3D's column-major RLE format.
+	/// Set via XML RleSprites="false" for sprite pages stored as raw palette-indexed
+	/// square data (e.g. KOD), in which case the sprite sqrt is derived per-page
+	/// from pageLengths rather than SpriteSqrt.
+	/// </summary>
+	public bool RleSprites { get; private init; } = true;
 	#endregion
 	public byte[] Sprite(ushort number) => Pages[SpritePage + number];
-	public static uint GetOffset(ushort x, ushort y, ushort tileSqrt = 64) => (uint)((tileSqrt * y + x) * 4);
-	public uint GetOffset(ushort x, ushort y) => GetOffset(x, y, TileSqrt);
-	public byte GetR(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y)];
-	public byte GetG(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 1];
-	public byte GetB(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 2];
-	public byte GetA(ushort page, ushort x, ushort y) => Pages[page][GetOffset(x, y) + 3];
-	public bool IsTransparent(ushort page, ushort x, ushort y) =>
-		page >= Pages.Length
-		|| Pages[page] is null
-		|| page >= SpritePage // We know walls aren't transparent
-		&& GetOffset(x, y) + 3 is uint offset
-		&& offset < Pages[page].Length
-		&& Pages[page][offset] > 128;
-	public VSwap(XElement xml, uint[] palette, Stream stream, ushort tileSqrt = 64)
+	public VSwap(XElement xml, uint[] palette, Stream stream, ushort tileSqrt = 64, bool fourBytePageLengths = false, bool rleSprites = true)
 	{
 		Palette = palette;
 		TileSqrt = tileSqrt;
+		FourBytePageLengths = fourBytePageLengths;
+		RleSprites = rleSprites;
 		if (Palette is null)
 			throw new InvalidDataException("Must load a palette before loading a VSWAP!");
 		using BinaryReader binaryReader = new(stream);
@@ -77,16 +86,16 @@ public sealed class VSwap
 			if (pageOffsets[i] != 0 && pageOffsets[i] < dataStart || pageOffsets[i] > stream.Length)
 				throw new InvalidDataException("VSWAP contains invalid page offsets.");
 		}
-		ushort[] pageLengths = new ushort[NumPages];
+		uint[] pageLengths = new uint[NumPages];
 		for (int page = 0; page < pageLengths.Length; page++)
-			pageLengths[page] = binaryReader.ReadUInt16();
+			pageLengths[page] = fourBytePageLengths ? binaryReader.ReadUInt32() : binaryReader.ReadUInt16();
 		#endregion parse header info
 		byte[][] rawPages = new byte[SoundPage][];
 		for (int page = 0; page < SoundPage; page++)
 			if (pageOffsets[page] > 0)
 			{
 				stream.Seek(pageOffsets[page], SeekOrigin.Begin);
-				rawPages[page] = binaryReader.ReadBytes(pageLengths[page]);
+				rawPages[page] = binaryReader.ReadBytes((int)pageLengths[page]);
 			}
 		// Build per-page palette lookup from WallPaletteRanges
 		uint[][] wallPalettes = new uint[SpritePage][];
@@ -109,10 +118,21 @@ public sealed class VSwap
 			{
 				if (rawPages[page] is null) return;
 				if (page < SpritePage)
-					Pages[page] = ProcessWall(rawPages[page], wallPalettes[page] ?? palette, TileSqrt);
-				else
+				{
+					ushort wallSqrt = (ushort)Math.Round(Math.Sqrt((double)pageLengths[page]));
+					Pages[page] = ProcessWall(rawPages[page], wallPalettes[page] ?? palette, wallSqrt);
+				}
+				else if (rleSprites)
 				{
 					(byte[] rgba, BitArray mask) = ProcessSprite(rawPages[page], palette, TileSqrt);
+					Pages[page] = rgba;
+					Masks[page - SpritePage] = mask;
+				}
+				else
+				{
+					// Raw square sprite: derive sqrt per-page from pageLengths
+					ushort rawSqrt = (ushort)Math.Round(Math.Sqrt((double)pageLengths[page]));
+					(byte[] rgba, BitArray mask) = ProcessRawSprite(rawPages[page], palette, rawSqrt);
 					Pages[page] = rgba;
 					Masks[page - SpritePage] = mask;
 				}
@@ -189,6 +209,27 @@ public sealed class VSwap
 			for (int row = 0, destinationIndex = col; row < tileSqrt; row++, destinationIndex += tileSqrt)
 				destination[destinationIndex] = BinaryPrimitives.ReverseEndianness(palette[rawData[sourceIndex++]]);
 		return rgbaData;
+	}
+	/// <summary>
+	/// Converts a raw square palette-indexed sprite page (column-major, same layout as walls)
+	/// to RGBA8888, building a transparency mask. Used when RleSprites="false".
+	/// Mask is row-major (row * tileSqrt + col) for consistency with ProcessSprite masks.
+	/// </summary>
+	private static (byte[] rgba, BitArray mask) ProcessRawSprite(byte[] rawData, uint[] palette, ushort tileSqrt)
+	{
+		byte[] rgbaData = new byte[tileSqrt * tileSqrt << 2];
+		BitArray mask = new(tileSqrt * tileSqrt);
+		Span<uint> destination = MemoryMarshal.Cast<byte, uint>(rgbaData.AsSpan());
+		int sourceIndex = 0;
+		for (int col = 0; col < tileSqrt; col++)
+			for (int row = 0, destinationIndex = col; row < tileSqrt; row++, destinationIndex += tileSqrt)
+			{
+				byte paletteIndex = rawData[sourceIndex++];
+				destination[destinationIndex] = BinaryPrimitives.ReverseEndianness(palette[paletteIndex]);
+				mask[row * tileSqrt + col] = paletteIndex != 255; // 255 = transparent
+			}
+		ApplyTransparentBorder(rgbaData, tileSqrt);
+		return (rgbaData, mask);
 	}
 	private static (byte[] rgba, BitArray mask) ProcessSprite(byte[] rawData, uint[] palette, ushort tileSqrt = 64)
 	{
