@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
@@ -51,8 +52,24 @@ public class AssetManager
 		Maps = maps;
 		ILogger<MapAnalyzer> mapAnalyzerLogger = loggerFactory?.CreateLogger<MapAnalyzer>()
 			?? NullLogger<MapAnalyzer>.Instance;
-		MapAnalyzer = new MapAnalyzer(xml, VSwap.SpritesByName, mapAnalyzerLogger);
-		MapAnalyses = [.. MapAnalyzer.Analyze(maps)];
+		MapAnalyzer = new MapAnalyzer(xml, VSwap?.SpritesByName, mapAnalyzerLogger);
+		// Load pre-baked wall spawns if this game uses a WALLSPAWNS file.
+		// Games like KOD assign different textures to each face of a block (n_wall, e_wall,
+		// s_wall, w_wall in .BLK files). The standard Wolf3D tile-to-page formula can't
+		// represent that, so those games bake wall spawns at conversion time instead.
+		MapAnalyzer.MapAnalysis.WallSpawn[][] wallSpawnsByLevel = null;
+		if (!string.IsNullOrEmpty(MapAnalyzer.WallSpawnsFile))
+		{
+			string wallSpawnsPath = Path.Combine(folder, MapAnalyzer.WallSpawnsFile);
+			if (File.Exists(wallSpawnsPath))
+				wallSpawnsByLevel = Gameplay.WallSpawns.LoadAll(wallSpawnsPath);
+		}
+		MapAnalyses = wallSpawnsByLevel != null
+			? [.. maps.Select(map =>
+				map.Number < wallSpawnsByLevel.Length
+					? MapAnalyzer.Analyze(map, wallSpawnsByLevel[map.Number])
+					: MapAnalyzer.Analyze(map))]
+			: [.. MapAnalyzer.Analyze(maps)];
 		// Load StateCollection from XML
 		StateCollection = LoadStateCollection(xml);
 		// Load WeaponCollection from XML

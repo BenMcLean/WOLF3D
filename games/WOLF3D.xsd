@@ -14,6 +14,7 @@
 		</xs:annotation>
 		<xs:complexType>
 			<xs:all>
+				<xs:element name="OnStartup" type="xs:string"/>
 				<xs:element ref="VgaGraph" minOccurs="0"/>
 				<xs:element ref="Maps" minOccurs="0"/>
 				<xs:element ref="Audio" minOccurs="0"/>
@@ -54,9 +55,9 @@
 				<xs:element ref="StatusBar" minOccurs="0"/>
 				<xs:element ref="Menus" minOccurs="0"/>
 			</xs:all>
-			<xs:attribute name="VgaDict" type="xs:string" use="required"/>
-			<xs:attribute name="VgaGraph" type="xs:string" use="required"/>
-			<xs:attribute name="VgaHead" type="xs:string" use="required"/>
+			<xs:attribute name="VgaDict" type="xs:string"/>
+			<xs:attribute name="VgaGraph" type="xs:string"/>
+			<xs:attribute name="VgaHead" type="xs:string"/>
 			<xs:attribute name="LoadingPic" type="xs:string"/>
 			<xs:attribute name="Sizes" type="xs:nonNegativeInteger">
 				<xs:annotation>
@@ -304,11 +305,6 @@
 				<xs:element ref="MenuFunction"/>
 				<xs:element ref="Menu"/>
 			</xs:choice>
-			<xs:attribute name="Start" type="xs:string">
-				<xs:annotation>
-					<xs:documentation>Name of the initial/starting menu</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
 			<xs:attribute name="Music" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Default background music for all menus (e.g., "WONDERIN_MUS")</xs:documentation>
@@ -904,8 +900,8 @@
 			<xs:sequence>
 				<xs:element ref="Map" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
-			<xs:attribute name="MapHead" type="xs:string" use="required"/>
-			<xs:attribute name="GameMaps" type="xs:string" use="required"/>
+			<xs:attribute name="MapHead" type="xs:string"/>
+			<xs:attribute name="GameMaps" type="xs:string"/>
 			<xs:attribute name="Floor" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>
@@ -1083,8 +1079,8 @@
 				<xs:element ref="Imf"/>
 				<xs:element ref="Midi"/>
 			</xs:choice>
-			<xs:attribute name="AudioHead" type="xs:string" use="required"/>
-			<xs:attribute name="AudioT" type="xs:string" use="required"/>
+			<xs:attribute name="AudioHead" type="xs:string"/>
+			<xs:attribute name="AudioT" type="xs:string"/>
 			<xs:attribute name="StartPCSounds" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="StartAdlibSounds" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="StartMusic" type="xs:nonNegativeInteger"/>
@@ -1148,7 +1144,7 @@
 				<xs:element ref="DigiSounds" minOccurs="0"/>
 				<xs:element ref="WallPaletteRanges" minOccurs="0"/>
 			</xs:all>
-			<xs:attribute name="Name" type="xs:string" use="required"/>
+			<xs:attribute name="Name" type="xs:string"/>
 			<xs:attribute name="Sqrt" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>
@@ -1249,8 +1245,8 @@
 				<xs:element ref="AltElevator"/>
 				<xs:element ref="Door"/>
 			</xs:choice>
-			<xs:attribute name="MaxWallTiles" type="xs:nonNegativeInteger" use="required"/>
-			<xs:attribute name="DoorWall" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="MaxWallTiles" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="DoorWall" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="DoorFrame" type="xs:nonNegativeInteger">
 				<xs:annotation>
 					<xs:documentation>

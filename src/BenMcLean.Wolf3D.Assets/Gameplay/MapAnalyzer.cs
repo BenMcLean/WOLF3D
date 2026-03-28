@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -52,21 +52,29 @@ public class MapAnalyzer
 	public IReadOnlyDictionary<string, ushort> Sprites { get; private set; }
 	public ushort FloorCodeFirst { get; private set; }
 	public ushort FloorCodes { get; private set; }
+	/// <summary>
+	/// Optional path to a WALLSPAWNS file (relative to game folder), read from &lt;Maps WallSpawns="..."&gt;.
+	/// When set, MapAnalysis uses pre-baked wall spawns from this file instead of
+	/// running the standard Wolf3D EastWest/NorthSouth wall scan.
+	/// Null for standard Wolf3D games that use the tile-to-VSWAP-page formula.
+	/// </summary>
+	public string WallSpawnsFile { get; private set; }
 	#endregion Data
-	public MapAnalyzer(XElement xml, IReadOnlyDictionary<string, ushort> spritesByName, ILogger<MapAnalyzer> logger = null)
+	public MapAnalyzer(XElement xml, IReadOnlyDictionary<string, ushort> spritesByName = null, ILogger<MapAnalyzer> logger = null)
 	{
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
-		Sprites = spritesByName ?? throw new ArgumentNullException(nameof(spritesByName));
+		// Accept null spritesByName for games that omit VSwap entirely.
+		Sprites = spritesByName ?? new Dictionary<string, ushort>();
 		_logger = logger ?? NullLogger<MapAnalyzer>.Instance;
 
-		// Parse WallPlane element attributes (required)
-		XElement wallsElement = XML.Element("VSwap")?.Element("WallPlane")
-			?? throw new InvalidDataException("Missing VSwap/WallPlane element in XML");
-
-		MaxWallTiles = ushort.Parse(wallsElement.Attribute("MaxWallTiles")?.Value
-			?? throw new InvalidDataException("Missing MaxWallTiles attribute"));
-		DoorWall = ushort.Parse(wallsElement.Attribute("DoorWall")?.Value
-			?? throw new InvalidDataException("Missing DoorWall attribute"));
+		// Parse WallPlane element attributes (optional — games without a VSWAP can omit them).
+		// MaxWallTiles defaults to 0 (no tile-mapped walls; use pre-baked WallSpawns instead).
+		// DoorWall defaults to 0 (no doors).
+		XElement wallsElement = XML.Element("VSwap")?.Element("WallPlane");
+		MaxWallTiles = ushort.TryParse(wallsElement?.Attribute("MaxWallTiles")?.Value, out ushort mwt)
+			? mwt : (ushort)0;
+		DoorWall = ushort.TryParse(wallsElement?.Attribute("DoorWall")?.Value, out ushort dw)
+			? dw : (ushort)0;
 		// DoorFrame: optional, defaults to DoorWall+2 (standard Wolf3D: DOORWALL+2)
 		// N3D override: DoorFrame="62" = DOORWALL(1) = DoorWall+4 (WL_DRAW.C HitHorizWall #ifdef GAMEVER_NOAH3D)
 		DoorFrame = ushort.TryParse(wallsElement.Attribute("DoorFrame")?.Value, out ushort df)
@@ -248,6 +256,9 @@ public class MapAnalyzer
 			FloorCodeFirst = floorCodeFirst;
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("WallPlane")?.Attribute("FloorCodeLast")?.Value, out ushort floorCodeLast))
 			FloorCodes = (ushort)(1 + floorCodeLast - FloorCodeFirst);
+		// WallSpawnsFile: optional path to WALLSPAWNS file for games (e.g. KOD) that need
+		// per-face textures instead of Wolf3D's single-texture-per-tile formula.
+		WallSpawnsFile = XML.Element("Maps")?.Attribute("WallSpawns")?.Value;
 	}
 	public ushort MapNumber(ushort episode, ushort level) => ushort.Parse(XML.Element("Maps").Elements("Map").Where(map =>
 			ushort.TryParse(map.Attribute("Episode")?.Value, out ushort e) && e == episode
@@ -294,7 +305,7 @@ public class MapAnalyzer
 	/// <returns>Tuple of (script name to code, item number to script name) dictionaries</returns>
 	public (Dictionary<string, string> Scripts, Dictionary<byte, string> ItemNumberToScript) GetItemScripts()
 	{
-		Dictionary<byte, string> itemNumberToScript = new();
+		Dictionary<byte, string> itemNumberToScript = [];
 
 		foreach (KeyValuePair<ushort, ObjectInfo> kvp in Objects)
 		{
@@ -324,6 +335,13 @@ public class MapAnalyzer
 	};
 
 	public MapAnalysis Analyze(GameMap map) => new(this, map, _logger);
+	/// <summary>
+	/// Analyzes a map using pre-baked wall spawns instead of the standard Wolf3D wall scan.
+	/// Used when the game's &lt;Maps&gt; element has a WallSpawns attribute pointing to a
+	/// WALLSPAWNS file (e.g. KOD), bypassing EastWest/NorthSouth for visual wall data
+	/// while still deriving collision, doors, actors, etc. from GAMEMAPS as normal.
+	/// </summary>
+	public MapAnalysis Analyze(GameMap map, MapAnalysis.WallSpawn[] prebuiltWalls) => new(this, map, _logger, prebuiltWalls);
 	public IEnumerable<MapAnalysis> Analyze(params GameMap[] maps) => maps.Parallelize(Analyze);
 	#region Inner classes
 	public sealed class MapAnalysis
@@ -453,7 +471,12 @@ public class MapAnalyzer
 			short Area2 = -1);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
-		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap, ILogger logger = null)
+		/// <param name="prebuiltWalls">
+		/// Optional pre-baked wall spawns from a WALLSPAWNS file. When non-null, bypasses
+		/// EastWest/NorthSouth wall scanning and uses these spawns directly for Walls.
+		/// All other parsing (collision masks, doors, actors, pushwalls) runs normally.
+		/// </param>
+		public MapAnalysis(MapAnalyzer mapAnalyzer, GameMap gameMap, ILogger logger = null, WallSpawn[] prebuiltWalls = null)
 		{
 			this.gameMap = gameMap ?? throw new ArgumentNullException(nameof(gameMap));
 			logger ??= NullLogger.Instance;
@@ -690,13 +713,20 @@ public class MapAnalyzer
 					// Use original map data, not realWalls (which replaces pushwalls with FloorCodeFirst)
 					if (mapAnalyzer.AmbushTiles.Contains(gameMap.GetMapData(x, y)))
 						ambushes.Add(x | (uint)y << 16);
-					// For empty spaces (including ambush/alternate elevator tiles), check adjacent cells for walls
-					EastWest(x, y);
-					NorthSouth(x, y);
+					// For empty spaces, check adjacent cells for walls.
+					// Skipped when pre-baked wall spawns are provided (EastWest/NorthSouth
+					// use the Wolf3D tile-to-page formula, which is wrong for games like KOD
+					// that assign distinct textures to each face of a block).
+					if (prebuiltWalls == null)
+					{
+						EastWest(x, y);
+						NorthSouth(x, y);
+					}
 				}
 			}
 
-			Walls = Array.AsReadOnly([.. walls]);
+			// Use pre-baked spawns when provided; otherwise use the wall scan results.
+			Walls = prebuiltWalls != null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);
 			PushWalls = Array.AsReadOnly([.. pushWalls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
 			AltElevators = Array.AsReadOnly([.. altElevators]);

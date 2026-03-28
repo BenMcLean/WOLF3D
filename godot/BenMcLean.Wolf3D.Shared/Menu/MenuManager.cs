@@ -149,11 +149,6 @@ public class MenuManager
 		_input = new KeyboardMenuInput();
 		// Subscribe to music enabled changes to restart menu music when re-enabled
 		_config.MusicEnabledChanged += OnMusicEnabledChanged;
-		// Navigate to start menu
-		if (!string.IsNullOrEmpty(_menuCollection.StartMenu))
-			NavigateToMenu(_menuCollection.StartMenu);
-		else
-			_logger?.LogWarning("No StartMenu defined in MenuCollection");
 	}
 	/// <summary>
 	/// Handles MusicEnabledChanged event to restart menu music when re-enabled.

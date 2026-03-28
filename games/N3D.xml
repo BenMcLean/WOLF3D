@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Game Name="Super 3-D Noah's Ark" Version="1.0" Path="N3D" Extension="N3D" Exe="noah3d.exe" HighScores="config.n3d" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
+	<OnStartup>LoadMenu("Title")</OnStartup>
 	<VgaGraph VgaDict="vgadict.n3d" VgaGraph="vgagraph.n3d" VgaHead="vgahead.n3d" LoadingPic="GETPSYCHEDPIC" Sizes="0">
 		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
@@ -153,7 +154,7 @@
 			<Picture Id="BlueKey" Name="NOKEYPIC" X="256" Y="20" />
 			<Text Id="Fruit" X="296" Y="16"> 0</Text>
 		</StatusBar>
-		<Menus Start="Title" Pause="Main" TextColor="204" Highlight="197" BordColor="217" BkgdColor="221" Deactive="219" Bord2Color="215" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="NOAH01_MUS" ModalColor="204" ModalTextColor="0" ModalHighlight="197" ModalBord2Color="0">
+		<Menus Pause="Main" TextColor="204" Highlight="197" BordColor="217" BkgdColor="221" Deactive="219" Bord2Color="215" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="NOAH01_MUS" ModalColor="204" ModalTextColor="0" ModalHighlight="197" ModalBord2Color="0">
 			<!-- Classic game end strings -->
 			<EndString>Are you sure you're&#10;ready to quit?.&#10;Press Y to Quit.</EndString>
 			<EndString>What? Quitting already?&#10;Press Y to Quit.</EndString>

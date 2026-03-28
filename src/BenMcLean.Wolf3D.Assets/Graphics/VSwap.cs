@@ -20,9 +20,12 @@ public sealed class VSwap
 {
 	public static VSwap Load(XElement xml, string folder = "")
 	{
+		string name = xml.Element("VSwap")?.Attribute("Name")?.Value;
+		if (name == null)
+			return null;
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
-		using FileStream vSwap = new(Path.Combine(folder, xml.Element("VSwap").Attribute("Name").Value), FileMode.Open);
+		using FileStream vSwap = new(Path.Combine(folder, name), FileMode.Open);
 		return new VSwap(
 			xml: xml,
 			palette: LoadPalette(xml),

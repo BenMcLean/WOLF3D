@@ -63,9 +63,17 @@ public sealed class GameMap
 	public bool IsWithinMap(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Depth;
 	#endregion Data
 	#region Loading
-	public static GameMap[] Load(XElement xml, string folder = "") => Load(
-		mapHead: Path.Combine(folder, xml.Element("Maps").Attribute("MapHead").Value),
-		gameMaps: Path.Combine(folder, xml.Element("Maps").Attribute("GameMaps").Value));
+	public static GameMap[] Load(XElement xml, string folder = "")
+	{
+		XElement el  = xml.Element("Maps");
+		string head  = el?.Attribute("MapHead")?.Value;
+		string gmaps = el?.Attribute("GameMaps")?.Value;
+		if (head == null || gmaps == null)
+			return [];
+		return Load(
+			mapHead:   Path.Combine(folder, head),
+			gameMaps:  Path.Combine(folder, gmaps));
+	}
 	public static GameMap[] Load(string mapHead, string gameMaps)
 	{
 		using FileStream mapHeadStream = new(mapHead, FileMode.Open);

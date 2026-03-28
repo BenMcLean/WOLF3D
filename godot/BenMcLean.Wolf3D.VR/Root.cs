@@ -1,5 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.Lua;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
@@ -105,12 +106,16 @@ public partial class Root : Node3D
 				// Shareware assets loaded → show the game selection menu
 				string gamesDir = System.IO.Path.GetFullPath(@"..\..\games");
 				MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(gamesDir);
-				MenuRoom selectionRoom = new(DisplayMode) { MenuCollectionOverride = gameSelectMenu };
+				MenuRoom selectionRoom = new(DisplayMode)
+				{
+					MenuCollectionOverride = gameSelectMenu,
+					StartMenuOverride = "_GameSelect0",
+				};
 				TransitionTo(selectionRoom);
 			}
 			else
 			{
-				// Selected game assets loaded → initialize VR materials, play music, enter game
+				// Selected game assets loaded → initialize VR materials, then run OnStartup script
 				try
 				{
 					VSwap vswap = Shared.SharedAssetManager.CurrentGame.VSwap;
@@ -121,10 +126,7 @@ public partial class Root : Node3D
 						? xmlScale
 						: (byte)Math.Max(1, 512 / vswap.TileSqrt);
 					VRAssetManager.Initialize(scaleFactor: scaleFactor);
-					string songName = Shared.SharedAssetManager.CurrentGame.MapAnalyses[CurrentLevelIndex].Music;
-					if (!string.IsNullOrWhiteSpace(songName))
-						Shared.EventBus.Emit(Shared.GameEvent.PlayMusic, songName);
-					TransitionTo(new MenuRoom(DisplayMode));
+					RunOnStartup();
 				}
 				catch (Exception ex)
 				{
@@ -146,10 +148,9 @@ public partial class Root : Node3D
 
 			if (menuRoom.PendingEndGame)
 			{
-				// User confirmed "End Game" — discard suspended game and go to main menu
+				// User confirmed "End Game" — discard suspended game and re-run OnStartup
 				_suspendedGame = null;
-				MenuRoom freshMenu = new(DisplayMode);
-				TransitionTo(freshMenu);
+				RunOnStartup();
 			}
 			else if (menuRoom.PendingLoadGame is int loadSlot)
 			{
@@ -269,6 +270,44 @@ public partial class Root : Node3D
 		}
 	}
 
+	/// <summary>
+	/// Reads and executes the mandatory &lt;OnStartup&gt; Lua element from the current game's XML.
+	/// Throws if the element is missing or the script fails (hard-crash policy).
+	/// </summary>
+	private void RunOnStartup()
+	{
+		string onStartupCode = Shared.SharedAssetManager.CurrentGame.XML
+			.Element("OnStartup")?.Value
+			?? throw new InvalidOperationException(
+				"Missing required <OnStartup> element in game XML.");
+		MenuScriptContext startupCtx = new(new Shared.Menu.MenuState(), Shared.SharedAssetManager.Config)
+		{
+			NavigateToMenuAction = menuName =>
+			{
+				if (Shared.SharedAssetManager.CurrentGame.VgaGraph == null)
+					throw new InvalidOperationException(
+						$"LoadMenu(\"{menuName}\") called but game has no VgaGraph.");
+				if (Shared.SharedAssetManager.CurrentGame.MenuCollection?.GetMenu(menuName) == null)
+					throw new InvalidOperationException(
+						$"LoadMenu(\"{menuName}\"): menu \"{menuName}\" not found.");
+				TransitionTo(new MenuRoom(DisplayMode) { StartMenuOverride = menuName });
+			},
+			StartLevelAction = mapIndex =>
+			{
+				MapAnalyzer.MapAnalysis[] analyses = Shared.SharedAssetManager.CurrentGame.MapAnalyses;
+				if (analyses == null || analyses.Length == 0)
+					throw new InvalidOperationException(
+						$"StartLevel({mapIndex}) called but game has no maps.");
+				if (mapIndex < 0 || mapIndex >= analyses.Length)
+					throw new InvalidOperationException(
+						$"StartLevel({mapIndex}): index out of range (0\u2013{analyses.Length - 1}).");
+				_suspendedGame = null;
+				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex));
+			},
+		};
+		LuaScriptEngine startupEngine = new([typeof(Shared.Menu.MenuScriptContext)]);
+		startupEngine.DoString(onStartupCode, startupCtx);
+	}
 	/// <summary>
 	/// Suspends the current game and transitions to the main menu.
 	/// Captures the Simulator and player state before destroying the ActionStage.

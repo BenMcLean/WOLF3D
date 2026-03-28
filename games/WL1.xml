@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
+	<OnStartup>LoadMenu("Credits")</OnStartup>
 	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC" Sizes="0">
 		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
@@ -165,7 +166,7 @@
 			<Picture Id="WeaponPic" Name="GUNPIC" X="256" Y="8" />
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Start="Credits" Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
+		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>

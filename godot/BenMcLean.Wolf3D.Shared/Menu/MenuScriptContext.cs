@@ -41,6 +41,26 @@ public class MenuScriptContext(
 	/// </summary>
 	public Action<string> NavigateToMenuAction { get; set; }
 	/// <summary>
+	/// Delegate for starting a level by flat map index.
+	/// Set by Root after context creation.
+	/// </summary>
+	public Action<int> StartLevelAction { get; set; }
+	/// <summary>
+	/// Navigate to a named menu screen.
+	/// Alias for NavigateToMenu — preferred name in OnStartup scripts.
+	/// Throws InvalidOperationException if VgaGraph is null or menu name not found.
+	/// Exposed to Lua.
+	/// </summary>
+	/// <param name="menuName">Name of menu to navigate to</param>
+	public void LoadMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
+	/// <summary>
+	/// Start a level by its flat MapAnalyses index (0-based).
+	/// Throws InvalidOperationException if Maps is empty or index is out of range.
+	/// Exposed to Lua.
+	/// </summary>
+	/// <param name="mapIndex">Zero-based index into MapAnalyses</param>
+	public void StartLevel(int mapIndex) => StartLevelAction?.Invoke(mapIndex);
+	/// <summary>
 	/// Delegate for closing all menus and returning to game.
 	/// Set by MenuManager after context creation.
 	/// </summary>

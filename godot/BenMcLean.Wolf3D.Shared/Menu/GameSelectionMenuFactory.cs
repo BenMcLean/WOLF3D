@@ -46,7 +46,6 @@ public static class GameSelectionMenuFactory
 
 		MenuCollection collection = new()
 		{
-			StartMenu = "_GameSelect0",
 			DefaultFont = "SMALL",
 			DefaultSpacing = 13,
 			DefaultTextColor = 0x17,          // WL_MENU.H:TEXTCOLOR

@@ -435,13 +435,10 @@ public class LuaScriptEngine
 	/// <returns>The result of the Lua script execution</returns>
 	public DynValue ExecuteActionFunction(string functionName, IScriptContext context)
 	{
-		// TODO: In final release, missing functions should throw hard errors with helpful messages for modders.
-		// For now, silently skip missing functions to allow testing with incomplete function sets.
-		// Final behavior should be:
-		//   throw new InvalidOperationException($"Action function '{functionName}' not compiled. Did you call CompileAllActionFunctions?");
 		if (!compiledActionFunctions.TryGetValue(functionName, out DynValue compiled))
-			// TODO: Restore hard error for final release (see method summary)
-			return DynValue.Nil; // Silently skip missing function for testing
+			throw new InvalidOperationException(
+				$"Action function '{functionName}' not compiled. " +
+				"Ensure CompileAllActionFunctions was called and the function is defined in the XML.");
 		if (compiled.Type == DataType.Nil)
 			// Empty function - nothing to execute
 			return DynValue.Nil;

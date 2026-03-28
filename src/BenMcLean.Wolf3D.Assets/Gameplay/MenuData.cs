@@ -673,13 +673,11 @@ public class MenuCollection
 	/// All menu functions (Lua scripts), indexed by name
 	/// </summary>
 	public Dictionary<string, MenuFunction> Functions { get; set; } = [];
-	/// <summary>
-	/// Name of the initial/starting menu (e.g., "Intro")
-	/// </summary>
-	public string StartMenu { get; set; }
+	/// <summary>Returns the named menu, or null if not found.</summary>
+	public MenuDefinition GetMenu(string name) =>
+		Menus.TryGetValue(name, out MenuDefinition m) ? m : null;
 	/// <summary>
 	/// Name of the menu to show when pausing during gameplay (e.g., "Main").
-	/// If null, falls back to StartMenu.
 	/// </summary>
 	public string PauseMenu { get; set; }
 	/// <summary>
@@ -870,7 +868,6 @@ public class MenuCollection
 
 		MenuCollection collection = new()
 		{
-			StartMenu = menusElement.Attribute("Start")?.Value,
 			PauseMenu = menusElement.Attribute("Pause")?.Value,
 			DefaultCursorMoveSound = menusElement.Attribute("CursorMoveSound")?.Value,
 			DefaultMusic = menusElement.Attribute("Music")?.Value,

@@ -17,11 +17,17 @@ public sealed class VgaGraph
 {
 	public static VgaGraph Load(XElement xml, string folder = "")
 	{
+		XElement el = xml.Element("VgaGraph");
+		string head  = el?.Attribute("VgaHead")?.Value;
+		string graph = el?.Attribute("VgaGraph")?.Value;
+		string dict  = el?.Attribute("VgaDict")?.Value;
+		if (head == null || graph == null || dict == null)
+			return null;
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
-		using FileStream vgaHead = new(Path.Combine(folder, xml.Element("VgaGraph").Attribute("VgaHead").Value), FileMode.Open);
-		using FileStream vgaGraphStream = new(Path.Combine(folder, xml.Element("VgaGraph").Attribute("VgaGraph").Value), FileMode.Open);
-		using FileStream vgaDict = new(Path.Combine(folder, xml.Element("VgaGraph").Attribute("VgaDict").Value), FileMode.Open);
+		using FileStream vgaHead = new(Path.Combine(folder, head),  FileMode.Open);
+		using FileStream vgaGraphStream = new(Path.Combine(folder, graph), FileMode.Open);
+		using FileStream vgaDict = new(Path.Combine(folder, dict),  FileMode.Open);
 		return new VgaGraph(vgaHead, vgaGraphStream, vgaDict, xml);
 	}
 	public Font[] Fonts { get; private init; }

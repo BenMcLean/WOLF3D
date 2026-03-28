@@ -13,9 +13,14 @@ public sealed class AudioT
 {
 	public static AudioT Load(XElement xml, string folder = "")
 	{
-		using FileStream audioHead = new(Path.Combine(folder, xml.Element("Audio").Attribute("AudioHead").Value), FileMode.Open);
-		using FileStream audioTStream = new(Path.Combine(folder, xml.Element("Audio").Attribute("AudioT").Value), FileMode.Open);
-		return new AudioT(audioHead, audioTStream, xml.Element("Audio"));
+		XElement el   = xml.Element("Audio");
+		string head   = el?.Attribute("AudioHead")?.Value;
+		string audioT = el?.Attribute("AudioT")?.Value;
+		if (head == null || audioT == null)
+			return null;
+		using FileStream audioHead    = new(Path.Combine(folder, head),   FileMode.Open);
+		using FileStream audioTStream = new(Path.Combine(folder, audioT), FileMode.Open);
+		return new AudioT(audioHead, audioTStream, el);
 	}
 	public Dictionary<string, PcSpeaker> PcSounds { get; private init; }
 	public Dictionary<string, Adl> Sounds { get; private init; }
