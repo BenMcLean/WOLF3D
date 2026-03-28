@@ -21,7 +21,7 @@ namespace BenMcLean.Wolf3D.Assets.Gameplay;
 /// <para>
 /// File format: [ushort levelCount][uint[] offsets][level data...]
 /// Per level at its offset: [ushort count][count * (ushort X, ushort Y, ushort Shape, byte flags)]
-/// flags: bit 0 = FacesEastWest, bit 1 = Flip
+/// flags: bit 0 = FacesEastWest (legacy), bit 1 = Flip (legacy); decoded to Direction on load
 /// </para>
 /// </summary>
 public static class WallSpawns
@@ -60,7 +60,14 @@ public static class WallSpawns
 				byte flags = reader.ReadByte();
 				bool facesEastWest = (flags & 1) != 0;
 				bool flip = (flags & 2) != 0;
-				spawns[j] = new MapAnalysis.WallSpawn(shape, facesEastWest, x, y, flip);
+				Direction facing = (facesEastWest, flip) switch
+				{
+					(true, false) => Direction.W,
+					(true, true) => Direction.E,
+					(false, true) => Direction.N,
+					_ => Direction.S,
+				};
+				spawns[j] = new MapAnalysis.WallSpawn(shape, facing, x, y);
 			}
 			result[i] = spawns;
 		}

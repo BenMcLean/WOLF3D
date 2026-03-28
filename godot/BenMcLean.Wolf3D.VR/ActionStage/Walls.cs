@@ -3,6 +3,7 @@ using BenMcLean.Wolf3D.Simulator;
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.VR.ActionStage;
@@ -382,35 +383,29 @@ void fragment() {
 	/// <summary>
 	/// Calculates the 3D transform for a wall based on its spawn data.
 	/// WallSpawn coordinates represent the wall block's grid position.
-	/// Flip indicates which face: false=west/north, true=east/south
 	/// </summary>
 	private static Transform3D CalculateWallTransform(MapAnalysis.WallSpawn wall)
 	{
 		Vector3 position;
 		float rotationY;
-		if (wall.FacesEastWest) // East/West facing wall (runs N-S, perpendicular to X, vertwall)
+		switch (wall.Facing)
 		{
-			// Wall block at (X, Z) - show west face (Flip=false) or east face (Flip=true)
-			position = new Vector3(
-				x: wall.Flip ?
-					wall.X.ToMeters() + Constants.TileWidth
-					: wall.X.ToMeters(),
-				y: Constants.HalfTileHeight,
-				z: wall.Y.ToMetersCentered());
-			// West face looks west (-90°), East face looks east (90°)
-			rotationY = wall.Flip ? Constants.HalfPi : -Constants.HalfPi;
-		}
-		else // North/South facing wall (runs E-W, perpendicular to Z, horizwall)
-		{
-			// Wall block at (X, Z) - show south face (Flip=false) or north face (Flip=true)
-			position = new Vector3(
-				wall.X.ToMetersCentered(),
-				Constants.HalfTileHeight,
-				wall.Flip ?
-					wall.Y.ToMeters()
-					: wall.Y.ToMeters() + Constants.TileWidth);
-			// South face looks south (0°), North face looks north (180°)
-			rotationY = wall.Flip ? Mathf.Pi : 0f;
+			case Direction.W:
+				position = new Vector3(wall.X.ToMeters(), Constants.HalfTileHeight, wall.Y.ToMetersCentered());
+				rotationY = -Constants.HalfPi;
+				break;
+			case Direction.E:
+				position = new Vector3(wall.X.ToMeters() + Constants.TileWidth, Constants.HalfTileHeight, wall.Y.ToMetersCentered());
+				rotationY = Constants.HalfPi;
+				break;
+			case Direction.S:
+				position = new Vector3(wall.X.ToMetersCentered(), Constants.HalfTileHeight, wall.Y.ToMeters() + Constants.TileWidth);
+				rotationY = 0f;
+				break;
+			default: // Direction.N
+				position = new Vector3(wall.X.ToMetersCentered(), Constants.HalfTileHeight, wall.Y.ToMeters());
+				rotationY = Mathf.Pi;
+				break;
 		}
 		Transform3D transform = Transform3D.Identity.Rotated(Vector3.Up, rotationY);
 		transform.Origin = position;

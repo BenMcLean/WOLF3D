@@ -440,9 +440,7 @@ public class MapAnalyzer
 		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
 		public ReadOnlyCollection<PatrolPoint> PatrolPoints { get; private set; }
 
-		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
-		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
-		public readonly record struct WallSpawn(ushort Shape, bool FacesEastWest, ushort X, ushort Y, bool Flip = false);
+		public readonly record struct WallSpawn(ushort Shape, Direction Facing, ushort X, ushort Y);
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
 
 		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
@@ -645,10 +643,10 @@ public class MapAnalyzer
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (x < Width - 1 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x + 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x + 1), y, false));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), Direction.W, (ushort)(x + 1), y));
 				if (x > 0 && mapAnalyzer.IsWall(wall = GetMapData((ushort)(x - 1), y))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), true, (ushort)(x - 1), y, true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), Direction.E, (ushort)(x - 1), y));
 			}
 
 			void NorthSouth(ushort x, ushort y)
@@ -659,10 +657,10 @@ public class MapAnalyzer
 				// Skip if adjacent tile is a door (doors have their own frames)
 				if (y > 0 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y - 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y - 1), false));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), Direction.S, x, (ushort)(y - 1)));
 				if (y < Depth - 1 && mapAnalyzer.IsWall(wall = GetMapData(x, (ushort)(y + 1)))
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
-					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), false, x, (ushort)(y + 1), true));
+					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), Direction.N, x, (ushort)(y + 1)));
 			}
 
 			// Scan wall plane (MapData) for doors, walls, and elevators
@@ -680,8 +678,8 @@ public class MapAnalyzer
 					if (tile % 2 == 0)  // Vertical door (runs N-S, faces E/W)
 					{
 						// Door frames on north and south sides (run E-W, face N/S)
-						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y - 1), false));
-						walls.Add(new WallSpawn(doorFrameHoriz, false, x, (ushort)(y + 1), true));
+						walls.Add(new WallSpawn(doorFrameHoriz, Direction.S, x, (ushort)(y - 1)));
+						walls.Add(new WallSpawn(doorFrameHoriz, Direction.N, x, (ushort)(y + 1)));
 						// Calculate area connectivity: FacesEastWest doors connect left (X-1) and right (X+1)
 						short area1 = GetAreaNumber(x - 1, y);
 						short area2 = GetAreaNumber(x + 1, y);
@@ -690,8 +688,8 @@ public class MapAnalyzer
 					else  // Horizontal door (runs E-W, faces N/S)
 					{
 						// Door frames on west and east sides (run N-S, face E/W)
-						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x - 1), y, true));
-						walls.Add(new WallSpawn(doorFrameVert, true, (ushort)(x + 1), y, false));
+						walls.Add(new WallSpawn(doorFrameVert, Direction.E, (ushort)(x - 1), y));
+						walls.Add(new WallSpawn(doorFrameVert, Direction.W, (ushort)(x + 1), y));
 						// Calculate area connectivity: horizontal doors connect above (Y-1) and below (Y+1)
 						short area1 = GetAreaNumber(x, y - 1);
 						short area2 = GetAreaNumber(x, y + 1);
