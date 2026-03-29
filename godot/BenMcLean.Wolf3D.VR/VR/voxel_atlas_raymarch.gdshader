@@ -156,7 +156,7 @@ void fragment() {
 	// boundary case (floor(model_size.x) == model_size.x) without any directional skew.
 	vec3 ray_origin = clamp(
 		camera_voxel + ray_dir * max(t_enter, 0.0),
-		vec3(0.0), box_max - vec3(1e-6));
+		vec3(0.0), box_max - vec3(1e-4));
 
 	vec4 color = raymarch(ray_origin, ray_dir);
 	if (color.a < 0.5) discard;

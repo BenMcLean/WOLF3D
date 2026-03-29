@@ -104,18 +104,18 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		float diagonal = Mathf.Sqrt(xyz[3] * xyz[3] + xyz[4] * xyz[4] + xyz[5] * xyz[5]);
 		_quadMesh.Size = new Vector2(2f * diagonal, 2f * diagonal);
 		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at the controller's grip point (local origin).
-		// Grip voxel center in QuadMesh local space (MagicaVoxel Z → Godot Y, MagicaVoxel Y → Godot Z):
-		//   Godot local X = gripMvX + 0.5 - sizeX / 2
-		//   Godot local Y = gripMvZ + 0.5 - sizeZ / 2
-		//   Godot local Z = gripMvY + 0.5 - sizeY / 2
-		// Negate and multiply by per-axis scale to get the offset in parent (controller) space.
+		// The Ry(+π/2) swizzle in the shader maps: controller X ↔ -MvY, controller Y ↔ MvZ, controller Z ↔ MvX.
+		// Grip voxel center offset from mesh centre, converted to parent (controller) space:
+		//   controller X = +(gripMvY + 0.5 - sizeY / 2) × scale   [positive factor due to sign flip]
+		//   controller Y = -(gripMvZ + 0.5 - sizeZ / 2) × scale
+		//   controller Z = -(gripMvX + 0.5 - sizeX / 2) × scale
 		if (xyz.Length >= 9)
 		{
 			Vector3 scale = _meshInstance.Scale;
 			_meshInstance.Position = new Vector3(
-				-scale.X * (xyz[6] + 0.5f - xyz[3] * 0.5f),
+				scale.X * (xyz[7] + 0.5f - xyz[4] * 0.5f),
 				-scale.Y * (xyz[8] + 0.5f - xyz[5] * 0.5f),
-				-scale.Z * (xyz[7] + 0.5f - xyz[4] * 0.5f));
+				-scale.Z * (xyz[6] + 0.5f - xyz[3] * 0.5f));
 		}
 		Visible = true;
 	}
