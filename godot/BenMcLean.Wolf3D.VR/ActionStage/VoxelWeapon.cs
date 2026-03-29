@@ -46,6 +46,8 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		};
 		_meshInstance.Scale = Constants.VoxelWeaponScale;
 		AddChild(_meshInstance);
+		// Initialise to identity so the uniform is never the zero matrix before _Process runs.
+		_material.SetShaderParameter("inv_model_matrix", Transform3D.Identity);
 		Visible = false;  // Hidden until a weapon is equipped in this slot
 	}
 
@@ -97,12 +99,12 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		// xyz[0..2] = atlas origin (MagicaVoxel X, Y, Z); xyz[3..5] = model size; xyz[6..8] = grip origin (MagicaVoxel X, Y, Z)
 		_material.SetShaderParameter("model_offset", new Vector3I(xyz[0], xyz[1], xyz[2]));
 		_material.SetShaderParameter("model_size", new Vector3I(xyz[3], xyz[4], xyz[5]));
-		// QuadMesh size: 2× bounding sphere diameter in voxel units.
-		// 2× because the grip origin can be at the edge of the model, so the billboard
-		// must extend a full diagonal in every direction from the grip point to guarantee
-		// the entire weapon silhouette is covered. Scale converts voxels → metres.
+		// QuadMesh size: bounding sphere diameter in voxel units.
+		// The quad is centered at the model's geometric centre (not the grip), so a half-extent
+		// equal to the bounding sphere radius (diagonal/2) is sufficient to cover the weapon
+		// silhouette from any viewing angle. Scale converts voxels → metres.
 		float diagonal = Mathf.Sqrt(xyz[3] * xyz[3] + xyz[4] * xyz[4] + xyz[5] * xyz[5]);
-		_quadMesh.Size = new Vector2(2f * diagonal, 2f * diagonal);
+		_quadMesh.Size = new Vector2(diagonal, diagonal);
 		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at the controller's grip point (local origin).
 		// The Ry(+π/2) swizzle in the shader maps: controller X ↔ -MvY, controller Y ↔ MvZ, controller Z ↔ MvX.
 		// Grip voxel center offset from mesh centre, converted to parent (controller) space:
@@ -126,6 +128,8 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		Camera3D camera = GetViewport().GetCamera3D();
 		if (camera is not null)
 			_material.SetShaderParameter("camera_world_center", camera.GlobalPosition);
+		if (_meshInstance is not null)
+			_material.SetShaderParameter("inv_model_matrix", _meshInstance.GlobalTransform.AffineInverse());
 	}
 
 	public override void _ExitTree()

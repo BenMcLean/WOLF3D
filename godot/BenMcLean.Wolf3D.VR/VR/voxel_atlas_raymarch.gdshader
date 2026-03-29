@@ -89,6 +89,9 @@ vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
 // HMD centre position in world space, updated each frame by VoxelWeapon._Process.
 // Eye-independent so this varying is consistent across both VR eyes.
 uniform vec3 camera_world_center = vec3(0.0, 1.7, 0.0);
+// Inverse of MODEL_MATRIX, updated each frame by VoxelWeapon._Process.
+// Precomputed on the CPU to avoid a per-fragment inverse() call in the shader.
+uniform mat4 inv_model_matrix;
 
 // Billboarded world-space quad position — eye-independent, interpolates correctly in VR multiview.
 varying vec3 vertex_world;
@@ -96,8 +99,8 @@ varying vec3 vertex_world;
 void vertex() {
 	// Billboard: build a camera-facing quad from translation + uniform scale only.
 	// MODEL_MATRIX rotation is deliberately ignored here so the quad always faces the
-	// camera. The unmodified MODEL_MATRIX is still used in the fragment shader to
-	// define the voxel coordinate space for AABB intersection.
+	// camera. inv_model_matrix (the precomputed inverse) is used in the fragment shader
+	// to transform rays into the voxel coordinate space for AABB intersection.
 	vec3 world_origin = MODEL_MATRIX[3].xyz;
 	vec3 to_cam = normalize(camera_world_center - world_origin);
 	// Build right/up axes perpendicular to to_cam.
@@ -123,9 +126,8 @@ void fragment() {
 	vec3 ray_world_dir = normalize(vertex_world - camera_world);
 
 	// Transform camera position and ray direction to object local space.
-	mat4 inv_model = inverse(MODEL_MATRIX);
-	vec3 camera_local = (inv_model * vec4(camera_world, 1.0)).xyz;
-	vec3 ray_dir = normalize((inv_model * vec4(ray_world_dir, 0.0)).xyz);
+	vec3 camera_local = (inv_model_matrix * vec4(camera_world, 1.0)).xyz;
+	vec3 ray_dir = normalize((inv_model_matrix * vec4(ray_world_dir, 0.0)).xyz);
 	// Apply Ry(+π/2) swizzle to orient voxel space to the controller's forward direction,
 	// equivalent to Basis(Vector3.Up, -π/2) on the mesh but baked here so MODEL_MATRIX stays identity.
 	// Ry(+π/2): (x, y, z) → (z, y, -x)
