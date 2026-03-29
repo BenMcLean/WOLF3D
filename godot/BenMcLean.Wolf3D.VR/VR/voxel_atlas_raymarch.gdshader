@@ -126,6 +126,11 @@ void fragment() {
 	mat4 inv_model = inverse(MODEL_MATRIX);
 	vec3 camera_local = (inv_model * vec4(camera_world, 1.0)).xyz;
 	vec3 ray_dir = normalize((inv_model * vec4(ray_world_dir, 0.0)).xyz);
+	// Apply Ry(+π/2) swizzle to orient voxel space to the controller's forward direction,
+	// equivalent to Basis(Vector3.Up, -π/2) on the mesh but baked here so MODEL_MATRIX stays identity.
+	// Ry(+π/2): (x, y, z) → (z, y, -x)
+	camera_local = vec3(camera_local.z, camera_local.y, -camera_local.x);
+	ray_dir = vec3(ray_dir.z, ray_dir.y, -ray_dir.x);
 
 	// Shift from BoxMesh-centered local space [-size/2, +size/2] to voxel [0, model_size) space.
 	// model_size is MagicaVoxel (X, Y, Z); BoxMesh.Size is Godot (X=MvX, Y=MvZ, Z=MvY),
