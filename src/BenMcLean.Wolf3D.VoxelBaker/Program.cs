@@ -76,12 +76,15 @@ public static class Program
 			palette = destination;
 		}
 		Dictionary<string, IModel> models = loaded.ToDictionary(x => x.Key, x => x.Model);
+		foreach (KeyValuePair<string, IModel> kvp in models
+			.Where(kvp => kvp.Value.GlobalRotation != VoxReader.Matrix3.Identity))
+			Console.Error.WriteLine($"WARNING: {kvp.Key}.vox has a non-identity GlobalRotation: {kvp.Value.GlobalRotation}. Bake the rotation into the voxel data in MagicaVoxel and clear the scene object rotation.");
 		VoxelAtlasPacker<string>.PackResult packResult = VoxelAtlasPacker<string>.Pack(models
 			.Select(kvp => new VoxelAtlasPacker<string>.Cuboid(
 				Id: kvp.Key,
-				X: kvp.Value.LocalSize.X,
-				Y: kvp.Value.LocalSize.Y,
-				Z: kvp.Value.LocalSize.Z)));
+				X: kvp.Value.GlobalSize.X,
+				Y: kvp.Value.GlobalSize.Y,
+				Z: kvp.Value.GlobalSize.Z)));
 		string outputPath = Path.Combine(folderPath, "VOXELS.W3D");
 		using MemoryStream compressedStream = new();
 		using (DeflateStream deflateStream = new(
@@ -102,12 +105,12 @@ public static class Program
 							c.X,
 							c.Y,
 							c.Z,
-							models[c.Id].LocalSize.X,
-							models[c.Id].LocalSize.Y,
-							models[c.Id].LocalSize.Z,
-							Math.Abs(models[c.Id].GlobalPosition.X),
-							Math.Abs(models[c.Id].GlobalPosition.Y),
-							Math.Abs(models[c.Id].GlobalPosition.Z),
+							models[c.Id].GlobalSize.X,
+							models[c.Id].GlobalSize.Y,
+							models[c.Id].GlobalSize.Z,
+							models[c.Id].GlobalSize.X / 2 - models[c.Id].GlobalPosition.X,
+							models[c.Id].GlobalSize.Y / 2 - models[c.Id].GlobalPosition.Y,
+							models[c.Id].GlobalSize.Z / 2 - models[c.Id].GlobalPosition.Z,
 						],
 						Sprites: Sprites[c.Id]))));
 			Console.WriteLine("Compressing palette.");
@@ -146,11 +149,16 @@ public static class Program
 		Parallel.ForEach(packResult.Placements, placement =>
 		{
 			IModel model = models[placement.Id];
+			VoxReader.Vector3 localSize = model.LocalSize;
+			VoxReader.Vector3 globalSize = model.GlobalSize;
 			foreach (VoxReader.Voxel voxel in model.Voxels)
 			{
-				int ax = placement.X + voxel.LocalPosition.X,
-					ay = placement.Y + voxel.LocalPosition.Y,
-					az = placement.Z + voxel.LocalPosition.Z;
+				// Apply GlobalRotation so that scene-level rotations baked in the .vox
+				// file are reflected in the atlas, matching what MagicaVoxel displays.
+				VoxReader.Vector3 rotated = model.GlobalRotation.RotateIndex(voxel.LocalPosition - localSize / 2);
+				int ax = placement.X + rotated.X + globalSize.X / 2,
+					ay = placement.Y + rotated.Y + globalSize.Y / 2,
+					az = placement.Z + rotated.Z + globalSize.Z / 2;
 				atlas[ax + ay * width + az * width * depth] = (byte)voxel.ColorIndex;
 			}
 		});
