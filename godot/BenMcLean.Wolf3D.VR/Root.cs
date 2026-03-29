@@ -417,6 +417,7 @@ public partial class Root : Node3D
 
 			_transitionState = TransitionState.FadingIn;
 			Simulator.Simulator.Paused = true;
+			GetTree().Paused = true;
 			_fadeOverlay.FadeFromBlack();
 		}
 		else
@@ -479,6 +480,7 @@ public partial class Root : Node3D
 		_pendingMidFadeAction = midFadeAction;
 		_transitionState = TransitionState.FadingOut;
 		Simulator.Simulator.Paused = true;
+		GetTree().Paused = true;
 		// Disable VR locomotion so the player stays put during the fade.
 		// Each room's _Ready() sets LocomotionEnabled to its own desired value when it loads.
 		DisplayMode?.LocomotionEnabled = false;
@@ -517,6 +519,7 @@ public partial class Root : Node3D
 				_skipFadeIn = false;
 				_transitionState = TransitionState.Idle;
 				Simulator.Simulator.Paused = false;
+				GetTree().Paused = false;
 				_fadeOverlay.SetTransparent();
 			}
 			else
@@ -531,6 +534,7 @@ public partial class Root : Node3D
 			_skipFadeIn = false;
 			_transitionState = TransitionState.Idle;
 			Simulator.Simulator.Paused = false;
+			GetTree().Paused = false;
 			ExceptionHandler.HandleException(ex);
 		}
 	}
@@ -542,6 +546,7 @@ public partial class Root : Node3D
 	{
 		_transitionState = TransitionState.Idle;
 		Simulator.Simulator.Paused = false;
+		GetTree().Paused = false;
 	}
 
 	/// <summary>
