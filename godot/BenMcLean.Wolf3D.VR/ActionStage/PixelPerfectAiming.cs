@@ -26,6 +26,7 @@ public class PixelPerfectAiming
 		public bool IsHit;
 		public HitType Type;
 		public int ActorIndex; // Only valid if Type == HitType.Actor
+		public Vector3 Normal; // Surface normal at hit point, pointing toward ray origin
 	}
 	/// <summary>
 	/// Public result of an aiming raycast, including what type of object was hit.
@@ -42,6 +43,8 @@ public class PixelPerfectAiming
 		public HitType Type { get; init; }
 		/// <summary>Actor index (only valid if Type == HitType.Actor)</summary>
 		public int ActorIndex { get; init; }
+		/// <summary>Surface normal at hit point, pointing toward ray origin</summary>
+		public Vector3 Normal { get; init; }
 	}
 	/// <summary>
 	/// Type of object hit by the raycast.
@@ -54,7 +57,9 @@ public class PixelPerfectAiming
 		PushWall,
 		Actor,     // Opaque pixel on actor sprite
 		Fixture,   // Opaque pixel on fixture sprite
-		Bonus      // Opaque pixel on bonus sprite
+		Bonus,     // Opaque pixel on bonus sprite
+		Floor,     // Floor plane
+		Ceiling    // Ceiling plane
 	}
 	/// <summary>
 	/// Creates the pixel-perfect raycasting system.
@@ -79,10 +84,11 @@ public class PixelPerfectAiming
 	public AimHitResult Raycast(Vector3 rayOrigin, Vector3 rayDirection, Vector3 cameraForward)
 	{
 		rayDirection = rayDirection.Normalized();
-		// Check solid objects first (walls, closed doors, pushwalls)
+		// Check solid objects first (walls, closed doors, pushwalls, floor, ceiling)
 		RayHit wallHit = RaycastWalls(rayOrigin, rayDirection),
 			doorHit = RaycastDoors(rayOrigin, rayDirection),
 			pushWallHit = RaycastPushWalls(rayOrigin, rayDirection),
+			floorCeilingHit = RaycastFloorCeiling(rayOrigin, rayDirection),
 		// Find closest solid hit
 			closestHit = new() { IsHit = false, Distance = float.MaxValue };
 		if (wallHit.IsHit && wallHit.Distance < closestHit.Distance)
@@ -91,6 +97,8 @@ public class PixelPerfectAiming
 			closestHit = doorHit;
 		if (pushWallHit.IsHit && pushWallHit.Distance < closestHit.Distance)
 			closestHit = pushWallHit;
+		if (floorCeilingHit.IsHit && floorCeilingHit.Distance < closestHit.Distance)
+			closestHit = floorCeilingHit;
 		// Check billboards with pixel-perfect detection
 		// Only check billboards closer than the wall/door hit
 		float maxBillboardDistance = closestHit.IsHit ? closestHit.Distance : MaxRayDistance;
@@ -104,7 +112,8 @@ public class PixelPerfectAiming
 			Position = closestHit.Position,
 			Distance = closestHit.Distance,
 			Type = closestHit.Type,
-			ActorIndex = closestHit.ActorIndex
+			ActorIndex = closestHit.ActorIndex,
+			Normal = closestHit.Normal
 		};
 	}
 	/// <summary>
@@ -217,12 +226,16 @@ public class PixelPerfectAiming
 			return new RayHit { IsHit = false }; // Hit above ceiling or below floor
 		Vector3 hitPosition = new(hitX, hitY, hitZ);
 		float distance = t; // Since rayDirection is normalized, t is the distance
+		Vector3 wallNormal = hitVertical
+			? new Vector3(-stepX, 0, 0)
+			: new Vector3(0, 0, -stepZ);
 		return new RayHit
 		{
 			IsHit = true,
 			Position = hitPosition,
 			Distance = distance,
 			Type = HitType.Wall,
+			Normal = wallNormal,
 			ActorIndex = -1
 		};
 	}
@@ -306,6 +319,9 @@ public class PixelPerfectAiming
 			if (hitPosition.Y < 0 || hitPosition.Y > Constants.TileHeight)
 				continue;
 			float distance = (hitPosition - rayOrigin).Length();
+			Vector3 doorNormal = door.FacesEastWest
+				? new Vector3(-Mathf.Sign(rayDirection.X), 0, 0)
+				: new Vector3(0, 0, -Mathf.Sign(rayDirection.Z));
 			if (distance < closestHit.Distance)
 				closestHit = new RayHit
 				{
@@ -313,6 +329,7 @@ public class PixelPerfectAiming
 					Position = hitPosition,
 					Distance = distance,
 					Type = HitType.Door,
+					Normal = doorNormal,
 					ActorIndex = -1
 				};
 		}
@@ -407,12 +424,16 @@ public class PixelPerfectAiming
 		if (hitPosition.Y < 0 || hitPosition.Y > height)
 			return new RayHit { IsHit = false }; // Outside face bounds in Y
 		float distance = t; // rayDirection is normalized
+		Vector3 pushWallNormal = isVerticalInX
+			? new Vector3(-Mathf.Sign(rayDirection.X), 0, 0)
+			: new Vector3(0, 0, -Mathf.Sign(rayDirection.Z));
 		return new RayHit
 		{
 			IsHit = true,
 			Position = hitPosition,
 			Distance = distance,
 			Type = HitType.PushWall,
+			Normal = pushWallNormal,
 			ActorIndex = -1
 		};
 	}
@@ -569,7 +590,53 @@ public class PixelPerfectAiming
 			Position = hitPosition,
 			Distance = distance,
 			Type = hitType,
+			Normal = -billboardNormal, // Billboard face points toward player
 			ActorIndex = actorIndex
 		};
+	}
+	/// <summary>
+	/// Raycasts against the floor (Y=0) and ceiling (Y=TileHeight) planes.
+	/// Returns no hit if the ray is horizontal or the hit point is outside map bounds.
+	/// </summary>
+	private RayHit RaycastFloorCeiling(Vector3 rayOrigin, Vector3 rayDirection)
+	{
+		if (Mathf.Abs(rayDirection.Y) < 0.0001f)
+			return new RayHit { IsHit = false }; // Horizontal ray can't hit floor or ceiling
+		float mapWidth = _actionStage.MapAnalysis.Width * Constants.TileWidth,
+			mapDepth = _actionStage.MapAnalysis.Depth * Constants.TileWidth;
+		RayHit closestHit = new() { IsHit = false, Distance = float.MaxValue };
+		// Check floor (Y = 0, normal points up)
+		float tFloor = -rayOrigin.Y / rayDirection.Y;
+		if (tFloor > 0)
+		{
+			Vector3 hitPos = rayOrigin + rayDirection * tFloor;
+			if (hitPos.X >= 0 && hitPos.X < mapWidth && hitPos.Z >= 0 && hitPos.Z < mapDepth)
+				closestHit = new RayHit
+				{
+					IsHit = true,
+					Position = hitPos,
+					Distance = tFloor,
+					Type = HitType.Floor,
+					Normal = Vector3.Up,
+					ActorIndex = -1
+				};
+		}
+		// Check ceiling (Y = TileHeight, normal points down)
+		float tCeiling = (Constants.TileHeight - rayOrigin.Y) / rayDirection.Y;
+		if (tCeiling > 0 && tCeiling < closestHit.Distance)
+		{
+			Vector3 hitPos = rayOrigin + rayDirection * tCeiling;
+			if (hitPos.X >= 0 && hitPos.X < mapWidth && hitPos.Z >= 0 && hitPos.Z < mapDepth)
+				closestHit = new RayHit
+				{
+					IsHit = true,
+					Position = hitPos,
+					Distance = tCeiling,
+					Type = HitType.Ceiling,
+					Normal = Vector3.Down,
+					ActorIndex = -1
+				};
+		}
+		return closestHit;
 	}
 }

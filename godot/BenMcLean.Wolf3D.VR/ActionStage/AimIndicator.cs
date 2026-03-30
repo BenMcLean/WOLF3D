@@ -4,10 +4,12 @@ using Godot;
 namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
-/// Debug visualization for pixel-perfect aiming.
-/// In VR: displays a red sphere at each hand's aim point (one per controller).
-/// In flatscreen: displays a single red sphere at the camera's aim point.
-/// This is a temporary debug tool and will not be in the final game.
+/// Crosshair aim indicator for pixel-perfect aiming.
+/// In VR: displays a crosshair at each hand's aim point (one per controller).
+/// In flatscreen: displays a single crosshair at the camera's aim point.
+/// The crosshair lies parallel to the aimed surface, floats one pixel above it,
+/// and rotates around the surface normal to match the controller's orientation.
+/// Hides when the ray misses (e.g., pointing outside the level).
 /// </summary>
 public partial class AimIndicator : Node3D
 {
@@ -43,35 +45,34 @@ public partial class AimIndicator : Node3D
 	}
 
 	/// <summary>
-	/// Creates a red sphere that marks an aim point.
+	/// Creates a crosshair quad that marks an aim point on surfaces.
+	/// Size matches the 13x11 pixel crosshair with mode-13h non-square pixels.
 	/// </summary>
-	private MeshInstance3D CreateAimPoint(string name)
+	private static MeshInstance3D CreateAimPoint(string name)
 	{
-		SphereMesh sphereMesh = new()
+		QuadMesh crosshairMesh = new()
 		{
-			Radius = 0.05f, // 5cm sphere
-			Height = 0.1f,
-			RadialSegments = 8,
-			Rings = 4,
-		};
-		StandardMaterial3D material = new()
-		{
-			AlbedoColor = Colors.Red,
-			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			Size = new Vector2(13f * Constants.PixelWidth, 11f * Constants.PixelHeight),
 		};
 		MeshInstance3D aimPoint = new()
 		{
-			Mesh = sphereMesh,
-			MaterialOverride = material,
+			Mesh = crosshairMesh,
+			MaterialOverride = VRAssetManager.CrosshairMaterial,
 			Name = name,
 			Visible = false,
 		};
-		AddChild(aimPoint);
 		return aimPoint;
 	}
 
+	public override void _Ready()
+	{
+		AddChild(_aimPoint0);
+		if (_aimPoint1 is not null)
+			AddChild(_aimPoint1);
+	}
+
 	/// <summary>
-	/// Updates the aim point positions each frame by raycasting from each hand.
+	/// Updates the aim point positions and orientations each frame by raycasting from each hand.
 	/// </summary>
 	public override void _Process(double delta)
 	{
@@ -82,24 +83,54 @@ public partial class AimIndicator : Node3D
 			? _displayMode.GetHandPosition(0)
 			: _displayMode.Camera.GlobalPosition;
 		Hit0 = _aiming.Raycast(origin0, _displayMode.GetHandForward(0), cameraForward);
-		UpdateAimPoint(_aimPoint0, Hit0);
+		UpdateAimPoint(_aimPoint0, Hit0, 0);
 
 		// Hand 1 (left in VR only)
 		if (_aimPoint1 != null)
 		{
 			Hit1 = _aiming.Raycast(_displayMode.GetHandPosition(1), _displayMode.GetHandForward(1), cameraForward);
-			UpdateAimPoint(_aimPoint1, Hit1);
+			UpdateAimPoint(_aimPoint1, Hit1, 1);
 		}
 	}
 
-	private static void UpdateAimPoint(MeshInstance3D aimPoint, PixelPerfectAiming.AimHitResult hit)
+	/// <summary>
+	/// Updates a crosshair quad's visibility, position, and orientation for a raycast hit.
+	/// The crosshair is placed parallel to the hit surface, offset one pixel above it,
+	/// and rotated around the surface normal to match the controller's roll.
+	/// </summary>
+	private void UpdateAimPoint(MeshInstance3D aimPoint, PixelPerfectAiming.AimHitResult hit, int handIndex)
 	{
-		if (hit.IsHit)
+		if (!hit.IsHit)
 		{
-			aimPoint.Position = hit.Position;
-			aimPoint.Visible = true;
-		}
-		else
 			aimPoint.Visible = false;
+			return;
+		}
+		Vector3 normal = hit.Normal;
+		// Offset crosshair one pixel above the surface
+		Vector3 position = hit.Position + normal * Constants.PixelWidth;
+		// Orient crosshair parallel to the surface, with Z-rotation matching the controller.
+		// Project the controller's local up onto the surface plane to get crosshair up direction.
+		Node3D handNode = _displayMode.GetHandNode(handIndex);
+		Vector3 handUp = handNode.GlobalTransform.Basis.Y;
+		Vector3 crosshairUp = handUp - handUp.Dot(normal) * normal;
+		if (crosshairUp.LengthSquared() < 0.001f)
+		{
+			// Controller up is parallel to normal (e.g., pointing straight at floor).
+			// Fall back to world up projected onto the surface plane.
+			crosshairUp = Vector3.Up - Vector3.Up.Dot(normal) * normal;
+			if (crosshairUp.LengthSquared() < 0.001f)
+			{
+				// Normal is world up/down (floor/ceiling). Use world forward as fallback.
+				crosshairUp = Vector3.Forward - Vector3.Forward.Dot(normal) * normal;
+			}
+		}
+		crosshairUp = crosshairUp.Normalized();
+		// Build basis: X=right, Y=up, Z=face normal (quad faces in +Z local direction)
+		Vector3 crosshairRight = crosshairUp.Cross(normal);
+		aimPoint.GlobalTransform = new Transform3D(
+			new Basis(crosshairRight, crosshairUp, normal),
+			position
+		);
+		aimPoint.Visible = true;
 	}
 }

@@ -1,5 +1,6 @@
 using BenMcLean.Wolf3D.Assets;
 using BenMcLean.Wolf3D.Assets.Graphics;
+using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 using System;
@@ -38,6 +39,14 @@ public static class VRAssetManager
 	/// Contains 3D model geometry for VR weapons
 	/// </summary>
 	public static VoxelAtlas VoxelAtlas { get; private set; }
+	/// <summary>
+	/// Crosshair texture (13x11 pixels, white on transparent background).
+	/// </summary>
+	public static ImageTexture CrosshairTexture { get; private set; }
+	/// <summary>
+	/// Crosshair material for the aim indicator quad.
+	/// </summary>
+	public static StandardMaterial3D CrosshairMaterial { get; private set; }
 	/// <summary>
 	/// Cache of flipped opaque materials with horizontally mirrored UVs.
 	/// Only contains materials for door textures. Used with negative scale for correct handle orientation.
@@ -87,6 +96,20 @@ void fragment() {
 				VoxelAtlas = new VoxelAtlas(ms, _vswap.SpritesByName);
 		else
 			VoxelAtlas = null;
+		// Create crosshair texture (13x11 pixels, white on transparent background)
+		byte[] crosshairData = new byte[13 * 11 * 4]; // RGBA8888, all transparent
+		crosshairData = crosshairData.DrawCrosshair(width: 13);
+		Image crosshairImage = Image.CreateFromData(13, 11, false, Image.Format.Rgba8, crosshairData);
+		CrosshairTexture = ImageTexture.CreateFromImage(crosshairImage);
+		CrosshairMaterial = new StandardMaterial3D
+		{
+			AlbedoTexture = CrosshairTexture,
+			Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor,
+			AlphaScissorThreshold = 0.5f,
+			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			CullMode = BaseMaterial3D.CullModeEnum.Disabled, // Visible from both sides
+		};
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
 		// Only process pages that actually exist in the VSwap (skip null entries)
 		OpaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)
@@ -282,6 +305,10 @@ void fragment() {
 			foreach (ShaderMaterial material in _flippedOpaqueMaterials.Values)
 				material?.Dispose();
 		_flippedOpaqueMaterials?.Clear();
+		CrosshairMaterial?.Dispose();
+		CrosshairMaterial = null;
+		CrosshairTexture?.Dispose();
+		CrosshairTexture = null;
 		_vswap = null;
 		VoxelAtlas?.Dispose();
 		VoxelAtlas = null;
