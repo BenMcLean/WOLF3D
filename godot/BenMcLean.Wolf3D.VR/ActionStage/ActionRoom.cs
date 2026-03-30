@@ -356,7 +356,7 @@ void sky() {
 			// the same compensation used when entering the MenuRoom.
 			// In flatscreen mode this is a no-op.
 			// Panel direction vector for cameraRotationY: (sin θ, 0, -cos θ)
-			Vector3 spawnXZ = new Vector3(cameraPosition.X, 0f, cameraPosition.Z);
+			Vector3 spawnXZ = new(cameraPosition.X, 0f, cameraPosition.Z);
 			_displayMode.ResetPositionFacing(
 				spawnXZ + new Vector3(Mathf.Sin(cameraRotationY), 0f, -Mathf.Cos(cameraRotationY)),
 				spawnXZ);
@@ -669,10 +669,9 @@ void sky() {
 		if (collection == null)
 			return;
 
-		List<int> weaponNumbers = collection.Weapons.Values
+		List<int> weaponNumbers = [.. collection.Weapons.Values
 			.OrderBy(w => w.Number)
-			.Select(w => w.Number)
-			.ToList();
+			.Select(w => w.Number)];
 		if (weaponNumbers.Count == 0)
 			return;
 
@@ -820,7 +819,7 @@ void sky() {
 			return;
 
 		Vector3 handForward = _displayMode.GetHandForward(handIndex);
-		Vector3 horizontal = new Vector3(handForward.X, 0f, handForward.Z);
+		Vector3 horizontal = new(handForward.X, 0f, handForward.Z);
 		if (horizontal.LengthSquared() < 0.0001f)
 			return; // Pointing straight up or down
 

@@ -32,6 +32,24 @@ public static class Constants
 		QuarterPi = Mathf.Pi / 4f,
 		EighthPi = Mathf.Pi / 8f,
 		/// <summary>
+		/// Joystick locomotion speed in meters per second.
+		/// Wolf3D PLAYERSPEED = 3000 fixed-point units per tic at 70 tics/sec ≈ 7.8 m/s max.
+		/// </summary>
+		VRMovementSpeed = 8f,
+		/// <summary>
+		/// Run speed multiplier, matching the flatscreen Shift multiplier.
+		/// </summary>
+		RunSpeedMultiplier = 2.5f,
+		/// <summary>
+		/// Snap turn: 45-degree increments.
+		/// </summary>
+		SnapTurnAngle = QuarterPi,
+		SnapTurnThreshold = 0.5f,
+		/// <summary>
+		/// Smooth turn: continuous rotation at up to 180 degrees per second at full stick deflection.
+		/// </summary>
+		SmoothTurnSpeed = Mathf.Pi,
+		/// <summary>
 		/// The weapon sprites are not drawn to world scale so they need their own inferred scale.
 		/// The pistol in the PC release is the Walther P38.
 		/// The pistol is 9 pixels across.

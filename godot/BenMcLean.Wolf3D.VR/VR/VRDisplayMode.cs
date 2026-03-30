@@ -41,22 +41,7 @@ public class VRDisplayMode : IDisplayMode
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
 	private Vector3 _lastValidHmdPosition;
 
-	// Joystick locomotion speed in meters per second
-	// Wolf3D PLAYERSPEED = 3000 fixed-point units per tic at 70 tics/sec ≈ 7.8 m/s max
-	// Using a moderate speed for VR comfort
-	private const float VRMovementSpeed = 4f;
-
-	// Snap turn: 45-degree increments, threshold at half deflection
-	private const float SnapTurnAngle = Mathf.Pi / 4f;
-	private const float SnapTurnThreshold = 0.5f;
 	private bool _snapTurnReady = true;
-
-	// Smooth turn: continuous rotation at up to 90 degrees per second at full stick deflection
-	private const float SmoothTurnSpeed = Mathf.Pi / 2f;
-
-	// Run speed: 2.5× walk speed, matching flatscreen Shift multiplier
-	private const float RunSpeedMultiplier = 2.5f;
-
 	private bool _smoothTurnEnabled = false;
 	private bool _isRunning = false;
 	private bool _teleportModeActive = false;
@@ -205,7 +190,7 @@ public class VRDisplayMode : IDisplayMode
 		Vector3 forward = new Vector3(-_camera.GlobalBasis.Z.X, 0f, -_camera.GlobalBasis.Z.Z).Normalized();
 		Vector3 right = new Vector3(_camera.GlobalBasis.X.X, 0f, _camera.GlobalBasis.X.Z).Normalized();
 
-		float speed = _isRunning ? VRMovementSpeed * RunSpeedMultiplier : VRMovementSpeed;
+		float speed = _isRunning ? Constants.VRMovementSpeed * Constants.RunSpeedMultiplier : Constants.VRMovementSpeed;
 		Vector3 movement = (forward * stick.Y + right * stick.X) * speed * delta;
 		_origin.GlobalPosition += movement;
 	}
@@ -253,7 +238,7 @@ public class VRDisplayMode : IDisplayMode
 
 		float x = _rightController.GetVector2("primary").X;
 
-		if (Mathf.Abs(x) < SnapTurnThreshold)
+		if (Mathf.Abs(x) < Constants.SnapTurnThreshold)
 		{
 			_snapTurnReady = true;
 			return;
@@ -265,7 +250,7 @@ public class VRDisplayMode : IDisplayMode
 		_snapTurnReady = false;
 
 		// Snap by 45° in the direction of stick deflection
-		float angle = x > 0f ? -SnapTurnAngle : SnapTurnAngle;
+		float angle = x > 0f ? -Constants.SnapTurnAngle : Constants.SnapTurnAngle;
 
 		// Rotate around the HMD world position so the player's viewpoint doesn't shift
 		Vector3 hmdBefore = _camera.GlobalPosition;
@@ -285,10 +270,10 @@ public class VRDisplayMode : IDisplayMode
 
 		float x = _rightController.GetVector2("primary").X;
 
-		if (Mathf.Abs(x) < SnapTurnThreshold)
+		if (Mathf.Abs(x) < Constants.SnapTurnThreshold)
 			return;
 
-		float angle = -x * SmoothTurnSpeed * delta;
+		float angle = -x * Constants.SmoothTurnSpeed * delta;
 
 		// Rotate around the HMD world position so the player's viewpoint doesn't shift
 		Vector3 hmdBefore = _camera.GlobalPosition;
