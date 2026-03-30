@@ -420,6 +420,16 @@
 					<xs:documentation>Default vertical spacing between menu items in pixels (original uses 13). Individual menus can override this.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="WeaponSprite" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the VSwap sprite to display on VR controllers while the menu is active.
+						If VoxelWeapons is true on the VSwap element, uses the voxel model for this sprite;
+						otherwise uses WeaponHandMesh with the sprite texture.
+						Optional: if omitted, no weapon is shown on VR controllers in the menu.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -1172,6 +1182,18 @@
 						When true, page lengths in the VSWAP header are stored as uint (4 bytes)
 						instead of the standard ushort (2 bytes). Use for files with page sizes
 						exceeding 65535 bytes (e.g. 256×256 = 65536). Defaults to false.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="VoxelWeapons" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						When true, the built-in voxel weapon models are used for VR controller rendering.
+						Must be explicitly set to true to enable; omitting the attribute disables voxel weapons.
+						Only set this for games whose weapons match the standard Wolf3D arsenal.
+						Games with thematically different weapons (e.g. Super 3-D Noah's Ark uses slingshots)
+						should omit this attribute so VR controllers fall back to WeaponHandMesh sprites.
+						Defaults to false.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

@@ -166,7 +166,7 @@
 			<Picture Id="WeaponPic" Name="GUNPIC" X="256" Y="8" />
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0">
+		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
@@ -956,7 +956,7 @@ StartTicker("AvgTreasureRatio", tr)
 		<Imf Number="25" Name="VICMARCH_MUS" />
 		<Imf Number="26" Name="PACMAN_MUS" />
 	</Audio>
-	<VSwap Name="VSWAP.WL1" Sqrt="64" Scale="8" MipMaps="true">
+	<VSwap Name="VSWAP.WL1" Sqrt="64" Scale="8" MipMaps="true" VoxelWeapons="true">
 
 		<!-- GameplayWeapons Section (for simulation) -->
 		<!-- All weapon behavior defined here via Lua scripts - no hardcoding in C# -->

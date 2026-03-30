@@ -1,6 +1,7 @@
 using System;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
+using BenMcLean.Wolf3D.VR.ActionStage;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -304,6 +305,50 @@ public partial class MenuRoom : Node3D, IRoom
 		};
 		AddChild(_worldEnvironment);
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
+		SetupVRControllerWeapons();
+	}
+
+	/// <summary>
+	/// Attaches a static weapon to each VR controller hand for the menu.
+	/// Uses the sprite named by WeaponSprite in the Menus XML element.
+	/// Chooses VoxelWeapon when the voxel atlas is loaded, WeaponHandMesh otherwise.
+	/// No-ops if WeaponSprite is not set, the game has no VSwap, or no hand nodes exist.
+	/// </summary>
+	private void SetupVRControllerWeapons()
+	{
+		string spriteName = Shared.SharedAssetManager.CurrentGame?.XML
+			.Element("VgaGraph")?.Element("Menus")?.Attribute("WeaponSprite")?.Value;
+		if (string.IsNullOrEmpty(spriteName))
+			return;
+		Assets.Graphics.VSwap vswap = Shared.SharedAssetManager.CurrentGame?.VSwap;
+		if (vswap is null)
+			return;
+		if (VRAssetManager.SpriteTextures is null)
+			return;
+		if (!vswap.SpritesByName.TryGetValue(spriteName, out ushort pageNum))
+		{
+			GD.PrintErr($"Warning: WeaponSprite \"{spriteName}\" not found in VSwap sprite names");
+			return;
+		}
+		for (int hand = 0; hand <= 1; hand++)
+		{
+			if (_displayMode.GetHandNode(hand) is not Node3D handNode)
+				continue;
+			if (VRAssetManager.VoxelAtlas is not null)
+			{
+				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand)
+					{ Name = $"MenuVoxelWeapon{hand}" };
+				handNode.AddChild(voxelWeapon);
+				voxelWeapon.ShowModel(pageNum);
+			}
+			else
+			{
+				WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand)
+					{ Name = $"MenuWeaponHandMesh{hand}" };
+				handNode.AddChild(handMesh);
+				handMesh.ShowTexture(pageNum);
+			}
+		}
 	}
 
 	/// <summary>

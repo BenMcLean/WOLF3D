@@ -77,8 +77,16 @@ void fragment() {
 			?? throw new InvalidOperationException("SharedAssetManager.CurrentGame.VSwap is null. Load a game first.");
 		ScaleFactor = scaleFactor;
 		_flippedOpaqueMaterials = [];
-		using (MemoryStream ms = new(Godot.FileAccess.GetFileAsBytes("res://Resources/VOXELS.W3D")))
-			VoxelAtlas = new VoxelAtlas(ms, _vswap.SpritesByName);
+		bool useVoxelWeapons = bool.TryParse(
+			Shared.SharedAssetManager.CurrentGame.XML
+				.Element("VSwap")?.Attribute("VoxelWeapons")?.Value,
+			out bool xmlVoxelWeapons)
+			&& xmlVoxelWeapons;
+		if (useVoxelWeapons)
+			using (MemoryStream ms = new(Godot.FileAccess.GetFileAsBytes("res://Resources/VOXELS.W3D")))
+				VoxelAtlas = new VoxelAtlas(ms, _vswap.SpritesByName);
+		else
+			VoxelAtlas = null;
 		// Eagerly convert all opaque materials (walls and doors) using parallelization
 		// Only process pages that actually exist in the VSwap (skip null entries)
 		OpaqueMaterials = Enumerable.Range(0, _vswap.SpritePage)

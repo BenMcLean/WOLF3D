@@ -28,6 +28,9 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 
 	public override void _Ready()
 	{
+		// Must always process so _Process() keeps shader uniforms current even when
+		// the parent scene (e.g. MenuRoom) is paused during fade transitions.
+		ProcessMode = ProcessModeEnum.Always;
 		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://VR/voxel_atlas_raymarch.gdshader") };
 		if (voxelShader is null)
 		{
@@ -62,6 +65,13 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		sim.WeaponEquipped += OnWeaponEquipped;
 		sim.WeaponSpriteChanged += OnWeaponSpriteChanged;
 	}
+
+	/// <summary>
+	/// Display a fixed voxel model without subscribing to a simulator.
+	/// Use this for static contexts like the menu where no simulator is running.
+	/// Must be called after the node has been added to the scene tree (_Ready has run).
+	/// </summary>
+	public void ShowModel(ushort shape) => UpdateModel(shape);
 
 	/// <summary>Unsubscribe from simulator weapon events.</summary>
 	public void Unsubscribe()

@@ -64,6 +64,13 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 		sim.WeaponSpriteChanged += OnWeaponSpriteChanged;
 	}
 
+	/// <summary>
+	/// Display a fixed sprite texture without subscribing to a simulator.
+	/// Use this for static contexts like the menu where no simulator is running.
+	/// Must be called after the node has been added to the scene tree (_Ready has run).
+	/// </summary>
+	public void ShowTexture(ushort shape) => UpdateTexture(shape);
+
 	/// <summary>Unsubscribe from simulator weapon events.</summary>
 	public void Unsubscribe()
 	{
