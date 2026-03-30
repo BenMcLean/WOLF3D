@@ -52,7 +52,7 @@ public partial class AimIndicator : Node3D
 	{
 		QuadMesh crosshairMesh = new()
 		{
-			Size = new Vector2(13f * Constants.PixelWidth, 11f * Constants.PixelHeight),
+			Size = new Vector2(6.5f * Constants.PixelWidth, 5.5f * Constants.PixelHeight),
 		};
 		MeshInstance3D aimPoint = new()
 		{
