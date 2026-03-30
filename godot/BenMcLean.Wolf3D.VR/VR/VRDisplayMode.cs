@@ -152,10 +152,13 @@ public class VRDisplayMode : IDisplayMode
 		_leftController.ButtonPressed += name => HandButtonPressed?.Invoke(1, name);
 		_leftController.ButtonReleased += name => HandButtonReleased?.Invoke(1, name);
 
-		// Enable XR on the viewport
+		// Enable XR on the viewport and disable object picking, which is incompatible
+		// with stereo rendering and would trigger a warning every frame otherwise.
 		if (_parent is Node node)
 		{
-			node.GetViewport().UseXR = true;
+			Viewport vp = node.GetViewport();
+			vp.UseXR = true;
+			vp.PhysicsObjectPicking = false;
 		}
 	}
 
