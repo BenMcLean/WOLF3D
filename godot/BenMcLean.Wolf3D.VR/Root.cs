@@ -103,29 +103,31 @@ public partial class Root : Node3D
 		{
 			if (setupRoom.IsInitialLoad)
 			{
-				// Shareware assets loaded → show the game selection menu
-				string gamesDir = System.IO.Path.GetFullPath(@"..\..\games");
-				MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(gamesDir);
-				MenuRoom selectionRoom = new(DisplayMode)
+				// Shareware assets loaded → initialize VR materials, then show the game selection menu
+				try
 				{
-					MenuCollectionOverride = gameSelectMenu,
-					StartMenuOverride = "_GameSelect0",
-				};
-				TransitionTo(selectionRoom);
+					InitializeVRAssets();
+					string gamesDir = System.IO.Path.GetFullPath(@"..\..\games");
+					MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(gamesDir);
+					MenuRoom selectionRoom = new(DisplayMode)
+					{
+						MenuCollectionOverride = gameSelectMenu,
+						StartMenuOverride = "_GameSelect0",
+						MenuWeaponSprite = "SPR_PISTOLREADY",
+					};
+					TransitionTo(selectionRoom);
+				}
+				catch (Exception ex)
+				{
+					ExceptionHandler.HandleException(ex);
+				}
 			}
 			else
 			{
 				// Selected game assets loaded → initialize VR materials, then run OnStartup script
 				try
 				{
-					VSwap vswap = Shared.SharedAssetManager.CurrentGame.VSwap;
-					byte scaleFactor = byte.TryParse(
-						Shared.SharedAssetManager.CurrentGame.XML
-							.Element("VSwap")?.Attribute("Scale")?.Value,
-						out byte xmlScale)
-						? xmlScale
-						: (byte)Math.Max(1, 512 / vswap.TileSqrt);
-					VRAssetManager.Initialize(scaleFactor: scaleFactor);
+					InitializeVRAssets();
 					RunOnStartup();
 				}
 				catch (Exception ex)
@@ -230,6 +232,7 @@ public partial class Root : Node3D
 							PendingHighScoreScore = finalScore,
 							PendingHighScoreCompleted = completedLevel,
 							PendingHighScoreEpisode = episode,
+							MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 						};
 						_currentScene = gameOverRoom;
 						_pendingScene = null;
@@ -252,6 +255,7 @@ public partial class Root : Node3D
 				{
 					StartMenuOverride = request.MenuName ?? "LevelComplete",
 					LevelTransition = request,
+					MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 				};
 				// For Victory (episode complete), pass final score for high score check
 				if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
@@ -268,6 +272,32 @@ public partial class Root : Node3D
 				TransitionTo(intermissionRoom);
 			}
 		}
+	}
+
+	/// <summary>
+	/// Reads the WeaponSprite attribute from the current game's Menus XML element.
+	/// Returns null when no game is loaded or the attribute is absent.
+	/// </summary>
+	private static string CurrentGameMenuWeaponSprite() =>
+		Shared.SharedAssetManager.CurrentGame?.XML
+			.Element("VgaGraph")?.Element("Menus")?.Attribute("WeaponSprite")?.Value;
+
+	/// <summary>
+	/// Initializes VR rendering assets from the currently loaded game.
+	/// Reads the Scale attribute from the VSwap XML element, defaulting to a value
+	/// that produces 512-pixel textures. Called after every game load, including the
+	/// initial shareware load before the game selection menu is shown.
+	/// </summary>
+	private void InitializeVRAssets()
+	{
+		VSwap vswap = Shared.SharedAssetManager.CurrentGame.VSwap;
+		byte scaleFactor = byte.TryParse(
+			Shared.SharedAssetManager.CurrentGame.XML
+				.Element("VSwap")?.Attribute("Scale")?.Value,
+			out byte xmlScale)
+			? xmlScale
+			: (byte)Math.Max(1, 512 / vswap.TileSqrt);
+		VRAssetManager.Initialize(scaleFactor: scaleFactor);
 	}
 
 	/// <summary>
@@ -290,7 +320,7 @@ public partial class Root : Node3D
 				if (Shared.SharedAssetManager.CurrentGame.MenuCollection?.GetMenu(menuName) == null)
 					throw new InvalidOperationException(
 						$"LoadMenu(\"{menuName}\"): menu \"{menuName}\" not found.");
-				TransitionTo(new MenuRoom(DisplayMode) { StartMenuOverride = menuName });
+				TransitionTo(new MenuRoom(DisplayMode) { StartMenuOverride = menuName, MenuWeaponSprite = CurrentGameMenuWeaponSprite() });
 			},
 			StartLevelAction = mapIndex =>
 			{
@@ -325,6 +355,7 @@ public partial class Root : Node3D
 			StartMenuOverride = SharedAssetManager.CurrentGame?.MenuCollection?.PauseMenu,
 			SuspendedSimulator = _suspendedGame.Simulator,
 			SuspendedLevelIndex = _suspendedGame.Simulator.Inventory.GetValue("MapOn"),
+			MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 		};
 		_pendingScene = menuRoom;
 		StartFade(() =>

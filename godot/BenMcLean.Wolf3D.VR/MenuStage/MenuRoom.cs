@@ -124,6 +124,12 @@ public partial class MenuRoom : Node3D, IRoom
 	/// When set, used instead of SharedAssetManager.CurrentGame.MenuCollection.
 	/// </summary>
 	public Assets.Gameplay.MenuCollection MenuCollectionOverride { get; set; }
+	/// <summary>
+	/// VSwap sprite name to display on VR controllers while this menu is active.
+	/// Set by the creator (Root) from the game XML's WeaponSprite attribute, or directly
+	/// for procedural menus (e.g., the game selection screen). Null shows nothing.
+	/// </summary>
+	public string MenuWeaponSprite { get; set; }
 
 	/// <summary>
 	/// Set when the user selects a game from the game selection menu (via SelectGame() Lua call).
@@ -316,18 +322,16 @@ public partial class MenuRoom : Node3D, IRoom
 	/// </summary>
 	private void SetupVRControllerWeapons()
 	{
-		string spriteName = Shared.SharedAssetManager.CurrentGame?.XML
-			.Element("VgaGraph")?.Element("Menus")?.Attribute("WeaponSprite")?.Value;
-		if (string.IsNullOrEmpty(spriteName))
+		if (string.IsNullOrEmpty(MenuWeaponSprite))
 			return;
 		Assets.Graphics.VSwap vswap = Shared.SharedAssetManager.CurrentGame?.VSwap;
 		if (vswap is null)
 			return;
 		if (VRAssetManager.SpriteTextures is null)
 			return;
-		if (!vswap.SpritesByName.TryGetValue(spriteName, out ushort pageNum))
+		if (!vswap.SpritesByName.TryGetValue(MenuWeaponSprite, out ushort pageNum))
 		{
-			GD.PrintErr($"Warning: WeaponSprite \"{spriteName}\" not found in VSwap sprite names");
+			GD.PrintErr($"Warning: WeaponSprite \"{MenuWeaponSprite}\" not found in VSwap sprite names");
 			return;
 		}
 		for (int hand = 0; hand <= 1; hand++)
