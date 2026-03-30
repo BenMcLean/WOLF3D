@@ -89,6 +89,10 @@ vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
 // HMD centre position in world space, updated each frame by VoxelWeapon._Process.
 // Eye-independent so this varying is consistent across both VR eyes.
 uniform vec3 camera_world_center = vec3(0.0, 1.7, 0.0);
+// Half the interpupillary distance in metres. Used to compute the per-eye parallax margin
+// so the billboard covers the model from both eyes. 0.040 = 80 mm max IPD / 2, which
+// covers the full human IPD range conservatively.
+uniform float ipd_half = 0.040;
 // Inverse of MODEL_MATRIX, updated each frame by VoxelWeapon._Process.
 // Precomputed on the CPU to avoid a per-fragment inverse() call in the shader.
 uniform mat4 inv_model_matrix;
@@ -110,8 +114,16 @@ void vertex() {
 	vec3 up    = normalize(cross(to_cam, right));
 	// VoxelWeaponScale is uniform, so all three MODEL_MATRIX column lengths are equal.
 	float s = length(MODEL_MATRIX[0].xyz);
+	// Per-eye parallax margin: voxels at depth ±d from the billboard plane appear laterally
+	// shifted in each eye's view by (ipd_half × d) / dist. The worst case is d = half the
+	// model's longest dimension. This margin is added symmetrically so both eyes are covered.
+	float dist = length(camera_world_center - world_origin);
+	float model_half_depth = float(max(model_size.x, max(model_size.y, model_size.z))) * 0.5 * s;
+	float parallax_margin = (dist > 0.001) ? (ipd_half * model_half_depth / dist) : 0.0;
 	// VERTEX.xy are the quad local half-extents; s converts voxels to metres.
-	vertex_world = world_origin + right * (VERTEX.x * s) + up * (VERTEX.y * s);
+	vertex_world = world_origin
+		+ right * (VERTEX.x * s + sign(VERTEX.x) * parallax_margin)
+		+ up    * (VERTEX.y * s + sign(VERTEX.y) * parallax_margin);
 	// Override clip-space position with the billboarded world position.
 	// PROJECTION_MATRIX and VIEW_MATRIX are per-eye in VR multiview vertex shader.
 	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(vertex_world, 1.0);
