@@ -73,24 +73,48 @@ public partial class AimIndicator : Node3D
 
 	/// <summary>
 	/// Updates the aim point positions and orientations each frame by raycasting from each hand.
+	/// Skips the raycast entirely if the controller is out of bounds (outside vertical limits
+	/// or blocked from the player's head by a wall, door, or pushwall).
 	/// </summary>
 	public override void _Process(double delta)
 	{
 		Vector3 cameraForward = -_displayMode.Camera.GlobalTransform.Basis.Z;
+		Vector3 headPosition = _displayMode.Camera.GlobalPosition;
 
 		// Hand 0 (right in VR, camera in flatscreen)
 		Vector3 origin0 = _displayMode.IsVRActive
 			? _displayMode.GetHandPosition(0)
 			: _displayMode.Camera.GlobalPosition;
-		Hit0 = _aiming.Raycast(origin0, _displayMode.GetHandForward(0), cameraForward);
+		Hit0 = IsControllerAccessible(origin0, headPosition)
+			? _aiming.Raycast(origin0, _displayMode.GetHandForward(0), cameraForward)
+			: new PixelPerfectAiming.AimHitResult { IsHit = false };
 		UpdateAimPoint(_aimPoint0, Hit0, 0);
 
 		// Hand 1 (left in VR only)
 		if (_aimPoint1 != null)
 		{
-			Hit1 = _aiming.Raycast(_displayMode.GetHandPosition(1), _displayMode.GetHandForward(1), cameraForward);
+			Vector3 origin1 = _displayMode.GetHandPosition(1);
+			Hit1 = IsControllerAccessible(origin1, headPosition)
+				? _aiming.Raycast(origin1, _displayMode.GetHandForward(1), cameraForward)
+				: new PixelPerfectAiming.AimHitResult { IsHit = false };
 			UpdateAimPoint(_aimPoint1, Hit1, 1);
 		}
+	}
+
+	/// <summary>
+	/// Returns true if the controller position is reachable from the player's head:
+	/// within vertical bounds (between floor and ceiling) and with no wall, door,
+	/// or pushwall blocking the straight path from head to controller.
+	/// Scenery objects (actors, fixtures, bonuses) do not block this check.
+	/// In flatscreen mode the controller is the camera position itself, always accessible.
+	/// </summary>
+	private bool IsControllerAccessible(Vector3 controllerPosition, Vector3 headPosition)
+	{
+		if (!_displayMode.IsVRActive)
+			return true;
+		if (controllerPosition.Y < 0f || controllerPosition.Y > Constants.TileHeight)
+			return false;
+		return _aiming.HasClearPath(headPosition, controllerPosition);
 	}
 
 	/// <summary>
@@ -110,7 +134,7 @@ public partial class AimIndicator : Node3D
 		Vector3 position = hit.Position + normal * Constants.PixelWidth;
 		// Orient crosshair parallel to the surface, with Z-rotation matching the controller.
 		// Project the controller's local up onto the surface plane to get crosshair up direction.
-		Node3D handNode = _displayMode.GetHandNode(handIndex);
+		Node3D handNode = _displayMode.GetHandNode(handIndex) ?? _displayMode.Camera;
 		Vector3 handUp = handNode.GlobalTransform.Basis.Y;
 		Vector3 crosshairUp = handUp - handUp.Dot(normal) * normal;
 		if (crosshairUp.LengthSquared() < 0.001f)

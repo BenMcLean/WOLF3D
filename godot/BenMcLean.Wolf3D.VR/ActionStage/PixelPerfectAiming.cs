@@ -117,6 +117,29 @@ public class PixelPerfectAiming
 		};
 	}
 	/// <summary>
+	/// Returns true if there are no walls, closed or partially-open doors, or pushwalls
+	/// blocking the straight line from <paramref name="from"/> to <paramref name="to"/>.
+	/// Does not check floor or ceiling planes; use vertical bounds checks for those.
+	/// </summary>
+	public bool HasClearPath(Vector3 from, Vector3 to)
+	{
+		Vector3 diff = to - from;
+		float distance = diff.Length();
+		if (distance < 0.001f)
+			return true;
+		Vector3 direction = diff / distance;
+		RayHit wallHit = RaycastWalls(from, direction);
+		if (wallHit.IsHit && wallHit.Distance < distance)
+			return false;
+		RayHit doorHit = RaycastDoors(from, direction);
+		if (doorHit.IsHit && doorHit.Distance < distance)
+			return false;
+		RayHit pushWallHit = RaycastPushWalls(from, direction);
+		if (pushWallHit.IsHit && pushWallHit.Distance < distance)
+			return false;
+		return true;
+	}
+	/// <summary>
 	/// Raycasts against walls using a DDA-style grid traversal algorithm.
 	/// Based on the original Wolfenstein 3D raycasting algorithm.
 	/// </summary>
