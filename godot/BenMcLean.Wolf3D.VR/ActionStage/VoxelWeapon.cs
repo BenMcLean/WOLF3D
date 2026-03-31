@@ -18,9 +18,16 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// </summary>
 /// <param name="voxelAtlas">Voxel atlas from VRAssetManager.VoxelAtlas.</param>
 /// <param name="slotIndex">Weapon slot index this hand displays (0 = left/primary, 1 = right).</param>
-public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
+/// <param name="gripNode">
+/// Optional grip-pose controller node (from IDisplayMode.GetGripHandNode).
+/// When supplied, VoxelWeapon's local position is updated each frame so its origin
+/// (where the grip voxel sits) tracks the grip pose origin in world space, while the
+/// weapon's orientation is inherited from its parent (aim-pose controller).
+/// </param>
+public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gripNode = null) : Node3D
 {
 	private readonly VoxelAtlas _voxelAtlas = voxelAtlas ?? throw new ArgumentNullException(nameof(voxelAtlas));
+	private readonly Node3D _gripNode = gripNode;
 	private ShaderMaterial _material;
 	private QuadMesh _quadMesh;
 	private MeshInstance3D _meshInstance;
@@ -117,12 +124,15 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 		// Scale converts voxels → metres.
 		float diagonal = Mathf.Sqrt(xyz[3] * xyz[3] + xyz[4] * xyz[4] + xyz[5] * xyz[5]);
 		_quadMesh.Size = new Vector2(diagonal + 1f, diagonal + 1f);
-		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at the controller's grip point (local origin).
-		// The Ry(+π/2) swizzle in the shader maps: controller X ↔ -MvY, controller Y ↔ MvZ, controller Z ↔ MvX.
-		// Grip voxel center offset from mesh centre, converted to parent (controller) space:
-		//   controller X = +(gripMvY + 0.5 - sizeY / 2) × scale   [positive factor due to sign flip]
-		//   controller Y = -(gripMvZ + 0.5 - sizeZ / 2) × scale
-		//   controller Z = -(gripMvX + 0.5 - sizeX / 2) × scale
+		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at this node's local origin.
+		// VoxelWeapon is a child of the aim controller (no rotation offset), so _meshInstance.Position
+		// is expressed in aim-controller space. _Process moves VoxelWeapon itself to the grip pose
+		// origin each frame, so the grip voxel ends up at the physical hand position in world space.
+		// The Ry(+π/2) swizzle in the shader maps: controller X ↔ –MvY, controller Y ↔ MvZ, controller Z ↔ MvX.
+		// Grip voxel center offset from mesh centre, converted to parent (aim-controller) space:
+		//   controller X = +(gripMvY + 0.5 – sizeY / 2) × scale   [positive factor due to sign flip]
+		//   controller Y = –(gripMvZ + 0.5 – sizeZ / 2) × scale
+		//   controller Z = –(gripMvX + 0.5 – sizeX / 2) × scale
 		if (xyz.Length >= 9)
 		{
 			Vector3 scale = _meshInstance.Scale;
@@ -137,6 +147,11 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex) : Node3D
 	public override void _Process(double delta)
 	{
 		if (_material is null) return;
+		// Move this node's origin to the grip pose position each frame so the grip voxel
+		// aligns with the physical hand grip, while orientation is inherited from the aim
+		// controller (parent). This decouples position (grip pose) from orientation (aim pose).
+		if (_gripNode is not null && GetParent() is Node3D aimParent)
+			Position = aimParent.GlobalTransform.AffineInverse() * _gripNode.GlobalPosition;
 		Camera3D camera = GetViewport().GetCamera3D();
 		if (camera is not null)
 			_material.SetShaderParameter("camera_world_center", camera.GlobalPosition);

@@ -336,20 +336,20 @@ public partial class MenuRoom : Node3D, IRoom
 		}
 		for (int hand = 0; hand <= 1; hand++)
 		{
-			if (_displayMode.GetHandNode(hand) is not Node3D handNode)
+			if (_displayMode.GetHandNode(hand) is not Node3D aimNode)
 				continue;
 			if (VRAssetManager.VoxelAtlas is not null)
 			{
-				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand)
+				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand))
 					{ Name = $"MenuVoxelWeapon{hand}" };
-				handNode.AddChild(voxelWeapon);
+				aimNode.AddChild(voxelWeapon);
 				voxelWeapon.ShowModel(pageNum);
 			}
 			else
 			{
 				WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand)
 					{ Name = $"MenuWeaponHandMesh{hand}" };
-				handNode.AddChild(handMesh);
+				aimNode.AddChild(handMesh);
 				handMesh.ShowTexture(pageNum);
 			}
 		}

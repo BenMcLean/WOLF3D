@@ -34,6 +34,8 @@ public class VRDisplayMode : IDisplayMode
 	private XRCamera3D _camera;
 	private XRController3D _leftController;
 	private XRController3D _rightController;
+	private XRController3D _leftGripController;
+	private XRController3D _rightGripController;
 	private Node _parent;
 	private readonly VRPlayMode _playMode;
 
@@ -129,6 +131,24 @@ public class VRDisplayMode : IDisplayMode
 			Pose = "aim",
 		};
 		_origin.AddChild(_rightController);
+
+		// Grip-pose controllers: same tracker, grip pose. Used only for VoxelWeapon attachment.
+		// Button events and thumbstick input remain on the aim controllers.
+		_leftGripController = new XRController3D
+		{
+			Name = "LeftGripController",
+			Tracker = "left_hand",
+			Pose = "grip",
+		};
+		_origin.AddChild(_leftGripController);
+
+		_rightGripController = new XRController3D
+		{
+			Name = "RightGripController",
+			Tracker = "right_hand",
+			Pose = "grip",
+		};
+		_origin.AddChild(_rightGripController);
 
 		// Connect to controller button signals for event-driven input
 		// Hand 0 = right controller, hand 1 = left controller
@@ -350,6 +370,8 @@ public class VRDisplayMode : IDisplayMode
 		// Right thumbstick for turning
 		return _rightController.GetVector2("primary");
 	}
+
+	public Node3D GetGripHandNode(int handIndex) => handIndex == 1 ? _leftGripController : _rightGripController;
 
 	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator)
 	{

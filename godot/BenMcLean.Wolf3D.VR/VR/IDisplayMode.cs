@@ -41,12 +41,20 @@ public interface IDisplayMode
 	Vector3 GetHandForward(int handIndex);
 
 	/// <summary>
-	/// Gets the scene node for the specified hand.
+	/// Gets the scene node for the specified hand (aim pose).
 	/// In VR: the XRController3D for that hand. In flatscreen: null (no controller node).
 	/// Attach WeaponHandMesh as a child to position it with the hand.
 	/// </summary>
 	/// <param name="handIndex">0 = right/primary, 1 = left/secondary</param>
 	Node3D GetHandNode(int handIndex);
+
+	/// <summary>
+	/// Gets the grip-pose scene node for the specified hand.
+	/// In VR: an XRController3D tracking the grip pose for that hand. In flatscreen: null.
+	/// Attach VoxelWeapon as a child — the grip origin voxel aligns with this node's origin.
+	/// </summary>
+	/// <param name="handIndex">0 = right/primary, 1 = left/secondary</param>
+	Node3D GetGripHandNode(int handIndex);
 
 	/// <summary>
 	/// The camera node (XRCamera3D or Camera3D).

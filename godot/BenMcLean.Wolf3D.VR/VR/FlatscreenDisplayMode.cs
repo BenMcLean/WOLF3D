@@ -136,4 +136,7 @@ public class FlatscreenDisplayMode : IDisplayMode
 
 	// Teleportation only applies in VR
 	public bool IsTeleportModeActive => false;
+
+	// Grip controller nodes only exist in VR
+	public Node3D GetGripHandNode(int handIndex) => null;
 }

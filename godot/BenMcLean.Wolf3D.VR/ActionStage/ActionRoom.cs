@@ -366,17 +366,17 @@ void sky() {
 			// Hand 0 = right controller (slot 0), hand 1 = left controller (slot 1).
 			if (_displayMode.IsVRActive)
 				for (int hand = 0; hand <= 1; hand++)
-					if (_displayMode.GetHandNode(hand) is Node3D handNode)
+					if (_displayMode.GetHandNode(hand) is Node3D aimNode)
 						if (VRAssetManager.VoxelAtlas is not null)
 						{
-							VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand) { Name = $"VoxelWeapon{hand}" };
-							handNode.AddChild(voxelWeapon);
+							VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand)) { Name = $"VoxelWeapon{hand}" };
+							aimNode.AddChild(voxelWeapon);
 							voxelWeapon.Subscribe(_simulatorController.Simulator);
 						}
 						else
 						{
 							WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand) { Name = $"WeaponHandMesh{hand}" };
-							handNode.AddChild(handMesh);
+							aimNode.AddChild(handMesh);
 							handMesh.Subscribe(_simulatorController.Simulator);
 						}
 			_simulatorController.Simulator.EmitWeaponState();
