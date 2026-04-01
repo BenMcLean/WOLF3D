@@ -2448,7 +2448,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (actor.Flags.HasFlag(ActorFlags.Ambush)) continue;
 
 			short actorArea = mapAnalysis.GetAreaNumber(actor.TileX, actor.TileY);
-			if (actorArea < 0 || !connectedAreas.Contains((ushort)actorArea)) continue;
+			if (actorArea >= 0)
+			{
+				if (!connectedAreas.Contains((ushort)actorArea)) continue;
+			}
+			else
+			{
+				// Actor is in a doorframe - hear if either area the door connects is reachable.
+				Door? actorDoor = doors.FirstOrDefault(d => d.TileX == actor.TileX && d.TileY == actor.TileY);
+				if (actorDoor is null) continue;
+				bool doorConnected = (actorDoor.Area1 >= 0 && connectedAreas.Contains((ushort)actorDoor.Area1))
+					|| (actorDoor.Area2 >= 0 && connectedAreas.Contains((ushort)actorDoor.Area2));
+				if (!doorConnected) continue;
+			}
 
 			// WL_STATE.C:SightPlayer - ob->temp2 = 1 + US_RndT()/4
 			actor.ReactionTimer = (short)(1 + rng.Next(256) / 4);
