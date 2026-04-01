@@ -59,6 +59,7 @@ public struct MenuInputState
 /// <summary>
 /// Interface for menu input providers.
 /// Abstracts keyboard, mouse, gamepad, and VR controller input.
+/// Includes both directional navigation and pointer (crosshair/ray) state in one interface.
 /// </summary>
 public interface IMenuInput
 {
@@ -70,7 +71,7 @@ public interface IMenuInput
 	MenuInputState GetState();
 	/// <summary>
 	/// Update input state (called each frame before GetState).
-	/// Allows input implementation to perform per-frame updates.
+	/// Allows input implementation to perform per-frame updates, including pointer tracking.
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds</param>
 	void Update(float delta);
@@ -80,4 +81,21 @@ public interface IMenuInput
 	/// </summary>
 	/// <param name="itemBounds">Array of bounding rectangles for each menu item (in viewport coordinates 320x200)</param>
 	void SetMenuItemBounds(Rect2[] itemBounds);
+	/// <summary>
+	/// Gets the state of the primary pointer (mouse or right VR controller ray).
+	/// Returns an inactive default when pointing is not supported by this input implementation.
+	/// </summary>
+	PointerState PrimaryPointer { get; }
+	/// <summary>
+	/// Gets the state of the secondary pointer (left VR controller ray).
+	/// Returns an inactive default in flatscreen and keyboard-only modes.
+	/// </summary>
+	PointerState SecondaryPointer { get; }
+	/// <summary>
+	/// Handle an input event. Called from the scene node's _Input override.
+	/// Used for event-driven input (e.g., mouse button presses).
+	/// No-op for implementations that use polling (keyboard, VR).
+	/// </summary>
+	/// <param name="event">The input event to process.</param>
+	void HandleInput(InputEvent @event);
 }

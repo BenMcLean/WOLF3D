@@ -22,13 +22,12 @@ public class MenuManager
 	private readonly Config _config;
 	private readonly LuaScriptEngine _luaEngine;
 	private readonly MenuRenderer _renderer;
-	private readonly IMenuInput _input;
+	private IMenuInput _input;
 	private readonly MenuScriptContext _scriptContext;
 	private readonly ILogger _logger;
 	private string _currentMenuName;
 	private int _selectedItemIndex = 0;
 	private string _currentMenuMusic = null;
-	private IMenuPointerProvider _pointerProvider;
 	private Rect2[] _currentMenuItemBounds = [];
 	private ClickablePictureBounds[] _currentClickablePictureBounds = [];
 	private MenuSequence _activeSequence;
@@ -88,10 +87,12 @@ public class MenuManager
 	/// </summary>
 	public MenuRenderer Renderer => _renderer;
 	/// <summary>
-	/// Sets the pointer provider for crosshair display.
+	/// Replaces the active input implementation.
+	/// Call after construction to inject a platform-specific input source
+	/// (e.g., VRMenuInput or FlatscreenMenuInput) in place of the default KeyboardMenuInput.
 	/// </summary>
-	/// <param name="provider">The pointer provider to use, or null to disable crosshairs.</param>
-	public void SetPointerProvider(IMenuPointerProvider provider) => _pointerProvider = provider;
+	/// <param name="input">The new input implementation to use.</param>
+	public void SetInput(IMenuInput input) => _input = input;
 	/// <summary>
 	/// Creates a new MenuManager.
 	/// </summary>
@@ -425,26 +426,17 @@ public class MenuManager
 			return;
 		// Update animated pictures (e.g., BJ breathing on intermission screen)
 		_renderer.UpdateAnimations(delta);
-		// Update pointer provider and crosshairs
-		if (_pointerProvider != null)
-		{
-			_pointerProvider.Update(delta);
-			_renderer.SetPointers(_pointerProvider.PrimaryPointer, _pointerProvider.SecondaryPointer);
-			_renderer.UpdateCrosshairs();
-		}
-		// Update input
+		// Update input (includes pointer tracking for mouse/VR implementations)
 		_input.Update(delta);
+		_renderer.SetPointers(_input.PrimaryPointer, _input.SecondaryPointer);
+		_renderer.UpdateCrosshairs();
 		MenuInputState inputState = _input.GetState();
 		// Check for "any button" from pointers as well
-		bool anyButtonPressed = inputState.AnyButtonPressed;
-		if (_pointerProvider is not null)
-		{
-			Input.PointerState primary = _pointerProvider.PrimaryPointer,
-				secondary = _pointerProvider.SecondaryPointer;
-			if (primary.SelectPressed || primary.CancelPressed ||
-				secondary.SelectPressed || secondary.CancelPressed)
-				anyButtonPressed = true;
-		}
+		Input.PointerState primary = _input.PrimaryPointer,
+			secondary = _input.SecondaryPointer;
+		bool anyButtonPressed = inputState.AnyButtonPressed ||
+			primary.SelectPressed || primary.CancelPressed ||
+			secondary.SelectPressed || secondary.CancelPressed;
 		// If a presentation sequence is active, process it instead of normal menu input
 		if (_activeSequence is not null && !_activeSequence.IsComplete)
 		{
@@ -476,8 +468,6 @@ public class MenuManager
 		// Handle active modal (blocks normal menu input while pending)
 		if (_activeModal is not null && _activeModal.IsPending)
 		{
-			Input.PointerState primary = _pointerProvider?.PrimaryPointer ?? default,
-				secondary = _pointerProvider?.SecondaryPointer ?? default;
 			_activeModal.HandleInput(inputState, primary, secondary);
 			if (!_activeModal.IsPending)
 				ResolveModal();
@@ -485,8 +475,7 @@ public class MenuManager
 		}
 
 		// Normal interactive menu mode
-		if (_pointerProvider is not null)
-			HandlePointerHover(menuDef);
+		HandlePointerHover(menuDef);
 		// Handle navigation (use _currentVisibleItems so invisible items are skipped)
 		if (inputState.UpPressed && _selectedItemIndex > 0)
 		{
@@ -555,8 +544,8 @@ public class MenuManager
 	/// <param name="menuDef">Current menu definition</param>
 	private void HandlePointerHover(MenuDefinition menuDef)
 	{
-		Input.PointerState primary = _pointerProvider.PrimaryPointer,
-			secondary = _pointerProvider.SecondaryPointer;
+		Input.PointerState primary = _input.PrimaryPointer,
+			secondary = _input.SecondaryPointer;
 
 		// Check for cancel from either pointer (works regardless of position)
 		if (primary.CancelPressed || secondary.CancelPressed)

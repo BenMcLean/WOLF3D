@@ -5,14 +5,15 @@ using Godot;
 namespace BenMcLean.Wolf3D.VR.MenuStage;
 
 /// <summary>
-/// Pointer provider for VR mode.
-/// Tracks VR controller ray intersections with the menu panel.
-/// Uses event-driven input from XRController3D button signals.
+/// Full menu input implementation for VR mode.
+/// Combines keyboard passthrough with VR controller pointing (ray cast), thumbstick
+/// directional navigation, and face button (A/B/X/Y) select/cancel.
 /// Hand 0 = right controller, hand 1 = left controller.
 /// </summary>
-public class VRMenuPointerProvider : IMenuPointerProvider
+public class VRMenuInput : IMenuInput
 {
 	private readonly IDisplayMode _displayMode;
+	private readonly KeyboardMenuInput _keyboard = new();
 	private PointerState _primaryPointer;
 	private PointerState _secondaryPointer;
 	private MeshInstance3D _menuPanel;
@@ -25,6 +26,13 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	private bool _selectPressed1;
 	private bool _cancelPressed1;
 
+	// Thumbstick navigation state
+	private bool _thumbstickUp;
+	private bool _thumbstickDown;
+	private float _thumbstickCooldown;
+	private const float ThumbstickThreshold = 0.5f;
+	private const float ThumbstickRepeatDelay = 0.3f;
+
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
 
@@ -32,10 +40,10 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	public PointerState SecondaryPointer => _secondaryPointer;
 
 	/// <summary>
-	/// Creates a new VR menu pointer provider.
+	/// Creates a new VR menu input.
 	/// </summary>
 	/// <param name="displayMode">The VR display mode for accessing controller data.</param>
-	public VRMenuPointerProvider(IDisplayMode displayMode)
+	public VRMenuInput(IDisplayMode displayMode)
 	{
 		_displayMode = displayMode;
 		_displayMode.HandButtonPressed += OnHandButtonPressed;
@@ -53,13 +61,15 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	{
 		if (handIndex == 0)
 		{
-			if (buttonName == "trigger_click") _selectPressed0 = true;
-			else if (buttonName == "grip_click") _cancelPressed0 = true;
+			// Trigger or A button → select; grip or B button → cancel
+			if (buttonName is "trigger_click" or "ax_button") _selectPressed0 = true;
+			else if (buttonName is "grip_click" or "by_button") _cancelPressed0 = true;
 		}
 		else if (handIndex == 1)
 		{
-			if (buttonName == "trigger_click") _selectPressed1 = true;
-			else if (buttonName == "grip_click") _cancelPressed1 = true;
+			// Trigger or X button → select; grip or Y button → cancel
+			if (buttonName is "trigger_click" or "ax_button") _selectPressed1 = true;
+			else if (buttonName is "grip_click" or "by_button") _cancelPressed1 = true;
 		}
 	}
 
@@ -77,18 +87,45 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 	}
 
 	/// <inheritdoc/>
-	/// <remarks>
-	/// VR controller input comes through IDisplayMode events, not InputEvent.
-	/// This method is a no-op for VR.
-	/// </remarks>
-	public void HandleInput(InputEvent @event)
-	{
-		// VR input comes through IDisplayMode button events
-	}
+	/// <remarks>VR input is event-driven via IDisplayMode; this is a no-op.</remarks>
+	public void HandleInput(InputEvent @event) { }
 
 	/// <inheritdoc/>
 	public void Update(float delta)
 	{
+		_keyboard.Update(delta);
+
+		// Advance thumbstick repeat cooldown
+		if (_thumbstickCooldown > 0)
+			_thumbstickCooldown -= delta;
+
+		// Compute thumbstick directional navigation from left stick Y
+		_thumbstickUp = false;
+		_thumbstickDown = false;
+		if (_displayMode.IsVRActive)
+		{
+			float stickY = _displayMode.GetMovementInput().Y;
+			if (Mathf.Abs(stickY) < ThumbstickThreshold)
+			{
+				// Stick returned to centre — reset cooldown so next deflection fires immediately
+				_thumbstickCooldown = 0;
+			}
+			else if (_thumbstickCooldown <= 0)
+			{
+				// Stick.Y > 0 = pushed forward = up in menu
+				if (stickY > ThumbstickThreshold)
+				{
+					_thumbstickUp = true;
+					_thumbstickCooldown = ThumbstickRepeatDelay;
+				}
+				else if (stickY < -ThumbstickThreshold)
+				{
+					_thumbstickDown = true;
+					_thumbstickCooldown = ThumbstickRepeatDelay;
+				}
+			}
+		}
+
 		if (_menuPanel == null || !_displayMode.IsVRActive)
 		{
 			_primaryPointer = new PointerState { IsActive = false };
@@ -96,7 +133,7 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 			return;
 		}
 
-		// Capture and clear button states (they were set by event handlers)
+		// Capture and clear button states (set by event handler)
 		bool select0 = _selectPressed0, cancel0 = _cancelPressed0;
 		bool select1 = _selectPressed1, cancel1 = _cancelPressed1;
 		_selectPressed0 = false;
@@ -118,6 +155,33 @@ public class VRMenuPointerProvider : IMenuPointerProvider
 			select1,
 			cancel1);
 	}
+
+	/// <inheritdoc/>
+	public MenuInputState GetState()
+	{
+		MenuInputState keyState = _keyboard.GetState();
+		bool select = keyState.SelectPressed;
+		bool cancel = keyState.CancelPressed;
+		bool up = keyState.UpPressed || _thumbstickUp;
+		bool down = keyState.DownPressed || _thumbstickDown;
+		bool left = keyState.LeftPressed;
+		bool right = keyState.RightPressed;
+		return new MenuInputState
+		{
+			CursorPosition = keyState.CursorPosition,
+			SelectPressed = select,
+			CancelPressed = cancel,
+			UpPressed = up,
+			DownPressed = down,
+			LeftPressed = left,
+			RightPressed = right,
+			AnyButtonPressed = select || cancel || up || down || left || right,
+			HoveredItemIndex = -1
+		};
+	}
+
+	/// <inheritdoc/>
+	public void SetMenuItemBounds(Rect2[] itemBounds) => _keyboard.SetMenuItemBounds(itemBounds);
 
 	/// <summary>
 	/// Casts a ray from a controller and checks for intersection with the menu panel.

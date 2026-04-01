@@ -4,6 +4,7 @@ namespace BenMcLean.Wolf3D.Shared.Menu.Input;
 
 /// <summary>
 /// State of a single pointer (mouse or VR controller).
+/// Used by IMenuInput implementations that support pointing (flatscreen mouse, VR ray cast).
 /// </summary>
 public struct PointerState
 {
@@ -24,34 +25,4 @@ public struct PointerState
 	/// True if cancel button was just pressed this frame (RMB / VR grip).
 	/// </summary>
 	public bool CancelPressed;
-}
-
-/// <summary>
-/// Interface for providing pointer positions to the menu system.
-/// Supports up to two pointers for VR dual-controller input.
-/// </summary>
-public interface IMenuPointerProvider
-{
-	/// <summary>
-	/// Gets the state of the primary pointer.
-	/// In flatscreen mode: mouse position.
-	/// In VR mode: right controller ray intersection.
-	/// </summary>
-	PointerState PrimaryPointer { get; }
-	/// <summary>
-	/// Gets the state of the secondary pointer.
-	/// In flatscreen mode: always inactive.
-	/// In VR mode: left controller ray intersection.
-	/// </summary>
-	PointerState SecondaryPointer { get; }
-	/// <summary>
-	/// Update pointer positions. Called each frame.
-	/// </summary>
-	/// <param name="delta">Time since last frame in seconds.</param>
-	void Update(float delta);
-	/// <summary>
-	/// Handle an input event. Called from _Input for event-driven input processing.
-	/// </summary>
-	/// <param name="event">The input event to process.</param>
-	void HandleInput(InputEvent @event);
 }

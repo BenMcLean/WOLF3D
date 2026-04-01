@@ -159,7 +159,9 @@ public static class Program
 				int ax = placement.X + rotated.X + globalSize.X / 2,
 					ay = placement.Y + rotated.Y + globalSize.Y / 2,
 					az = placement.Z + rotated.Z + globalSize.Z / 2;
-				atlas[ax + ay * width + az * width * depth] = (byte)voxel.ColorIndex;
+				// VoxReader.Voxel.ColorIndex is 0-indexed (MV palette index minus 1).
+				// Add 1 to match the shifted palette (Colors[0..254] at palette[1..255]).
+				atlas[ax + ay * width + az * width * depth] = (byte)(voxel.ColorIndex + 1);
 			}
 		});
 		return atlas;

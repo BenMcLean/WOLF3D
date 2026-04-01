@@ -1,6 +1,7 @@
 using System;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
+using BenMcLean.Wolf3D.Shared.Menu.Input;
 using BenMcLean.Wolf3D.VR.ActionStage;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
@@ -22,8 +23,7 @@ public partial class MenuRoom : Node3D, IRoom
 	private ColorRect _marginBackground;
 	private WorldEnvironment _worldEnvironment;
 	private bool _playerOriented;
-	private VRMenuPointerProvider _vrPointerProvider;
-	private FlatscreenMenuPointerProvider _flatscreenPointerProvider;
+	private IMenuInput _menuInput;
 
 	// Menu panel sizing in VR (in meters)
 	private const float PanelWidth = Constants.TileWidth;                // One tile wide
@@ -292,10 +292,11 @@ public partial class MenuRoom : Node3D, IRoom
 		AddChild(_menuPanel);
 		_menuPanel.GlobalPosition = MenuPanelWorldPos;
 
-		// Create VR pointer provider for crosshair tracking
-		_vrPointerProvider = new VRMenuPointerProvider(_displayMode);
-		_vrPointerProvider.SetMenuPanel(_menuPanel, PanelWidth, PanelHeight);
-		_menuManager.SetPointerProvider(_vrPointerProvider);
+		// Create VR menu input for crosshair tracking, thumbstick navigation, and face buttons
+		VRMenuInput vrMenuInput = new(_displayMode);
+		vrMenuInput.SetMenuPanel(_menuPanel, PanelWidth, PanelHeight);
+		_menuInput = vrMenuInput;
+		_menuManager.SetInput(_menuInput);
 
 		// Add simple environment lighting for the VR space
 		_worldEnvironment = new()
@@ -414,10 +415,11 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
 		OnBordColorChanged(_menuManager.Renderer.CurrentBordColor);
 
-		// Create flatscreen pointer provider for mouse crosshair tracking
-		_flatscreenPointerProvider = new FlatscreenMenuPointerProvider();
-		_flatscreenPointerProvider.SetMenuDisplayArea(menuPosition, menuSize);
-		_menuManager.SetPointerProvider(_flatscreenPointerProvider);
+		// Create flatscreen menu input for mouse crosshair tracking
+		FlatscreenMenuInput flatscreenMenuInput = new();
+		flatscreenMenuInput.SetMenuDisplayArea(menuPosition, menuSize);
+		_menuInput = flatscreenMenuInput;
+		_menuManager.SetInput(_menuInput);
 	}
 
 	public override void _ExitTree()
@@ -429,7 +431,7 @@ public partial class MenuRoom : Node3D, IRoom
 		if (_displayMode.IsVRActive)
 		{
 			_displayMode.HandButtonPressed -= OnHandButtonPressed;
-			_vrPointerProvider?.Dispose();
+			(_menuInput as VRMenuInput)?.Dispose();
 		}
 	}
 
@@ -472,9 +474,8 @@ public partial class MenuRoom : Node3D, IRoom
 
 	public override void _Input(InputEvent @event)
 	{
-		// Forward input events to the active pointer provider
-		_flatscreenPointerProvider?.HandleInput(@event);
-		_vrPointerProvider?.HandleInput(@event);
+		// Forward input events to the active input implementation
+		_menuInput?.HandleInput(@event);
 	}
 
 	public override void _Process(double delta)

@@ -4,12 +4,12 @@ using Godot;
 namespace BenMcLean.Wolf3D.VR.MenuStage;
 
 /// <summary>
-/// Pointer provider for flatscreen mode.
-/// Tracks mouse position and converts to menu viewport coordinates.
-/// Uses event-driven input for button detection.
+/// Full menu input implementation for flatscreen mode.
+/// Combines keyboard navigation with mouse pointer tracking and click detection.
 /// </summary>
-public class FlatscreenMenuPointerProvider : IMenuPointerProvider
+public class FlatscreenMenuInput : IMenuInput
 {
+	private readonly KeyboardMenuInput _keyboard = new();
 	private PointerState _primaryPointer;
 	private Vector2 _menuPosition;
 	private Vector2 _menuSize;
@@ -49,6 +49,8 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 	/// <inheritdoc/>
 	public void Update(float delta)
 	{
+		_keyboard.Update(delta);
+
 		// Get mouse position in window coordinates
 		Vector2I screenPos = DisplayServer.MouseGetPosition();
 		Vector2I windowPos = DisplayServer.WindowGetPosition();
@@ -64,7 +66,7 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 		if (mousePos.X < _menuPosition.X || mousePos.X >= _menuPosition.X + _menuSize.X ||
 			mousePos.Y < _menuPosition.Y || mousePos.Y >= _menuPosition.Y + _menuSize.Y)
 		{
-			// Mouse is outside menu area - still report cancel press
+			// Mouse is outside menu area — still report cancel press
 			_primaryPointer = new PointerState
 			{
 				IsActive = false,
@@ -88,4 +90,10 @@ public class FlatscreenMenuPointerProvider : IMenuPointerProvider
 			CancelPressed = cancelPressed
 		};
 	}
+
+	/// <inheritdoc/>
+	public MenuInputState GetState() => _keyboard.GetState();
+
+	/// <inheritdoc/>
+	public void SetMenuItemBounds(Rect2[] itemBounds) => _keyboard.SetMenuItemBounds(itemBounds);
 }

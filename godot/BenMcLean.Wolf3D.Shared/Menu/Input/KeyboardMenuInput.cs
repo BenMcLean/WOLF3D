@@ -48,8 +48,17 @@ public class KeyboardMenuInput : IMenuInput
 	}
 	/// <summary>
 	/// Set the menu item bounding rectangles for hover detection.
-	/// Not used for keyboard-only input, but stored for future mouse integration.
+	/// Not used for keyboard-only input.
 	/// </summary>
 	/// <param name="itemBounds">Array of bounding rectangles for each menu item</param>
 	public void SetMenuItemBounds(Rect2[] itemBounds) => _menuItemBounds = itemBounds;
+	/// <inheritdoc/>
+	/// <remarks>Keyboard input has no pointer; always returns an inactive default.</remarks>
+	public PointerState PrimaryPointer => default;
+	/// <inheritdoc/>
+	/// <remarks>Keyboard input has no secondary pointer; always returns an inactive default.</remarks>
+	public PointerState SecondaryPointer => default;
+	/// <inheritdoc/>
+	/// <remarks>Keyboard input does not use event-driven input.</remarks>
+	public void HandleInput(InputEvent @event) { }
 }
