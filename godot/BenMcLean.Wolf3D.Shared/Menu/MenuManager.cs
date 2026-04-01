@@ -231,7 +231,8 @@ public class MenuManager
 			return;
 		// Set new current menu
 		_currentMenuName = menuName;
-		_selectedItemIndex = 0; // Reset to first item
+		// WL_MENU.H:CP_iteminfo:curpos — use configured initial selection, defaulting to 0
+		_selectedItemIndex = menuDef.CurPos ?? 0;
 		ApplyMenuMusic(menuDef);
 		// Render the menu
 		RefreshMenu();
@@ -263,11 +264,15 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Execute the OnCancel Lua script for a menu.
-	/// If no OnCancel script is defined, pressing cancel does nothing.
+	/// Plays EscPressedSound first (WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND)).
+	/// If no OnCancel script is defined, pressing cancel does nothing beyond the sound.
 	/// </summary>
 	/// <param name="menuDef">Menu definition containing OnCancel script</param>
 	private void ExecuteOnCancel(MenuDefinition menuDef)
 	{
+		// WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND); return -1;
+		if (!string.IsNullOrEmpty(_menuCollection.EscPressedSound))
+			_scriptContext.PlayAdLibSound(_menuCollection.EscPressedSound);
 		if (string.IsNullOrEmpty(menuDef.OnCancel))
 			return;
 		try

@@ -529,6 +529,13 @@ public class MenuDefinition
 	/// </summary>
 	public string CursorPic { get; set; }
 	/// <summary>
+	/// Initial cursor position (0-based index) when this menu first opens.
+	/// WL_MENU.H:CP_iteminfo:curpos
+	/// WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 for difficulty menu (4-item version)
+	/// If absent, defaults to 0 (first item).
+	/// </summary>
+	public int? CurPos { get; set; }
+	/// <summary>
 	/// Lua script to execute when menu selection changes (including initial menu construction).
 	/// Similar to original Wolf3D's DrawNewGameDiff callback in HandleMenu.
 	/// WL_MENU.C:1518: which=HandleMenu(&NewItems,&NewMenu[0],DrawNewGameDiff);
@@ -613,6 +620,8 @@ public class MenuDefinition
 			menu.Indent = indent;
 		if (int.TryParse(element.Attribute("Spacing")?.Value, out int spacing))
 			menu.Spacing = spacing;
+		if (int.TryParse(element.Attribute("CurPos")?.Value, out int curPos))
+			menu.CurPos = curPos;
 
 		// Parse boxes
 		IEnumerable<XElement> boxElements = element.Elements("Box");
@@ -649,7 +658,7 @@ public class MenuDefinition
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
 			if (attrName is not ("Name" or "BordColor"
-				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CursorPic" or "CursorMoveSound"))
+				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CurPos" or "CursorPic" or "CursorMoveSound"))
 			{
 				menu.CustomProperties[attrName] = attr.Value;
 			}
@@ -728,6 +737,12 @@ public class MenuCollection
 	/// WL1.xml: ModalBord2Color="0"
 	/// </summary>
 	public byte? DefaultModalBord2Color { get; set; }
+	/// <summary>
+	/// Sound to play when ESC/cancel is pressed on any menu.
+	/// WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND); return -1;
+	/// If null or empty, no sound is played on cancel.
+	/// </summary>
+	public string EscPressedSound { get; set; }
 	/// <summary>
 	/// Default sound to play when cursor moves to different menu item (e.g., "MOVEGUN2SND")
 	/// </summary>
@@ -869,6 +884,7 @@ public class MenuCollection
 		MenuCollection collection = new()
 		{
 			PauseMenu = menusElement.Attribute("Pause")?.Value,
+			EscPressedSound = menusElement.Attribute("EscPressedSnd")?.Value,
 			DefaultCursorMoveSound = menusElement.Attribute("CursorMoveSound")?.Value,
 			DefaultMusic = menusElement.Attribute("Music")?.Value,
 			DefaultCursorPic = menusElement.Attribute("CursorPic")?.Value,

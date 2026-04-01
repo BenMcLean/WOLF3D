@@ -310,6 +310,15 @@
 					<xs:documentation>Default background music for all menus (e.g., "WONDERIN_MUS")</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="EscPressedSnd" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound to play when ESC/cancel is pressed on any menu.
+						WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND); return -1;
+						Omit or leave empty to play no sound on cancel.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="CursorMoveSound" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Default sound when cursor moves to different menu item (e.g., "MOVEGUN2SND")</xs:documentation>
@@ -534,6 +543,16 @@
 			<xs:attribute name="CursorPic" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Name of the cursor picture from VgaGraph (e.g., "C_CURSOR1PIC"). If not specified, no cursor will be rendered.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="CurPos" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Initial cursor position (0-based index) when this menu first opens.
+						WL_MENU.H:CP_iteminfo:curpos
+						WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 for difficulty menu (4-item version).
+						If absent, defaults to 0 (first item).
+					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 		</xs:complexType>

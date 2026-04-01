@@ -166,7 +166,8 @@
 			<Picture Id="WeaponPic" Name="GUNPIC" X="256" Y="8" />
 		</StatusBar>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
+		<!-- WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND) — played universally on any menu cancel -->
+		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" EscPressedSnd="ESCPRESSEDSND" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
@@ -303,7 +304,8 @@
 			<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H,BKGDCOLOR) where NM_W=225, NM_H=13*4+15=67 -->
 			<!-- WL_MENU.C:1518: which=HandleMenu(&NewItems,&NewMenu[0],DrawNewGameDiff) -->
 			<!-- WL_MENU.C:1669: void DrawNewGameDiff(int w) { VWB_DrawPic(NM_X+185,NM_Y+7,w+C_BABYMODEPIC); } -->
-			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CursorPic="">
+			<!-- WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 defaults to "Bring 'em on!" (Normal) -->
+			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CurPos="2" CursorPic="">
 				<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H) = (45,90,225,67) -->
 				<Box X="45" Y="90" W="225" H="67" />
 				<!-- WL_MENU.C:1639-1649: US_Print("How tough are you?") at (NM_X+20, NM_Y-32) = (70,68) with READHCOLOR = 0x47 = 71 -->
