@@ -21,12 +21,17 @@ public class VRMenuInput : IMenuInput
 	private float _panelHeight;
 
 	// Event-driven button states, indexed by hand (0 = right, 1 = left)
+	// _selectPressed: trigger + face buttons — passed to ray cast so pointing always works
+	// _faceSelectPressed: face buttons only (A/B/X/Y) — also drives directional select off-panel
 	private bool _selectPressed0;
 	private bool _cancelPressed0;
 	private bool _selectPressed1;
 	private bool _cancelPressed1;
+	private bool _faceSelectPressed0;
+	private bool _faceSelectPressed1;
 
 	// Aggregated button states for MenuInputState (survive Update into GetState)
+	// _anySelectPressed uses face buttons only — trigger is pointer-only (requires ray hit)
 	private bool _anySelectPressed;
 	private bool _anyCancelPressed;
 
@@ -65,14 +70,32 @@ public class VRMenuInput : IMenuInput
 	{
 		if (handIndex == 0)
 		{
-			// Trigger, A, or B → select/confirm; grip → cancel
-			if (buttonName is "trigger_click" or "ax_button" or "by_button") _selectPressed0 = true;
+			if (buttonName == "trigger_click")
+			{
+				// Trigger: pointer-only select — requires ray to hit the panel
+				_selectPressed0 = true;
+			}
+			else if (buttonName is "ax_button" or "by_button")
+			{
+				// A/B: select via ray when pointing, directional select when not pointing
+				_selectPressed0 = true;
+				_faceSelectPressed0 = true;
+			}
 			else if (buttonName == "grip_click") _cancelPressed0 = true;
 		}
 		else if (handIndex == 1)
 		{
-			// Trigger, X, or Y → select/confirm; grip → cancel
-			if (buttonName is "trigger_click" or "ax_button" or "by_button") _selectPressed1 = true;
+			if (buttonName == "trigger_click")
+			{
+				// Trigger: pointer-only select — requires ray to hit the panel
+				_selectPressed1 = true;
+			}
+			else if (buttonName is "ax_button" or "by_button")
+			{
+				// X/Y: select via ray when pointing, directional select when not pointing
+				_selectPressed1 = true;
+				_faceSelectPressed1 = true;
+			}
 			else if (buttonName == "grip_click") _cancelPressed1 = true;
 		}
 	}
@@ -103,15 +126,18 @@ public class VRMenuInput : IMenuInput
 		if (_thumbstickCooldown > 0)
 			_thumbstickCooldown -= delta;
 
-		// Compute thumbstick directional navigation from left stick Y
+		// Compute thumbstick directional navigation from either stick's Y axis
 		_thumbstickUp = false;
 		_thumbstickDown = false;
 		if (_displayMode.IsVRActive)
 		{
-			float stickY = _displayMode.GetMovementInput().Y;
+			float leftY = _displayMode.GetMovementInput().Y;
+			float rightY = _displayMode.GetTurnInput().Y;
+			// Use whichever stick is deflected more
+			float stickY = Mathf.Abs(leftY) >= Mathf.Abs(rightY) ? leftY : rightY;
 			if (Mathf.Abs(stickY) < ThumbstickThreshold)
 			{
-				// Stick returned to centre — reset cooldown so next deflection fires immediately
+				// Both sticks returned to centre — reset cooldown so next deflection fires immediately
 				_thumbstickCooldown = 0;
 			}
 			else if (_thumbstickCooldown <= 0)
@@ -133,13 +159,16 @@ public class VRMenuInput : IMenuInput
 		// Capture and clear button states (set by event handler)
 		bool select0 = _selectPressed0, cancel0 = _cancelPressed0;
 		bool select1 = _selectPressed1, cancel1 = _cancelPressed1;
+		bool faceSelect0 = _faceSelectPressed0, faceSelect1 = _faceSelectPressed1;
 		_selectPressed0 = false;
 		_cancelPressed0 = false;
 		_selectPressed1 = false;
 		_cancelPressed1 = false;
+		_faceSelectPressed0 = false;
+		_faceSelectPressed1 = false;
 
-		// Save aggregates for GetState() — these survive regardless of ray hit
-		_anySelectPressed = select0 || select1;
+		// _anySelectPressed: face buttons only — trigger requires a ray hit to select
+		_anySelectPressed = faceSelect0 || faceSelect1;
 		_anyCancelPressed = cancel0 || cancel1;
 
 		if (_menuPanel == null || !_displayMode.IsVRActive)
