@@ -489,11 +489,14 @@ public class MenuManager
 			PlayCursorMoveSound(menuDef);
 			RefreshMenu();
 		}
-		// Handle selection
-		if (inputState.SelectPressed && _currentVisibleItems.Count > 0)
+		// Handle selection and cancel via directional input only when the pointer did not
+		// already handle them this frame. This prevents double-execution when VR button presses
+		// feed both the pointer state (used by HandlePointerHover) and MenuInputState.
+		bool pointerHandledSelect = primary.SelectPressed || secondary.SelectPressed;
+		bool pointerHandledCancel = primary.CancelPressed || secondary.CancelPressed;
+		if (!pointerHandledSelect && inputState.SelectPressed && _currentVisibleItems.Count > 0)
 			ExecuteMenuItemAction(_currentVisibleItems[_selectedItemIndex]);
-		// Handle cancel/back
-		if (inputState.CancelPressed)
+		if (!pointerHandledCancel && inputState.CancelPressed)
 			ExecuteOnCancel(menuDef);
 	}
 	/// <summary>

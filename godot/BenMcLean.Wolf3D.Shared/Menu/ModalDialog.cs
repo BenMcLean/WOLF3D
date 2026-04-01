@@ -87,7 +87,8 @@ public class ModalDialog(string message, ModalDialog.ModalKind kind)
 
 		// Keyboard: Y = confirm, N or Escape = cancel
 		// WL_MENU.C:Confirm loop - Keyboard[sc_Y], Keyboard[sc_N], Keyboard[sc_Escape]
-		if (Godot.Input.IsKeyPressed(Godot.Key.Y))
+		// Controller: select (trigger/face buttons) = confirm; cancel (grip) = cancel
+		if (Godot.Input.IsKeyPressed(Godot.Key.Y) || inputState.SelectPressed)
 		{
 			Confirm();
 			return;

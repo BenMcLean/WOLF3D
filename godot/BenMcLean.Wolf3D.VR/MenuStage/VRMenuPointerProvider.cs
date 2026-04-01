@@ -26,6 +26,10 @@ public class VRMenuInput : IMenuInput
 	private bool _selectPressed1;
 	private bool _cancelPressed1;
 
+	// Aggregated button states for MenuInputState (survive Update into GetState)
+	private bool _anySelectPressed;
+	private bool _anyCancelPressed;
+
 	// Thumbstick navigation state
 	private bool _thumbstickUp;
 	private bool _thumbstickDown;
@@ -61,15 +65,15 @@ public class VRMenuInput : IMenuInput
 	{
 		if (handIndex == 0)
 		{
-			// Trigger or A button → select; grip or B button → cancel
-			if (buttonName is "trigger_click" or "ax_button") _selectPressed0 = true;
-			else if (buttonName is "grip_click" or "by_button") _cancelPressed0 = true;
+			// Trigger, A, or B → select/confirm; grip → cancel
+			if (buttonName is "trigger_click" or "ax_button" or "by_button") _selectPressed0 = true;
+			else if (buttonName == "grip_click") _cancelPressed0 = true;
 		}
 		else if (handIndex == 1)
 		{
-			// Trigger or X button → select; grip or Y button → cancel
-			if (buttonName is "trigger_click" or "ax_button") _selectPressed1 = true;
-			else if (buttonName is "grip_click" or "by_button") _cancelPressed1 = true;
+			// Trigger, X, or Y → select/confirm; grip → cancel
+			if (buttonName is "trigger_click" or "ax_button" or "by_button") _selectPressed1 = true;
+			else if (buttonName == "grip_click") _cancelPressed1 = true;
 		}
 	}
 
@@ -126,13 +130,6 @@ public class VRMenuInput : IMenuInput
 			}
 		}
 
-		if (_menuPanel == null || !_displayMode.IsVRActive)
-		{
-			_primaryPointer = new PointerState { IsActive = false };
-			_secondaryPointer = new PointerState { IsActive = false };
-			return;
-		}
-
 		// Capture and clear button states (set by event handler)
 		bool select0 = _selectPressed0, cancel0 = _cancelPressed0;
 		bool select1 = _selectPressed1, cancel1 = _cancelPressed1;
@@ -140,6 +137,17 @@ public class VRMenuInput : IMenuInput
 		_cancelPressed0 = false;
 		_selectPressed1 = false;
 		_cancelPressed1 = false;
+
+		// Save aggregates for GetState() — these survive regardless of ray hit
+		_anySelectPressed = select0 || select1;
+		_anyCancelPressed = cancel0 || cancel1;
+
+		if (_menuPanel == null || !_displayMode.IsVRActive)
+		{
+			_primaryPointer = new PointerState { IsActive = false };
+			_secondaryPointer = new PointerState { IsActive = false };
+			return;
+		}
 
 		// Cast ray from hand 0 (right controller)
 		_primaryPointer = CastControllerRay(
@@ -160,8 +168,8 @@ public class VRMenuInput : IMenuInput
 	public MenuInputState GetState()
 	{
 		MenuInputState keyState = _keyboard.GetState();
-		bool select = keyState.SelectPressed;
-		bool cancel = keyState.CancelPressed;
+		bool select = keyState.SelectPressed || _anySelectPressed;
+		bool cancel = keyState.CancelPressed || _anyCancelPressed;
 		bool up = keyState.UpPressed || _thumbstickUp;
 		bool down = keyState.DownPressed || _thumbstickDown;
 		bool left = keyState.LeftPressed;
