@@ -2421,9 +2421,23 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (mapAnalysis is null) return;
 
 		short playerArea = mapAnalysis.GetAreaNumber(PlayerTileX, PlayerTileY);
-		if (playerArea < 0) return;
-
-		List<ushort> connectedAreas = AreaConnect.FloorCodes((ushort)playerArea);
+		List<ushort> connectedAreas;
+		if (playerArea >= 0)
+		{
+			connectedAreas = AreaConnect.FloorCodes((ushort)playerArea);
+		}
+		else
+		{
+			// Player is standing in a doorframe - propagate from both areas the door connects.
+			// WL_ACT1.C: Original game's player->areanumber was undefined for door tiles;
+			// we intentionally improve on this by starting from both sides of the door.
+			Door? playerDoor = doors.FirstOrDefault(d => d.TileX == PlayerTileX && d.TileY == PlayerTileY);
+			if (playerDoor is null) return;
+			// Either area reaches the other through the open door connection, so one suffices.
+			short doorArea = playerDoor.Area1 >= 0 ? playerDoor.Area1 : playerDoor.Area2;
+			if (doorArea < 0) return;
+			connectedAreas = AreaConnect.FloorCodes((ushort)doorArea);
+		}
 
 		for (int i = 0; i < actors.Count; i++)
 		{
