@@ -514,7 +514,7 @@ public partial class Root : Node3D
 		GetTree().Paused = true;
 		// Disable VR locomotion so the player stays put during the fade.
 		// Each room's _Ready() sets LocomotionEnabled to its own desired value when it loads.
-		DisplayMode?.LocomotionEnabled = false;
+		DisplayMode.LocomotionEnabled = false;
 		_fadeOverlay.FadeToBlack();
 	}
 

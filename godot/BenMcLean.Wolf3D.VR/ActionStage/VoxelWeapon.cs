@@ -140,8 +140,15 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 				scale.X * (xyz[7] + 0.5f - xyz[4] * 0.5f),
 				-scale.Y * (xyz[8] + 0.5f - xyz[5] * 0.5f),
 				-scale.Z * (xyz[6] + 0.5f - xyz[3] * 0.5f));
+			UpdateInvModelMatrix();
 		}
 		Visible = true;
+	}
+
+	private void UpdateInvModelMatrix()
+	{
+		if (_meshInstance is not null)
+			_material.SetShaderParameter("inv_model_matrix", _meshInstance.GlobalTransform.AffineInverse());
 	}
 
 	public override void _Process(double delta)
@@ -155,8 +162,7 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		Camera3D camera = GetViewport().GetCamera3D();
 		if (camera is not null)
 			_material.SetShaderParameter("camera_world_center", camera.GlobalPosition);
-		if (_meshInstance is not null)
-			_material.SetShaderParameter("inv_model_matrix", _meshInstance.GlobalTransform.AffineInverse());
+		UpdateInvModelMatrix();
 	}
 
 	public override void _ExitTree()
