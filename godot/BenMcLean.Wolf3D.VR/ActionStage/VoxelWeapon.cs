@@ -53,8 +53,8 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 			Name = "Mesh",
 			Mesh = _quadMesh,
 			MaterialOverride = _material,
+			Scale = Constants.VoxelWeaponScale
 		};
-		_meshInstance.Scale = Constants.VoxelWeaponScale;
 		AddChild(_meshInstance);
 		// Initialise to identity so the uniform is never the zero matrix before _Process runs.
 		_material.SetShaderParameter("inv_model_matrix", Transform3D.Identity);

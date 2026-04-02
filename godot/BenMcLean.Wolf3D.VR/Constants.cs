@@ -54,11 +54,17 @@ public static class Constants
 		/// The pistol in the PC release is the Walther P38.
 		/// The pistol is 9 pixels across.
 		/// Wikipedia reports that the width of the Walther P38 is 36 mm. (1.4 in)
-		/// So 1 pixel = 4 millimeters.
+		/// 36 mm / 9 pixels = 4 mm per pixel.
 		/// </summary>
 		WeaponMetersPerPixel = 0.004f,
 		WeaponWidth = WeaponMetersPerPixel * 64f,
 		WeaponHeight = WeaponWidth * 1.2f,
+		/// <summary>
+		/// The voxel pistol is 3 voxels across.
+		/// 36 mm / 3 voxels = 12 mm per voxel.
+		/// But testing showed this was too big.
+		/// </summary>
+		WeaponMetersPerVoxel = 0.008f,
 		/// <summary>
 		/// This value is used to determine how big the player's head is for collision detection
 		/// </summary>
@@ -75,7 +81,7 @@ public static class Constants
 	};
 	public static readonly Vector3 Scale = new(1f, 1.2f, 1f),
 		WeaponScale = new(WeaponWidth, WeaponMetersPerPixel, WeaponHeight),
-		VoxelWeaponScale = new(WeaponMetersPerPixel, WeaponMetersPerPixel, WeaponMetersPerPixel),
+		VoxelWeaponScale = new(WeaponMetersPerVoxel, WeaponMetersPerVoxel, WeaponMetersPerVoxel),
 		Rotate90 = new(0, HalfPi, 0);
 	public static readonly Color White = Godot.Color.Color8(255, 255, 255, 255);
 }
