@@ -22,9 +22,15 @@ public static class Program
 		{
 			["SPR_PISTOLREADY"] = 527,
 			["SPR_PISTOLATK1"] = 528,
-			["SPR_PISTOLATK2"] = 529,
-			["SPR_PISTOLATK3"] = 530,
 			["SPR_PISTOLATK4"] = 531,
+		},
+		["pistol2"] = new()
+		{
+			["SPR_PISTOLATK2"] = 529,
+		},
+		["pistol3"] = new()
+		{
+			["SPR_PISTOLATK3"] = 530,
 		},
 		["machinegun"] = new()
 		{
@@ -79,13 +85,16 @@ public static class Program
 		foreach (KeyValuePair<string, IModel> kvp in models
 			.Where(kvp => kvp.Value.GlobalRotation != VoxReader.Matrix3.Identity))
 			Console.Error.WriteLine($"WARNING: {kvp.Key}.vox has a non-identity GlobalRotation: {kvp.Value.GlobalRotation}. Bake the rotation into the voxel data in MagicaVoxel and clear the scene object rotation.");
+		foreach (KeyValuePair<string, IModel> kvp in models
+			.Where(kvp => kvp.Value.GlobalPosition == new VoxReader.Vector3(0, 0, 0)))
+			Console.Error.WriteLine($"WARNING: {kvp.Key}.vox has GlobalPosition (0,0,0). The grip will default to the model centre. If this is wrong, open the file in MagicaVoxel World Mode, translate the model so the grip voxel sits at scene origin, then Save (not Export).");
 		VoxelAtlasPacker<string>.PackResult packResult = VoxelAtlasPacker<string>.Pack(models
 			.Select(kvp => new VoxelAtlasPacker<string>.Cuboid(
 				Id: kvp.Key,
 				X: kvp.Value.GlobalSize.X,
 				Y: kvp.Value.GlobalSize.Y,
 				Z: kvp.Value.GlobalSize.Z)));
-		string outputPath = Path.Combine(folderPath, "VOXELS.W3D");
+		string outputPath = Path.Combine(folderPath, "..", "..", "godot", "BenMcLean.Wolf3D.VR", "Resources", "VOXELS.W3D");
 		using MemoryStream compressedStream = new();
 		using (DeflateStream deflateStream = new(
 			stream: compressedStream,
