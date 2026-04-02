@@ -36,9 +36,15 @@ public static class Program
 		{
 			["SPR_MACHINEGUNREADY"] = 532,
 			["SPR_MACHINEGUNATK1"] = 533,
-			["SPR_MACHINEGUNATK2"] = 534,
-			["SPR_MACHINEGUNATK3"] = 535,
 			["SPR_MACHINEGUNATK4"] = 536,
+		},
+		["machinegun2"] = new()
+		{
+			["SPR_MACHINEGUNATK2"] = 534,
+		},
+		["machinegun3"] = new()
+		{
+			["SPR_MACHINEGUNATK3"] = 535,
 		},
 		["chaingun"] = new()
 		{

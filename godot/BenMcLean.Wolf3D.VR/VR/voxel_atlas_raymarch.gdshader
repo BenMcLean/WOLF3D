@@ -41,7 +41,12 @@ int fetch_voxel(ivec3 local_pos) {
 
 // DDA raymarcher operating in voxel index space [0, model_size).
 vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
-	ivec3 voxel_pos = ivec3(floor(ray_origin));
+	// Nudge ray_origin slightly in the ray direction before flooring.
+	// Without this, floating-point imprecision can place ray_origin just below a
+	// voxel boundary (e.g. 2.9999997 instead of 3.0), causing floor() to land one
+	// voxel short. The DDA then misses the first filled voxel, producing a visible gap.
+	// Using sign(ray_dir) as the per-axis nudge avoids directional bias.
+	ivec3 voxel_pos = ivec3(floor(ray_origin + 1e-4 * sign(ray_dir)));
 	vec3 delta_dist = abs(vec3(1.0) / ray_dir);
 	ivec3 ray_step = ivec3(sign(ray_dir));
 	vec3 side_dist = (sign(ray_dir) * (vec3(voxel_pos) - ray_origin) + sign(ray_dir) * 0.5 + 0.5) * delta_dist;
