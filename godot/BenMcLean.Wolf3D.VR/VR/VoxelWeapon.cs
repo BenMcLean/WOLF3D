@@ -1,9 +1,8 @@
 using System;
 using BenMcLean.Wolf3D.Simulator;
-using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
-namespace BenMcLean.Wolf3D.VR.ActionStage;
+namespace BenMcLean.Wolf3D.VR.VR;
 
 /// <summary>
 /// A QuadMesh rendered with the voxel_atlas_raymarch shader, intended to be attached
@@ -38,7 +37,7 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		// Must always process so _Process() keeps shader uniforms current even when
 		// the parent scene (e.g. MenuRoom) is paused during fade transitions.
 		ProcessMode = ProcessModeEnum.Always;
-		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://VR/voxel_atlas_raymarch.gdshader") };
+		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/voxel_atlas_raymarch.gdshader") };
 		if (voxelShader is null)
 		{
 			GD.PrintErr("Warning: voxel_atlas_raymarch.gdshader not found");

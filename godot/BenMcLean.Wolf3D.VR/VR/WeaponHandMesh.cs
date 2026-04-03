@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using BenMcLean.Wolf3D.Simulator;
 using Godot;
 
-namespace BenMcLean.Wolf3D.VR.ActionStage;
+namespace BenMcLean.Wolf3D.VR.VR;
 
 /// <summary>
 /// A BoxMesh rendered with the WeaponSpriteVoxelDDA shader, intended to be attached
@@ -22,7 +22,7 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 
 	public override void _Ready()
 	{
-		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://ActionStage/WeaponSpriteVoxelDDA.gdshader") };
+		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/WeaponSpriteVoxelDDA.gdshader") };
 		if (voxelShader is null)
 		{
 			GD.PrintErr("Warning: WeaponSpriteVoxelDDA.gdshader not found");
