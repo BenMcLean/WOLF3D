@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Shared;
+using BenMcLean.Wolf3D.Shared.Minimap;
 using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.Simulator.Entities;
@@ -132,6 +133,8 @@ void sky() {
 	private CanvasLayer _statusBarCanvas;
 	private Action<StatusBarPicChangedEvent> _onStatusBarPicChanged;
 	private Action<StatusBarTextChangedEvent> _onStatusBarTextChanged;
+	private MinimapRenderer _minimapRenderer;
+	private Action<PushWallPositionChangedEvent> _onPushWallPositionChanged;
 
 	/// <summary>
 	/// Creates a new ActionStage with the specified display mode.
@@ -499,6 +502,54 @@ void sky() {
 					TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 				};
 				_statusBarCanvas.AddChild(statusBarDisplay);
+			}
+
+			// Create minimap renderer for flatscreen mode.
+			// VR wrist-screen integration is a separate task.
+			if (!_displayMode.IsVRActive)
+			{
+				_minimapRenderer = new MinimapRenderer();
+				_minimapRenderer.Init(MapAnalysis);
+
+				// Subscribe to pushwall completion to keep the minimap background current
+				_onPushWallPositionChanged = OnPushWallPositionChanged;
+				_simulatorController.Simulator.PushWallPositionChanged += _onPushWallPositionChanged;
+
+				// Render into a SubViewport so we can display it as a scaled TextureRect
+				CanvasLayer minimapCanvas = new()
+				{
+					Name = "MinimapCanvas",
+					Layer = 10,
+				};
+				AddChild(minimapCanvas);
+
+				SubViewport minimapViewport = new()
+				{
+					Size = new Vector2I(MinimapRenderer.ViewWidth, MinimapRenderer.ViewHeight),
+					Disable3D = true,
+					RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
+				};
+				minimapCanvas.AddChild(minimapViewport);
+				minimapViewport.AddChild(_minimapRenderer);
+
+				// Display in the upper-right corner at 2× scale for readability
+				TextureRect minimapDisplay = new()
+				{
+					Name = "MinimapDisplay",
+					Texture = minimapViewport.GetTexture(),
+					AnchorLeft = 1f,
+					AnchorRight = 1f,
+					AnchorTop = 0f,
+					AnchorBottom = 0f,
+					CustomMinimumSize = new Vector2(MinimapRenderer.ViewWidth * 2, MinimapRenderer.ViewHeight * 2),
+					Size = new Vector2(MinimapRenderer.ViewWidth * 2, MinimapRenderer.ViewHeight * 2),
+					OffsetLeft = -MinimapRenderer.ViewWidth * 2,
+					OffsetRight = 0,
+					OffsetTop = 0,
+					OffsetBottom = MinimapRenderer.ViewHeight * 2,
+					TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				};
+				minimapCanvas.AddChild(minimapDisplay);
 			}
 		}
 		catch (Exception ex)
@@ -1015,6 +1066,13 @@ void sky() {
 		// Bonuses updates billboard rotations automatically in its own _Process
 		// Doors use two-quad approach with back-face culling - no per-frame updates needed
 		// SimulatorController drives the simulator and updates door/bonus states automatically in its own _Process
+
+		// Update minimap player marker every frame (QueueRedraw is coalesced by Godot if nothing changed)
+		if (_minimapRenderer is not null && _simulatorController?.Simulator is not null)
+			_minimapRenderer.UpdatePlayer(
+				_simulatorController.Simulator.PlayerTileX,
+				_simulatorController.Simulator.PlayerTileY,
+				_simulatorController.Simulator.PlayerAngle);
 	}
 
 	public override void _ExitTree()
@@ -1043,6 +1101,10 @@ void sky() {
 				_simulatorController.Simulator.StatusBarTextChanged -= _onStatusBarTextChanged;
 		}
 
+		// Unsubscribe from pushwall events for minimap
+		if (_onPushWallPositionChanged is not null)
+			_simulatorController?.Simulator?.PushWallPositionChanged -= _onPushWallPositionChanged;
+
 		// Clear HitDetection delegate (points at this ActionStage's method)
 		if (_simulatorController?.Simulator is not null)
 			_simulatorController.Simulator.HitDetection = null;
@@ -1051,6 +1113,30 @@ void sky() {
 		// Release mouse when leaving action stage (returning to menu, etc.)
 		if (!_displayMode.IsVRActive)
 			Input.MouseMode = Input.MouseModeEnum.Visible;
+	}
+
+	/// <summary>
+	/// Updates the minimap background when a pushwall finishes moving.
+	/// Only acts when the pushwall transitions to Idle (move complete).
+	/// Derives the vacated tile from the push direction and the final tile position.
+	/// </summary>
+	private void OnPushWallPositionChanged(PushWallPositionChangedEvent evt)
+	{
+		if (evt.Action != PushWallAction.Idle || _minimapRenderer is null)
+			return;
+		PushWall pushWall = _simulatorController.Simulator.PushWalls[evt.PushWallIndex];
+		ushort newTileX = (ushort)(evt.X >> 16);
+		ushort newTileY = (ushort)(evt.Y >> 16);
+		// The old tile is one step backwards along the push direction
+		(ushort oldTileX, ushort oldTileY) = pushWall.Direction switch
+		{
+			Direction.E => ((ushort)(newTileX - 1), newTileY),
+			Direction.W => ((ushort)(newTileX + 1), newTileY),
+			Direction.N => (newTileX, (ushort)(newTileY + 1)),
+			Direction.S => (newTileX, (ushort)(newTileY - 1)),
+			_ => (pushWall.InitialTileX, pushWall.InitialTileY)
+		};
+		_minimapRenderer.OnPushWallMoved(oldTileX, oldTileY, newTileX, newTileY, pushWall.Shape);
 	}
 
 	/// <summary>
