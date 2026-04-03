@@ -49,10 +49,19 @@ public static class Program
 		["chaingun"] = new()
 		{
 			["SPR_CHAINREADY"] = 537,
+		},
+		["chaingun2"] = new()
+		{
 			["SPR_CHAINATK1"] = 538,
-			["SPR_CHAINATK2"] = 539,
-			["SPR_CHAINATK3"] = 540,
 			["SPR_CHAINATK4"] = 541,
+		},
+		["chaingun3"] = new()
+		{
+			["SPR_CHAINATK2"] = 539,
+		},
+		["chaingun4"] = new()
+		{
+			["SPR_CHAINATK3"] = 540,
 		},
 	};
 	public record Model(int[] XYZ, Dictionary<string, ushort> Sprites);

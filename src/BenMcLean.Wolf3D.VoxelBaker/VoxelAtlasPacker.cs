@@ -36,7 +36,7 @@ public static class VoxelAtlasPacker<T> where T : notnull
 			Node? node = FindNode(root, cuboid.X, cuboid.Y, cuboid.Z);
 			while (node is null)
 			{
-				Grow(ref root);
+				Grow(ref root, cuboid.X, cuboid.Y, cuboid.Z);
 				node = FindNode(root, cuboid.X, cuboid.Y, cuboid.Z);
 			}
 			Node placed = SplitNode(node, cuboid.X, cuboid.Y, cuboid.Z);
@@ -92,23 +92,23 @@ public static class VoxelAtlasPacker<T> where T : notnull
 		// Recursively refine the first child until it's the exact size needed.
 		return SplitNode(node.Child1, w, d, h);
 	}
-	private static void Grow(ref Node root) =>
+	private static void Grow(ref Node root, int w, int d, int h) =>
 		root = root.W <= root.D && root.W <= root.H
-			? new(0, 0, 0, root.W + 1, root.D, root.H)
+			? new(0, 0, 0, root.W + w, root.D, root.H)
 			{
 				Child1 = root,
-				Child2 = new(root.W, 0, 0, 1, root.D, root.H)
+				Child2 = new(root.W, 0, 0, w, root.D, root.H)
 			}
 			: root.D <= root.H
-			? new(0, 0, 0, root.W, root.D + 1, root.H)
+			? new(0, 0, 0, root.W, root.D + d, root.H)
 			{
 				Child1 = root,
-				Child2 = new(0, root.D, 0, root.W, 1, root.H)
+				Child2 = new(0, root.D, 0, root.W, d, root.H)
 			}
-			: new(0, 0, 0, root.W, root.D, root.H + 1)
+			: new(0, 0, 0, root.W, root.D, root.H + h)
 			{
 				Child1 = root,
-				Child2 = new(0, 0, root.H, root.W, root.D, 1)
+				Child2 = new(0, 0, root.H, root.W, root.D, h)
 			};
 	private static int Align(int value, int alignment) =>
 		(value + alignment - 1) / alignment * alignment;
