@@ -18,6 +18,13 @@ public class OperateDoorAction : PlayerAction
 }
 
 /// <summary>
+/// Player tried to "use" (push) a plain non-interactive wall.
+/// WL_AGENT.C:Cmd_Use else branch: plays DONOTHINGSND (Wolf3D) or NOWAYSND (N3D).
+/// Simulator fires PlayGlobalSoundEvent with UseWallSound (configured from XML).
+/// </summary>
+public class UseNormalWallAction : PlayerAction { }
+
+/// <summary>
 /// Player attempts to push a pushwall.
 /// Based on WL_ACT1.C pushwall activation logic.
 /// </summary>

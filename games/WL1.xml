@@ -1258,7 +1258,7 @@ return false
 			<DigiSound Number="22" Name="SLURPIESND" />
 			<DigiSound Number="32" Name="YEAHSND" />
 		</DigiSounds>
-		<StatInfo>
+		<StatInfo UseWallSound="DONOTHINGSND">
 			<!-- Bonus pickup scripts -->
 			<BonusScript Name="health_small">
 				<![CDATA[
@@ -1479,7 +1479,7 @@ return true
 			<Turn Number="95" Direction="SW" Name="Turn SW" />
 			<Turn Number="96" Direction="S" Name="Turn S" />
 			<Turn Number="97" Direction="SE" Name="Turn SE" />
-			<Pushwall Number="98" DigiSound="PUSHWALLSND" Name="Secret Door" />
+			<Pushwall Number="98" DigiSound="PUSHWALLSND" BlockedSound="NOWAYSND" Name="Secret Door" />
 			<ObjectType Number="99" ObClass="bonus" Script="VictoryTile" Name="End Game Trigger" />
 			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdstand" />
 			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdstand" />

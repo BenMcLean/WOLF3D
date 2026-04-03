@@ -123,6 +123,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// WL_DEF.H:player->angle (0-359)
 	public short PlayerAngle { get; private set; }
 	/// <summary>
+	/// Sound to play when the player uses a plain non-interactive wall.
+	/// WL_AGENT.C:Cmd_Use else branch: DONOTHINGSND (Wolf3D) or NOWAYSND (N3D).
+	/// Null means no sound (default).
+	/// </summary>
+	public string UseWallSound { get; set; }
+	/// <summary>
 	/// When true, player movement bypasses all collision checks.
 	/// Based on original Wolf3D "MLI" debug/cheat command.
 	/// </summary>
@@ -485,7 +491,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 	private void ProcessAction(PlayerAction action)
 	{
-		if (action is OperateDoorAction operateDoor)
+		if (action is UseNormalWallAction)
+		{
+			// WL_AGENT.C:Cmd_Use else branch: SD_PlaySound(DONOTHINGSND) / NOWAYSND
+			if (UseWallSound is not null)
+				EmitPlayGlobalSound(UseWallSound);
+		}
+		else if (action is OperateDoorAction operateDoor)
 			OperateDoor(operateDoor.DoorIndex);
 		else if (action is ActivatePushWallAction activatePushWall)
 			ActivatePushWall(activatePushWall.TileX, activatePushWall.TileY, activatePushWall.Direction);
@@ -862,8 +874,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 
 		// Check if both destination tiles are navigable
+		// WL_ACT1.C:PushWall: plays NOWAYSND when actorat[dest] is non-null (destination blocked)
 		if (!IsTileNavigable(dest1X, dest1Y) || !IsTileNavigable(dest2X, dest2Y))
+		{
+			if (pushWall.BlockedSound is not null)
+				EmitPushWallPlaySound((ushort)pushWallIndex, pushWall.BlockedSound);
 			return; // Can't push - destination blocked
+		}
 
 		// Start pushing!
 		pushWall.Action = PushWallAction.Pushing;
@@ -1382,7 +1399,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		int pushWallIndex = 0;
 		foreach (MapAnalysis.PushWallSpawn spawn in pushWallSpawns)
 		{
-			pushWalls.Add(new PushWall(spawn.Shape, spawn.X, spawn.Y, spawn.DigiSound, spawn.SoundRepeatTics));
+			pushWalls.Add(new PushWall(spawn.Shape, spawn.X, spawn.Y, spawn.DigiSound, spawn.BlockedSound, spawn.SoundRepeatTics));
 
 			// Update spatial index - pushwall occupies its initial tile
 			int tileIdx = GetTileIndex(spawn.X, spawn.Y);

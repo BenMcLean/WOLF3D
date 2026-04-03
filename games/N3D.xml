@@ -873,7 +873,7 @@ end
 			<Door Tile="94" Name="Silver key" Key="Silver Key" Page="2" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND" />
 			<Door Tile="96" Name="Stairway" Page="3" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" />
 		</WallPlane>
-		<StatInfo>
+		<StatInfo UseWallSound="NOWAYSND">
 			<!-- Bonus pickup scripts -->
 			<BonusScript Name="yellow_key">
 				<![CDATA[

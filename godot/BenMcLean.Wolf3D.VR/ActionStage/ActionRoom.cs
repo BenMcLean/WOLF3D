@@ -773,6 +773,8 @@ void sky() {
 		// Try elevator third
 		if (IsElevatorAtTile(tileX, tileY))
 			_simulatorController.ActivateElevator(tileX, tileY, dir);
+		else
+			_simulatorController.UseNormalWall();
 	}
 
 	/// <summary>
@@ -824,8 +826,9 @@ void sky() {
 			return; // Pointing straight up or down
 
 		Direction dir = horizontal.ToCardinalDirection();
-		if (TryGetAdjacentTile(handTileX, handTileY, dir, out ushort targetX, out ushort targetY))
-			TryUseObjectAtTile(targetX, targetY, dir);
+		if (TryGetAdjacentTile(handTileX, handTileY, dir, out ushort targetX, out ushort targetY)
+			&& !TryUseObjectAtTile(targetX, targetY, dir))
+			_simulatorController.UseNormalWall();
 	}
 
 	/// <summary>

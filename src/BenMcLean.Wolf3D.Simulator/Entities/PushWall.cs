@@ -45,6 +45,13 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	public string DigiSound { get; }
 
 	/// <summary>
+	/// DigiSound name to play when the push wall is blocked (destination occupied).
+	/// WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) when actorat[dest] is non-null.
+	/// Null means no sound (default).
+	/// </summary>
+	public string BlockedSound { get; }
+
+	/// <summary>
 	/// How often (in tics) to repeat DigiSound during movement.
 	/// Null means play once on activation only (standard Wolf3D behavior).
 	/// N3D uses 8 tics — WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D).
@@ -102,14 +109,16 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	/// <param name="shape">Wall texture number (VSWAP page)</param>
 	/// <param name="initialTileX">Starting tile X coordinate</param>
 	/// <param name="initialTileY">Starting tile Y coordinate</param>
-	/// <param name="digiSound">DigiSound name to play (null for no sound)</param>
+	/// <param name="digiSound">DigiSound name to play on activation (null for no sound)</param>
+	/// <param name="blockedSound">DigiSound name to play when destination is blocked (null for no sound)</param>
 	/// <param name="soundRepeatTics">Tics between repeat sounds (null = no repeat)</param>
-	public PushWall(ushort shape, ushort initialTileX, ushort initialTileY, string digiSound = null, short? soundRepeatTics = null)
+	public PushWall(ushort shape, ushort initialTileX, ushort initialTileY, string digiSound = null, string blockedSound = null, short? soundRepeatTics = null)
 	{
 		Shape = shape;
 		InitialTileX = initialTileX;
 		InitialTileY = initialTileY;
 		DigiSound = digiSound;
+		BlockedSound = blockedSound;
 		SoundRepeatTics = soundRepeatTics;
 
 		// Start at tile center in fixed-point (tile * 65536 + 32768)

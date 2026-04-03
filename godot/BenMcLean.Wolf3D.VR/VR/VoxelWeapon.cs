@@ -12,8 +12,9 @@ namespace BenMcLean.Wolf3D.VR.VR;
 /// other hands or overlapping subscribers.
 /// A QuadMesh is used instead of BoxMesh so that all rasterized fragments lie on one
 /// flat plane, giving consistent vertex_world-based ray directions with no face-seam
-/// distortion. The quad is sized to the bounding sphere diameter so it covers the
-/// weapon silhouette from any viewing angle without needing per-frame updates.
+/// distortion. The quad size is recomputed each frame using the perspective-correct
+/// bounding-sphere projection formula so the weapon silhouette is fully covered from
+/// any viewing angle and camera distance.
 /// </summary>
 /// <param name="voxelAtlas">Voxel atlas from VRAssetManager.VoxelAtlas.</param>
 /// <param name="slotIndex">Weapon slot index this hand displays (0 = left/primary, 1 = right).</param>
@@ -31,6 +32,10 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 	private QuadMesh _quadMesh;
 	private MeshInstance3D _meshInstance;
 	private Simulator.Simulator _simulator;
+	// Bounding-sphere radius of the current model in voxel units (diagonal / 2).
+	// Zero when no model is loaded. Used each frame to recompute the quad size for
+	// perspective-correct coverage; see _Process for the derivation.
+	private float _boundingSphereRadiusVoxels = 0f;
 
 	public override void _Ready()
 	{
@@ -109,19 +114,20 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 			return;
 		if (!_voxelAtlas.Models.TryGetValue(shape, out int[] xyz))
 		{
+			_boundingSphereRadiusVoxels = 0f;
 			Visible = false;
 			return;
 		}
 		// xyz[0..2] = atlas origin (MagicaVoxel X, Y, Z); xyz[3..5] = model size; xyz[6..8] = grip origin (MagicaVoxel X, Y, Z)
 		_material.SetShaderParameter("model_offset", new Vector3I(xyz[0], xyz[1], xyz[2]));
 		_material.SetShaderParameter("model_size", new Vector3I(xyz[3], xyz[4], xyz[5]));
-		// QuadMesh size: bounding sphere diameter in voxel units, plus a 1-voxel margin.
-		// The quad is centered at the model's geometric centre (not the grip), so a half-extent
-		// equal to the bounding sphere radius (diagonal/2) is theoretically sufficient, but the
-		// fit is very tight for elongated models (e.g. a long gun barrel where diagonal ≈ sizeX).
-		// One extra voxel prevents floating-point boundary precision from clipping the far edge.
-		// Scale converts voxels → metres.
+		// Store the bounding-sphere radius so _Process can compute a perspective-correct quad
+		// size each frame. The quad is NOT sized here (beyond an initial fallback) because the
+		// correct size depends on the camera distance at the time of rendering, not at model-load
+		// time. See _Process for the full derivation.
 		float diagonal = Mathf.Sqrt(xyz[3] * xyz[3] + xyz[4] * xyz[4] + xyz[5] * xyz[5]);
+		_boundingSphereRadiusVoxels = diagonal * 0.5f;
+		// Initial fallback size (orthographic bound + 1-voxel margin) until _Process runs.
 		_quadMesh.Size = new Vector2(diagonal + 1f, diagonal + 1f);
 		// Position mesh so the grip origin voxel (xyz[6..8], MagicaVoxel coords) sits at this node's local origin.
 		// VoxelWeapon is a child of the aim controller (no rotation offset), so _meshInstance.Position
@@ -160,8 +166,49 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 			Position = aimParent.GlobalTransform.AffineInverse() * _gripNode.GlobalPosition;
 		Camera3D camera = GetViewport().GetCamera3D();
 		if (camera is not null)
+		{
 			_material.SetShaderParameter("camera_world_center", camera.GlobalPosition);
+			UpdateQuadSize(camera.GlobalPosition);
+		}
 		UpdateInvModelMatrix();
+	}
+
+	/// <summary>
+	/// Recomputes the QuadMesh size each frame so the billboard always covers the full
+	/// weapon model under perspective projection from the current camera position.
+	///
+	/// WHY THE BOUNDING-SPHERE DIAMETER IS NOT ENOUGH:
+	/// The bounding sphere guarantees coverage under orthographic (infinite-distance)
+	/// projection. Under perspective projection the furthest angular extent of the sphere
+	/// as seen from a finite-distance camera is larger. The maximum projection offset of
+	/// any point on a bounding sphere of radius R, viewed from distance D to the sphere
+	/// centre, is R·D/√(D²−R²) — derived by maximising the perspective projection formula
+	/// over all points on the sphere. This equals R only as D→∞.
+	///
+	/// For the pistol (small model, tested at comfortable distance) the correction was
+	/// negligible. For the larger chain gun at the increased WeaponMetersPerVoxel scale
+	/// the R/D ratio grows large enough that the back of the gun clips when the barrel
+	/// is tilted upward and the mesh centre rises above the camera.
+	/// </summary>
+	private void UpdateQuadSize(Vector3 cameraWorldPosition)
+	{
+		if (_boundingSphereRadiusVoxels <= 0f || _meshInstance is null || _quadMesh is null)
+			return;
+		float s = _meshInstance.Scale.X;           // metres per voxel (WeaponMetersPerVoxel)
+		float R = _boundingSphereRadiusVoxels * s; // bounding-sphere radius in metres
+		float D = _meshInstance.GlobalPosition.DistanceTo(cameraWorldPosition);
+		float halfSizeMeters;
+		if (D > R)
+			// Perspective-correct half-extent: R·D/√(D²−R²)
+			halfSizeMeters = R * D / Mathf.Sqrt(D * D - R * R);
+		else
+			// Camera is at or inside the bounding sphere (should not happen in normal play).
+			// Fall back to a generous size so nothing clips.
+			halfSizeMeters = R * 2f;
+		// Convert metres back to voxel units (QuadMesh.Size is in pre-scale mesh-local units)
+		// and add a 1-voxel margin for floating-point boundary precision.
+		float quadSizeVoxels = halfSizeMeters / s * 2f + 1f;
+		_quadMesh.Size = new Vector2(quadSizeVoxels, quadSizeVoxels);
 	}
 
 	public override void _ExitTree()

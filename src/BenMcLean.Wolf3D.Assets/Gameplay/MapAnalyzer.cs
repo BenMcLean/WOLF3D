@@ -27,6 +27,9 @@ public class MapAnalyzer
 	// Default false: Wolf3D paired formula (horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1).
 	public bool UniformWallTextures { get; private set; }
 
+	// WL_AGENT.C:Cmd_Use else branch: sound when player uses a plain non-interactive wall (null = no sound)
+	public string UseWallSound { get; private set; }
+
 	// Special tiles (from WOLF3D.xsd special tile elements - can have multiple)
 	public Dictionary<ushort, ElevatorConfig> Elevators { get; private set; }
 	public Dictionary<ushort, PushwallConfig> PushableTiles { get; private set; }
@@ -109,6 +112,9 @@ public class MapAnalyzer
 				Sound = sound
 			};
 		}
+		// WL_AGENT.C:Cmd_Use else branch: SD_PlaySound(DONOTHINGSND) for Wolf3D, NOWAYSND for N3D
+		UseWallSound = XML.Element("VSwap")?.Element("StatInfo")?.Attribute("UseWallSound")?.Value;
+
 		// Pushwall markers are in the INFO PLANE (StatInfo section), not the wall plane
 		// XSD: <Pushwall Number="N"> where N is the info plane tile value (e.g. PUSHABLETILE=98)
 		PushableTiles = (XML.Element("VSwap")?.Element("StatInfo")?.Elements("Pushwall") ?? Enumerable.Empty<XElement>())
@@ -118,6 +124,8 @@ public class MapAnalyzer
 				e => new PushwallConfig
 				{
 					DigiSound = e.Attribute("DigiSound")?.Value,
+					// WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) when destination is blocked
+					BlockedSound = e.Attribute("BlockedSound")?.Value,
 					// WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D)
 					SoundRepeatTics = e.Attribute("SoundRepeatTics") is XAttribute repeatAttr
 						? (short)ushort.Parse(repeatAttr.Value)
@@ -444,7 +452,7 @@ public class MapAnalyzer
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
 
 		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
-		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y, string DigiSound, short? SoundRepeatTics);
+		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y, string DigiSound, string BlockedSound, short? SoundRepeatTics);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 
 		/// <summary>
@@ -619,7 +627,7 @@ public class MapAnalyzer
 					ushort wall = gameMap.MapData[i];
 					ushort page = mapAnalyzer.GetWallPage(wall, false);
 					// VSWAP even/odd pairing: page (even) for one orientation, page+1 (odd) for perpendicular
-					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i), pwConfig.DigiSound, pwConfig.SoundRepeatTics));
+					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i), pwConfig.DigiSound, pwConfig.BlockedSound, pwConfig.SoundRepeatTics));
 				}
 			ushort GetMapData(ushort x, ushort y) => realWalls[gameMap.GetIndex(x, y)];
 
@@ -861,6 +869,8 @@ public enum StatType : byte
 public record PushwallConfig
 {
 	public string DigiSound { get; init; }     // Sound to play on activation and repeat
+	// WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) - sound when destination blocked (null = no sound)
+	public string BlockedSound { get; init; }
 	// WL_ACT1.C:MovePWalls pwallnoise - tics between repeat sounds (null = no repeat, Wolf3D default)
 	public short? SoundRepeatTics { get; init; }
 }

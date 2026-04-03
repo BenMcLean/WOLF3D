@@ -1469,6 +1469,17 @@
 				<xs:element ref="Turn"/>
 				<xs:element ref="Pushwall"/>
 			</xs:choice>
+			<xs:attribute name="UseWallSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound to play when the player tries to "use" (push) a plain non-interactive wall
+						(not a pushwall, door, or elevator).
+						WL_AGENT.C:Cmd_Use else branch: SD_PlaySound(DONOTHINGSND) for Wolf3D,
+						SD_PlaySound(NOWAYSND) for N3D.
+						When absent, no sound plays (default).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -1604,6 +1615,16 @@
 			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string"/>
 			<xs:attribute name="DigiSound" type="xs:string"/>
+			<xs:attribute name="BlockedSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound to play when the player tries to push the wall but the destination is blocked
+						(occupied by an actor, another wall, or out-of-bounds).
+						WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) when actorat[dest] is non-null.
+						When absent, no sound plays on a failed push (default).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="SoundRepeatTics" type="xs:positiveInteger">
 				<xs:annotation>
 					<xs:documentation>

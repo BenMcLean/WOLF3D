@@ -36,6 +36,7 @@ public partial class SimulatorController : Node3D
 	private Action<ScreenFlashEvent> _screenFlashHandler;
 	private Action<NavigateToMenuEvent> _navigateToMenuHandler;
 	private Action<PlayerDiedEvent> _playerDiedHandler;
+	private Action<PlayGlobalSoundEvent> _playGlobalSoundHandler;
 
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
@@ -123,6 +124,10 @@ public partial class SimulatorController : Node3D
 		_playerDiedHandler = e => PlayerDied?.Invoke(e);
 		simulator.PlayerDied += _playerDiedHandler;
 
+		// Forward global (non-positional) sound events to the audio bus
+		_playGlobalSoundHandler = e => EventBus.Emit(GameEvent.PlaySound, e.SoundName);
+		simulator.PlayGlobalSound += _playGlobalSoundHandler;
+
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar != null)
@@ -143,6 +148,9 @@ public partial class SimulatorController : Node3D
 		// Load bonuses into simulator (populates StatObjList only - no events emitted).
 		// Always called regardless of snapshot; if loading, Load() will overwrite StatObjList afterward.
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
+
+		// WL_AGENT.C:Cmd_Use else branch sound (DONOTHINGSND for Wolf3D, NOWAYSND for N3D)
+		simulator.UseWallSound = mapAnalyzer.UseWallSound;
 
 		// VR uses pixel-perfect aiming - disable distance-based miss chance
 		simulator.UseAccuracyFalloff = false;
@@ -208,6 +216,8 @@ public partial class SimulatorController : Node3D
 		simulator.NavigateToMenu += _navigateToMenuHandler;
 		_playerDiedHandler = e => PlayerDied?.Invoke(e);
 		simulator.PlayerDied += _playerDiedHandler;
+		_playGlobalSoundHandler = e => EventBus.Emit(GameEvent.PlaySound, e.SoundName);
+		simulator.PlayGlobalSound += _playGlobalSoundHandler;
 
 		// Replay current state to newly subscribed presentation layers
 		simulator.EmitAllEntityState();
@@ -227,6 +237,8 @@ public partial class SimulatorController : Node3D
 				simulator.NavigateToMenu -= _navigateToMenuHandler;
 			if (_playerDiedHandler != null)
 				simulator.PlayerDied -= _playerDiedHandler;
+			if (_playGlobalSoundHandler != null)
+				simulator.PlayGlobalSound -= _playGlobalSoundHandler;
 		}
 	}
 
@@ -262,6 +274,20 @@ public partial class SimulatorController : Node3D
 		{
 			DoorIndex = doorIndex
 		});
+	}
+
+	/// <summary>
+	/// Player tried to "use" (push) a plain non-interactive wall.
+	/// Call this from player input handling when the player uses a wall that isn't a door, pushwall, or elevator.
+	/// WL_AGENT.C:Cmd_Use else branch: plays DONOTHINGSND (Wolf3D) or NOWAYSND (N3D).
+	/// Note: in the original game this plays every tic the button is held; VR fires once per press.
+	/// </summary>
+	public void UseNormalWall()
+	{
+		if (simulator == null)
+			return;
+
+		simulator.QueueAction(new UseNormalWallAction());
 	}
 
 	/// <summary>
