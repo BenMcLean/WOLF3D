@@ -121,7 +121,10 @@ public partial class AutomapRenderer : Control
 			{
 				int srcX = (int)(dx * scaleX) + (int)region.Position.X;
 				int srcY = (int)(dy * scaleY) + (int)region.Position.Y;
-				_backgroundImage.SetPixel(destX + dx, destY + dy, atlasImage.GetPixel(srcX, srcY));
+				Color src = atlasImage.GetPixel(srcX, srcY);
+				if (src.A > 1f)
+					_backgroundImage.SetPixel(destX + dx, destY + dy, src);
+				// else: transparent pixel — leave floor colour showing through
 			}
 		}
 	}

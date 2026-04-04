@@ -770,6 +770,20 @@ public class MapAnalyzer
 						automapData[i] = mapAnalyzer.GetWallPage(tile, false);
 				}
 			}
+			// Second pass: decorative static objects (WL_MAP.C:DrawMapPrizes analogue).
+			// ObClass.dressing = non-interactive scenery; ObClass.block = blocking scenery.
+			// Only fills tiles still at the floor sentinel — walls/doors take priority.
+			// Shape is the VSwap sprite page number (short; negative = not displayed).
+			foreach (StaticSpawn s in StaticSpawns)
+			{
+				if (s.Type != ObClass.dressing && s.Type != ObClass.block)
+					continue;
+				if (s.Shape < 0)
+					continue;
+				int idx = gameMap.GetIndex(s.X, s.Y);
+				if (automapData[idx] == ushort.MaxValue)
+					automapData[idx] = (ushort)s.Shape;
+			}
 			AutomapData = Array.AsReadOnly(automapData);
 
 			// Use pre-baked spawns when provided; otherwise use the wall scan results.
