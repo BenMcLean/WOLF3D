@@ -20,7 +20,7 @@ public partial class MinimapRenderer : Control
 	public const int ViewWidth   = 320;
 	public const int ViewHeight  = 160;
 
-	private static readonly Color _floorColor = new(0.12f, 0.12f, 0.12f);
+	private Color                _floorColor = new(0.12f, 0.12f, 0.12f);
 	private static readonly Color _doorColor  = new(0.50f, 0.50f, 0.50f);
 
 	// Full-map baked image (mapWidth*8 × mapDepth*8 pixels)
@@ -28,6 +28,10 @@ public partial class MinimapRenderer : Control
 	private ImageTexture _backgroundTexture;
 	private int          _mapPixelWidth;
 	private int          _mapPixelHeight;
+
+	// Pushwall tiles — drawn dynamically in _Draw() so moves update without rebaking
+	// Key: current tile position; Value: VSwap page number
+	private readonly Dictionary<(ushort, ushort), ushort> _pushWallTextures = [];
 
 	// Player state — set by UpdatePlayer(), drives viewport scroll and marker draw
 	private ushort _playerTileX;
@@ -55,6 +59,12 @@ public partial class MinimapRenderer : Control
 		}
 		_wallTextures.Clear();
 		_doorTiles.Clear();
+		_pushWallTextures.Clear();
+
+		// Floor color from level data — VGA palette index if defined, dark grey fallback
+		_floorColor = mapAnalysis.Floor is byte floorIndex
+			? SharedAssetManager.GetPaletteColor(floorIndex)
+			: new Color(0.12f, 0.12f, 0.12f);
 
 		// WallSpawn list may have up to 4 entries per tile (one per visible face).
 		// Dedup by position — first entry wins; any face texture is good enough for the minimap.
@@ -64,11 +74,11 @@ public partial class MinimapRenderer : Control
 		foreach (MapAnalyzer.MapAnalysis.DoorSpawn door in mapAnalysis.Doors)
 			_doorTiles.Add((door.X, door.Y));
 
-		// PushWalls are replaced with floor tiles in MapAnalysis.Walls (MapAnalyzer.cs replaces
-		// them with FloorCodeFirst in realWalls before wall scanning).  Add them here so they
-		// show as walls in the initial bake.  OnPushWallMoved() updates them after movement.
+		// PushWalls are NOT baked into the static background — they move, so they're drawn
+		// dynamically in _Draw().  MapAnalyzer.cs already excludes them from MapAnalysis.Walls
+		// (replaces with FloorCodeFirst before scanning), so the background correctly shows floor.
 		foreach (MapAnalyzer.MapAnalysis.PushWallSpawn pushWall in mapAnalysis.PushWalls)
-			_wallTextures.TryAdd((pushWall.X, pushWall.Y), pushWall.Shape);
+			_pushWallTextures[(pushWall.X, pushWall.Y)] = pushWall.Shape;
 
 		_mapPixelWidth  = mapAnalysis.Width * TilePixels;
 		_mapPixelHeight = mapAnalysis.Depth * TilePixels;
@@ -156,24 +166,16 @@ public partial class MinimapRenderer : Control
 	/// <summary>
 	/// Updates the minimap when a pushwall finishes moving.
 	/// Call when PushWallPositionChangedEvent fires with Action == PushWallAction.Idle.
-	/// Repaints the vacated tile as floor and the destination tile as the wall texture,
-	/// then uploads the updated image to the GPU.
+	/// Moves the pushwall entry in the dynamic overlay; the static background is untouched
+	/// because pushwalls are never baked into it.
 	/// </summary>
 	public void OnPushWallMoved(ushort oldX, ushort oldY, ushort newX, ushort newY, ushort shape)
 	{
 		if (!_initialized)
 			return;
 
-		_wallTextures.Remove((oldX, oldY));
-		PaintSolidTile(oldX, oldY, _floorColor);
-
-		_wallTextures[(newX, newY)] = shape;
-		if (SharedAssetManager.VSwap.TryGetValue(shape, out AtlasTexture atlasTexture))
-			PaintWallTile(newX, newY, atlasTexture, SharedAssetManager.AtlasImage);
-		else
-			PaintSolidTile(newX, newY, _floorColor);
-
-		_backgroundTexture.Update(_backgroundImage);
+		_pushWallTextures.Remove((oldX, oldY));
+		_pushWallTextures[(newX, newY)] = shape;
 		QueueRedraw();
 	}
 
@@ -206,17 +208,36 @@ public partial class MinimapRenderer : Control
 				new Rect2(0, 0, drawW, drawH),
 				new Rect2(viewX, viewY, drawW, drawH));
 
+		// Pushwall overlay — drawn on top of the static background, below the player marker
+		foreach (((ushort pwX, ushort pwY), ushort pwShape) in _pushWallTextures)
+		{
+			int pwScreenX = pwX * TilePixels - viewX;
+			int pwScreenY = pwY * TilePixels - viewY;
+			// Skip tiles fully outside the viewport
+			if (pwScreenX + TilePixels <= 0 || pwScreenX >= ViewWidth
+				|| pwScreenY + TilePixels <= 0 || pwScreenY >= ViewHeight)
+				continue;
+			if (SharedAssetManager.VSwap.TryGetValue(pwShape, out AtlasTexture pwAtlas))
+				DrawTextureRectRegion(
+					pwAtlas,
+					new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
+					pwAtlas.Region);
+			else
+				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels), _doorColor);
+		}
+
 		// Player tile marker
 		int    screenX  = _playerTileX * TilePixels - viewX;
 		int    screenY  = _playerTileY * TilePixels - viewY;
 		Rect2  tileRect = new(screenX, screenY, TilePixels, TilePixels);
 		DrawRect(tileRect, Colors.LimeGreen);
 
-		// Direction indicator: line extending from tile centre in the player's facing direction
-		// WL_DEF.H:player->angle 0=east; screen Y is down so negate sin
+		// Direction indicator: line extending from tile centre in the player's facing direction.
+		// Engine angle convention (ExtensionMethods.cs:ToWolf3DAngle): wolf3dAngle = 90 - godotDegrees
+		// so wolf3dAngle 0 = West on screen — negate cos to flip X axis to match.
 		Vector2 center = tileRect.GetCenter();
 		float   rad    = _playerAngle * Mathf.Pi / 180f;
-		Vector2 dir    = new(Mathf.Cos(rad), -Mathf.Sin(rad));
+		Vector2 dir    = new(-Mathf.Cos(rad), -Mathf.Sin(rad));
 		DrawLine(center, center + dir * (TilePixels * 1.5f), Colors.White, 1f);
 	}
 
