@@ -20,14 +20,18 @@ public partial class AutomapRenderer : Control
 	public const int ViewWidth   = 320;
 	public const int ViewHeight  = 160;
 
-	private Color                _floorColor = new(0.12f, 0.12f, 0.12f);
-	private static readonly Color _doorColor  = new(0.50f, 0.50f, 0.50f);
+	private Color _floorColor = new(0.12f, 0.12f, 0.12f);
 
 	// Full-map baked image (mapWidth*8 × mapDepth*8 pixels)
 	private Image        _backgroundImage;
 	private ImageTexture _backgroundTexture;
 	private int          _mapPixelWidth;
 	private int          _mapPixelHeight;
+	private int          _mapWidth;   // tile count, needed to index into _automapData
+
+	// Flat array parallel to MapData: VSwap page per tile, ushort.MaxValue = floor/empty
+	// Mirrors MapAnalysis.AutomapData — walls and doors baked here, pushwalls excluded
+	private IReadOnlyList<ushort> _automapData;
 
 	// Pushwall tiles — drawn dynamically in _Draw() so moves update without rebaking
 	// Key: current tile position; Value: VSwap page number
@@ -37,11 +41,6 @@ public partial class AutomapRenderer : Control
 	private ushort _playerTileX;
 	private ushort _playerTileY;
 	private short  _playerAngle;  // WL_DEF.H:player->angle (0-359, 0=east, counter-clockwise)
-
-	// Lookup tables built from MapAnalysis in Init()
-	// Key: (ushort tileX, ushort tileY) — value: VSwap page number for the wall texture
-	private readonly Dictionary<(ushort, ushort), ushort> _wallTextures = [];
-	private readonly HashSet<(ushort, ushort)>            _doorTiles    = [];
 
 	private bool _initialized;
 
@@ -57,8 +56,6 @@ public partial class AutomapRenderer : Control
 			GD.PrintErr("ERROR: AutomapRenderer.Init called with null mapAnalysis");
 			return;
 		}
-		_wallTextures.Clear();
-		_doorTiles.Clear();
 		_pushWallTextures.Clear();
 
 		// Floor color from level data — VGA palette index if defined, dark grey fallback
@@ -66,16 +63,12 @@ public partial class AutomapRenderer : Control
 			? SharedAssetManager.GetPaletteColor(floorIndex)
 			: new Color(0.12f, 0.12f, 0.12f);
 
-		// WallSpawn list may have up to 4 entries per tile (one per visible face).
-		// Dedup by position — first entry wins; any face texture is good enough for the automap.
-		foreach (MapAnalyzer.MapAnalysis.WallSpawn wall in mapAnalysis.Walls)
-			_wallTextures.TryAdd((wall.X, wall.Y), wall.Shape);
-
-		foreach (MapAnalyzer.MapAnalysis.DoorSpawn door in mapAnalysis.Doors)
-			_doorTiles.Add((door.X, door.Y));
+		// Snapshot the flat automap array from MapAnalysis — walls + doors, no pushwalls
+		_automapData = mapAnalysis.AutomapData;
+		_mapWidth    = mapAnalysis.Width;
 
 		// PushWalls are NOT baked into the static background — they move, so they're drawn
-		// dynamically in _Draw().  MapAnalyzer.cs already excludes them from MapAnalysis.Walls
+		// dynamically in _Draw().  MapAnalyzer.cs already excludes them from AutomapData
 		// (replaces with FloorCodeFirst before scanning), so the background correctly shows floor.
 		foreach (MapAnalyzer.MapAnalysis.PushWallSpawn pushWall in mapAnalysis.PushWalls)
 			_pushWallTextures[(pushWall.X, pushWall.Y)] = pushWall.Shape;
@@ -101,31 +94,18 @@ public partial class AutomapRenderer : Control
 
 		Image atlasImage = SharedAssetManager.AtlasImage;
 
-		// C# idiom: int loop variables; cast to ushort only for dictionary key lookup
-		for (int y = 0; y < mapDepth; y++)
+		// WL_MAP.C:DrawMapWalls — iterate flat array, skip floor/empty sentinel
+		for (int i = 0; i < _automapData.Count; i++)
 		{
-			for (int x = 0; x < mapWidth; x++)
-			{
-				(ushort, ushort) key = ((ushort)x, (ushort)y);
-				if (_doorTiles.Contains(key))
-					PaintSolidTile(x, y, _doorColor);
-				else if (_wallTextures.TryGetValue(key, out ushort shape)
-					&& SharedAssetManager.VSwap.TryGetValue(shape, out AtlasTexture atlasTexture))
-					PaintWallTile(x, y, atlasTexture, atlasImage);
-				// else: floor colour already filled by Image.Fill above
-			}
+			ushort page = _automapData[i];
+			if (page == ushort.MaxValue)
+				continue; // floor — already filled above
+			int x = i % mapWidth, y = i / mapWidth;
+			if (SharedAssetManager.VSwap.TryGetValue(page, out AtlasTexture atlasTexture))
+				PaintWallTile(x, y, atlasTexture, atlasImage);
 		}
 
 		_backgroundTexture = ImageTexture.CreateFromImage(_backgroundImage);
-	}
-
-	private void PaintSolidTile(int tileX, int tileY, Color color)
-	{
-		int destX = tileX * TilePixels,
-			destY = tileY * TilePixels;
-		for (int dy = 0; dy < TilePixels; dy++)
-			for (int dx = 0; dx < TilePixels; dx++)
-				_backgroundImage.SetPixel(destX + dx, destY + dy, color);
 	}
 
 	private void PaintWallTile(int tileX, int tileY, AtlasTexture atlasTexture, Image atlasImage)
@@ -223,7 +203,7 @@ public partial class AutomapRenderer : Control
 					new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
 					false);
 			else
-				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels), _doorColor);
+				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels), _floorColor);
 		}
 
 		// Player tile marker

@@ -456,6 +456,15 @@ public class MapAnalyzer
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
 
 		/// <summary>
+		/// Flat array parallel to MapData (Width × Depth), for automap display (WL_MAP.C:DrawMapWalls).
+		/// Each entry is the VSwap page to display for that tile, or ushort.MaxValue for floor/empty.
+		/// Wall tiles use GetWallPage (horizontal/NS texture); door tiles use their door texture.
+		/// Pushwall starting positions are treated as floor (they move — track via PushWalls + events).
+		/// Standard path: derived from the wall plane. Pre-baked path (KOD): first face per position.
+		/// </summary>
+		public IReadOnlyList<ushort> AutomapData { get; private set; }
+
+		/// <summary>
 		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
 		/// look up ElevatorConfig from MapAnalyzer.Elevators dictionary.
 		/// </summary>
@@ -730,6 +739,38 @@ public class MapAnalyzer
 					}
 				}
 			}
+
+			// Build AutomapData: flat array parallel to MapData for WL_MAP.C:DrawMapWalls display.
+			// ushort.MaxValue = floor/empty (not drawn). Doors included with their own page.
+			ushort[] automapData = new ushort[realWalls.Length];
+			Array.Fill(automapData, ushort.MaxValue);
+			if (prebuiltWalls != null)
+			{
+				// Pre-baked path (e.g. KOD): each face may have a distinct texture; first per tile wins
+				foreach (WallSpawn ws in prebuiltWalls)
+				{
+					int idx = gameMap.GetIndex(ws.X, ws.Y);
+					if (automapData[idx] == ushort.MaxValue)
+						automapData[idx] = ws.Shape;
+				}
+			}
+			else
+			{
+				// Build a fast index→doorPage lookup from the doors list we just constructed
+				Dictionary<int, ushort> doorPageByIndex = [];
+				foreach (DoorSpawn d in doors)
+					doorPageByIndex[gameMap.GetIndex(d.X, d.Y)] = d.Shape;
+
+				for (int i = 0; i < realWalls.Length; i++)
+				{
+					ushort tile = realWalls[i];
+					if (doorPageByIndex.TryGetValue(i, out ushort doorPage))
+						automapData[i] = doorPage;
+					else if (mapAnalyzer.IsWall(tile))
+						automapData[i] = mapAnalyzer.GetWallPage(tile, false);
+				}
+			}
+			AutomapData = Array.AsReadOnly(automapData);
 
 			// Use pre-baked spawns when provided; otherwise use the wall scan results.
 			Walls = prebuiltWalls != null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);
