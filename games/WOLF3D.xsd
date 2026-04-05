@@ -1859,6 +1859,15 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="StatusBarPic" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Status bar picture name to show in the WeaponPic slot when this weapon is equipped
+						(e.g., "KNIFEPIC", "GUNPIC", "MACHINEGUNPIC", "GATLINGGUNPIC").
+						When present, equipping this weapon automatically updates the WeaponPic status bar picture.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

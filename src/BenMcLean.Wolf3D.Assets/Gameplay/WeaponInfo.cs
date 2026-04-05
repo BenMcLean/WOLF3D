@@ -78,6 +78,13 @@ public class WeaponInfo
 	public string FireSound { get; set; }
 
 	/// <summary>
+	/// Status bar picture name to display in the WeaponPic slot when this weapon is equipped.
+	/// (e.g., "KNIFEPIC", "GUNPIC", "MACHINEGUNPIC", "GATLINGGUNPIC").
+	/// Null if the weapon has no status bar picture.
+	/// </summary>
+	public string StatusBarPic { get; set; }
+
+	/// <summary>
 	/// Creates a WeaponInfo instance from an XML element.
 	/// </summary>
 	/// <param name="element">The XML element containing weapon data</param>
@@ -95,7 +102,8 @@ public class WeaponInfo
 			AmmoPerShot = short.TryParse(element.Attribute("AmmoPerShot")?.Value, out short ammo) ? ammo : (short)0,
 			AmmoType = element.Attribute("AmmoType")?.Value,
 			RapidFire = string.Equals(element.Attribute("RapidFire")?.Value, "true", StringComparison.OrdinalIgnoreCase),
-			FireSound = element.Attribute("FireSound")?.Value
+			FireSound = element.Attribute("FireSound")?.Value,
+			StatusBarPic = element.Attribute("StatusBarPic")?.Value
 		};
 	}
 }

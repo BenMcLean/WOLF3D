@@ -2013,6 +2013,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Inventory is the single source of truth for the presentation layer
 		Inventory.SetValue($"SelectedWeapon{slotIndex}", weaponInfo.Number);
 		Inventory.SetValue("StatusBarWeapon", weaponInfo.Number);
+		// Update the WeaponPic status bar picture when equipped
+		if (!string.IsNullOrEmpty(weaponInfo.StatusBarPic))
+			EmitStatusBarPicChanged("WeaponPic", weaponInfo.StatusBarPic);
 
 		WeaponEquipped?.Invoke(new WeaponEquippedEvent
 		{

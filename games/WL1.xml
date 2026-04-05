@@ -971,7 +971,8 @@ StartTicker("AvgTreasureRatio", tr)
 				IdleState="s_knife"
 				FireState="s_knife_1"
 				AmmoPerShot="0"
-				FireSound="ATKKNIFESND"/>
+				FireSound="ATKKNIFESND"
+				StatusBarPic="KNIFEPIC"/>
 			<!-- Pistol (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] -->
 			<GameplayWeapon
 				Name="pistol"
@@ -981,7 +982,8 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKPISTOLSND"
-				BaseDamage="5"/>
+				BaseDamage="5"
+				StatusBarPic="GUNPIC"/>
 			<!-- Machine Gun (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] -->
 			<GameplayWeapon
 				Name="machinegun"
@@ -992,7 +994,8 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoPerShot="1"
 				FireSound="ATKMACHINEGUNSND"
 				BaseDamage="5"
-				RapidFire="true"/>
+				RapidFire="true"
+				StatusBarPic="MACHINEGUNPIC"/>
 			<!-- Chain Gun (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] -->
 			<GameplayWeapon
 				Name="chaingun"
@@ -1003,7 +1006,8 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoPerShot="1"
 				FireSound="ATKGATLINGSND"
 				BaseDamage="5"
-				RapidFire="true"/>
+				RapidFire="true"
+				StatusBarPic="GATLINGGUNPIC"/>
 		</GameplayWeapons>
 		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
@@ -1361,7 +1365,7 @@ local isNew = not Has("Weapon3")
 SetValue("Weapon3", 1)
 AddValue("Ammo", 6)
 if isNew then SwitchToWeapon("chaingun") end
-SetValue("FaceGrinTics", 2)
+SetValue("FaceGrinTics", 4)
 PlayAdLibSound("GETGATLINGSND")
 FlashScreen(0xFFF800)
 return true
