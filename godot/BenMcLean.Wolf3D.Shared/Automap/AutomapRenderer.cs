@@ -20,18 +20,31 @@ public partial class AutomapRenderer : Control
 	public const int ViewWidth   = 320;
 	public const int ViewHeight  = 160;
 
-	private Color _floorColor = new(0.12f, 0.12f, 0.12f);
+	private Color _floorColor   = new(0.12f, 0.12f, 0.12f);
+	private Color _ceilingColor = new(0.08f, 0.08f, 0.08f);
 
-	// Full-map baked image (mapWidth*8 × mapDepth*8 pixels)
-	private Image        _backgroundImage;
-	private ImageTexture _backgroundTexture;
+	// Two baked images (init-time only):
+	//   _litImage  — floor color bg + light-side (NS) wall pages
+	//   _dimImage  — ceiling color bg + dark-side (EW) wall pages
+	// One composite image (rebuilt when fog changes, CPU-side only):
+	//   _compositeImage — per-tile selection from lit/dim/black based on fog state
+	private Image        _litImage;
+	private Image        _dimImage;
+	private Image        _compositeImage;
+	private ImageTexture _compositeTexture;
+	private bool         _compositeDirty;
 	private int          _mapPixelWidth;
 	private int          _mapPixelHeight;
 	private int          _mapWidth;   // tile count, needed to index into _automapData
 
 	// Flat array parallel to MapData: VSwap page per tile, ushort.MaxValue = floor/empty
 	// Mirrors MapAnalysis.AutomapData — walls and doors baked here, pushwalls excluded
-	private IReadOnlyList<ushort> _automapData;
+	private IReadOnlyList<ushort>           _automapData;
+	private MapAnalyzer.MapAnalysis         _mapAnalysis; // kept for AutomapTileHasDimVariant
+
+	// Fog-of-war snapshots — updated by UpdateFog(), consumed when composite is rebuilt
+	private IReadOnlyList<bool> _fogEverSeen        = [];
+	private IReadOnlyList<bool> _fogCurrentlyVisible = [];
 
 	// Pushwall tiles — drawn dynamically in _Draw() so moves update without rebaking
 	// Key: current tile position; Value: VSwap page number
@@ -62,9 +75,14 @@ public partial class AutomapRenderer : Control
 		_floorColor = mapAnalysis.Floor is byte floorIndex
 			? SharedAssetManager.GetPaletteColor(floorIndex)
 			: new Color(0.12f, 0.12f, 0.12f);
+		// Ceiling color for the dim (discovered-but-not-visible) layer
+		_ceilingColor = mapAnalysis.Ceiling is byte ceilingIndex
+			? SharedAssetManager.GetPaletteColor(ceilingIndex)
+			: new Color(0.08f, 0.08f, 0.08f);
 
 		// Snapshot the flat automap array from MapAnalysis — walls + doors, no pushwalls
 		_automapData = mapAnalysis.AutomapData;
+		_mapAnalysis = mapAnalysis;
 		_mapWidth    = mapAnalysis.Width;
 
 		// PushWalls are NOT baked into the static background — they move, so they're drawn
@@ -75,6 +93,8 @@ public partial class AutomapRenderer : Control
 
 		_mapPixelWidth  = mapAnalysis.Width * TilePixels;
 		_mapPixelHeight = mapAnalysis.Depth * TilePixels;
+		_fogEverSeen         = [];
+		_fogCurrentlyVisible = [];
 
 		CustomMinimumSize = new Vector2(ViewWidth, ViewHeight);
 
@@ -89,26 +109,39 @@ public partial class AutomapRenderer : Control
 
 	private void BakeBackground(ushort mapWidth, ushort mapDepth)
 	{
-		_backgroundImage = Image.CreateEmpty(_mapPixelWidth, _mapPixelHeight, false, Image.Format.Rgba8);
-		_backgroundImage.Fill(_floorColor);
-
 		Image atlasImage = SharedAssetManager.AtlasImage;
+
+		// Lit image: floor color background, light-side (NS/even) wall pages
+		_litImage = Image.CreateEmpty(_mapPixelWidth, _mapPixelHeight, false, Image.Format.Rgba8);
+		_litImage.Fill(_floorColor);
+
+		// Dim image: ceiling color background, dark-side (EW/odd) wall pages where available
+		_dimImage = Image.CreateEmpty(_mapPixelWidth, _mapPixelHeight, false, Image.Format.Rgba8);
+		_dimImage.Fill(_ceilingColor);
 
 		// WL_MAP.C:DrawMapWalls — iterate flat array, skip floor/empty sentinel
 		for (int i = 0; i < _automapData.Count; i++)
 		{
-			ushort page = _automapData[i];
-			if (page == ushort.MaxValue)
+			ushort litPage = _automapData[i];
+			if (litPage == ushort.MaxValue)
 				continue; // floor — already filled above
 			int x = i % mapWidth, y = i / mapWidth;
-			if (SharedAssetManager.VSwap.TryGetValue(page, out AtlasTexture atlasTexture))
-				PaintWallTile(x, y, atlasTexture, atlasImage);
+			if (SharedAssetManager.VSwap.TryGetValue(litPage, out AtlasTexture litAtlas))
+				PaintTile(_litImage, x, y, litAtlas, atlasImage);
+			ushort dimPage = _mapAnalysis.AutomapTileHasDimVariant(i)
+				? (ushort)(litPage + 1) : litPage;
+			if (SharedAssetManager.VSwap.TryGetValue(dimPage, out AtlasTexture dimAtlas))
+				PaintTile(_dimImage, x, y, dimAtlas, atlasImage);
 		}
 
-		_backgroundTexture = ImageTexture.CreateFromImage(_backgroundImage);
+		// Composite starts fully black (all undiscovered); rebuilt by RebuildComposite() on fog update
+		_compositeImage = Image.CreateEmpty(_mapPixelWidth, _mapPixelHeight, false, Image.Format.Rgba8);
+		_compositeImage.Fill(Colors.Black);
+		_compositeTexture = ImageTexture.CreateFromImage(_compositeImage);
+		_compositeDirty = false;
 	}
 
-	private void PaintWallTile(int tileX, int tileY, AtlasTexture atlasTexture, Image atlasImage)
+	private void PaintTile(Image target, int tileX, int tileY, AtlasTexture atlasTexture, Image atlasImage)
 	{
 		Rect2 region = atlasTexture.Region;
 		int   destX  = tileX * TilePixels,
@@ -122,11 +155,34 @@ public partial class AutomapRenderer : Control
 				int srcX = (int)(dx * scaleX) + (int)region.Position.X;
 				int srcY = (int)(dy * scaleY) + (int)region.Position.Y;
 				Color src = atlasImage.GetPixel(srcX, srcY);
-				if (src.A > 1f)
-					_backgroundImage.SetPixel(destX + dx, destY + dy, src);
-				// else: transparent pixel — leave floor colour showing through
+				if (src.A > 0f)
+					target.SetPixel(destX + dx, destY + dy, src);
+				// else: transparent pixel — leave background colour showing through
 			}
 		}
+	}
+
+	private void RebuildComposite()
+	{
+		int tileCount = _automapData.Count;
+		for (int i = 0; i < tileCount; i++)
+		{
+			int x = i % _mapWidth, y = i / _mapWidth;
+			Rect2I tileRect = new(x * TilePixels, y * TilePixels, TilePixels, TilePixels);
+			Vector2I tileDst = new(x * TilePixels, y * TilePixels);
+
+			bool visible = i < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[i];
+			bool seen    = i < _fogEverSeen.Count         && _fogEverSeen[i];
+
+			if (visible)
+				_compositeImage.BlitRect(_litImage, tileRect, tileDst);
+			else if (seen)
+				_compositeImage.BlitRect(_dimImage, tileRect, tileDst);
+			else
+				_compositeImage.FillRect(tileRect, Colors.Black);
+		}
+		_compositeTexture.Update(_compositeImage);
+		_compositeDirty = false;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -162,14 +218,30 @@ public partial class AutomapRenderer : Control
 		QueueRedraw();
 	}
 
+	/// <summary>
+	/// Snapshots the current fog state from the simulator and marks the composite dirty.
+	/// The composite is rebuilt lazily at the start of the next _Draw() call.
+	/// </summary>
+	public void UpdateFog(IReadOnlyList<bool> everSeen, IReadOnlyList<bool> currentlyVisible)
+	{
+		_fogEverSeen         = everSeen;
+		_fogCurrentlyVisible = currentlyVisible;
+		_compositeDirty      = true;
+		QueueRedraw();
+	}
+
 	// ---------------------------------------------------------------------------
 	// Rendering
 	// ---------------------------------------------------------------------------
 
 	public override void _Draw()
 	{
-		if (!_initialized || _backgroundTexture is null)
+		if (!_initialized || _compositeTexture is null)
 			return;
+
+		// Rebuild composite if fog state changed since last frame
+		if (_compositeDirty)
+			RebuildComposite();
 
 		// Scroll viewport to keep player centred, clamped so we never go past map edge
 		int viewX = Math.Clamp(
@@ -179,24 +251,27 @@ public partial class AutomapRenderer : Control
 			_playerTileY * TilePixels - ViewHeight / 2,
 			0, Math.Max(0, _mapPixelHeight - ViewHeight));
 
-		// Black background — visible only when the map is smaller than 320×160
+		// Black background — visible only for maps smaller than 320×160
 		DrawRect(new Rect2(0, 0, ViewWidth, ViewHeight), Colors.Black);
 
-		// Background map region (one draw call for the entire map background)
+		// Composite map region — one draw call; encodes lit/dim/black per tile
 		int drawW = Math.Min(ViewWidth,  _mapPixelWidth  - viewX);
 		int drawH = Math.Min(ViewHeight, _mapPixelHeight - viewY);
 		if (drawW > 0 && drawH > 0)
 			DrawTextureRectRegion(
-				_backgroundTexture,
+				_compositeTexture,
 				new Rect2(0, 0, drawW, drawH),
 				new Rect2(viewX, viewY, drawW, drawH));
 
-		// Pushwall overlay — drawn on top of the static background, below the player marker
+		// Pushwall overlay — drawn on top, but only for tiles the player has seen
 		foreach (((ushort pwX, ushort pwY), ushort pwShape) in _pushWallTextures)
 		{
+			int tileIdx = pwY * _mapWidth + pwX;
+			bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
+			if (!seen) continue;
+
 			int pwScreenX = pwX * TilePixels - viewX;
 			int pwScreenY = pwY * TilePixels - viewY;
-			// Skip tiles fully outside the viewport
 			if (pwScreenX + TilePixels <= 0 || pwScreenX >= ViewWidth
 				|| pwScreenY + TilePixels <= 0 || pwScreenY >= ViewHeight)
 				continue;
@@ -233,10 +308,14 @@ public partial class AutomapRenderer : Control
 	/// </summary>
 	public override void _ExitTree()
 	{
-		_backgroundTexture?.Dispose();
-		_backgroundTexture = null;
-		_backgroundImage?.Dispose();
-		_backgroundImage   = null;
-		_initialized       = false;
+		_compositeTexture?.Dispose();
+		_compositeTexture = null;
+		_compositeImage?.Dispose();
+		_compositeImage   = null;
+		_litImage?.Dispose();
+		_litImage         = null;
+		_dimImage?.Dispose();
+		_dimImage         = null;
+		_initialized      = false;
 	}
 }

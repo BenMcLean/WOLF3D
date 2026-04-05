@@ -22,6 +22,7 @@ public class AutomapController
 	private Action<PushWallPositionChangedEvent> _onPushWallPositionChanged;
 	// Last confirmed idle tile per pushwall index — avoids relying on Direction when Action==Idle
 	private readonly Dictionary<ushort, (ushort tileX, ushort tileY)> _pushWallTiles = [];
+	private int _lastFogVersion = -1;
 
 	public AutomapController()
 	{
@@ -53,6 +54,7 @@ public class AutomapController
 	public void Init(MapAnalyzer.MapAnalysis mapAnalysis, Simulator.Simulator simulator)
 	{
 		_renderer.Init(mapAnalysis);
+		_lastFogVersion = -1;
 
 		// Unsubscribe from any previous simulator before switching
 		if (_simulator is not null && _onPushWallPositionChanged is not null)
@@ -72,11 +74,19 @@ public class AutomapController
 	}
 
 	/// <summary>
-	/// Updates the player marker on the automap.
+	/// Updates the player marker on the automap and advances fog of war if needed.
 	/// Call each frame from the presentation layer's _Process.
 	/// </summary>
-	public void UpdatePlayer(ushort tileX, ushort tileY, short angle) =>
+	public void UpdatePlayer(ushort tileX, ushort tileY, short angle)
+	{
+		_simulator?.RecomputeVisibilityIfNeeded();
+		if (_simulator is not null && _simulator.FogVersion != _lastFogVersion)
+		{
+			_renderer.UpdateFog(_simulator.EverSeen, _simulator.CurrentlyVisible);
+			_lastFogVersion = _simulator.FogVersion;
+		}
 		_renderer.UpdatePlayer(tileX, tileY, angle);
+	}
 
 	/// <summary>
 	/// Unsubscribes from simulator events. Call when the presentation layer exits the tree.

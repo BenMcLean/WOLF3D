@@ -458,11 +458,21 @@ public class MapAnalyzer
 		/// <summary>
 		/// Flat array parallel to MapData (Width × Depth), for automap display (WL_MAP.C:DrawMapWalls).
 		/// Each entry is the VSwap page to display for that tile, or ushort.MaxValue for floor/empty.
-		/// Wall tiles use GetWallPage (horizontal/NS texture); door tiles use their door texture.
+		/// Wall tiles use GetWallPage(facesEastWest=false) — the lighter NS/horizontal texture.
+		/// Door tiles use their door texture. Decorations use their sprite page.
 		/// Pushwall starting positions are treated as floor (they move — track via PushWalls + events).
 		/// Standard path: derived from the wall plane. Pre-baked path (KOD): first face per position.
 		/// </summary>
 		public IReadOnlyList<ushort> AutomapData { get; private set; }
+
+		/// <summary>
+		/// One bit per tile (parallel to AutomapData): true when the tile has a dark-side VSwap page.
+		/// The dim page is always AutomapData[i] + 1 (Wolf3D EW/vertical paired convention).
+		/// True only for standard paired wall tiles; false for doors, sprites, floor, pre-baked paths,
+		/// and games with UniformWallTextures (which have no light/dark pairing).
+		/// </summary>
+		private readonly BitArray _automapHasDimVariant;
+		public bool AutomapTileHasDimVariant(int index) => _automapHasDimVariant[index];
 
 		/// <summary>
 		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
@@ -744,9 +754,12 @@ public class MapAnalyzer
 			// ushort.MaxValue = floor/empty (not drawn). Doors included with their own page.
 			ushort[] automapData = new ushort[realWalls.Length];
 			Array.Fill(automapData, ushort.MaxValue);
+			// _automapHasDimVariant: true where dim layer should use page+1 (EW/dark paired variant)
+			BitArray hasDimVariant = new(realWalls.Length, false);
 			if (prebuiltWalls != null)
 			{
-				// Pre-baked path (e.g. KOD): each face may have a distinct texture; first per tile wins
+				// Pre-baked path (e.g. KOD): each face may have a distinct texture; first per tile wins.
+				// No light/dark pairing available, so hasDimVariant stays false throughout.
 				foreach (WallSpawn ws in prebuiltWalls)
 				{
 					int idx = gameMap.GetIndex(ws.X, ws.Y);
@@ -767,7 +780,12 @@ public class MapAnalyzer
 					if (doorPageByIndex.TryGetValue(i, out ushort doorPage))
 						automapData[i] = doorPage;
 					else if (mapAnalyzer.IsWall(tile))
+					{
 						automapData[i] = mapAnalyzer.GetWallPage(tile, false);
+						// Paired textures only: dim page = light page + 1 (the EW/vertical variant)
+						if (!mapAnalyzer.UniformWallTextures)
+							hasDimVariant[i] = true;
+					}
 				}
 			}
 			// Second pass: decorative static objects (WL_MAP.C:DrawMapPrizes analogue).
@@ -785,6 +803,7 @@ public class MapAnalyzer
 					automapData[idx] = (ushort)s.Shape;
 			}
 			AutomapData = Array.AsReadOnly(automapData);
+			_automapHasDimVariant = hasDimVariant;
 
 			// Use pre-baked spawns when provided; otherwise use the wall scan results.
 			Walls = prebuiltWalls != null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);

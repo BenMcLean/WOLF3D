@@ -113,6 +113,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private short[] actorAtTile;     // Actor index occupying this tile (-1 if none)
 	private short[] doorAtTile;      // Door index at this tile (-1 if none)
 	private short[] pushWallAtTile;  // PushWall index at this tile (-1 if none)
+
+	// Fog-of-war state (WL_MAP.C:AutoMap visibility concept)
+	// _everSeen: persistent; once true, stays true (suitable for save/load)
+	// _currentlyVisible: recomputed each time RecomputeVisibilityIfNeeded() runs
+	private bool[] _everSeen;
+	private bool[] _currentlyVisible;
+	private ushort _lastFogTileX = ushort.MaxValue;
+	private ushort _lastFogTileY = ushort.MaxValue;
+	private bool _fogDirty;        // set when doors/pushwalls change; cleared after recompute
+	private int _fogVersion;       // incremented each recompute; AutomapController polls this
+	public IReadOnlyList<bool> EverSeen => Array.AsReadOnly(_everSeen ?? []);
+	public IReadOnlyList<bool> CurrentlyVisible => Array.AsReadOnly(_currentlyVisible ?? []);
+	public int FogVersion => _fogVersion;
 									 // WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
 									 // Current simulation time in tics
 	public long CurrentTic { get; private set; }
@@ -751,6 +764,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			door.Position = (ushort)newPosition;
 			door.TicCount = 0;
 			door.Action = DoorAction.Open;
+			_fogDirty = true;
 			DoorOpened?.Invoke(new DoorOpenedEvent
 			{
 				DoorIndex = (ushort)doorIndex,
@@ -806,6 +820,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			newPosition = 0;
 			door.Position = (ushort)newPosition;
 			door.Action = DoorAction.Closed;
+			_fogDirty = true;
 			// Restore door to spatial index (blocks movement again)
 			doorAtTile[tileIdx] = (short)doorIndex;
 			DoorClosed?.Invoke(new DoorClosedEvent
@@ -1027,6 +1042,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			pushWall.Action = PushWallAction.Idle;
 			pushWall.SoundNoiseAccumulator = 0;
 			anyPushWallMoving = false; // Rule 3: Release global lock
+			_fogDirty = true;
 
 			// Clean up: release the initial tile and middle tile, keep only final tile
 			// Pushwall moved 2 tiles from initial position, so clear initial and initial+1
@@ -1355,6 +1371,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		actorAtTile = new short[tileCount];
 		doorAtTile = new short[tileCount];
 		pushWallAtTile = new short[tileCount];
+		_everSeen = new bool[tileCount];
+		_currentlyVisible = new bool[tileCount];
+		_lastFogTileX = ushort.MaxValue;
+		_lastFogTileY = ushort.MaxValue;
+		_fogDirty = true;
 
 		// Fill with -1 (empty)
 #if NET6_0_OR_GREATER
@@ -3364,6 +3385,73 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Based on WL_DEF.H actorat array indexing.
 	/// </summary>
 	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
+
+	#region Fog of War
+	/// <summary>
+	/// Recomputes visibility from the player's current tile if anything relevant has changed:
+	/// player moved to a new tile, a door opened/closed, or a pushwall completed movement.
+	/// Call every frame from the automap presentation layer (AutomapController.UpdatePlayer).
+	/// WL_MAP.C:AutoMap — the automap only shows areas the player has explored.
+	/// </summary>
+	public void RecomputeVisibilityIfNeeded()
+	{
+		if (_everSeen == null) return;
+		if (PlayerTileX != _lastFogTileX || PlayerTileY != _lastFogTileY || _fogDirty)
+			RecomputeVisibility();
+	}
+
+	private void RecomputeVisibility()
+	{
+		Array.Clear(_currentlyVisible, 0, _currentlyVisible.Length);
+
+		ushort startX = PlayerTileX, startY = PlayerTileY;
+		if (startX >= mapWidth || startY >= mapHeight) return;
+
+		// BFS flood fill from player tile (WL_MAP.C:AutoMap area traversal concept)
+		// Visits all tiles reachable without crossing a solid boundary.
+		// Solid boundaries: walls, pushwalls, closed/locking doors.
+		// Open doors are transparent — flood fill passes through them.
+		Queue<(ushort x, ushort y)> queue = new();
+		queue.Enqueue((startX, startY));
+
+		while (queue.Count > 0)
+		{
+			(ushort x, ushort y) = queue.Dequeue();
+			int idx = GetTileIndex(x, y);
+			if (_currentlyVisible[idx]) continue;
+			_currentlyVisible[idx] = true;
+			_everSeen[idx] = true;
+
+			if (!IsFogPassable(x, y)) continue; // mark as seen but don't expand through solid tiles
+
+			if (x > 0)                queue.Enqueue(((ushort)(x - 1), y));
+			if (x < mapWidth  - 1)    queue.Enqueue(((ushort)(x + 1), y));
+			if (y > 0)                queue.Enqueue((x, (ushort)(y - 1)));
+			if (y < mapHeight - 1)    queue.Enqueue((x, (ushort)(y + 1)));
+		}
+
+		_lastFogTileX = PlayerTileX;
+		_lastFogTileY = PlayerTileY;
+		_fogDirty = false;
+		_fogVersion++;
+	}
+
+	/// <summary>
+	/// Returns true if the fog flood fill can pass through this tile.
+	/// Solid tiles (walls, pushwalls, closed doors) are marked seen but not expanded through.
+	/// </summary>
+	private bool IsFogPassable(ushort x, ushort y)
+	{
+		int idx = GetTileIndex(x, y);
+		if (pushWallAtTile[idx] >= 0) return false;
+		if (doorAtTile[idx] >= 0)
+		{
+			DoorAction a = doors[doorAtTile[idx]].Action;
+			return a == DoorAction.Open || a == DoorAction.Opening;
+		}
+		return mapAnalysis.IsNavigable(x, y);
+	}
+	#endregion Fog of War
 
 	/// <summary>
 	/// Checks if a straight-line teleportation path between two tile positions is clear.
