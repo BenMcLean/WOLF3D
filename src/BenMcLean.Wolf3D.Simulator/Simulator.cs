@@ -3387,11 +3387,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
 
 	#region Fog of War
+	// 512 rays gives angular resolution of 0.703°, guaranteeing coverage of every tile
+	// at distances up to 1/sin(0.703°) ≈ 81 tiles — sufficient for a 64×64 Wolf3D map.
+	// Rays are cast only on tile-change or door/pushwall state transitions, not every frame.
+	private const int FogRayCount = 512;
+
 	/// <summary>
 	/// Recomputes visibility from the player's current tile if anything relevant has changed:
 	/// player moved to a new tile, a door opened/closed, or a pushwall completed movement.
 	/// Call every frame from the automap presentation layer (AutomapController.UpdatePlayer).
-	/// WL_MAP.C:AutoMap — the automap only shows areas the player has explored.
+	/// WL_MAP.C:AutoMap — automap tiles revealed when a renderer ray hits them (S3DNA tilemap|0x20).
 	/// </summary>
 	public void RecomputeVisibilityIfNeeded()
 	{
@@ -3407,40 +3412,76 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		ushort startX = PlayerTileX, startY = PlayerTileY;
 		if (startX >= mapWidth || startY >= mapHeight) return;
 
-		// BFS flood fill from player tile (WL_MAP.C:AutoMap area traversal concept)
-		// Visits all tiles reachable without crossing a solid boundary.
-		// Solid boundaries: walls, pushwalls, closed/locking doors.
-		// Open doors are transparent — flood fill passes through them.
-		Queue<(ushort x, ushort y)> queue = new();
-		queue.Enqueue((startX, startY));
+		// Player's own tile is always visible
+		int startIdx = GetTileIndex(startX, startY);
+		_currentlyVisible[startIdx] = true;
+		_everSeen[startIdx] = true;
 
-		while (queue.Count > 0)
+		// Cast 512 rays in all directions using DDA grid traversal.
+		// Each ray starts at the centre of the player's tile and steps through tiles until
+		// it hits a solid tile (wall, pushwall, closed door) or exits the map.
+		// Mirrors WL_DRAW.C:HitVertWall/HitHorizWall setting tilemap[x][y]|=0x20 (S3DNA).
+		for (int r = 0; r < FogRayCount; r++)
 		{
-			(ushort x, ushort y) = queue.Dequeue();
-			int idx = GetTileIndex(x, y);
-			if (_currentlyVisible[idx]) continue;
-			_currentlyVisible[idx] = true;
-			_everSeen[idx] = true;
+			double angle  = r * (2.0 * Math.PI / FogRayCount);
+			double dx     = Math.Cos(angle);
+			double dy     = Math.Sin(angle);
+			int    tileX  = startX;
+			int    tileY  = startY;
+			int    stepX  = dx >= 0 ? 1 : -1;
+			int    stepY  = dy >= 0 ? 1 : -1;
 
-			if (!IsFogPassable(x, y)) continue; // mark as seen but don't expand through solid tiles
+			// Distance along the ray between consecutive tile-boundary crossings per axis.
+			// Near-zero component → ray is axis-parallel → that axis never crosses.
+			double tDeltaX = Math.Abs(dx) < 1e-10 ? double.MaxValue : Math.Abs(1.0 / dx);
+			double tDeltaY = Math.Abs(dy) < 1e-10 ? double.MaxValue : Math.Abs(1.0 / dy);
 
-			if (x > 0)                queue.Enqueue(((ushort)(x - 1), y));
-			if (x < mapWidth  - 1)    queue.Enqueue(((ushort)(x + 1), y));
-			if (y > 0)                queue.Enqueue((x, (ushort)(y - 1)));
-			if (y < mapHeight - 1)    queue.Enqueue((x, (ushort)(y + 1)));
+			// Starting at the tile centre means the first crossing is always half a step away.
+			double tMaxX = tDeltaX * 0.5;
+			double tMaxY = tDeltaY * 0.5;
+
+			while (true)
+			{
+				// Advance to the nearer axis crossing
+				if (tMaxX < tMaxY)
+				{
+					tileX += stepX;
+					tMaxX += tDeltaX;
+				}
+				else
+				{
+					tileY += stepY;
+					tMaxY += tDeltaY;
+				}
+
+				// Cast negative indices to uint so a single comparison catches both
+				// underflow (negative → huge uint) and overflow (>= mapWidth/Height).
+				if ((uint)tileX >= (uint)mapWidth || (uint)tileY >= (uint)mapHeight)
+					break;
+
+				int idx = GetTileIndex((ushort)tileX, (ushort)tileY);
+				_currentlyVisible[idx] = true;
+				_everSeen[idx] = true;
+
+				if (!IsFogRayPassable((ushort)tileX, (ushort)tileY))
+					break; // solid tile — mark it, then stop the ray
+			}
 		}
 
 		_lastFogTileX = PlayerTileX;
 		_lastFogTileY = PlayerTileY;
-		_fogDirty = false;
+		_fogDirty     = false;
 		_fogVersion++;
 	}
 
 	/// <summary>
-	/// Returns true if the fog flood fill can pass through this tile.
-	/// Solid tiles (walls, pushwalls, closed doors) are marked seen but not expanded through.
+	/// Returns true if a fog-of-war ray can pass through this tile.
+	/// Open/opening doors are transparent; walls, pushwalls, and closed doors terminate the ray.
+	/// Block objects are transparent to rays (IsTransparent, not IsNavigable) — the Wolf3D
+	/// raycaster only checks the first map plane (wall data), not the object plane.
+	/// Mirrors S3DNA WL_DRAW.C ray termination: passvert/passhoriz vs hitvert/hithoriz.
 	/// </summary>
-	private bool IsFogPassable(ushort x, ushort y)
+	private bool IsFogRayPassable(ushort x, ushort y)
 	{
 		int idx = GetTileIndex(x, y);
 		if (pushWallAtTile[idx] >= 0) return false;
@@ -3449,7 +3490,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			DoorAction a = doors[doorAtTile[idx]].Action;
 			return a == DoorAction.Open || a == DoorAction.Opening;
 		}
-		return mapAnalysis.IsNavigable(x, y);
+		return mapAnalysis.IsTransparent(x, y);
 	}
 	#endregion Fog of War
 

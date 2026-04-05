@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -187,8 +187,8 @@ public class MapAnalyzer
 		}
 
 		// Parse object metadata - unified <ObjectType> elements
-		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? Enumerable.Empty<XElement>();
-		Objects = new Dictionary<ushort, ObjectInfo>();
+		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? [];
+		Objects = [];
 
 		foreach (XElement obj in objectElements)
 		{
