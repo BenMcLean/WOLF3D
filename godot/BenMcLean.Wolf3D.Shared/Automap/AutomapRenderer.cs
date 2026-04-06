@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Simulator.Entities;
 using Godot;
 
 namespace BenMcLean.Wolf3D.Shared.Automap;
@@ -49,6 +50,10 @@ public partial class AutomapRenderer : Control
 	// Pushwall tiles — drawn dynamically in _Draw() so moves update without rebaking
 	// Key: current tile position; Value: VSwap page number
 	private readonly Dictionary<(ushort, ushort), ushort> _pushWallTextures = [];
+
+	// Bonus items — set by UpdateBonuses() once on level load; read each _Draw()
+	// WL_MAP.C:DrawMapPrizes — items with ShapeNum == -1 have been collected and are skipped
+	private StatObj[] _statObjList;
 
 	// Player state — set by UpdatePlayer(), drives viewport scroll and marker draw
 	private ushort _playerTileX;
@@ -196,6 +201,17 @@ public partial class AutomapRenderer : Control
 	// ---------------------------------------------------------------------------
 
 	/// <summary>
+	/// Sets the bonus item list read each frame by _Draw() to render uncollected pickups.
+	/// Call once after Init() with simulator.StatObjList — the renderer reads it live,
+	/// so collected items (ShapeNum == -1) automatically stop appearing without further calls.
+	/// WL_MAP.C:DrawMapPrizes — only items with ShapeNum >= 0 are shown.
+	/// </summary>
+	public void UpdateBonuses(StatObj[] statObjList)
+	{
+		_statObjList = statObjList;
+	}
+
+	/// <summary>
 	/// Updates the player's tile position and facing angle.
 	/// Convert from simulator: tileX = PlayerX >> 16, tileY = PlayerY >> 16.
 	/// WL_DEF.H:player->angle — 0-359 degrees, 0 = east, counter-clockwise.
@@ -296,6 +312,30 @@ public partial class AutomapRenderer : Control
 			else
 				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
 					visible ? _floorColor : _ceilingColor);
+		}
+
+		// Bonus overlay — drawn dynamically so collected items disappear automatically.
+		// WL_MAP.C:DrawMapPrizes — only items with ShapeNum >= 0 are shown; ShapeNum == -1 = collected.
+		// ShapeNum == -2 = invisible trigger (no sprite), also skipped.
+		// Only draw bonuses on tiles the player has already seen (fog-of-war consistent with walls).
+		if (_statObjList is not null)
+		{
+			foreach (StatObj stat in _statObjList)
+			{
+				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
+					continue;
+				int tileIdx = stat.TileY * _mapWidth + stat.TileX;
+				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
+				if (!seen)
+					continue;
+				int bScreenX = stat.TileX * TilePixels - viewX;
+				int bScreenY = stat.TileY * TilePixels - viewY;
+				if (bScreenX + TilePixels <= 0 || bScreenX >= ViewWidth
+					|| bScreenY + TilePixels <= 0 || bScreenY >= ViewHeight)
+					continue;
+				if (SharedAssetManager.VSwap.TryGetValue((ushort)stat.ShapeNum, out AtlasTexture bonusAtlas))
+					DrawTextureRect(bonusAtlas, new Rect2(bScreenX, bScreenY, TilePixels, TilePixels), false);
+			}
 		}
 
 		// Player tile marker

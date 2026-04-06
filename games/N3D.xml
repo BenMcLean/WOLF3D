@@ -1050,7 +1050,8 @@ return true
 				<![CDATA[
 -- bo_map: WL_AGENT.C #ifdef GAMEVER_NOAH3D
 -- SD_PlaySound(GETKEYSND=D_KEYSND); gamestate.automap = true
-SetValue("AutoMap", 1)
+-- RevealEntireMap marks all tiles seen so the fog system reveals them naturally.
+RevealEntireMap()
 PlayDigiSound("D_KEYSND")
 return true
 ]]>

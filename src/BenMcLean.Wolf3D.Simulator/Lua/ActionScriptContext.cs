@@ -73,6 +73,11 @@ public class ActionScriptContext(
 	/// <param name="color">24-bit RGB color (e.g., 0xFF0000 for red, 0xFFFF00 for yellow)</param>
 	/// <param name="duration">Duration in tics (default 18 = ~257ms, matching original Wolf3D bonus flash)</param>
 	public void FlashScreen(int color, int duration = 18) => simulator.EmitScreenFlash((uint)color, (short)duration);
+	/// <summary>
+	/// Marks every tile on the map as permanently seen, revealing it on the automap.
+	/// WL_AGENT.C:#ifdef GAMEVER_NOAH3D bo_map pickup (gamestate.automap = true).
+	/// </summary>
+	public void RevealEntireMap() => simulator.RevealEntireMap();
 	#endregion
 	#region Menu Navigation API (exposed to Lua)
 	/// <summary>

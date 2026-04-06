@@ -3401,6 +3401,20 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Call every frame from the automap presentation layer (AutomapController.UpdatePlayer).
 	/// WL_MAP.C:AutoMap — automap tiles revealed when a renderer ray hits them (S3DNA tilemap|0x20).
 	/// </summary>
+	/// <summary>
+	/// Marks every tile on the map as permanently seen, revealing it on the automap.
+	/// WL_AGENT.C:#ifdef GAMEVER_NOAH3D — bo_map pickup sets gamestate.automap = true,
+	/// which caused DrawMapWalls to show all tiles. Here we achieve the same effect by
+	/// marking all tiles seen so the fog-of-war system reveals them naturally.
+	/// </summary>
+	public void RevealEntireMap()
+	{
+		if (_everSeen == null) return;
+		for (int i = 0; i < _everSeen.Length; i++)
+			_everSeen[i] = true;
+		_fogVersion++;
+	}
+
 	public void RecomputeVisibilityIfNeeded()
 	{
 		if (_everSeen == null) return;

@@ -54,6 +54,7 @@ public class AutomapController
 	public void Init(MapAnalyzer.MapAnalysis mapAnalysis, Simulator.Simulator simulator)
 	{
 		_renderer.Init(mapAnalysis);
+		_renderer.UpdateBonuses(simulator.StatObjList);
 		_lastFogVersion = -1;
 
 		// Unsubscribe from any previous simulator before switching
