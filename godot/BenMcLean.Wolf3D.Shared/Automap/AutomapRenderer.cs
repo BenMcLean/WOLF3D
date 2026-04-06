@@ -192,6 +192,25 @@ public partial class AutomapRenderer : Control
 			else
 				_compositeImage.FillRect(tileRect, Colors.Black);
 		}
+
+		// Paint active bonus sprites onto seen tiles.
+		// WL_MAP.C:DrawMapPrizes — items with ShapeNum == -1 have been collected and are skipped.
+		if (_statObjList is not null)
+		{
+			Image atlasImage = SharedAssetManager.AtlasImage;
+			foreach (StatObj stat in _statObjList)
+			{
+				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
+					continue;
+				int tileIdx = stat.TileY * _mapWidth + stat.TileX;
+				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
+				if (!seen)
+					continue;
+				if (SharedAssetManager.VSwap.TryGetValue((ushort)stat.ShapeNum, out AtlasTexture bonusAtlas))
+					PaintTile(_compositeImage, stat.TileX, stat.TileY, bonusAtlas, atlasImage);
+			}
+		}
+
 		_compositeTexture.Update(_compositeImage);
 		_compositeDirty = false;
 	}
@@ -201,14 +220,25 @@ public partial class AutomapRenderer : Control
 	// ---------------------------------------------------------------------------
 
 	/// <summary>
-	/// Sets the bonus item list read each frame by _Draw() to render uncollected pickups.
-	/// Call once after Init() with simulator.StatObjList — the renderer reads it live,
-	/// so collected items (ShapeNum == -1) automatically stop appearing without further calls.
+	/// Sets the bonus item list used by RebuildComposite() to paint uncollected pickups.
+	/// Call once after Init() with simulator.StatObjList.
 	/// WL_MAP.C:DrawMapPrizes — only items with ShapeNum >= 0 are shown.
 	/// </summary>
 	public void UpdateBonuses(StatObj[] statObjList)
 	{
 		_statObjList = statObjList;
+		_compositeDirty = true;
+		QueueRedraw();
+	}
+
+	/// <summary>
+	/// Marks the composite dirty so the next _Draw() rebuilds it without the collected bonus.
+	/// Call when a bonus is picked up or a new one is spawned (e.g. enemy drop).
+	/// </summary>
+	public void OnBonusChanged()
+	{
+		_compositeDirty = true;
+		QueueRedraw();
 	}
 
 	/// <summary>
@@ -312,30 +342,6 @@ public partial class AutomapRenderer : Control
 			else
 				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
 					visible ? _floorColor : _ceilingColor);
-		}
-
-		// Bonus overlay — drawn dynamically so collected items disappear automatically.
-		// WL_MAP.C:DrawMapPrizes — only items with ShapeNum >= 0 are shown; ShapeNum == -1 = collected.
-		// ShapeNum == -2 = invisible trigger (no sprite), also skipped.
-		// Only draw bonuses on tiles the player has already seen (fog-of-war consistent with walls).
-		if (_statObjList is not null)
-		{
-			foreach (StatObj stat in _statObjList)
-			{
-				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
-					continue;
-				int tileIdx = stat.TileY * _mapWidth + stat.TileX;
-				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
-				if (!seen)
-					continue;
-				int bScreenX = stat.TileX * TilePixels - viewX;
-				int bScreenY = stat.TileY * TilePixels - viewY;
-				if (bScreenX + TilePixels <= 0 || bScreenX >= ViewWidth
-					|| bScreenY + TilePixels <= 0 || bScreenY >= ViewHeight)
-					continue;
-				if (SharedAssetManager.VSwap.TryGetValue((ushort)stat.ShapeNum, out AtlasTexture bonusAtlas))
-					DrawTextureRect(bonusAtlas, new Rect2(bScreenX, bScreenY, TilePixels, TilePixels), false);
-			}
 		}
 
 		// Player tile marker

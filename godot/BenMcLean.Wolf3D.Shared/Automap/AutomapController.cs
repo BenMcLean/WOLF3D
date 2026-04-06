@@ -20,6 +20,8 @@ public class AutomapController
 	private readonly AutomapRenderer _renderer;
 	private Simulator.Simulator _simulator;
 	private Action<PushWallPositionChangedEvent> _onPushWallPositionChanged;
+	private Action<BonusPickedUpEvent> _onBonusPickedUp;
+	private Action<BonusSpawnedEvent> _onBonusSpawned;
 	// Last confirmed idle tile per pushwall index — avoids relying on Direction when Action==Idle
 	private readonly Dictionary<ushort, (ushort tileX, ushort tileY)> _pushWallTiles = [];
 	private int _lastFogVersion = -1;
@@ -58,8 +60,15 @@ public class AutomapController
 		_lastFogVersion = -1;
 
 		// Unsubscribe from any previous simulator before switching
-		if (_simulator is not null && _onPushWallPositionChanged is not null)
-			_simulator.PushWallPositionChanged -= _onPushWallPositionChanged;
+		if (_simulator is not null)
+		{
+			if (_onPushWallPositionChanged is not null)
+				_simulator.PushWallPositionChanged -= _onPushWallPositionChanged;
+			if (_onBonusPickedUp is not null)
+				_simulator.BonusPickedUp -= _onBonusPickedUp;
+			if (_onBonusSpawned is not null)
+				_simulator.BonusSpawned -= _onBonusSpawned;
+		}
 
 		_simulator = simulator;
 
@@ -72,6 +81,12 @@ public class AutomapController
 
 		_onPushWallPositionChanged = OnPushWallPositionChanged;
 		_simulator.PushWallPositionChanged += _onPushWallPositionChanged;
+
+		_onBonusPickedUp = _ => _renderer.OnBonusChanged();
+		_simulator.BonusPickedUp += _onBonusPickedUp;
+
+		_onBonusSpawned = _ => _renderer.OnBonusChanged();
+		_simulator.BonusSpawned += _onBonusSpawned;
 	}
 
 	/// <summary>
@@ -95,8 +110,13 @@ public class AutomapController
 	/// </summary>
 	public void Unsubscribe()
 	{
-		if (_simulator is not null && _onPushWallPositionChanged is not null)
+		if (_simulator is null) return;
+		if (_onPushWallPositionChanged is not null)
 			_simulator.PushWallPositionChanged -= _onPushWallPositionChanged;
+		if (_onBonusPickedUp is not null)
+			_simulator.BonusPickedUp -= _onBonusPickedUp;
+		if (_onBonusSpawned is not null)
+			_simulator.BonusSpawned -= _onBonusSpawned;
 	}
 
 	private void OnPushWallPositionChanged(PushWallPositionChangedEvent evt)
