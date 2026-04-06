@@ -16,11 +16,11 @@ namespace BenMcLean.Wolf3D.Shared.Automap;
 public partial class AutomapRenderer : Control
 {
 	// WL_MAP.C: automap is 40 tiles wide × 20 tiles tall, each tile 8×8 px = 320×160
-	public const int TilePixels  = 8;
-	public const int ViewWidth   = 320;
-	public const int ViewHeight  = 160;
+	public const int TilePixels = 8;
+	public const int ViewWidth = 320;
+	public const int ViewHeight = 160;
 
-	private Color _floorColor   = new(0.12f, 0.12f, 0.12f);
+	private Color _floorColor = new(0.12f, 0.12f, 0.12f);
 	private Color _ceilingColor = new(0.08f, 0.08f, 0.08f);
 
 	// Two baked images (init-time only):
@@ -28,22 +28,22 @@ public partial class AutomapRenderer : Control
 	//   _dimImage  — ceiling color bg + dark-side (EW) wall pages
 	// One composite image (rebuilt when fog changes, CPU-side only):
 	//   _compositeImage — per-tile selection from lit/dim/black based on fog state
-	private Image        _litImage;
-	private Image        _dimImage;
-	private Image        _compositeImage;
+	private Image _litImage;
+	private Image _dimImage;
+	private Image _compositeImage;
 	private ImageTexture _compositeTexture;
-	private bool         _compositeDirty;
-	private int          _mapPixelWidth;
-	private int          _mapPixelHeight;
-	private int          _mapWidth;   // tile count, needed to index into _automapData
+	private bool _compositeDirty;
+	private int _mapPixelWidth;
+	private int _mapPixelHeight;
+	private int _mapWidth;   // tile count, needed to index into _automapData
 
 	// Flat array parallel to MapData: VSwap page per tile, ushort.MaxValue = floor/empty
 	// Mirrors MapAnalysis.AutomapData — walls and doors baked here, pushwalls excluded
-	private IReadOnlyList<ushort>           _automapData;
-	private MapAnalyzer.MapAnalysis         _mapAnalysis; // kept for AutomapTileHasDimVariant
+	private IReadOnlyList<ushort> _automapData;
+	private MapAnalyzer.MapAnalysis _mapAnalysis; // kept for AutomapTileHasDimVariant
 
 	// Fog-of-war snapshots — updated by UpdateFog(), consumed when composite is rebuilt
-	private IReadOnlyList<bool> _fogEverSeen        = [];
+	private IReadOnlyList<bool> _fogEverSeen = [];
 	private IReadOnlyList<bool> _fogCurrentlyVisible = [];
 
 	// Pushwall tiles — drawn dynamically in _Draw() so moves update without rebaking
@@ -53,7 +53,7 @@ public partial class AutomapRenderer : Control
 	// Player state — set by UpdatePlayer(), drives viewport scroll and marker draw
 	private ushort _playerTileX;
 	private ushort _playerTileY;
-	private short  _playerAngle;  // WL_DEF.H:player->angle (0-359, 0=east, counter-clockwise)
+	private short _playerAngle;  // WL_DEF.H:player->angle (0-359, 0=east, counter-clockwise)
 
 	private bool _initialized;
 
@@ -83,7 +83,7 @@ public partial class AutomapRenderer : Control
 		// Snapshot the flat automap array from MapAnalysis — walls + doors, no pushwalls
 		_automapData = mapAnalysis.AutomapData;
 		_mapAnalysis = mapAnalysis;
-		_mapWidth    = mapAnalysis.Width;
+		_mapWidth = mapAnalysis.Width;
 
 		// PushWalls are NOT baked into the static background — they move, so they're drawn
 		// dynamically in _Draw().  MapAnalyzer.cs already excludes them from AutomapData
@@ -91,14 +91,14 @@ public partial class AutomapRenderer : Control
 		foreach (MapAnalyzer.MapAnalysis.PushWallSpawn pushWall in mapAnalysis.PushWalls)
 			_pushWallTextures[(pushWall.X, pushWall.Y)] = pushWall.Shape;
 
-		_mapPixelWidth  = mapAnalysis.Width * TilePixels;
+		_mapPixelWidth = mapAnalysis.Width * TilePixels;
 		_mapPixelHeight = mapAnalysis.Depth * TilePixels;
-		_fogEverSeen         = [];
+		_fogEverSeen = [];
 		_fogCurrentlyVisible = [];
 
 		CustomMinimumSize = new Vector2(ViewWidth, ViewHeight);
 
-		BakeBackground(mapAnalysis.Width, mapAnalysis.Depth);
+		BakeBackground(mapAnalysis.Width);
 		_initialized = true;
 		QueueRedraw();
 	}
@@ -107,7 +107,7 @@ public partial class AutomapRenderer : Control
 	// Background baking
 	// ---------------------------------------------------------------------------
 
-	private void BakeBackground(ushort mapWidth, ushort mapDepth)
+	private void BakeBackground(ushort mapWidth)
 	{
 		Image atlasImage = SharedAssetManager.AtlasImage;
 
@@ -141,19 +141,25 @@ public partial class AutomapRenderer : Control
 		_compositeDirty = false;
 	}
 
-	private void PaintTile(Image target, int tileX, int tileY, AtlasTexture atlasTexture, Image atlasImage)
+	private static void PaintTile(
+		Image target,
+		int tileX,
+		int tileY,
+		AtlasTexture atlasTexture,
+		Image atlasImage)
 	{
 		Rect2 region = atlasTexture.Region;
-		int   destX  = tileX * TilePixels,
-			  destY  = tileY * TilePixels;
+		int destX = tileX * TilePixels,
+			  destY = tileY * TilePixels;
 		float scaleX = region.Size.X / TilePixels,
 			  scaleY = region.Size.Y / TilePixels;
 		for (int dy = 0; dy < TilePixels; dy++)
 		{
 			for (int dx = 0; dx < TilePixels; dx++)
 			{
-				int srcX = (int)(dx * scaleX) + (int)region.Position.X;
-				int srcY = (int)(dy * scaleY) + (int)region.Position.Y;
+				// Sample the centre of each source block, not the top-left corner
+				int srcX = (int)((dx + 0.5f) * scaleX) + (int)region.Position.X;
+				int srcY = (int)((dy + 0.5f) * scaleY) + (int)region.Position.Y;
 				Color src = atlasImage.GetPixel(srcX, srcY);
 				if (src.A > 0f)
 					target.SetPixel(destX + dx, destY + dy, src);
@@ -172,7 +178,7 @@ public partial class AutomapRenderer : Control
 			Vector2I tileDst = new(x * TilePixels, y * TilePixels);
 
 			bool visible = i < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[i];
-			bool seen    = i < _fogEverSeen.Count         && _fogEverSeen[i];
+			bool seen = i < _fogEverSeen.Count && _fogEverSeen[i];
 
 			if (visible)
 				_compositeImage.BlitRect(_litImage, tileRect, tileDst);
@@ -224,9 +230,9 @@ public partial class AutomapRenderer : Control
 	/// </summary>
 	public void UpdateFog(IReadOnlyList<bool> everSeen, IReadOnlyList<bool> currentlyVisible)
 	{
-		_fogEverSeen         = everSeen;
+		_fogEverSeen = everSeen;
 		_fogCurrentlyVisible = currentlyVisible;
-		_compositeDirty      = true;
+		_compositeDirty = true;
 		QueueRedraw();
 	}
 
@@ -245,8 +251,8 @@ public partial class AutomapRenderer : Control
 
 		// Scroll viewport to keep player centred, clamped so we never go past map edge
 		int viewX = Math.Clamp(
-			_playerTileX * TilePixels - ViewWidth  / 2,
-			0, Math.Max(0, _mapPixelWidth  - ViewWidth));
+			_playerTileX * TilePixels - ViewWidth / 2,
+			0, Math.Max(0, _mapPixelWidth - ViewWidth));
 		int viewY = Math.Clamp(
 			_playerTileY * TilePixels - ViewHeight / 2,
 			0, Math.Max(0, _mapPixelHeight - ViewHeight));
@@ -255,7 +261,7 @@ public partial class AutomapRenderer : Control
 		DrawRect(new Rect2(0, 0, ViewWidth, ViewHeight), Colors.Black);
 
 		// Composite map region — one draw call; encodes lit/dim/black per tile
-		int drawW = Math.Min(ViewWidth,  _mapPixelWidth  - viewX);
+		int drawW = Math.Min(ViewWidth, _mapPixelWidth - viewX);
 		int drawH = Math.Min(ViewHeight, _mapPixelHeight - viewY);
 		if (drawW > 0 && drawH > 0)
 			DrawTextureRectRegion(
@@ -263,11 +269,14 @@ public partial class AutomapRenderer : Control
 				new Rect2(0, 0, drawW, drawH),
 				new Rect2(viewX, viewY, drawW, drawH));
 
-		// Pushwall overlay — drawn on top, but only for tiles the player has seen
+		// Pushwall overlay — drawn on top with the same lit/dim logic as baked wall tiles.
+		// The composite image already shows the correct background color (floor for lit,
+		// ceiling for dim) because pushwall tiles are floor-sentinel in AutomapData.
 		foreach (((ushort pwX, ushort pwY), ushort pwShape) in _pushWallTextures)
 		{
 			int tileIdx = pwY * _mapWidth + pwX;
-			bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
+			bool visible = tileIdx < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[tileIdx];
+			bool seen    = tileIdx < _fogEverSeen.Count        && _fogEverSeen[tileIdx];
 			if (!seen) continue;
 
 			int pwScreenX = pwX * TilePixels - viewX;
@@ -275,27 +284,32 @@ public partial class AutomapRenderer : Control
 			if (pwScreenX + TilePixels <= 0 || pwScreenX >= ViewWidth
 				|| pwScreenY + TilePixels <= 0 || pwScreenY >= ViewHeight)
 				continue;
-			if (SharedAssetManager.VSwap.TryGetValue(pwShape, out AtlasTexture pwAtlas))
+
+			// Use lit page when currently visible; dark-side page (Shape+1) when dim
+			ushort page = (!visible && _mapAnalysis.PushWallsHaveDimVariant)
+				? (ushort)(pwShape + 1) : pwShape;
+			if (SharedAssetManager.VSwap.TryGetValue(page, out AtlasTexture pwAtlas))
 				DrawTextureRect(
 					pwAtlas,
 					new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
 					false);
 			else
-				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels), _floorColor);
+				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
+					visible ? _floorColor : _ceilingColor);
 		}
 
 		// Player tile marker
-		int    screenX  = _playerTileX * TilePixels - viewX;
-		int    screenY  = _playerTileY * TilePixels - viewY;
-		Rect2  tileRect = new(screenX, screenY, TilePixels, TilePixels);
+		int screenX = _playerTileX * TilePixels - viewX;
+		int screenY = _playerTileY * TilePixels - viewY;
+		Rect2 tileRect = new(screenX, screenY, TilePixels, TilePixels);
 		DrawRect(tileRect, Colors.LimeGreen);
 
 		// Direction indicator: line extending from tile centre in the player's facing direction.
 		// Engine angle convention (ExtensionMethods.cs:ToWolf3DAngle): wolf3dAngle = 90 - godotDegrees
 		// so wolf3dAngle 0 = West on screen — negate cos to flip X axis to match.
 		Vector2 center = tileRect.GetCenter();
-		float   rad    = _playerAngle * Mathf.Pi / 180f;
-		Vector2 dir    = new(-Mathf.Cos(rad), -Mathf.Sin(rad));
+		float rad = _playerAngle * Mathf.Pi / 180f;
+		Vector2 dir = new(-Mathf.Cos(rad), -Mathf.Sin(rad));
 		DrawLine(center, center + dir * (TilePixels * 1.5f), Colors.White, 1f);
 	}
 
@@ -311,11 +325,11 @@ public partial class AutomapRenderer : Control
 		_compositeTexture?.Dispose();
 		_compositeTexture = null;
 		_compositeImage?.Dispose();
-		_compositeImage   = null;
+		_compositeImage = null;
 		_litImage?.Dispose();
-		_litImage         = null;
+		_litImage = null;
 		_dimImage?.Dispose();
-		_dimImage         = null;
-		_initialized      = false;
+		_dimImage = null;
+		_initialized = false;
 	}
 }

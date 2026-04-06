@@ -473,6 +473,11 @@ public class MapAnalyzer
 		/// </summary>
 		private readonly BitArray _automapHasDimVariant;
 		public bool AutomapTileHasDimVariant(int index) => _automapHasDimVariant[index];
+		/// <summary>
+		/// True when pushwall textures have a dark-side variant at Shape+1.
+		/// False for games with UniformWallTextures (no light/dark pairing).
+		/// </summary>
+		public bool PushWallsHaveDimVariant { get; private set; }
 
 		/// <summary>
 		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
@@ -778,7 +783,13 @@ public class MapAnalyzer
 				{
 					ushort tile = realWalls[i];
 					if (doorPageByIndex.TryGetValue(i, out ushort doorPage))
+					{
 						automapData[i] = doorPage;
+						// Door faces follow the same light/dark pairing as walls:
+						// lit face = DoorWall + Page (stored in doorPage),
+						// dark face = DoorWall + Page + 1 (WL_DRAW.C: doornum*2 / doornum*2+1).
+						hasDimVariant[i] = true;
+					}
 					else if (mapAnalyzer.IsWall(tile))
 					{
 						automapData[i] = mapAnalyzer.GetWallPage(tile, false);
@@ -804,6 +815,7 @@ public class MapAnalyzer
 			}
 			AutomapData = Array.AsReadOnly(automapData);
 			_automapHasDimVariant = hasDimVariant;
+			PushWallsHaveDimVariant = !mapAnalyzer.UniformWallTextures;
 
 			// Use pre-baked spawns when provided; otherwise use the wall scan results.
 			Walls = prebuiltWalls != null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);
