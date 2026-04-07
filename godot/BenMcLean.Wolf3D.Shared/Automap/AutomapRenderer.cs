@@ -11,8 +11,8 @@ namespace BenMcLean.Wolf3D.Shared.Automap;
 /// Matches the Super 3-D Noah's Ark / Wolf3D automap layout:
 /// 8 pixels per tile, 40×20 tile viewport, scrolling centered on player,
 /// clamped at map edges so no black border appears past the map.
-/// Wall tiles are nearest-neighbour downsampled from VSwap pages —
-/// works for any game, not just those with dedicated automap graphics.
+/// Wall tiles use VgaGraph 8×8 tiles when available (WL_MAP.C:VWB_DrawTile8),
+/// otherwise nearest-neighbour downsampled directly from raw VSwap RGBA pages.
 /// </summary>
 public partial class AutomapRenderer : Control
 {
@@ -47,8 +47,8 @@ public partial class AutomapRenderer : Control
 	private IReadOnlyList<bool> _fogEverSeen = [];
 	private IReadOnlyList<bool> _fogCurrentlyVisible = [];
 
-	// Pushwall tiles — drawn dynamically in _Draw() so moves update without rebaking
-	// Key: current tile position; Value: VSwap page number
+	// Pushwall tiles — painted into composite on moves; Value is VgaGraph tile index when
+	// UsesVgaGraphWallTiles, otherwise VSwap page number (same as AutomapData convention).
 	private readonly Dictionary<(ushort, ushort), ushort> _pushWallTextures = [];
 
 	// Bonus items — set by UpdateBonuses() once on level load; read each _Draw()
@@ -90,11 +90,14 @@ public partial class AutomapRenderer : Control
 		_mapAnalysis = mapAnalysis;
 		_mapWidth = mapAnalysis.Width;
 
-		// PushWalls are NOT baked into the static background — they move, so they're drawn
-		// dynamically in _Draw().  MapAnalyzer.cs already excludes them from AutomapData
-		// (replaces with FloorCodeFirst before scanning), so the background correctly shows floor.
+		// PushWalls are NOT baked into the static background — they move, so their tile is
+		// painted into the composite on each rebuild.  MapAnalyzer.cs already excludes them
+		// from AutomapData (replaces with FloorCodeFirst), so the background shows floor.
+		// Store VgaGraph tile index for VgaGraph games, VSwap page for others.
 		foreach (MapAnalyzer.MapAnalysis.PushWallSpawn pushWall in mapAnalysis.PushWalls)
-			_pushWallTextures[(pushWall.X, pushWall.Y)] = pushWall.Shape;
+			_pushWallTextures[(pushWall.X, pushWall.Y)] = mapAnalysis.UsesVgaGraphWallTiles
+				? mapAnalysis.VgaGraphTileForWallShape(pushWall.Shape)
+				: pushWall.Shape;
 
 		_mapPixelWidth = mapAnalysis.Width * TilePixels;
 		_mapPixelHeight = mapAnalysis.Depth * TilePixels;
@@ -114,8 +117,6 @@ public partial class AutomapRenderer : Control
 
 	private void BakeBackground(ushort mapWidth)
 	{
-		Image atlasImage = SharedAssetManager.AtlasImage;
-
 		// Lit image: floor color background, light-side (NS/even) wall pages
 		_litImage = Image.CreateEmpty(_mapPixelWidth, _mapPixelHeight, false, Image.Format.Rgba8);
 		_litImage.Fill(_floorColor);
@@ -127,6 +128,8 @@ public partial class AutomapRenderer : Control
 		// WL_MAP.C:DrawMapWalls — iterate flat array, skip floor/empty sentinel
 		byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
 		bool useVgaGraphWalls = _mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles != null;
+		byte[][] vswapPages = SharedAssetManager.CurrentGame?.VSwap?.Pages;
+		int pageSqrt = SharedAssetManager.CurrentGame?.VSwap?.TileSqrt ?? 64;
 		for (int i = 0; i < _automapData.Count; i++)
 		{
 			ushort tileOrPage = _automapData[i];
@@ -143,15 +146,15 @@ public partial class AutomapRenderer : Control
 					PaintTileFromRgbaBytes(_dimImage, x, y, tileData);
 				}
 			}
-			else
+			else if (vswapPages != null)
 			{
-				// VSwap path: downsample wall/door texture to 8×8 for the automap.
-				if (SharedAssetManager.VSwap.TryGetValue(tileOrPage, out AtlasTexture litAtlas))
-					PaintTile(_litImage, x, y, litAtlas, atlasImage);
-				ushort dimPage = _mapAnalysis.AutomapTileHasDimVariant(i)
+				// VSwap path: downsample wall/door texture directly from raw RGBA page to 8×8.
+				if (tileOrPage < vswapPages.Length && vswapPages[tileOrPage] is byte[] litPage)
+					PaintTileFromRgbaPage(_litImage, x, y, litPage, pageSqrt);
+				ushort dimPageIdx = _mapAnalysis.AutomapTileHasDimVariant(i)
 					? (ushort)(tileOrPage + 1) : tileOrPage;
-				if (SharedAssetManager.VSwap.TryGetValue(dimPage, out AtlasTexture dimAtlas))
-					PaintTile(_dimImage, x, y, dimAtlas, atlasImage);
+				if (dimPageIdx < vswapPages.Length && vswapPages[dimPageIdx] is byte[] dimPage)
+					PaintTileFromRgbaPage(_dimImage, x, y, dimPage, pageSqrt);
 			}
 		}
 
@@ -162,31 +165,29 @@ public partial class AutomapRenderer : Control
 		_compositeDirty = false;
 	}
 
-	private static void PaintTile(
-		Image target,
-		int tileX,
-		int tileY,
-		AtlasTexture atlasTexture,
-		Image atlasImage)
+
+	/// <summary>
+	/// Paints an 8x8 tile into the target image by nearest-neighbour downsampling a square
+	/// RGBA8888 VSwap page. Transparent pixels are skipped.
+	/// </summary>
+	private static void PaintTileFromRgbaPage(Image target, int tileX, int tileY, byte[] rgba, int pageSqrt)
 	{
-		Rect2 region = atlasTexture.Region;
-		int destX = tileX * TilePixels,
-			  destY = tileY * TilePixels;
-		float scaleX = region.Size.X / TilePixels,
-			  scaleY = region.Size.Y / TilePixels;
+		int destX = tileX * TilePixels, destY = tileY * TilePixels;
+		float scale = (float)pageSqrt / TilePixels;
 		for (int dy = 0; dy < TilePixels; dy++)
-		{
 			for (int dx = 0; dx < TilePixels; dx++)
 			{
-				// Sample the centre of each source block, not the top-left corner
-				int srcX = (int)((dx + 0.5f) * scaleX) + (int)region.Position.X;
-				int srcY = (int)((dy + 0.5f) * scaleY) + (int)region.Position.Y;
-				Color src = atlasImage.GetPixel(srcX, srcY);
-				if (src.A > 0f)
-					target.SetPixel(destX + dx, destY + dy, src);
-				// else: transparent pixel — leave background colour showing through
+				int srcX = (int)((dx + 0.5f) * scale);
+				int srcY = (int)((dy + 0.5f) * scale);
+				int srcOffset = (srcY * pageSqrt + srcX) * 4;
+				byte a = rgba[srcOffset + 3];
+				if (a == 0) continue;
+				target.SetPixel(destX + dx, destY + dy, new Color(
+					rgba[srcOffset] / 255f,
+					rgba[srcOffset + 1] / 255f,
+					rgba[srcOffset + 2] / 255f,
+					a / 255f));
 			}
-		}
 	}
 
 	/// <summary>
@@ -237,9 +238,9 @@ public partial class AutomapRenderer : Control
 		// WL_MAP.C:DrawMapPrizes — items with ShapeNum == -1 have been collected and are skipped.
 		if (_statObjList is not null)
 		{
-			Image atlasImage = SharedAssetManager.AtlasImage;
-			// VgaGraph.Tiles[] for hybrid rendering: use 8x8 tile if AutomapTile is set, else fall back to VSWAP sprite
 			byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
+			byte[][] vswapPages = SharedAssetManager.CurrentGame?.VSwap?.Pages;
+			int pageSqrt = SharedAssetManager.CurrentGame?.VSwap?.TileSqrt ?? 64;
 			foreach (StatObj stat in _statObjList)
 			{
 				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
@@ -248,18 +249,53 @@ public partial class AutomapRenderer : Control
 				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
 				if (!seen)
 					continue;
-				// Hybrid: prefer VgaGraph 8x8 tile (WL_MAP.C:VWB_DrawTile8), fall back to VSWAP sprite
+				// Prefer VgaGraph 8x8 tile (WL_MAP.C:VWB_DrawTile8); fall back to raw VSwap page.
 				if (stat.AutomapTile is short automapTileIdx
 					&& vgaGraphTiles is not null
 					&& automapTileIdx >= 0 && automapTileIdx < vgaGraphTiles.Length
 					&& vgaGraphTiles[automapTileIdx] is byte[] tileData)
-				{
 					PaintTileFromRgbaBytes(_compositeImage, stat.TileX, stat.TileY, tileData);
-				}
-				else if (SharedAssetManager.VSwap.TryGetValue((ushort)stat.ShapeNum, out AtlasTexture bonusAtlas))
+				else if (vswapPages != null)
 				{
-					PaintTile(_compositeImage, stat.TileX, stat.TileY, bonusAtlas, atlasImage);
+					ushort shapeNum = (ushort)stat.ShapeNum;
+					if (shapeNum < vswapPages.Length && vswapPages[shapeNum] is byte[] spritePage)
+						PaintTileFromRgbaPage(_compositeImage, stat.TileX, stat.TileY, spritePage, pageSqrt);
 				}
+			}
+		}
+
+		// Paint pushwalls — checked against fog so unseen tiles stay black.
+		// _pushWallTextures stores VgaGraph tile indices for VgaGraph games, VSwap pages otherwise.
+		if (_pushWallTextures.Count > 0)
+		{
+			byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
+			byte[][] vswapPages = SharedAssetManager.CurrentGame?.VSwap?.Pages;
+			int pageSqrt = SharedAssetManager.CurrentGame?.VSwap?.TileSqrt ?? 64;
+			foreach (((ushort pwX, ushort pwY), ushort tileOrPage) in _pushWallTextures)
+			{
+				int idx = pwY * _mapWidth + pwX;
+				bool visible = idx < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[idx];
+				bool seen = idx < _fogEverSeen.Count && _fogEverSeen[idx];
+				if (!seen) continue;
+				Rect2I rect = new(pwX * TilePixels, pwY * TilePixels, TilePixels, TilePixels);
+				if (_mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles != null)
+				{
+					if (tileOrPage < vgaGraphTiles.Length && vgaGraphTiles[tileOrPage] is byte[] tileData)
+						PaintTileFromRgbaBytes(_compositeImage, pwX, pwY, tileData);
+					else
+						_compositeImage.FillRect(rect, visible ? _floorColor : _ceilingColor);
+				}
+				else if (vswapPages != null)
+				{
+					ushort page = (!visible && _mapAnalysis.PushWallsHaveDimVariant)
+						? (ushort)(tileOrPage + 1) : tileOrPage;
+					if (page < vswapPages.Length && vswapPages[page] is byte[] pageData)
+						PaintTileFromRgbaPage(_compositeImage, pwX, pwY, pageData, pageSqrt);
+					else
+						_compositeImage.FillRect(rect, visible ? _floorColor : _ceilingColor);
+				}
+				else
+					_compositeImage.FillRect(rect, visible ? _floorColor : _ceilingColor);
 			}
 		}
 
@@ -318,7 +354,10 @@ public partial class AutomapRenderer : Control
 			return;
 
 		_pushWallTextures.Remove((oldX, oldY));
-		_pushWallTextures[(newX, newY)] = shape;
+		_pushWallTextures[(newX, newY)] = _mapAnalysis.UsesVgaGraphWallTiles
+			? _mapAnalysis.VgaGraphTileForWallShape(shape)
+			: shape;
+		_compositeDirty = true;
 		QueueRedraw();
 	}
 
@@ -366,35 +405,6 @@ public partial class AutomapRenderer : Control
 				_compositeTexture,
 				new Rect2(0, 0, drawW, drawH),
 				new Rect2(viewX, viewY, drawW, drawH));
-
-		// Pushwall overlay — drawn on top with the same lit/dim logic as baked wall tiles.
-		// The composite image already shows the correct background color (floor for lit,
-		// ceiling for dim) because pushwall tiles are floor-sentinel in AutomapData.
-		foreach (((ushort pwX, ushort pwY), ushort pwShape) in _pushWallTextures)
-		{
-			int tileIdx = pwY * _mapWidth + pwX;
-			bool visible = tileIdx < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[tileIdx];
-			bool seen    = tileIdx < _fogEverSeen.Count        && _fogEverSeen[tileIdx];
-			if (!seen) continue;
-
-			int pwScreenX = pwX * TilePixels - viewX;
-			int pwScreenY = pwY * TilePixels - viewY;
-			if (pwScreenX + TilePixels <= 0 || pwScreenX >= ViewWidth
-				|| pwScreenY + TilePixels <= 0 || pwScreenY >= ViewHeight)
-				continue;
-
-			// Use lit page when currently visible; dark-side page (Shape+1) when dim
-			ushort page = (!visible && _mapAnalysis.PushWallsHaveDimVariant)
-				? (ushort)(pwShape + 1) : pwShape;
-			if (SharedAssetManager.VSwap.TryGetValue(page, out AtlasTexture pwAtlas))
-				DrawTextureRect(
-					pwAtlas,
-					new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
-					false);
-			else
-				DrawRect(new Rect2(pwScreenX, pwScreenY, TilePixels, TilePixels),
-					visible ? _floorColor : _ceilingColor);
-		}
 
 		// Player tile marker
 		int screenX = _playerTileX * TilePixels - viewX;

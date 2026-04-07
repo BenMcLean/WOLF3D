@@ -54,15 +54,10 @@ public static class SharedAssetManager
 	/// </summary>
 	public static string XmlPath { get; private set; }
 	/// <summary>
-	/// The master texture atlas containing all VSwap pages, VgaGraph Pics, and Font characters.
+	/// The master texture atlas containing VgaGraph Pics and Font characters.
 	/// </summary>
 	public static Godot.ImageTexture AtlasTexture { get; private set; }
 	public static Godot.Image AtlasImage { get; private set; }
-	/// <summary>
-	/// Maps VSwap page indices to AtlasTextures ready for 2D display.
-	/// </summary>
-	public static IReadOnlyDictionary<int, Godot.AtlasTexture> VSwap => _vswap;
-	private static Dictionary<int, Godot.AtlasTexture> _vswap;
 	/// <summary>
 	/// Maps VgaGraph Pic names to AtlasTextures ready for 2D display.
 	/// </summary>
@@ -122,17 +117,6 @@ public static class SharedAssetManager
 	private static PackingRectangle[] GenerateRectangles()
 	{
 		List<PackingRectangle> rectangles = [];
-		// Add rectangles for VSwap pages (walls and sprites)
-		uint vSwapSize = (uint)CurrentGame?.VSwap?.TileSqrt + 2;
-		if (CurrentGame?.VSwap?.Pages is not null)
-			foreach (byte[] page in CurrentGame.VSwap.Pages
-				.Where(page => page is not null))
-				rectangles.Add(new PackingRectangle(
-					x: 0,
-					y: 0,
-					width: vSwapSize,
-					height: vSwapSize,
-					id: rectangles.Count));
 		// Add rectangles for VgaGraph Pics
 		if (CurrentGame.VgaGraph is not null)
 		{
@@ -189,34 +173,11 @@ public static class SharedAssetManager
 		// Create atlas canvas
 		byte[] atlas = new byte[atlasSize * atlasSize << 2];
 		// Insert textures into atlas
-		// Insert VSwap pages
-		Dictionary<int, Godot.Rect2I> vswapRegions = CurrentGame?.VSwap?.Pages
-			.Select((page, pageIndex) => (page, pageIndex))
-			.Where(x => x.page is not null)
-			.Select((x, rectIndex) => new { x.page, x.pageIndex, rect = rectangles[rectIndex] })
-			.AsParallel()
-			.Select(work =>
-			{
-				atlas.DrawInsert(
-					x: (ushort)(work.rect.X + 1),
-					y: (ushort)(work.rect.Y + 1),
-					insert: work.page,
-					insertWidth: CurrentGame.VSwap.TileSqrt,
-					width: atlasSize);
-				return new KeyValuePair<int, Godot.Rect2I>(
-					key: work.pageIndex,
-					value: new Godot.Rect2I(
-						x: (int)(work.rect.X + 1),
-						y: (int)(work.rect.Y + 1),
-						width: CurrentGame.VSwap.TileSqrt,
-						height: CurrentGame.VSwap.TileSqrt));
-			})
-			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		// Insert VgaGraph Pics
 		Dictionary<int, Godot.Rect2I> vgaGraphRegions = CurrentGame?.VgaGraph?.Pics
 			.Select((pic, picIndex) => (pic, picIndex))
 			.Where(x => x.pic is not null)
-			.Select((x, rectIndex) => new { x.pic, x.picIndex, rect = rectangles[vswapRegions.Count + rectIndex] })
+			.Select((x, rectIndex) => new { x.pic, x.picIndex, rect = rectangles[rectIndex] })
 			.AsParallel()
 			.Select(work =>
 			{
@@ -242,7 +203,7 @@ public static class SharedAssetManager
 		Dictionary<uint, Rect2I> vgaGraphFontRegions = CurrentGame.VgaGraph.Fonts
 			.SelectMany((font, fontIndex) => font.Glyphs.Select((glyph, glyphIndex) => new { font, fontIndex, glyph, glyphIndex }))
 			.Where(x => x.font.Widths[x.glyphIndex] > 0)
-			.Select((x, rectIndex) => new { x.font, x.fontIndex, x.glyphIndex, rect = rectangles[vswapRegions.Count + vgaGraphRegions.Count + rectIndex] })
+			.Select((x, rectIndex) => new { x.font, x.fontIndex, x.glyphIndex, rect = rectangles[vgaGraphRegions.Count + rectIndex] })
 			.AsParallel()
 			.Select(work =>
 			{
@@ -262,7 +223,7 @@ public static class SharedAssetManager
 			})
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		// Update rectIndex for subsequent single-threaded operations
-		int rectIndex = vswapRegions.Count + vgaGraphRegions.Count + vgaGraphFontRegions.Count;
+		int rectIndex = vgaGraphRegions.Count + vgaGraphFontRegions.Count;
 		// Insert PicFont space characters
 		Dictionary<string, Godot.Rect2I> picFontSpaceRegions = [];
 		foreach ((string fontName, VgaGraph.PicFont picFont) in
@@ -303,12 +264,6 @@ public static class SharedAssetManager
 			data: atlas);
 		AtlasTexture = Godot.ImageTexture.CreateFromImage(AtlasImage);
 		// Build AtlasTextures for 2D display
-		// Build VSwap AtlasTextures (indexed by page number)
-		_vswap = vswapRegions.ToDictionary(kvp => kvp.Key, kvp => new Godot.AtlasTexture()
-		{
-			Atlas = AtlasTexture,
-			Region = new Godot.Rect2(kvp.Value.Position, kvp.Value.Size),
-		});
 		// Build VgaGraph AtlasTextures by name
 		_vgaGraph = [];
 		if (CurrentGame?.VgaGraph?.PicsByName is not null)
@@ -667,10 +622,6 @@ public static class SharedAssetManager
 				theme?.Dispose();
 			}
 		_themes?.Clear();
-		if (_vswap is not null)
-			foreach (AtlasTexture atlasTexture in _vswap.Values)
-				atlasTexture.Dispose();
-		_vswap?.Clear();
 		if (_vgaGraph is not null)
 			foreach (AtlasTexture atlasTexture in _vgaGraph.Values)
 				atlasTexture.Dispose();

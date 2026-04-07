@@ -509,6 +509,25 @@ public class MapAnalyzer
 		/// Set when MapAnalyzer.WallTileBase is configured in the VgaGraph XML element.
 		/// </summary>
 		public bool UsesVgaGraphWallTiles { get; private set; }
+		// Cached for VgaGraphTileForWallShape; only meaningful when UsesVgaGraphWallTiles is true.
+		private ushort _wallTileBase;
+		private ushort? _secretWallTile;
+
+		/// <summary>
+		/// When UsesVgaGraphWallTiles is true, converts a VSwap wall page number to the
+		/// corresponding VgaGraph tile index using the WL_MAP.C formula.
+		/// Paired textures: wallcode = shape/2 + 1 (NS face is always even).
+		/// Uniform textures: wallcode = shape + 1.
+		/// </summary>
+		public ushort VgaGraphTileForWallShape(ushort shape)
+		{
+			ushort wallcode = PushWallsHaveDimVariant
+				? (ushort)(shape / 2 + 1)   // paired: NS (even) page → wallcode
+				: (ushort)(shape + 1);        // uniform: page index → wallcode
+			if ((wallcode & 0x1F) == 31 && _secretWallTile is ushort secret)
+				return secret;
+			return (ushort)((wallcode & 0x1F) + _wallTileBase);
+		}
 
 		/// <summary>
 		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
@@ -836,6 +855,8 @@ public class MapAnalyzer
 				}
 				// VgaGraph path: dressing objects not shown (WL_MAP.C DrawMapWalls shows only walls/doors).
 				UsesVgaGraphWallTiles = true;
+				_wallTileBase = wallTileBase;
+				_secretWallTile = mapAnalyzer.SecretWallTile;
 			}
 			else
 			{
