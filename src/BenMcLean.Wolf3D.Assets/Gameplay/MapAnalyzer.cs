@@ -247,7 +247,8 @@ public class MapAnalyzer
 				IsActive = objectClass == ObClass.actor,  // Actors are active objects
 				State = initialState,
 				Script = scriptRef,  // Now stores script NAME, not code
-				Difficulty = byte.TryParse(obj.Attribute("Difficulty")?.Value, out byte diff) ? diff : (byte)0
+				Difficulty = byte.TryParse(obj.Attribute("Difficulty")?.Value, out byte diff) ? diff : (byte)0,
+				AutomapTile = short.TryParse(obj.Attribute("AutomapTile")?.Value, out short automapTile) ? automapTile : null
 			};
 			Objects[number] = info;
 		}
@@ -442,7 +443,8 @@ public class MapAnalyzer
 		/// <param name="Shape">VSwap sprite page number</param>
 		/// <param name="X">Tile X coordinate</param>
 		/// <param name="Y">Tile Y coordinate</param>
-		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort ObjectCode, short Shape, ushort X, ushort Y);
+		/// <param name="AutomapTile">Optional VgaGraph tile index for automap display; null = use VSWAP sprite</param>
+		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort ObjectCode, short Shape, ushort X, ushort Y, short? AutomapTile = null);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
 
 		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
@@ -616,7 +618,7 @@ public class MapAnalyzer
 				else if (IsStatic(objectClass))
 				{
 					StatType statType = GetStatType(objectClass);
-					statics.Add(new StaticSpawn(statType, objectClass, objectCode, objInfo.Page, x, y));
+					statics.Add(new StaticSpawn(statType, objectClass, objectCode, objInfo.Page, x, y, objInfo.AutomapTile));
 				}
 			}
 
@@ -886,6 +888,12 @@ public record ObjectInfo
 	/// Parsed from XML Treasure="true" attribute on ObjectType elements.
 	/// </summary>
 	public bool IsTreasure { get; init; }
+	/// <summary>
+	/// Optional VgaGraph tile index for the automap display icon (WL_MAP.C:VWB_DrawTile8 tile argument).
+	/// When set, this 8x8 tile is drawn on the automap instead of the VSWAP sprite.
+	/// Null means fall back to the VSWAP sprite page (Page property).
+	/// </summary>
+	public short? AutomapTile { get; init; }
 }
 
 /// <summary>

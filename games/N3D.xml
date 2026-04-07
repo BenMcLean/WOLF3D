@@ -142,6 +142,8 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
+		<!-- GFXV_N3D.H: STARTTILE8=126, NUMTILE8=144 -->
+		<Tiles Start="126" Count="144" />
 		<StatusBar Pic="STATUSBARPIC" Font="3">
 			<Text Id="Episode" X="24" Y="16">1</Text>
 			<Text Id="Floor" X="40" Y="16">1</Text>
@@ -1080,7 +1082,7 @@ return true
 			<ObjectType Number="25" ObClass="block" Page="74" Name="Table" />
 			<ObjectType Number="26" ObClass="block" Page="75" Name="Barrel" />
 			<ObjectType Number="27" ObClass="dressing" Page="76" Walk="true" Name="Debris" />
-			<ObjectType Number="28" ObClass="bonus" Page="77" Script="quiz_scroll" Name="Quiz Scroll" />
+			<ObjectType Number="28" ObClass="bonus" Page="77" Script="quiz_scroll" AutomapTile="82" Name="Quiz Scroll" />
 			<ObjectType Number="29" ObClass="block" Page="78" Name="Feed bucket" />
 			<ObjectType Number="30" ObClass="block" Page="79" Name="Column 1" />
 			<ObjectType Number="31" ObClass="block" Page="80" Name="Slender column" />
@@ -1092,26 +1094,35 @@ return true
 			<ObjectType Number="37" ObClass="block" Page="86" Name="Water trough" />
 			<ObjectType Number="38" ObClass="block" Page="87" Name="Candle" />
 			<!-- Bonus pickups -->
-			<ObjectType Number="39" ObClass="bonus" Page="88" Script="yellow_key" Name="Yellow Key" />
-			<ObjectType Number="40" ObClass="bonus" Page="89" Script="blue_key" Name="Blue Key" />
-			<ObjectType Number="41" ObClass="bonus" Page="90" Script="feed_bag" Name="Feed carrying bag" />
-			<ObjectType Number="42" ObClass="bonus" Page="91" Script="feed_trough" Name="Feed trough" />
-			<ObjectType Number="43" ObClass="bonus" Page="92" Script="bandaid_small" Name="Small band-aid" />
-			<ObjectType Number="44" ObClass="bonus" Page="93" Script="bandaid_large" Name="Large band-aid" />
-			<ObjectType Number="45" ObClass="bonus" Page="94" Script="feed" Name="Feed" />
-			<ObjectType Number="46" ObClass="bonus" Page="95" Script="slingshot_2" Name="Slingshot 2" />
-			<ObjectType Number="47" ObClass="bonus" Page="96" Script="slingshot_3" Name="Slingshot 3" />
-			<ObjectType Number="48" ObClass="bonus" Page="97" Script="fruit" Name="Banana" />
-			<ObjectType Number="49" ObClass="bonus" Page="98" Script="fruit" Name="Red apple" />
-			<ObjectType Number="50" ObClass="bonus" Page="99" Script="fruit" Name="Grapes" />
-			<ObjectType Number="51" ObClass="bonus" Page="100" Script="fruit" Name="Peach" />
-			<ObjectType Number="52" ObClass="bonus" Page="101" Script="one_up" Name="One Up/Extra Life" />
+			<!-- bo_key1 → tile 76; bo_key2 → tile 77 (WL_MAP.C:DrawMapPrizes) -->
+			<ObjectType Number="39" ObClass="bonus" Page="88" Script="yellow_key" AutomapTile="76" Name="Yellow Key" />
+			<ObjectType Number="40" ObClass="bonus" Page="89" Script="blue_key" AutomapTile="77" Name="Blue Key" />
+			<!-- bo_bandolier/bo_25clip → tile 80 (weapons/ammo group) -->
+			<ObjectType Number="41" ObClass="bonus" Page="90" Script="feed_bag" AutomapTile="80" Name="Feed carrying bag" />
+			<ObjectType Number="42" ObClass="bonus" Page="91" Script="feed_trough" AutomapTile="80" Name="Feed trough" />
+			<!-- health items → tile 79 (bo_firstaid/bo_food group) -->
+			<ObjectType Number="43" ObClass="bonus" Page="92" Script="bandaid_small" AutomapTile="79" Name="Small band-aid" />
+			<ObjectType Number="44" ObClass="bonus" Page="93" Script="bandaid_large" AutomapTile="79" Name="Large band-aid" />
+			<!-- bo_clip (basic ammo) → tile 80 -->
+			<ObjectType Number="45" ObClass="bonus" Page="94" Script="feed" AutomapTile="80" Name="Feed" />
+			<!-- bo_machinegun/bo_chaingun → tile 80 -->
+			<ObjectType Number="46" ObClass="bonus" Page="95" Script="slingshot_2" AutomapTile="80" Name="Slingshot 2" />
+			<ObjectType Number="47" ObClass="bonus" Page="96" Script="slingshot_3" AutomapTile="80" Name="Slingshot 3" />
+			<!-- fruit = treasure items (bo_cross/chalice/crown/chest group) → tile 81 -->
+			<ObjectType Number="48" ObClass="bonus" Page="97" Script="fruit" AutomapTile="81" Name="Banana" />
+			<ObjectType Number="49" ObClass="bonus" Page="98" Script="fruit" AutomapTile="81" Name="Red apple" />
+			<ObjectType Number="50" ObClass="bonus" Page="99" Script="fruit" AutomapTile="81" Name="Grapes" />
+			<ObjectType Number="51" ObClass="bonus" Page="100" Script="fruit" AutomapTile="81" Name="Peach" />
+			<!-- bo_fullheal → tile 79 -->
+			<ObjectType Number="52" ObClass="bonus" Page="101" Script="one_up" AutomapTile="79" Name="One Up/Extra Life" />
 			<ObjectType Number="53" ObClass="block" Page="102" Name="Cage" />
 			<ObjectType Number="54" ObClass="block" Page="103" Name="Column 2" />
-			<ObjectType Number="55" ObClass="bonus" Page="104" Script="slingshot_4" Name="Slingshot 4" />
-			<ObjectType Number="56" ObClass="bonus" Page="105" Script="gascan" Name="Cantaloupe" />
-			<ObjectType Number="57" ObClass="bonus" Page="106" Script="slingshot_5" Name="Slingshot 5" />
-			<ObjectType Number="58" ObClass="bonus" Page="107" Script="missiles_ammo" Name="Watermelons" />
+			<!-- bo_flamethrower/bo_gascan/bo_launcher/bo_missiles → tile 80 -->
+			<ObjectType Number="55" ObClass="bonus" Page="104" Script="slingshot_4" AutomapTile="80" Name="Slingshot 4" />
+			<ObjectType Number="56" ObClass="bonus" Page="105" Script="gascan" AutomapTile="80" Name="Cantaloupe" />
+			<ObjectType Number="57" ObClass="bonus" Page="106" Script="slingshot_5" AutomapTile="80" Name="Slingshot 5" />
+			<ObjectType Number="58" ObClass="bonus" Page="107" Script="missiles_ammo" AutomapTile="80" Name="Watermelons" />
+			<!-- bo_map → no automap tile (WL_MAP.C default: tile=0, skip) -->
 			<ObjectType Number="59" ObClass="bonus" Page="108" Script="automap" Name="Map" />
 			<!-- Secret door / level triggers -->
 			<Pushwall Number="98" DigiSound="D_PWALLSND" Name="Secret Door" SoundRepeatTics="8" />

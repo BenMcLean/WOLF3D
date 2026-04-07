@@ -35,15 +35,24 @@ public class StatObj : ISnapshot<StatObj>
 	public byte ItemNumber { get; set; }
 
 	/// <summary>
+	/// Optional VgaGraph tile index for the automap display icon (WL_MAP.C:VWB_DrawTile8 tile argument).
+	/// When set, this 8x8 tile is drawn on the automap instead of the VSWAP sprite.
+	/// Null means fall back to the VSWAP sprite page (ShapeNum).
+	/// Not in the original WL_DEF.H:statstruct — added for hybrid automap rendering.
+	/// </summary>
+	public short? AutomapTile { get; set; }
+
+	/// <summary>
 	/// Creates a new static object (bonus item).
 	/// </summary>
-	public StatObj(ushort tileX, ushort tileY, short shapeNum, byte flags, byte itemNumber)
+	public StatObj(ushort tileX, ushort tileY, short shapeNum, byte flags, byte itemNumber, short? automapTile = null)
 	{
 		TileX = tileX;
 		TileY = tileY;
 		ShapeNum = shapeNum;
 		Flags = flags;
 		ItemNumber = itemNumber;
+		AutomapTile = automapTile;
 	}
 
 	/// <summary>
@@ -63,7 +72,7 @@ public class StatObj : ISnapshot<StatObj>
 	/// StatObj is its own snapshot type since all properties are already public+settable
 	/// and no type conversions are needed.
 	/// </summary>
-	public StatObj Save() => new(TileX, TileY, ShapeNum, Flags, ItemNumber);
+	public StatObj Save() => new(TileX, TileY, ShapeNum, Flags, ItemNumber, AutomapTile);
 
 	/// <summary>
 	/// Copies all field values from another StatObj instance.
@@ -75,5 +84,6 @@ public class StatObj : ISnapshot<StatObj>
 		ShapeNum = other.ShapeNum;
 		Flags = other.Flags;
 		ItemNumber = other.ItemNumber;
+		AutomapTile = other.AutomapTile;
 	}
 }

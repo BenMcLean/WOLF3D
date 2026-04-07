@@ -32,6 +32,13 @@ public sealed class VgaGraph
 	}
 	public Font[] Fonts { get; private init; }
 	public byte[][] Pics { get; private init; }
+	/// <summary>
+	/// 8x8 tile graphics for the automap display, loaded from the single packed
+	/// STARTTILE8 chunk. Each entry is an RGBA8888 byte array (256 bytes: 8x8x4).
+	/// Tile index matches the tile argument passed to VWB_DrawTile8() in WL_MAP.C.
+	/// Source: GFXV_*.H defines STARTTILE8 (chunk) and NUMTILE8 (count).
+	/// </summary>
+	public byte[][] Tiles { get; private init; }
 	public ushort[][] Sizes { get; private init; }
 	public uint[] Palette { get; private init; }
 	/// <summary>
@@ -53,8 +60,26 @@ public sealed class VgaGraph
 	/// Status bar definition parsed from XML.
 	/// </summary>
 	public StatusBarDefinition StatusBar { get; private init; }
-	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitFile(ParseHead(vgaHead), vgaGraph, Load16BitPairs(dictionary)), xml)
+	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml) : this(SplitWithTileInfo(vgaHead, vgaGraph, dictionary, xml), xml)
 	{ }
+	/// <summary>
+	/// Parses the optional Tiles element from the XML and calls SplitFile with tile chunk
+	/// info so that the tile chunk (which has NO 4-byte size prefix, unlike Pics/Fonts) is
+	/// read correctly. ID_CA.C: tile 8s have an implicit expanded size (BLOCK*NUMTILE8),
+	/// not an explicit longword — SplitFile must not consume 4 bytes as a length prefix for them.
+	/// </summary>
+	private static byte[][] SplitWithTileInfo(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml)
+	{
+		uint[] head = ParseHead(vgaHead);
+		ushort[][] dict = Load16BitPairs(dictionary);
+		// Build tile-chunk map: chunk index → known expanded size (Count * BLOCK where BLOCK=64)
+		Dictionary<uint, uint> tileChunks = [];
+		if (xml?.Element("VgaGraph")?.Element("Tiles") is XElement tilesEl
+			&& uint.TryParse(tilesEl.Attribute("Start")?.Value, out uint tileStart)
+			&& uint.TryParse(tilesEl.Attribute("Count")?.Value, out uint tileCount))
+			tileChunks[tileStart] = tileCount * 64u; // BLOCK=64 (ID_CA.C:#define BLOCK 64)
+		return SplitFile(head, vgaGraph, dict, tileChunks);
+	}
 	public VgaGraph(byte[][] file, XElement xml)
 	{
 		Palette = VSwap.LoadPalette(xml);
@@ -78,6 +103,34 @@ public sealed class VgaGraph
 						? ParseVgaPalette(file[c])
 						: Palette);
 			})];
+		// Extract 8x8 automap tiles from single packed chunk (STARTTILE8/NUMTILE8)
+		// All tiles are packed sequentially: tile k starts at byte offset k*64
+		// Each tile is 64 bytes of planar Mode X VGA data — same deplanify path as Pics
+		if (vgaGraph.Element("Tiles") is XElement tilesEl)
+		{
+			uint startTile8 = (uint)tilesEl.Attribute("Start");
+			int numTile8 = (int)(uint)tilesEl.Attribute("Count");
+			byte[] tileChunk = file[startTile8];
+			// Use actual decompressed length to derive tile count — the XML Count may differ
+			// from what a specific binary produces (e.g. different N3D versions), and the
+			// Huffman decoder terminates at source exhaustion so partial tiles are impossible.
+			int actualTileCount = (tileChunk?.Length ?? 0) / 64;
+			if (actualTileCount == 0)
+			{
+				Console.Error.WriteLine($"Warning: tile chunk {startTile8} decompressed to {tileChunk?.Length ?? 0} bytes (expected ~{numTile8 * 64}). Tiles will be empty.");
+				Tiles = [];
+			}
+			else
+			{
+				if (actualTileCount != numTile8)
+					Console.Error.WriteLine($"Warning: tile chunk {startTile8} yielded {actualTileCount} tiles, XML specifies {numTile8}.");
+				Tiles = [.. Enumerable.Range(0, actualTileCount)
+					.Parallelize(i => Deplanify(tileChunk[(i * 64)..((i + 1) * 64)], 8)
+						.Indices2ByteArray(Palette))];
+			}
+		}
+		else
+			Tiles = [];
 		// Build PicsByName dictionary from XML
 		PicsByName = [];
 		foreach (XElement picElement in vgaGraph.Element("Pics")?.Elements("Pic") ?? [])
@@ -158,7 +211,12 @@ public sealed class VgaGraph
 		return head;
 	}
 	public static uint Read24Bits(Stream stream) => (uint)(stream.ReadByte() | stream.ReadByte() << 8 | stream.ReadByte() << 16);
-	public static byte[][] SplitFile(uint[] head, Stream file, ushort[][] dictionary)
+	/// <param name="tileChunks">
+	/// Optional map of chunk index → known expanded size for chunks that have NO 4-byte
+	/// size prefix (tile 8 chunks). ID_CA.C: pics/fonts store an explicit longword;
+	/// tiles use an implicit size = BLOCK*NUMTILE8 that is NOT written to the file.
+	/// </param>
+	public static byte[][] SplitFile(uint[] head, Stream file, ushort[][] dictionary, Dictionary<uint, uint> tileChunks = null)
 	{
 		byte[][] split = new byte[head.Length - 1][];
 		uint[] lengths = new uint[split.Length];
@@ -169,11 +227,24 @@ public sealed class VgaGraph
 				if (size > 0)
 				{
 					file.Seek(head[i], 0);
-					lengths[i] = binaryReader.ReadUInt32();
-					binaryReader.Read(
-						buffer: split[i] = new byte[size - 2],
-						index: 0,
-						count: split[i].Length);
+					if (tileChunks?.TryGetValue(i, out uint expandedSize) == true)
+					{
+						// Tile chunk: no size longword prefix — read all bytes as compressed data
+						// ID_CA.C: "tile 8s are all in one chunk!" with implicit expanded size
+						binaryReader.Read(
+							buffer: split[i] = new byte[size],
+							index: 0,
+							count: (int)size);
+						lengths[i] = expandedSize; // BLOCK*NUMTILE8 = 64*Count
+					}
+					else
+					{
+						lengths[i] = binaryReader.ReadUInt32();
+						binaryReader.Read(
+							buffer: split[i] = new byte[size - 2],
+							index: 0,
+							count: split[i].Length);
+					}
 				}
 			}
 		return [.. split.Parallelize((slice, index) => CAL_HuffExpand(slice, dictionary, lengths[index]))];
@@ -206,13 +277,23 @@ public sealed class VgaGraph
 		uint read = 0;
 		ushort nodeVal;
 		byte val = source[read++], mask = 1;
-		while (read < source.Length && (length <= 0 || dest.Count < length))
+		bool running = true;
+		// Original ID_CA.C had no source-exhaustion guard — it ran purely until longcount
+		// reached zero. We must process ALL 8 bits of the last loaded byte before stopping,
+		// otherwise we exit as soon as the last byte is loaded (mask resets to 1) without
+		// consuming any of its bits, producing up to 8 decoded symbols too few.
+		while (running && (length <= 0 || dest.Count < length))
 		{
 			nodeVal = huffNode[(val & mask) == 0 ? 0 : 1];
 			if (mask == 0x80)
 			{
-				val = source[read++];
-				mask = 1;
+				if (read < source.Length)
+				{
+					val = source[read++];
+					mask = 1;
+				}
+				else
+					running = false; // finish processing this nodeVal, then stop
 			}
 			else
 				mask <<= 1;

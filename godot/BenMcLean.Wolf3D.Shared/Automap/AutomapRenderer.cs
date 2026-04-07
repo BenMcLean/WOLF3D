@@ -173,6 +173,30 @@ public partial class AutomapRenderer : Control
 		}
 	}
 
+	/// <summary>
+	/// Paints an 8x8 tile from raw RGBA8888 byte data directly into the target image.
+	/// Used for VgaGraph tiles (WL_MAP.C:VWB_DrawTile8) which are already 8x8 — no scaling needed.
+	/// Transparent pixels (alpha == 0) are skipped, preserving the background.
+	/// </summary>
+	private static void PaintTileFromRgbaBytes(Image target, int tileX, int tileY, byte[] rgba8x8)
+	{
+		int destX = tileX * TilePixels;
+		int destY = tileY * TilePixels;
+		for (int dy = 0; dy < TilePixels; dy++)
+			for (int dx = 0; dx < TilePixels; dx++)
+			{
+				int srcOffset = (dy * TilePixels + dx) * 4;
+				byte a = rgba8x8[srcOffset + 3];
+				if (a == 0)
+					continue;
+				target.SetPixel(destX + dx, destY + dy, new Color(
+					rgba8x8[srcOffset] / 255f,
+					rgba8x8[srcOffset + 1] / 255f,
+					rgba8x8[srcOffset + 2] / 255f,
+					a / 255f));
+			}
+	}
+
 	private void RebuildComposite()
 	{
 		int tileCount = _automapData.Count;
@@ -198,6 +222,8 @@ public partial class AutomapRenderer : Control
 		if (_statObjList is not null)
 		{
 			Image atlasImage = SharedAssetManager.AtlasImage;
+			// VgaGraph.Tiles[] for hybrid rendering: use 8x8 tile if AutomapTile is set, else fall back to VSWAP sprite
+			byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
 			foreach (StatObj stat in _statObjList)
 			{
 				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
@@ -206,8 +232,18 @@ public partial class AutomapRenderer : Control
 				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
 				if (!seen)
 					continue;
-				if (SharedAssetManager.VSwap.TryGetValue((ushort)stat.ShapeNum, out AtlasTexture bonusAtlas))
+				// Hybrid: prefer VgaGraph 8x8 tile (WL_MAP.C:VWB_DrawTile8), fall back to VSWAP sprite
+				if (stat.AutomapTile is short automapTileIdx
+					&& vgaGraphTiles is not null
+					&& automapTileIdx >= 0 && automapTileIdx < vgaGraphTiles.Length
+					&& vgaGraphTiles[automapTileIdx] is byte[] tileData)
+				{
+					PaintTileFromRgbaBytes(_compositeImage, stat.TileX, stat.TileY, tileData);
+				}
+				else if (SharedAssetManager.VSwap.TryGetValue((ushort)stat.ShapeNum, out AtlasTexture bonusAtlas))
+				{
 					PaintTile(_compositeImage, stat.TileX, stat.TileY, bonusAtlas, atlasImage);
+				}
 			}
 		}
 

@@ -52,6 +52,7 @@
 			<xs:all>
 				<xs:element ref="Fonts" minOccurs="0"/>
 				<xs:element ref="Pics" minOccurs="0"/>
+				<xs:element ref="Tiles" minOccurs="0"/>
 				<xs:element ref="StatusBar" minOccurs="0"/>
 				<xs:element ref="Menus" minOccurs="0"/>
 			</xs:all>
@@ -183,6 +184,35 @@
 				<xs:annotation>
 					<xs:documentation>
 						First file chunk containing Pic data (typically 3, after sizes and fonts).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Tiles">
+		<xs:annotation>
+			<xs:documentation>
+				8x8 tile graphics from VGAGRAPH, used for the automap display.
+				All NUMTILE8 tiles are packed into a single file chunk at STARTTILE8.
+				Each tile is 64 bytes of planar Mode X VGA data (8x8 pixels, same format as Pics).
+				Tile index 0 is the first tile in the chunk; index N is at byte offset N*64.
+				Source: GFXV_*.H defines STARTTILE8 (chunk index) and NUMTILE8 (count).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:attribute name="Start" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						VGAGRAPH chunk index of the packed tile data (STARTTILE8 in GFXV_*.H).
+						All tiles are stored in this single chunk, not individually chunked.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Count" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Number of 8x8 tiles in the chunk (NUMTILE8 in GFXV_*.H).
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -1538,6 +1568,16 @@
 			<xs:attribute name="Sprite" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Page" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="Palette" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="AutomapTile" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Optional index into VgaGraph.Tiles[] for the automap display icon.
+						When set, this 8x8 tile is drawn on the automap instead of the VSWAP sprite.
+						Corresponds to the tile argument passed to VWB_DrawTile8() in WL_MAP.C.
+						If absent, the automap falls back to drawing the VSWAP sprite (Page attribute).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 
 			<!-- Physical properties -->
 			<xs:attribute name="Walk" type="xs:boolean"/>

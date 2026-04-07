@@ -1457,7 +1457,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				spawn.Y,
 				spawn.Shape,  // short: -2 = invisible trigger, >= 0 = visible sprite page
 				0,  // flags (FL_BONUS would be set here, but we'll set it when needed)
-				(byte)spawn.ObjectCode);  // itemnumber - ObjectType Number for script lookup
+				(byte)spawn.ObjectCode,  // itemnumber - ObjectType Number for script lookup
+				spawn.AutomapTile);  // optional VgaGraph tile index for automap display
 			lastStatObj++;
 		}
 	}
