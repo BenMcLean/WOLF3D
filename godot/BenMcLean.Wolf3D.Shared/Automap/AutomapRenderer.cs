@@ -239,8 +239,6 @@ public partial class AutomapRenderer : Control
 		if (_statObjList is not null)
 		{
 			byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
-			byte[][] vswapPages = SharedAssetManager.CurrentGame?.VSwap?.Pages;
-			int pageSqrt = SharedAssetManager.CurrentGame?.VSwap?.TileSqrt ?? 64;
 			foreach (StatObj stat in _statObjList)
 			{
 				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
@@ -249,18 +247,15 @@ public partial class AutomapRenderer : Control
 				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
 				if (!seen)
 					continue;
-				// Prefer VgaGraph 8x8 tile (WL_MAP.C:VWB_DrawTile8); fall back to raw VSwap page.
+				// Prefer VgaGraph 8x8 tile (WL_MAP.C:VWB_DrawTile8);
+				// fall back to pre-cropped/downsampled VSwap sprite tile.
 				if (stat.AutomapTile is short automapTileIdx
 					&& vgaGraphTiles is not null
 					&& automapTileIdx >= 0 && automapTileIdx < vgaGraphTiles.Length
 					&& vgaGraphTiles[automapTileIdx] is byte[] tileData)
 					PaintTileFromRgbaBytes(_compositeImage, stat.TileX, stat.TileY, tileData);
-				else if (vswapPages != null)
-				{
-					ushort shapeNum = (ushort)stat.ShapeNum;
-					if (shapeNum < vswapPages.Length && vswapPages[shapeNum] is byte[] spritePage)
-						PaintTileFromRgbaPage(_compositeImage, stat.TileX, stat.TileY, spritePage, pageSqrt);
-				}
+				else if (SharedAssetManager.BonusAutomapTiles.TryGetValue((ushort)stat.ShapeNum, out byte[] bonusTile))
+					PaintTileFromRgbaBytes(_compositeImage, stat.TileX, stat.TileY, bonusTile);
 			}
 		}
 

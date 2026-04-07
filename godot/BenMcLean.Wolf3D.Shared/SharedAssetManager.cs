@@ -64,6 +64,14 @@ public static class SharedAssetManager
 	public static IReadOnlyDictionary<string, Godot.AtlasTexture> VgaGraph => _vgaGraph;
 	private static Dictionary<string, Godot.AtlasTexture> _vgaGraph;
 	/// <summary>
+	/// Pre-computed 8×8 RGBA8888 automap tiles for VSwap sprite pages, keyed by page number.
+	/// Each tile is cropped to the sprite's opaque content before downsampling, so the subject
+	/// fills the tile rather than appearing small against a transparent border.
+	/// Built once on load; used by AutomapRenderer as a fallback when no VgaGraph tile is set.
+	/// </summary>
+	public static IReadOnlyDictionary<ushort, byte[]> BonusAutomapTiles => _bonusAutomapTiles;
+	private static Dictionary<ushort, byte[]> _bonusAutomapTiles;
+	/// <summary>
 	/// Dictionary of Godot Theme objects with fonts configured, keyed by font name.
 	/// Includes both chunk fonts (from VGAGRAPH) and pic fonts (prefix-based).
 	/// </summary>
@@ -480,6 +488,71 @@ public static class SharedAssetManager
 		}
 	}
 	#endregion DigiSounds
+	#region BonusAutomapTiles
+	/// <summary>
+	/// Builds pre-computed 8×8 RGBA automap tiles for all VSwap sprite pages.
+	/// Each page is first cropped to its opaque content bounds (CropToContent), then
+	/// downsampled to 8×8 so the subject fills the tile rather than appearing tiny.
+	/// </summary>
+	private static void BuildBonusAutomapTiles()
+	{
+		_bonusAutomapTiles = [];
+		if (CurrentGame?.VSwap?.Pages is not byte[][] pages)
+			return;
+		// Only build tiles for ObjectType entries that have no AutomapTile attribute —
+		// those are the only ones that will use the VSwap fallback path in the automap.
+		HashSet<ushort> bonusPages = [..
+			CurrentGame.XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType")
+			.Where(e => e.Attribute("ObClass")?.Value == "bonus"
+				&& e.Attribute("AutomapTile") is null
+				&& ushort.TryParse(e.Attribute("Page")?.Value, out _))
+			.Select(e => ushort.Parse(e.Attribute("Page").Value))
+			?? []];
+		if (bonusPages.Count == 0)
+			return;
+		ushort tileSqrt = CurrentGame.VSwap.TileSqrt;
+		_bonusAutomapTiles = bonusPages
+			.Where(pageNum => pageNum < pages.Length && pages[pageNum] is not null)
+			.AsParallel()
+			.Select(pageNum =>
+			{
+				byte[] cropped = pages[pageNum].CropToContent(
+					out _, out _,
+					out ushort w, out ushort h,
+					tileSqrt);
+				return new KeyValuePair<ushort, byte[]>(
+					pageNum,
+					w > 0 && h > 0 ? SampleToTile(cropped, w) : pages[pageNum]);
+			})
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+	}
+
+	/// <summary>
+	/// Nearest-neighbour downsamples an RGBA8888 byte array of arbitrary size to an 8×8 tile.
+	/// </summary>
+	private static byte[] SampleToTile(byte[] rgba, ushort width=0)
+	{
+		ushort srcWidth = width < 1 ? (ushort)Math.Sqrt(rgba.Length >> 2) : width,
+			srcHeight = (ushort)(width < 1 ? srcWidth : (rgba.Length >> 2) / width);
+		const int size = Automap.AutomapRenderer.TilePixels;
+		byte[] tile = new byte[size * size << 2];
+		float scaleX = (float)srcWidth / size,
+			scaleY = (float)srcHeight / size;
+		for (int dy = 0; dy < size; dy++)
+			for (int dx = 0; dx < size; dx++)
+			{
+				int srcX = (int)((dx + 0.5f) * scaleX),
+					srcY = (int)((dy + 0.5f) * scaleY),
+					src = (srcY * srcWidth + srcX) << 2,
+					dst = (dy * size + dx) << 2;
+				tile[dst]     = rgba[src];
+				tile[dst + 1] = rgba[src + 1];
+				tile[dst + 2] = rgba[src + 2];
+				tile[dst + 3] = rgba[src + 3];
+			}
+		return tile;
+	}
+	#endregion BonusAutomapTiles
 	#region Config
 	/// <summary>
 	/// Loads the CONFIG file for the current game.
@@ -590,6 +663,7 @@ public static class SharedAssetManager
 		XmlPath = System.IO.Path.GetFullPath(xmlPath);
 		CurrentGame = Assets.AssetManager.Load(xmlPath, _loggerFactory);
 		BuildAtlas();
+		BuildBonusAutomapTiles();
 		BuildDigiSounds();
 		LoadConfig(xmlPath);
 	}
@@ -622,6 +696,7 @@ public static class SharedAssetManager
 				theme?.Dispose();
 			}
 		_themes?.Clear();
+		_bonusAutomapTiles?.Clear();
 		if (_vgaGraph is not null)
 			foreach (AtlasTexture atlasTexture in _vgaGraph.Values)
 				atlasTexture.Dispose();

@@ -15,6 +15,7 @@ public static class Constants
 		Purple = 0x800080FFu,
 		Magenta = 0xFF00FFFFu,
 		Cyan = 0x00FFFFFFu;
+	public const byte DefaultTransparencyThreshold = 127;
 	#endregion Colors
 	#region Coordinates
 	public const ushort MenuScreenWidth = 320,

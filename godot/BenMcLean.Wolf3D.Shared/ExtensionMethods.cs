@@ -189,6 +189,8 @@ public static class ExtensionMethods
 		.DrawRectangle(x: x + 8, y: y + 5, color: color, rectWidth: 5, rectHeight: 1, width: width)
 		// South arm: 1 pixel wide, 4 pixels tall, at relative position (6, 7)
 		.DrawRectangle(x: x + 6, y: y + 7, color: color, rectWidth: 1, rectHeight: 4, width: width);
+	#endregion Drawing
+	#region Image manipulation
 	/// <summary>
 	/// Converts an RGBA8888 uint to a Godot Color.
 	/// Format: 0xRRGGBBAA (big-endian, matching BinaryPrimitives.WriteUInt32BigEndian)
@@ -200,7 +202,108 @@ public static class ExtensionMethods
 		g: ((rgba >> 16) & 0xFF) / 255f,
 		b: ((rgba >> 8) & 0xFF) / 255f,
 		a: (rgba & 0xFF) / 255f);
-	#endregion Drawing
+	/// <summary>
+	/// Extracts a rectangular piece of a texture
+	/// </summary>
+	/// <param name="texture">raw rgba8888 pixel data of source image</param>
+	/// <param name="x">upper left corner of selection</param>
+	/// <param name="y">upper left corner of selection</param>
+	/// <param name="croppedWidth">width of selection</param>
+	/// <param name="croppedHeight">height of selection</param>
+	/// <param name="width">width of source texture or 0 to assume square texture</param>
+	/// <returns>new raw rgba8888 pixel data of width croppedWidth or smaller if x is smaller than zero or if x + croppedWidth extends outside the source texture</returns>
+	public static byte[] Crop(this byte[] texture, int x, int y, int croppedWidth, int croppedHeight, ushort width = 0)
+	{
+		if (width < 1) width = (ushort)Math.Sqrt(texture.Length >> 2);
+		if (x < 0)
+		{
+			croppedWidth += x;
+			x = 0;
+		}
+		if (croppedWidth < 1) throw new ArgumentException("croppedWidth < 1. Was: \"" + croppedWidth + "\"");
+		if (y < 0)
+		{
+			croppedHeight += y;
+			y = 0;
+		}
+		if (croppedHeight < 1) throw new ArgumentException("croppedHeight < 1. Was: \"" + croppedHeight + "\"");
+		int xSide = width << 2;
+		x <<= 2; // x *= 4;
+		if (x > xSide) throw new ArgumentException("x > xSide. x: \"" + x + "\", xSide: \"" + xSide + "\"");
+		int ySide = (width < 1 ? xSide : texture.Length / width) >> 2;
+		if (y > ySide) throw new ArgumentException("y > ySide. y: \"" + y + "\", ySide: \"" + ySide + "\"");
+		if (y + croppedHeight > ySide)
+			croppedHeight = ySide - y;
+		croppedWidth <<= 2; // croppedWidth *= 4;
+		if (x + croppedWidth > xSide)
+			croppedWidth = xSide - x;
+		byte[] cropped = new byte[croppedWidth * croppedHeight];
+		for (int y1 = y * xSide + x, y2 = 0; y2 < cropped.Length; y1 += xSide, y2 += croppedWidth)
+			Array.Copy(
+				sourceArray: texture,
+				sourceIndex: y1,
+				destinationArray: cropped,
+				destinationIndex: y2,
+				length: croppedWidth);
+		return cropped;
+	}
+	/// <summary>
+	/// Cuts off all edge rows and columns with an alpha channel lower than the threshold
+	/// </summary>
+	/// <param name="texture">raw rgba8888 pixel data of source image</param>
+	/// <param name="cutLeft">number of columns of pixels that have been removed form the left side</param>
+	/// <param name="cutTop">number of rows of pixels that have been removed from the top</param>
+	/// <param name="croppedWidth">width of returned texture</param>
+	/// <param name="croppedHeight">height of returned texture</param>
+	/// <param name="width">width of source texture or 0 to assume square texture</param>
+	/// <param name="threshold">alpha channel lower than this will be evaluated as transparent</param>
+	/// <returns>cropped texture</returns>
+	public static byte[] CropToContent(this byte[] texture, out ushort cutLeft, out ushort cutTop, out ushort croppedWidth, out ushort croppedHeight, ushort width = 0, byte threshold = Constants.DefaultTransparencyThreshold)
+	{
+		if (width < 1) width = (ushort)Math.Sqrt(texture.Length >> 2);
+		CropToContentInfo(
+			texture: texture,
+			cutLeft: out cutLeft,
+			cutTop: out cutTop,
+			croppedWidth: out croppedWidth,
+			croppedHeight: out croppedHeight,
+			width: width,
+			threshold: threshold);
+		return texture.Crop(
+			x: cutLeft,
+			y: cutTop,
+			croppedWidth: croppedWidth,
+			croppedHeight: croppedHeight,
+			width: width);
+	}
+	public static void CropToContentInfo(this byte[] texture, out ushort cutLeft, out ushort cutTop, out ushort croppedWidth, out ushort croppedHeight, ushort width = 0, byte threshold = Constants.DefaultTransparencyThreshold)
+	{
+		if (width < 1) width = (ushort)Math.Sqrt(texture.Length >> 2);
+		int xSide = width << 2,
+			indexTop, indexBottom;
+		for (indexTop = 3; indexTop < texture.Length && texture[indexTop] < threshold; indexTop += 4) { }
+		cutTop = (ushort)(indexTop / xSide);
+		indexTop = (ushort)(cutTop * xSide);
+		for (indexBottom = texture.Length - 1; indexBottom > indexTop && texture[indexBottom] < threshold; indexBottom -= 4) { }
+		int cutBottom = indexBottom / xSide + 1;
+		croppedHeight = (ushort)(cutBottom - cutTop);
+		bool alpha(ushort x, ushort y) => texture[y * xSide + (x << 2) + 3] < threshold;
+		cutLeft = (ushort)(width - 1);
+		ushort cutRight = 0;
+		for (ushort y = cutTop; y < cutBottom; y++)
+		{
+			ushort left;
+			for (left = 0; left < cutLeft && alpha(left, y); left++) { }
+			if (left < cutLeft)
+				cutLeft = left;
+			ushort right;
+			for (right = (ushort)(width - 1); right > cutRight && alpha(right, y); right--) { }
+			if (right > cutRight)
+				cutRight = right;
+		}
+		croppedWidth = (ushort)(cutRight - cutLeft + 1);
+	}
+	#endregion Image manipulation
 	#region Utilities
 	/// <summary>
 	/// Compute power of two greater than or equal to n.
