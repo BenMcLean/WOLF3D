@@ -141,8 +141,8 @@ public static class SharedAssetManager
 				.Select(i => new PackingRectangle(
 					x: 0,
 					y: 0,
-					width: (uint)(CurrentGame.VgaGraph.Sizes[i][0] + 2),
-					height: (uint)(CurrentGame.VgaGraph.Sizes[i][1] + 2),
+					width: (uint)(CurrentGame.VgaGraph.Sizes[i << 1] + 2),
+					height: (uint)(CurrentGame.VgaGraph.Sizes[(i << 1) + 1] + 2),
 					id: rectangles.Count)));
 			// Add rectangles for VgaGraph Font characters
 			foreach (Assets.Graphics.Font font in CurrentGame.VgaGraph.Fonts)
@@ -162,7 +162,7 @@ public static class SharedAssetManager
 					x: 0,
 					y: 0,
 					width: (uint)(picFont.SpaceWidth + 2),
-					height: (uint)(CurrentGame.VgaGraph.Sizes[picFont.Glyphs.Values.First()][1] + 2),
+					height: (uint)(CurrentGame.VgaGraph.Sizes[picFont.Glyphs.Values.First() * 2 + 1] + 2),
 					id: rectangles.Count));
 		}
 		// Add rectangle for crosshair
@@ -273,7 +273,7 @@ public static class SharedAssetManager
 			// Get height from first character in the pic font
 			int firstPicIndex = picFont.Glyphs.Values.First();
 			ushort width = picFont.SpaceWidth,
-				height = CurrentGame.VgaGraph.Sizes[firstPicIndex][1];
+				height = CurrentGame.VgaGraph.Sizes[firstPicIndex * 2 + 1];
 			// Draw solid color rectangle directly onto atlas
 			uint color = CurrentGame.VgaGraph.Palette[picFont.SpaceColor];
 			atlas.DrawRectangle(
@@ -425,7 +425,7 @@ public static class SharedAssetManager
 		Godot.FontFile font = new()
 		{
 			Antialiasing = Godot.TextServer.FontAntialiasing.None,
-			FixedSize = CurrentGame.VgaGraph.Sizes[picFont.Glyphs.Values.First()][1],
+			FixedSize = CurrentGame.VgaGraph.Sizes[picFont.Glyphs.Values.First() * 2 + 1],
 			FixedSizeScaleMode = Godot.TextServer.FixedSizeScaleMode.IntegerOnly,
 		};
 		font.SetTextureImage(
