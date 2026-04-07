@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Game Name="Super 3-D Noah's Ark" Version="1.0" Path="N3D" Extension="N3D" Exe="noah3d.exe" HighScores="config.n3d" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
 	<OnStartup>LoadMenu("Title")</OnStartup>
-	<VgaGraph VgaDict="vgadict.n3d" VgaGraph="vgagraph.n3d" VgaHead="vgahead.n3d" LoadingPic="GETPSYCHEDPIC" Sizes="0" TileChunk="126">
+	<VgaGraph VgaDict="vgadict.n3d" VgaGraph="vgagraph.n3d" VgaHead="vgahead.n3d" LoadingPic="GETPSYCHEDPIC" Sizes="0" TileChunk="126" WallTileBase="35" VerticalDoorTile="65" HorizontalDoorTile="66" SecretWallTile="75">
 		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
 			<Font Number="1" Name="BIG" />

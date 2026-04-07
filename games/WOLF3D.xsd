@@ -77,6 +77,43 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="WallTileBase" type="xs:unsignedShort">
+				<xs:annotation>
+					<xs:documentation>
+						Base tile index for automap wall display. When set, AutomapData stores
+						VgaGraph tile indices instead of VSwap page numbers.
+						Formula: tile = (wallcode &amp; 0x1F) + WallTileBase (WL_MAP.C: tile=(tile&amp;0x1F)+35).
+						Omit for VSwap-based automap rendering (default).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="VerticalDoorTile" type="xs:unsignedShort">
+				<xs:annotation>
+					<xs:documentation>
+						VgaGraph tile index for NS-facing doors (FacesEastWest=false, original vertical=true).
+						WL_MAP.C: if (doorobjlist[...].vertical) tile=65.
+						Only used when WallTileBase is set.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="HorizontalDoorTile" type="xs:unsignedShort">
+				<xs:annotation>
+					<xs:documentation>
+						VgaGraph tile index for EW-facing doors (FacesEastWest=true, original vertical=false).
+						WL_MAP.C: else tile=66.
+						Only used when WallTileBase is set.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="SecretWallTile" type="xs:unsignedShort">
+				<xs:annotation>
+					<xs:documentation>
+						VgaGraph tile override for wall code 31 (secret/pushable wall marker).
+						WL_MAP.C: if (tile==31) tile=75.
+						Only used when WallTileBase is set.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

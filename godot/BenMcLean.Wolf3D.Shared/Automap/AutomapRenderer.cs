@@ -125,18 +125,34 @@ public partial class AutomapRenderer : Control
 		_dimImage.Fill(_ceilingColor);
 
 		// WL_MAP.C:DrawMapWalls — iterate flat array, skip floor/empty sentinel
+		byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
+		bool useVgaGraphWalls = _mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles != null;
 		for (int i = 0; i < _automapData.Count; i++)
 		{
-			ushort litPage = _automapData[i];
-			if (litPage == ushort.MaxValue)
+			ushort tileOrPage = _automapData[i];
+			if (tileOrPage == ushort.MaxValue)
 				continue; // floor — already filled above
 			int x = i % mapWidth, y = i / mapWidth;
-			if (SharedAssetManager.VSwap.TryGetValue(litPage, out AtlasTexture litAtlas))
-				PaintTile(_litImage, x, y, litAtlas, atlasImage);
-			ushort dimPage = _mapAnalysis.AutomapTileHasDimVariant(i)
-				? (ushort)(litPage + 1) : litPage;
-			if (SharedAssetManager.VSwap.TryGetValue(dimPage, out AtlasTexture dimAtlas))
-				PaintTile(_dimImage, x, y, dimAtlas, atlasImage);
+			if (useVgaGraphWalls)
+			{
+				// VgaGraph tile path (WL_MAP.C:VWB_DrawTile8): 8×8 pixels, no light/dark pairing.
+				// Both lit and dim images get the same tile — background color differs.
+				if (tileOrPage < vgaGraphTiles.Length && vgaGraphTiles[tileOrPage] is byte[] tileData)
+				{
+					PaintTileFromRgbaBytes(_litImage, x, y, tileData);
+					PaintTileFromRgbaBytes(_dimImage, x, y, tileData);
+				}
+			}
+			else
+			{
+				// VSwap path: downsample wall/door texture to 8×8 for the automap.
+				if (SharedAssetManager.VSwap.TryGetValue(tileOrPage, out AtlasTexture litAtlas))
+					PaintTile(_litImage, x, y, litAtlas, atlasImage);
+				ushort dimPage = _mapAnalysis.AutomapTileHasDimVariant(i)
+					? (ushort)(tileOrPage + 1) : tileOrPage;
+				if (SharedAssetManager.VSwap.TryGetValue(dimPage, out AtlasTexture dimAtlas))
+					PaintTile(_dimImage, x, y, dimAtlas, atlasImage);
+			}
 		}
 
 		// Composite starts fully black (all undiscovered); rebuilt by RebuildComposite() on fog update

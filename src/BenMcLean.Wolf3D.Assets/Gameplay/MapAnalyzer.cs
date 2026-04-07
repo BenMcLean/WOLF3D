@@ -56,6 +56,18 @@ public class MapAnalyzer
 	public ushort FloorCodeFirst { get; private set; }
 	public ushort FloorCodes { get; private set; }
 	/// <summary>
+	/// Optional VgaGraph tile index mapping for the automap wall display (WL_MAP.C:DrawMapWalls).
+	/// When set, AutomapData stores VgaGraph tile indices instead of VSwap page numbers.
+	/// Formula: VgaGraph tile = (wallcode &amp; 0x1F) + WallTileBase (WL_MAP.C: tile=(tile&amp;0x1F)+35).
+	/// </summary>
+	public ushort? WallTileBase { get; private set; }
+	/// <summary>VgaGraph tile for FacesEastWest=false (vertical=true) doors. WL_MAP.C: tile=65.</summary>
+	public ushort? VerticalDoorTile { get; private set; }
+	/// <summary>VgaGraph tile for FacesEastWest=true (vertical=false) doors. WL_MAP.C: tile=66.</summary>
+	public ushort? HorizontalDoorTile { get; private set; }
+	/// <summary>VgaGraph tile override for wall code 31. WL_MAP.C: if (tile==31) tile=75.</summary>
+	public ushort? SecretWallTile { get; private set; }
+	/// <summary>
 	/// Optional path to a WALLSPAWNS file (relative to game folder), read from &lt;Maps WallSpawns="..."&gt;.
 	/// When set, MapAnalysis uses pre-baked wall spawns from this file instead of
 	/// running the standard Wolf3D EastWest/NorthSouth wall scan.
@@ -268,6 +280,17 @@ public class MapAnalyzer
 		// WallSpawnsFile: optional path to WALLSPAWNS file for games (e.g. KOD) that need
 		// per-face textures instead of Wolf3D's single-texture-per-tile formula.
 		WallSpawnsFile = XML.Element("Maps")?.Attribute("WallSpawns")?.Value;
+		// VgaGraph tile mapping for automap wall display (WL_MAP.C:DrawMapWalls).
+		// When WallTileBase is set, AutomapData stores VgaGraph tile indices.
+		XElement vgaGraphElement = XML.Element("VgaGraph");
+		WallTileBase = ushort.TryParse(vgaGraphElement?.Attribute("WallTileBase")?.Value, out ushort wtb)
+			? wtb : null;
+		VerticalDoorTile = ushort.TryParse(vgaGraphElement?.Attribute("VerticalDoorTile")?.Value, out ushort vdt)
+			? vdt : null;
+		HorizontalDoorTile = ushort.TryParse(vgaGraphElement?.Attribute("HorizontalDoorTile")?.Value, out ushort hdt)
+			? hdt : null;
+		SecretWallTile = ushort.TryParse(vgaGraphElement?.Attribute("SecretWallTile")?.Value, out ushort swt)
+			? swt : null;
 	}
 	public ushort MapNumber(ushort episode, ushort level) => ushort.Parse(XML.Element("Maps").Elements("Map").Where(map =>
 			ushort.TryParse(map.Attribute("Episode")?.Value, out ushort e) && e == episode
@@ -480,6 +503,12 @@ public class MapAnalyzer
 		/// False for games with UniformWallTextures (no light/dark pairing).
 		/// </summary>
 		public bool PushWallsHaveDimVariant { get; private set; }
+		/// <summary>
+		/// True when AutomapData stores VgaGraph tile indices (WL_MAP.C:VWB_DrawTile8 tile argument).
+		/// False when AutomapData stores VSwap page numbers (downsampled to 8x8 for display).
+		/// Set when MapAnalyzer.WallTileBase is configured in the VgaGraph XML element.
+		/// </summary>
+		public bool UsesVgaGraphWallTiles { get; private set; }
 
 		/// <summary>
 		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
@@ -774,9 +803,43 @@ public class MapAnalyzer
 						automapData[idx] = ws.Shape;
 				}
 			}
+			else if (mapAnalyzer.WallTileBase is ushort wallTileBase)
+			{
+				// VgaGraph tile path (WL_MAP.C:DrawMapWalls — uses VWB_DrawTile8 tile indices).
+				// AutomapData stores VgaGraph tile indices, not VSwap page numbers.
+				// No dim variant: VgaGraph tiles have no light/dark pairing; hasDimVariant stays false.
+				Dictionary<int, bool> doorFacesEWByIndex = [];
+				foreach (DoorSpawn d in doors)
+					doorFacesEWByIndex[gameMap.GetIndex(d.X, d.Y)] = d.FacesEastWest;
+
+				for (int i = 0; i < realWalls.Length; i++)
+				{
+					ushort wallcode = realWalls[i];
+					if (doorFacesEWByIndex.TryGetValue(i, out bool facesEW))
+					{
+						// WL_MAP.C: vertical=true → tile 65; vertical=false → tile 66.
+						// FacesEastWest=false matches vertical=true (NS-facing door).
+						ushort doorTile = facesEW
+							? (mapAnalyzer.HorizontalDoorTile ?? ushort.MaxValue)
+							: (mapAnalyzer.VerticalDoorTile ?? ushort.MaxValue);
+						if (doorTile != ushort.MaxValue)
+							automapData[i] = doorTile;
+					}
+					else if (mapAnalyzer.IsWall(wallcode))
+					{
+						// WL_MAP.C: if (tile==31) tile=75; else tile=(tile&0x1F)+35.
+						if ((wallcode & 0x1F) == 31 && mapAnalyzer.SecretWallTile is ushort secretTile)
+							automapData[i] = secretTile;
+						else
+							automapData[i] = (ushort)((wallcode & 0x1F) + wallTileBase);
+					}
+				}
+				// VgaGraph path: dressing objects not shown (WL_MAP.C DrawMapWalls shows only walls/doors).
+				UsesVgaGraphWallTiles = true;
+			}
 			else
 			{
-				// Build a fast index→doorPage lookup from the doors list we just constructed
+				// VSwap path: store VSwap page numbers in AutomapData.
 				Dictionary<int, ushort> doorPageByIndex = [];
 				foreach (DoorSpawn d in doors)
 					doorPageByIndex[gameMap.GetIndex(d.X, d.Y)] = d.Shape;
@@ -800,20 +863,20 @@ public class MapAnalyzer
 							hasDimVariant[i] = true;
 					}
 				}
-			}
-			// Second pass: decorative static objects (WL_MAP.C:DrawMapPrizes analogue).
-			// ObClass.dressing = non-interactive scenery; ObClass.block = blocking scenery.
-			// Only fills tiles still at the floor sentinel — walls/doors take priority.
-			// Shape is the VSwap sprite page number (short; negative = not displayed).
-			foreach (StaticSpawn s in StaticSpawns)
-			{
-				if (s.Type != ObClass.dressing && s.Type != ObClass.block)
-					continue;
-				if (s.Shape < 0)
-					continue;
-				int idx = gameMap.GetIndex(s.X, s.Y);
-				if (automapData[idx] == ushort.MaxValue)
-					automapData[idx] = (ushort)s.Shape;
+				// Second pass: decorative static objects (WL_MAP.C:DrawMapPrizes analogue).
+				// ObClass.dressing = non-interactive scenery; ObClass.block = blocking scenery.
+				// Only fills tiles still at the floor sentinel — walls/doors take priority.
+				// Shape is the VSwap sprite page number (short; negative = not displayed).
+				foreach (StaticSpawn s in StaticSpawns)
+				{
+					if (s.Type != ObClass.dressing && s.Type != ObClass.block)
+						continue;
+					if (s.Shape < 0)
+						continue;
+					int idx = gameMap.GetIndex(s.X, s.Y);
+					if (automapData[idx] == ushort.MaxValue)
+						automapData[idx] = (ushort)s.Shape;
+				}
 			}
 			AutomapData = Array.AsReadOnly(automapData);
 			_automapHasDimVariant = hasDimVariant;
