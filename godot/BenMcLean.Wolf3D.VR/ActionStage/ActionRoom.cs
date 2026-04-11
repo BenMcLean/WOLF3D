@@ -551,24 +551,14 @@ void sky() {
 			else if (_statusBarRenderer is not null)
 			{
 				// VR: display status bar and automap as a wristwatch on the left hand.
-				// DEBUG: remove prints before shipping
-				GD.Print("Debug: creating wristwatch display");
-				Node3D leftGripNode = _displayMode.GetGripHandNode(1);
-				GD.Print($"Debug: left grip node = {leftGripNode?.Name ?? "null"}");
-				if (leftGripNode is not null)
+				if (_displayMode.GetGripHandNode(1) is Node3D leftGripNode)
 				{
 					_wristwatchDisplay = new WristwatchDisplay(
 						_automapController,
 						_statusBarRenderer,
 						_displayMode.Camera);
 					leftGripNode.AddChild(_wristwatchDisplay);
-					GD.Print("Debug: wristwatch added to scene");
 				}
-			}
-			else
-			{
-				// DEBUG: remove before shipping
-				GD.Print($"Debug: wristwatch skipped — IsVRActive={_displayMode.IsVRActive} statusBarRenderer={_statusBarRenderer is not null}");
 			}
 		}
 		catch (Exception ex)
@@ -1119,6 +1109,9 @@ void sky() {
 			if (_onStatusBarTextChanged is not null)
 				_simulatorController.Simulator.StatusBarTextChanged -= _onStatusBarTextChanged;
 		}
+		// StatusBarRenderer subscribes UpdateText/UpdatePicture to state events in its constructor;
+		// Dispose() unsubscribes them so they cannot fire against freed Godot Label/TextureRect nodes.
+		_statusBarRenderer?.Dispose();
 
 		// Unsubscribe automap from simulator events
 		_automapController?.Unsubscribe();
