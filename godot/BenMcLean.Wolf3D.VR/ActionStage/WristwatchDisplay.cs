@@ -16,11 +16,11 @@ public partial class WristwatchDisplay : Node3D
 	// so the quad must be 4:3, not the 16:10 ratio of the raw pixel dimensions.
 	// Tune if the display feels too large or too small in headset.
 	private const float ScreenWidth = 0.1f,
-		ScreenHeight = ScreenWidth * 0.75f,
-		// Dot-product thresholds for the wrist-raise fade.
-		// Below ShowDot: fully transparent. Above FullDot: fully opaque.
-		WristRaiseShowDot = 0.3f,
-		WristRaiseFullDot = 0.65f;
+		ScreenHeight = ScreenWidth * 0.75f, // 4:3 — pixel aspect ratio correction for mode 13h
+		// Gaze opacity: dot product of camera forward vs. direction-from-camera-to-screen
+		// (1 = dead-centre, 0 = 90° to the side). Fully transparent below Hide, fully opaque above Show.
+		GazeHideDot = 0.70f,  // ~46° off-centre — screen fades to invisible beyond this
+		GazeShowDot = 0.80f;  // ~37° off-centre — screen is fully opaque within this
 
 	private readonly AutomapController _automapController;
 	private readonly StatusBarRenderer _statusBarRenderer;
@@ -70,8 +70,7 @@ public partial class WristwatchDisplay : Node3D
 			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
 			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
 			Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-			// DEBUG: always opaque to verify geometry/material; restore fade-in before shipping
-			AlbedoColor = new Color(1f, 1f, 1f, 1f),
+			AlbedoColor = new Color(1f, 1f, 1f, 0f), // start invisible; gaze logic fades it in
 		};
 
 		_screenMesh = new MeshInstance3D
@@ -91,10 +90,32 @@ public partial class WristwatchDisplay : Node3D
 
 	public override void _Process(double delta)
 	{
-		// DEBUG: wrist-raise opacity disabled — always opaque for diagnostics.
-		// Restore before shipping.
-
 		UpdateScreenBillboard();
+		UpdateScreenOpacity();
+	}
+
+	/// <summary>
+	/// Fades the screen in when the camera is looking toward it, out when looking away.
+	/// Since the screen billboards to always face the camera, gaze is measured as the dot
+	/// product of the camera's forward direction with the direction from camera to screen:
+	/// 1 = screen dead-centre in view, approaching 0 = far off to the side.
+	/// </summary>
+	private void UpdateScreenOpacity()
+	{
+		if (_screenMaterial is null || _screenMesh is null || _camera is null
+			|| _screenMaterial.IsQueuedForDeletion())
+			return;
+
+		// Camera looks toward its own -Z in Godot's coordinate system
+		Vector3 cameraForward = -_camera.GlobalBasis.Z;
+		Vector3 toScreen = (_screenMesh.GlobalPosition - _camera.GlobalPosition).Normalized();
+		float dot = cameraForward.Dot(toScreen);
+
+		float alpha = Mathf.Clamp(
+			Mathf.InverseLerp(GazeHideDot, GazeShowDot, dot),
+			0f, 1f);
+
+		_screenMaterial.AlbedoColor = new Color(1f, 1f, 1f, alpha);
 	}
 
 	/// <summary>
