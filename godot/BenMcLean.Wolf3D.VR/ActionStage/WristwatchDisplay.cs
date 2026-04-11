@@ -12,16 +12,17 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// </summary>
 public partial class WristwatchDisplay : Node3D
 {
-	// Physical screen size in Godot metres — 10 cm wide, 6.25 cm tall (4:3 = 320:200).
+	// Physical screen size in Godot metres — true 4:3 aspect ratio.
+	// 320×200 VGA pixels were non-square on original CRT hardware (pixel aspect ratio 5:6),
+	// so the quad must be 4:3, not the 16:10 ratio of the raw pixel dimensions.
 	// Tune if the display feels too large or too small in headset.
-	private const float ScreenWidth = 0.10f;
-	private const float ScreenHeight = 0.0625f;
-
-	// Dot-product thresholds for the wrist-raise fade.
-	// Below ShowDot: fully transparent. Above FullDot: fully opaque.
-	// The screen faces the palm, so dot = 1 when the palm points directly at the camera.
-	private const float WristRaiseShowDot = 0.3f;
-	private const float WristRaiseFullDot = 0.65f;
+	private const float ScreenWidth = 0.10f,
+		ScreenHeight = ScreenWidth * 0.75f,
+		// Dot-product thresholds for the wrist-raise fade.
+		// Below ShowDot: fully transparent. Above FullDot: fully opaque.
+		// The screen faces the palm, so dot = 1 when the palm points directly at the camera.
+		WristRaiseShowDot = 0.3f,
+		WristRaiseFullDot = 0.65f;
 
 	private readonly AutomapController _automapController;
 	private readonly StatusBarRenderer _statusBarRenderer;
@@ -111,13 +112,11 @@ public partial class WristwatchDisplay : Node3D
 		AddChild(_screenMesh);
 
 		// --- Position on the inner wrist (palm side) of the left grip controller ---
-		// Observed: +90° X mapped the quad normal to the dorsal (back-of-hand) side.
 		// Grip pose convention for this setup: +Y toward palm, -Z toward fingers, +Z toward wrist.
-		// -90° around X maps quad normal (+Z) to grip +Y (palm/inner-wrist side).
-		// Z offset is positive to move toward the wrist end (away from fingertips).
+		// Z offset moves the display toward the wrist end (away from fingertips).
 		// These values will need tuning in headset.
-		Position = new Vector3(0f, 0.02f, 0.06f);
-		Rotation = new Vector3(Mathf.DegToRad(-90f), 0f, 0f);
+		Position = new Vector3(0f, 0.02f, 0.25f);
+		Rotation = new Vector3(Mathf.DegToRad(-45f), Mathf.DegToRad(180f), Mathf.DegToRad(-90f));
 	}
 
 	public override void _Process(double delta)
