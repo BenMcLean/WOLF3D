@@ -134,6 +134,7 @@ void sky() {
 	private Action<StatusBarPicChangedEvent> _onStatusBarPicChanged;
 	private Action<StatusBarTextChangedEvent> _onStatusBarTextChanged;
 	private AutomapController _automapController;
+	private WristwatchDisplay _wristwatchDisplay;
 
 	/// <summary>
 	/// Creates a new ActionStage with the specified display mode.
@@ -433,9 +434,10 @@ void sky() {
 				_teleportOverlay = new TeleportationOverlay();
 				AddChild(_teleportOverlay);
 			}
-			// Wire status bar events for flatscreen mode before OnNewGame script runs.
+			// Wire status bar events before OnNewGame script runs.
 			// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
-			if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar is not null)
+			// Both VR (wristwatch) and flatscreen need the renderer and events wired here.
+			if (SharedAssetManager.StatusBar is not null)
 			{
 				_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
 				_statusBarRenderer = new StatusBarRenderer(_statusBarState);
@@ -465,52 +467,50 @@ void sky() {
 			if (_existingSimulator == null && _loadSnapshot == null)
 				_simulatorController.Simulator.EquipStartingWeapon();
 
-			// Create status bar display nodes for flatscreen mode.
-			// Fields are populated by the OnNewGame script or restored inventory above.
-			if (!_displayMode.IsVRActive && SharedAssetManager.StatusBar is not null)
-			{
-				// Create CanvasLayer to display status bar at bottom of screen
-				_statusBarCanvas = new CanvasLayer
-				{
-					Name = "StatusBarCanvas",
-					Layer = 10 // On top of game view
-				};
-				AddChild(_statusBarCanvas);
+			// Create automap renderer — needed in both VR (wristwatch) and flatscreen modes.
+			_automapController = new AutomapController();
+			_automapController.Init(MapAnalysis, _simulatorController.Simulator);
 
-				// Add the status bar viewport as a child so it processes
-				_statusBarCanvas.AddChild(_statusBarRenderer.Viewport);
-
-				// Create TextureRect to display the status bar viewport texture
-				TextureRect statusBarDisplay = new()
-				{
-					Name = "StatusBarDisplay",
-					Texture = _statusBarRenderer.ViewportTexture,
-					// Anchor to bottom of screen, centered horizontally
-					AnchorLeft = 0.5f,
-					AnchorRight = 0.5f,
-					AnchorTop = 1.0f,
-					AnchorBottom = 1.0f,
-					// Scale 3x for visibility (320x40 -> 960x120)
-					CustomMinimumSize = new Vector2(960, 120),
-					Size = new Vector2(960, 120),
-					// Center horizontally, position at bottom
-					OffsetLeft = -480,
-					OffsetRight = 480,
-					OffsetTop = -120,
-					OffsetBottom = 0,
-					TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				};
-				_statusBarCanvas.AddChild(statusBarDisplay);
-			}
-
-			// Create minimap renderer for flatscreen mode.
-			// VR wrist-screen integration is a separate task.
 			if (!_displayMode.IsVRActive)
 			{
-				_automapController = new AutomapController();
-				_automapController.Init(MapAnalysis, _simulatorController.Simulator);
+				// Flatscreen: display status bar at bottom of screen and automap in top-right corner.
+				if (_statusBarRenderer is not null)
+				{
+					// Create CanvasLayer to display status bar at bottom of screen
+					_statusBarCanvas = new CanvasLayer
+					{
+						Name = "StatusBarCanvas",
+						Layer = 10 // On top of game view
+					};
+					AddChild(_statusBarCanvas);
 
-				// Add the controller's SubViewport to the scene tree
+					// Add the status bar viewport as a child so it processes
+					_statusBarCanvas.AddChild(_statusBarRenderer.Viewport);
+
+					// Create TextureRect to display the status bar viewport texture
+					TextureRect statusBarDisplay = new()
+					{
+						Name = "StatusBarDisplay",
+						Texture = _statusBarRenderer.ViewportTexture,
+						// Anchor to bottom of screen, centered horizontally
+						AnchorLeft = 0.5f,
+						AnchorRight = 0.5f,
+						AnchorTop = 1.0f,
+						AnchorBottom = 1.0f,
+						// Scale 3x for visibility (320x40 -> 960x120)
+						CustomMinimumSize = new Vector2(960, 120),
+						Size = new Vector2(960, 120),
+						// Center horizontally, position at bottom
+						OffsetLeft = -480,
+						OffsetRight = 480,
+						OffsetTop = -120,
+						OffsetBottom = 0,
+						TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+					};
+					_statusBarCanvas.AddChild(statusBarDisplay);
+				}
+
+				// Add the automap controller's SubViewport to the scene tree
 				CanvasLayer automapCanvas = new()
 				{
 					Name = "AutomapCanvas",
@@ -537,6 +537,28 @@ void sky() {
 					TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 				};
 				automapCanvas.AddChild(automapDisplay);
+			}
+			else if (_statusBarRenderer is not null)
+			{
+				// VR: display status bar and automap as a wristwatch on the left hand.
+				// DEBUG: remove prints before shipping
+				GD.Print("Debug: creating wristwatch display");
+				Node3D leftGripNode = _displayMode.GetGripHandNode(1);
+				GD.Print($"Debug: left grip node = {leftGripNode?.Name ?? "null"}");
+				if (leftGripNode is not null)
+				{
+					_wristwatchDisplay = new WristwatchDisplay(
+						_automapController,
+						_statusBarRenderer,
+						_displayMode.Camera);
+					leftGripNode.AddChild(_wristwatchDisplay);
+					GD.Print("Debug: wristwatch added to scene");
+				}
+			}
+			else
+			{
+				// DEBUG: remove before shipping
+				GD.Print($"Debug: wristwatch skipped — IsVRActive={_displayMode.IsVRActive} statusBarRenderer={_statusBarRenderer is not null}");
 			}
 		}
 		catch (Exception ex)
