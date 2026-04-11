@@ -179,6 +179,17 @@ public partial class SetupRoom : Node3D, IRoom
 				_phase = Phase.Loading;
 				try
 				{
+					// On Android, MANAGE_EXTERNAL_STORAGE must be granted before file access.
+					// Checked here (after DosScreen is visible) so the error displays to the user.
+					if (!AndroidPermissions.HasAllFilesAccess())
+					{
+						AndroidPermissions.OpenAllFilesAccessSettings();
+						throw new UnauthorizedAccessException(
+							"All Files Access permission is required to read game data from /sdcard/WOLF3D/.\n\n" +
+							"The Android All Files Access settings page has been opened.\n" +
+							"Grant 'All Files Access' to this app, then relaunch.");
+					}
+
 					// For non-initial loads, release the current game's VR 3D materials
 					// before SharedAssetManager.LoadGame() disposes the atlas textures
 					if (!IsInitialLoad)

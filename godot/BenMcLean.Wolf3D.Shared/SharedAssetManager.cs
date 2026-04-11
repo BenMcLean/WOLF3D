@@ -635,17 +635,20 @@ public static class SharedAssetManager
 		}
 		string wl1 = Path.Combine(gamesFolder, "WL1.xml"),
 			assemblyLocation = Assembly.GetExecutingAssembly().Location;
+		bool copyWl1 = !File.Exists(wl1);
 #if !DEBUG
-		if (!File.Exists(wl1) ||
-			(!string.IsNullOrEmpty(assemblyLocation) &&
-			File.GetLastWriteTime(wl1) < File.GetLastWriteTime(assemblyLocation)))
+		if (!copyWl1 &&
+			!string.IsNullOrEmpty(assemblyLocation) &&
+			File.GetLastWriteTime(wl1) < File.GetLastWriteTime(assemblyLocation))
+			copyWl1 = true;
+#endif
+		if (copyWl1)
 		{
 			using Stream wl1Stream = Assembly.GetExecutingAssembly()
 				.GetManifestResourceStream("BenMcLean.Wolf3D.Shared.Resources.WL1.xml");
 			using FileStream dest = File.Create(wl1);
 			wl1Stream.CopyTo(dest);
 		}
-#endif
 	}
 	/// <summary>
 	/// Loads a game from the user's games folder.
