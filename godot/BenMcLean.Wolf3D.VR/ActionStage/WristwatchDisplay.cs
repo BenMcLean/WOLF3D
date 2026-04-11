@@ -16,7 +16,7 @@ public partial class WristwatchDisplay : Node3D
 	// 320×200 VGA pixels were non-square on original CRT hardware (pixel aspect ratio 5:6),
 	// so the quad must be 4:3, not the 16:10 ratio of the raw pixel dimensions.
 	// Tune if the display feels too large or too small in headset.
-	private const float ScreenWidth = 0.10f,
+	private const float ScreenWidth = 0.1f,
 		ScreenHeight = ScreenWidth * 0.75f,
 		// Dot-product thresholds for the wrist-raise fade.
 		// Below ShowDot: fully transparent. Above FullDot: fully opaque.
@@ -114,9 +114,8 @@ public partial class WristwatchDisplay : Node3D
 		// --- Position on the inner wrist (palm side) of the left grip controller ---
 		// Grip pose convention for this setup: +Y toward palm, -Z toward fingers, +Z toward wrist.
 		// Z offset moves the display toward the wrist end (away from fingertips).
-		// These values will need tuning in headset.
-		Position = new Vector3(0f, 0.02f, 0.25f);
-		Rotation = new Vector3(Mathf.DegToRad(-45f), Mathf.DegToRad(180f), Mathf.DegToRad(-90f));
+		Position = new Vector3(0f, 0.02f, 0.125f);
+		Rotation = new Vector3(Mathf.DegToRad(-90f), Mathf.DegToRad(180f), Mathf.DegToRad(-90f));
 	}
 
 	public override void _Process(double delta)
