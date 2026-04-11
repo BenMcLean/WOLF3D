@@ -92,7 +92,14 @@ public partial class Root : Node3D
 	{
 		// Always update display mode so VR head tracking and camera continue during fades.
 		// Only SimulatorController is Pausable — presentation nodes keep rendering.
-		DisplayMode?.Update(delta);
+		try
+		{
+			DisplayMode?.Update(delta);
+		}
+		catch (Exception ex)
+		{
+			ExceptionHandler.HandleException(ex);
+		}
 
 		// Don't poll for new transitions while one is in progress
 		if (_transitionState != TransitionState.Idle)

@@ -92,8 +92,9 @@ void fragment() {
 			out bool xmlVoxelWeapons)
 			&& xmlVoxelWeapons;
 		if (useVoxelWeapons)
-			using (MemoryStream ms = new(Godot.FileAccess.GetFileAsBytes("res://Resources/VOXELS.W3D")))
-				VoxelAtlas = new VoxelAtlas(ms, _vswap.SpritesByName);
+			using (Stream stream = typeof(VRAssetManager).Assembly.GetManifestResourceStream("BenMcLean.Wolf3D.VR.Resources.VOXELS.W3D")
+				?? throw new InvalidOperationException("Embedded resource VOXELS.W3D not found in assembly."))
+				VoxelAtlas = new VoxelAtlas(stream, _vswap.SpritesByName);
 		else
 			VoxelAtlas = null;
 		// Create crosshair texture (13x11 pixels, white on transparent background)

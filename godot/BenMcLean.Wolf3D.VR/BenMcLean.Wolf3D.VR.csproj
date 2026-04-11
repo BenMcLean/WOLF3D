@@ -10,4 +10,7 @@
     <ProjectReference Include="..\..\src\ThirdParty\NScumm.Audio\NScumm.Audio.csproj" />
     <ProjectReference Include="..\BenMcLean.Wolf3D.Shared\BenMcLean.Wolf3D.Shared.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\VOXELS.W3D" />
+  </ItemGroup>
 </Project>

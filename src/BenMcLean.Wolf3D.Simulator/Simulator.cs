@@ -2473,7 +2473,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// Player is standing in a doorframe - propagate from both areas the door connects.
 			// WL_ACT1.C: Original game's player->areanumber was undefined for door tiles;
 			// we intentionally improve on this by starting from both sides of the door.
-			Door? playerDoor = doors.FirstOrDefault(d => d.TileX == PlayerTileX && d.TileY == PlayerTileY);
+			Door playerDoor = doors.FirstOrDefault(d => d.TileX == PlayerTileX && d.TileY == PlayerTileY);
 			if (playerDoor is null) return;
 			// Either area reaches the other through the open door connection, so one suffices.
 			short doorArea = playerDoor.Area1 >= 0 ? playerDoor.Area1 : playerDoor.Area2;
@@ -2497,7 +2497,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			else
 			{
 				// Actor is in a doorframe - hear if either area the door connects is reachable.
-				Door? actorDoor = doors.FirstOrDefault(d => d.TileX == actor.TileX && d.TileY == actor.TileY);
+				Door actorDoor = doors.FirstOrDefault(d => d.TileX == actor.TileX && d.TileY == actor.TileY);
 				if (actorDoor is null) continue;
 				bool doorConnected = (actorDoor.Area1 >= 0 && connectedAreas.Contains((ushort)actorDoor.Area1))
 					|| (actorDoor.Area2 >= 0 && connectedAreas.Contains((ushort)actorDoor.Area2));
