@@ -79,7 +79,7 @@ public partial class Root : Node3D
 			// Boot to SetupRoom which loads the shareware assets and shows the
 			// DosScreen progress log. After completion, _Process() transitions to
 			// the game selection MenuRoom.
-			SetupRoom setupRoom = new(DisplayMode, @"..\..\games\WL1.xml", isInitialLoad: true);
+			SetupRoom setupRoom = new(DisplayMode, System.IO.Path.Combine(GetGamesDir(), "WL1.xml"), isInitialLoad: true);
 			TransitionToImmediate(setupRoom);
 		}
 		catch (Exception ex)
@@ -107,7 +107,7 @@ public partial class Root : Node3D
 				try
 				{
 					InitializeVRAssets();
-					string gamesDir = System.IO.Path.GetFullPath(@"..\..\games");
+					string gamesDir = GetGamesDir();
 					MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(gamesDir);
 					MenuRoom selectionRoom = new(DisplayMode)
 					{
@@ -273,6 +273,16 @@ public partial class Root : Node3D
 			}
 		}
 	}
+
+	/// <summary>
+	/// Returns the directory containing game XML definition files and game data subdirectories.
+	/// On Android (Quest): /sdcard/WOLF3D — user places game data and XML files here.
+	/// On all other platforms: resolved relative to the executable location.
+	/// </summary>
+	private static string GetGamesDir() =>
+		OS.HasFeature("android")
+			? "/sdcard/WOLF3D"
+			: System.IO.Path.GetFullPath(@"..\..\games");
 
 	/// <summary>
 	/// Reads the WeaponSprite attribute from the current game's Menus XML element.
