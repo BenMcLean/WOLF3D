@@ -850,10 +850,15 @@ fabric.properties
 # Exclude all subdirectories under games/
 games/*/
 
-# Output of VoxelBaker
-src/BenMcLean.Wolf3D.VoxelBaker/VOXELS.W3D
-
 # Godot OpenXR Vendors plugin (downloaded separately, not checked in)
 # Run godot/BenMcLean.Wolf3D.VR/setup-openxr-vendors.sh to install
 # Required only for Quest standalone builds; PC VR works without it
 godot/BenMcLean.Wolf3D.VR/addons/godotopenxrvendors/
+# Godot Meta Toolkit (probably not needed)
+godot/BenMcLean.Wolf3D.VR/addons/godot_meta_toolkit/
+
+# Android builds
+*.apk
+*.apk.idsig
+godot/BenMcLean.Wolf3D.VR/android/build/
+godot/BenMcLean.Wolf3D.VR/android/.build_version
