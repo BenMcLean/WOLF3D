@@ -474,33 +474,36 @@ void sky() {
 			if (!_displayMode.IsVRActive)
 			{
 				// Flatscreen: display status bar at bottom of screen and automap in top-right corner.
+				// Each gets its own SubViewport created here; the renderers provide only the Control.
 				if (_statusBarRenderer is not null)
 				{
-					// Create CanvasLayer to display status bar at bottom of screen
+					SubViewport statusBarVP = new()
+					{
+						Name = "StatusBarViewport",
+						Size = new Vector2I(320, 40),
+						Disable3D = true,
+						RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
+					};
+					statusBarVP.AddChild(_statusBarRenderer.Canvas);
+
 					_statusBarCanvas = new CanvasLayer
 					{
 						Name = "StatusBarCanvas",
-						Layer = 10 // On top of game view
+						Layer = 10,
 					};
 					AddChild(_statusBarCanvas);
+					_statusBarCanvas.AddChild(statusBarVP);
 
-					// Add the status bar viewport as a child so it processes
-					_statusBarCanvas.AddChild(_statusBarRenderer.Viewport);
-
-					// Create TextureRect to display the status bar viewport texture
 					TextureRect statusBarDisplay = new()
 					{
 						Name = "StatusBarDisplay",
-						Texture = _statusBarRenderer.ViewportTexture,
-						// Anchor to bottom of screen, centered horizontally
+						Texture = statusBarVP.GetTexture(),
 						AnchorLeft = 0.5f,
 						AnchorRight = 0.5f,
 						AnchorTop = 1.0f,
 						AnchorBottom = 1.0f,
-						// Scale 3x for visibility (320x40 -> 960x120)
 						CustomMinimumSize = new Vector2(960, 120),
 						Size = new Vector2(960, 120),
-						// Center horizontally, position at bottom
 						OffsetLeft = -480,
 						OffsetRight = 480,
 						OffsetTop = -120,
@@ -510,20 +513,27 @@ void sky() {
 					_statusBarCanvas.AddChild(statusBarDisplay);
 				}
 
-				// Add the automap controller's SubViewport to the scene tree
+				SubViewport automapVP = new()
+				{
+					Name = "AutomapViewport",
+					Size = new Vector2I(AutomapRenderer.ViewWidth, AutomapRenderer.ViewHeight),
+					Disable3D = true,
+					RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
+				};
+				automapVP.AddChild(_automapController.Renderer);
+
 				CanvasLayer automapCanvas = new()
 				{
 					Name = "AutomapCanvas",
 					Layer = 10,
 				};
 				AddChild(automapCanvas);
-				automapCanvas.AddChild(_automapController.Viewport);
+				automapCanvas.AddChild(automapVP);
 
-				// Display in the upper-right corner at 2× scale for readability
 				TextureRect automapDisplay = new()
 				{
 					Name = "AutomapDisplay",
-					Texture = _automapController.ViewportTexture,
+					Texture = automapVP.GetTexture(),
 					AnchorLeft = 1f,
 					AnchorRight = 1f,
 					AnchorTop = 0f,

@@ -8,15 +8,14 @@ using Godot;
 namespace BenMcLean.Wolf3D.Shared.Automap;
 
 /// <summary>
-/// Owns an AutomapRenderer and its SubViewport, and wires simulator pushwall events
-/// so the automap overlay stays current as walls move.
-/// Presentation layers (flatscreen HUD, VR wrist screen, etc.) create one of these,
-/// call Init(), then position the viewport texture however they like.
+/// Owns an AutomapRenderer and wires simulator pushwall events so the automap overlay
+/// stays current as walls move.
+/// Presentation layers create one of these, call Init(), add Renderer to their own
+/// SubViewport, then drive it by calling UpdatePlayer each frame.
 /// WL_MAP.C:AutoMap — the entry point for the Wolf3D automap screen.
 /// </summary>
 public class AutomapController
 {
-	private readonly SubViewport _viewport;
 	private readonly AutomapRenderer _renderer;
 	private Simulator.Simulator _simulator;
 	private Action<PushWallPositionChangedEvent> _onPushWallPositionChanged;
@@ -28,26 +27,14 @@ public class AutomapController
 
 	public AutomapController()
 	{
-		_viewport = new SubViewport
-		{
-			Size = new Vector2I(AutomapRenderer.ViewWidth, AutomapRenderer.ViewHeight),
-			Disable3D = true,
-			RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
-		};
 		_renderer = new AutomapRenderer();
-		_viewport.AddChild(_renderer);
 	}
 
 	/// <summary>
-	/// The SubViewport containing the rendered automap.
-	/// Add this to your scene tree so the renderer gets Godot process callbacks.
+	/// The AutomapRenderer Control. Add this to a SubViewport of your choice so it
+	/// receives Godot process callbacks and renders into that viewport.
 	/// </summary>
-	public SubViewport Viewport => _viewport;
-
-	/// <summary>
-	/// Viewport texture for display — use as a TextureRect.Texture or on a 3D mesh.
-	/// </summary>
-	public ViewportTexture ViewportTexture => _viewport.GetTexture();
+	public AutomapRenderer Renderer => _renderer;
 
 	/// <summary>
 	/// Initialises the automap and subscribes to simulator pushwall events.

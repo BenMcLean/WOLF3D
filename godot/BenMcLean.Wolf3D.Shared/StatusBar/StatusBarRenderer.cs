@@ -6,40 +6,31 @@ using Godot;
 namespace BenMcLean.Wolf3D.Shared.StatusBar;
 
 /// <summary>
-/// Renders the status bar using Godot Control nodes.
-/// Creates a 320x40 SubViewport for pixel-perfect display.
-/// Follows the MenuRenderer pattern for consistency.
+/// Renders the status bar using Godot Control nodes into a 320×40 canvas.
+/// Add Canvas to a SubViewport of your choice to display it.
 /// </summary>
 public class StatusBarRenderer
 {
-	private readonly SubViewport _viewport;
 	private readonly Control _canvas;
 	private readonly StatusBarState _state;
 	private readonly StatusBarDefinition _definition;
 	private readonly Dictionary<string, Label> _textLabels = [];
 	private readonly Dictionary<string, TextureRect> _pictureTextures = [];
 	/// <summary>
-	/// Creates a new StatusBarRenderer with a 320x40 virtual canvas.
+	/// Creates a new StatusBarRenderer with a 320×40 canvas.
+	/// Add Canvas to a SubViewport of your choice to render it.
 	/// </summary>
 	/// <param name="state">The status bar state to render</param>
 	public StatusBarRenderer(StatusBarState state)
 	{
 		_state = state ?? throw new ArgumentNullException(nameof(state));
 		_definition = _state.Definition ?? throw new ArgumentException("State must have a definition", nameof(state));
-		// Create 320x40 SubViewport for pixel-perfect rendering
-		_viewport = new SubViewport
-		{
-			Size = new Vector2I(320, 40),
-			Disable3D = true,
-			RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
-		};
-		// Create root Control for UI elements
+		// Create root Control for UI elements — no anchors so callers can position it freely
 		_canvas = new Control
 		{
 			CustomMinimumSize = new Vector2(320, 40),
-			AnchorsPreset = (int)Control.LayoutPreset.FullRect,
+			Size = new Vector2(320, 40),
 		};
-		_viewport.AddChild(_canvas);
 		// Subscribe to state changes
 		_state.TextChanged += UpdateText;
 		_state.PicChanged += UpdatePicture;
@@ -47,14 +38,11 @@ public class StatusBarRenderer
 		RenderAll();
 	}
 	/// <summary>
-	/// Gets the SubViewport containing the rendered status bar.
-	/// Can be used as a texture in 3D space for VR.
+	/// The 320×40 Control containing the rendered status bar UI.
+	/// Add this to a SubViewport of your choice so it renders into that viewport.
+	/// In a combined viewport position it at (0, AutomapRenderer.ViewHeight).
 	/// </summary>
-	public SubViewport Viewport => _viewport;
-	/// <summary>
-	/// Gets the viewport texture for display.
-	/// </summary>
-	public ViewportTexture ViewportTexture => _viewport.GetTexture();
+	public Control Canvas => _canvas;
 	/// <summary>
 	/// Gets the current state being rendered.
 	/// </summary>
@@ -197,12 +185,12 @@ public class StatusBarRenderer
 		}
 	}
 	/// <summary>
-	/// Disposes resources and unsubscribes from events.
+	/// Unsubscribes from state events. Call when the presentation layer exits the tree.
+	/// The canvas node itself is freed by whichever SubViewport owns it.
 	/// </summary>
 	public void Dispose()
 	{
 		_state.TextChanged -= UpdateText;
 		_state.PicChanged -= UpdatePicture;
-		_viewport?.QueueFree();
 	}
 }

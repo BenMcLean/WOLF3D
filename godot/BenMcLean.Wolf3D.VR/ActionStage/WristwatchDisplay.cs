@@ -6,9 +6,8 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
 /// A 320×200 (mode 13h 4:3) wristwatch-style HUD attached to the left grip controller in VR.
-/// Composites the automap (top 320×160) and status bar (bottom 320×40) into a single
-/// SubViewport whose texture is applied to a world-space QuadMesh.
-/// Fades in when the wrist is raised toward the head (palm-facing detection via dot product).
+/// Renders the automap (top 320×160) and status bar (bottom 320×40) in a single SubViewport
+/// and applies the result to a world-space QuadMesh that billboards to face the camera.
 /// </summary>
 public partial class WristwatchDisplay : Node3D
 {
@@ -20,7 +19,6 @@ public partial class WristwatchDisplay : Node3D
 		ScreenHeight = ScreenWidth * 0.75f,
 		// Dot-product thresholds for the wrist-raise fade.
 		// Below ShowDot: fully transparent. Above FullDot: fully opaque.
-		// The screen faces the palm, so dot = 1 when the palm points directly at the camera.
 		WristRaiseShowDot = 0.3f,
 		WristRaiseFullDot = 0.65f;
 
@@ -28,17 +26,12 @@ public partial class WristwatchDisplay : Node3D
 	private readonly StatusBarRenderer _statusBarRenderer;
 	private readonly Camera3D _camera;
 
-	private SubViewport _compositorViewport;
 	private MeshInstance3D _screenMesh;
 	private StandardMaterial3D _screenMaterial;
 
-	/// <param name="automapController">
-	/// Owns the 320×160 automap SubViewport. WristwatchDisplay adds it to the scene tree.
-	/// </param>
-	/// <param name="statusBarRenderer">
-	/// Owns the 320×40 status bar SubViewport. WristwatchDisplay adds it to the scene tree.
-	/// </param>
-	/// <param name="camera">Head camera used for wrist-raise dot-product detection.</param>
+	/// <param name="automapController">Provides AutomapRenderer. WristwatchDisplay owns the SubViewport.</param>
+	/// <param name="statusBarRenderer">Provides the status bar canvas. WristwatchDisplay owns the SubViewport.</param>
+	/// <param name="camera">Head camera used for billboarding and wrist-raise detection.</param>
 	public WristwatchDisplay(
 		AutomapController automapController,
 		StatusBarRenderer statusBarRenderer,
@@ -52,49 +45,27 @@ public partial class WristwatchDisplay : Node3D
 
 	public override void _Ready()
 	{
-		// --- Inner SubViewports must be in the scene tree to render ---
-		// They are owned by AutomapController / StatusBarRenderer respectively;
-		// adding them here keeps them alive for the lifetime of this node.
-		AddChild(_automapController.Viewport);
-		AddChild(_statusBarRenderer.Viewport);
-
-		// --- Compositor SubViewport: 320×200 (mode 13h) ---
-		// Samples the two inner viewports via TextureRect and composites them.
-		_compositorViewport = new SubViewport
+		// --- Single 320×200 SubViewport: automap (top) + status bar (bottom) in one pass ---
+		SubViewport hudViewport = new()
 		{
-			Name = "WristwatchCompositorViewport",
+			Name = "WristwatchHudViewport",
 			Size = new Vector2I(320, 200),
 			Disable3D = true,
 			RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
 		};
-		AddChild(_compositorViewport);
+		AddChild(hudViewport);
 
-		// Automap occupies the top 320×160
-		_compositorViewport.AddChild(new TextureRect
-		{
-			Name = "AutomapRect",
-			Texture = _automapController.ViewportTexture,
-			Position = Vector2.Zero,
-			Size = new Vector2(AutomapRenderer.ViewWidth, AutomapRenderer.ViewHeight),
-			StretchMode = TextureRect.StretchModeEnum.Scale,
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-		});
+		// Automap renderer placed at the top of the viewport
+		hudViewport.AddChild(_automapController.Renderer);
 
-		// Status bar occupies the bottom 320×40
-		_compositorViewport.AddChild(new TextureRect
-		{
-			Name = "StatusBarRect",
-			Texture = _statusBarRenderer.ViewportTexture,
-			Position = new Vector2(0f, AutomapRenderer.ViewHeight),
-			Size = new Vector2(320f, 40f),
-			StretchMode = TextureRect.StretchModeEnum.Scale,
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-		});
+		// Status bar canvas placed immediately below the automap
+		_statusBarRenderer.Canvas.Position = new Vector2(0f, AutomapRenderer.ViewHeight);
+		hudViewport.AddChild(_statusBarRenderer.Canvas);
 
 		// --- World-space screen quad ---
 		_screenMaterial = new StandardMaterial3D
 		{
-			AlbedoTexture = _compositorViewport.GetTexture(),
+			AlbedoTexture = hudViewport.GetTexture(),
 			// Unshaded so the retro pixel art is not affected by scene lighting
 			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
 			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
