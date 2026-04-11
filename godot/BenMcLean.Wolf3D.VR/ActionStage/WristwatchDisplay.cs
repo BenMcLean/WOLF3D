@@ -115,7 +115,7 @@ public partial class WristwatchDisplay : Node3D
 		// Grip pose convention for this setup: +Y toward palm, -Z toward fingers, +Z toward wrist.
 		// Z offset moves the display toward the wrist end (away from fingertips).
 		Position = new Vector3(0f, 0.02f, 0.125f);
-		Rotation = new Vector3(Mathf.DegToRad(-90f), Mathf.DegToRad(180f), Mathf.DegToRad(-90f));
+		Rotation = new Vector3(Mathf.DegToRad(-45f), Mathf.DegToRad(180f), Mathf.DegToRad(-90f));
 	}
 
 	public override void _Process(double delta)
