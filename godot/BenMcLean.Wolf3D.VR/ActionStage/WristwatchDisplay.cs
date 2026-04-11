@@ -123,42 +123,30 @@ public partial class WristwatchDisplay : Node3D
 		// DEBUG: wrist-raise opacity disabled — always opaque for diagnostics.
 		// Restore before shipping.
 
-		UpdateScreenRoll();
+		UpdateScreenBillboard();
 	}
 
 	/// <summary>
-	/// Rotates the screen mesh around the screen's own normal axis so that the display
-	/// "up" direction always matches world up, regardless of which way the wrist is held.
-	/// This lets the user read the automap correctly whether viewing the display face-on
-	/// (gun pointed sideways) or sidelong (wrist raised in the classic watch-check gesture).
-	/// The WristwatchDisplay node's own position and facing are left untouched;
-	/// only _screenMesh gets a local Z rotation (roll).
+	/// Billboards the screen mesh to face the camera every frame.
+	/// The screen's world position (driven by WristwatchDisplay's attachment to the
+	/// left grip controller) is unchanged; only the mesh's orientation is overridden.
+	/// World Y is used as the up reference so the content stays right-side up regardless
+	/// of which way the wrist is held or the gun is pointed.
 	/// </summary>
-	private void UpdateScreenRoll()
+	private void UpdateScreenBillboard()
 	{
-		if (_screenMesh is null)
+		if (_screenMesh is null || _camera is null)
 			return;
 
-		// WristwatchDisplay's own world-space axes, unaffected by the mesh's local roll.
-		// GlobalBasis.Z is the screen normal (the direction the quad faces).
-		// GlobalBasis.Y is the screen's current "up" before any roll correction.
-		Vector3 screenNormal = GlobalBasis.Z;
-		Vector3 currentUp = GlobalBasis.Y;
+		Vector3 toCamera = (_camera.GlobalPosition - _screenMesh.GlobalPosition).Normalized();
 
-		// Project world up onto the screen plane to get the desired up direction.
-		// When the screen faces straight up or down this projection is degenerate — skip.
-		Vector3 projected = Vector3.Up - Vector3.Up.Dot(screenNormal) * screenNormal;
-		if (projected.LengthSquared() < 0.001f)
-			return;
-		Vector3 desiredUp = projected.Normalized();
+		// Degenerate: screen directly above or below camera — fall back to world forward as up
+		Vector3 worldUp = Mathf.Abs(toCamera.Dot(Vector3.Up)) > 0.999f
+			? -Vector3.Forward
+			: Vector3.Up;
 
-		// Angle from current screen up to desired up, measured around the screen normal.
-		float cosAngle = Mathf.Clamp(currentUp.Dot(desiredUp), -1f, 1f);
-		float sinAngle = screenNormal.Dot(currentUp.Cross(desiredUp));
-		float rollAngle = Mathf.Atan2(sinAngle, cosAngle);
-
-		// Apply as a pure Z rotation on the mesh so only the content rolls,
-		// not the screen's position or facing direction.
-		_screenMesh.Rotation = new Vector3(0f, 0f, rollAngle);
+		Vector3 right = worldUp.Cross(toCamera).Normalized();
+		Vector3 up = toCamera.Cross(right).Normalized();
+		_screenMesh.GlobalBasis = new Basis(right, up, toCamera);
 	}
 }
