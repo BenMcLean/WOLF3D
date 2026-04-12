@@ -209,6 +209,20 @@ public class MenuScriptContext(
 	/// <param name="enabled">True to enable mouse</param>
 	public void SetMouseEnabled(bool enabled) => config.MouseEnabled = enabled;
 	#endregion Settings (Config.cs)
+	#region Presentation Layer Menu
+	/// <summary>
+	/// Returns the display label for the presentation layer menu item, or null if no presentation
+	/// menu is registered. When null, the &lt;PresentationMenuItem&gt; slot is hidden.
+	/// Set by the presentation layer (e.g., MenuRoom) via RegisterPresentationMenu.
+	/// </summary>
+	public Func<string> GetPresentationMenuItemLabelFunc { get; set; }
+	/// <summary>
+	/// Invoked when the user selects the presentation layer menu item.
+	/// Typically navigates to the presentation layer's sub-menu.
+	/// Set by the presentation layer (e.g., MenuRoom) via RegisterPresentationMenu.
+	/// </summary>
+	public Action OpenPresentationMenuAction { get; set; }
+	#endregion Presentation Layer Menu
 	#region VR Settings (MenuState - New, not in CONFIG format)
 	/// <summary>
 	/// Get the current VR mode setting.

@@ -178,6 +178,22 @@ public class MenuManager
 					_logger?.LogError(ex, "Failed to compile menu function '{name}'", function.Name);
 				}
 	}
+	private const string PresentationMenuReservedName = "__PresentationMenu__";
+	/// <summary>
+	/// Registers the presentation layer's sub-menu.
+	/// The &lt;PresentationMenuItem&gt; slot in any game XML menu will show with the given label
+	/// and open this sub-menu when selected. Styling (colors, fonts, spacing) is inherited
+	/// from the game definition defaults. If never called, the slot remains hidden.
+	/// </summary>
+	/// <param name="label">Display text for the menu item in the parent menu</param>
+	/// <param name="menuDef">Sub-menu definition whose content is controlled by the presentation layer</param>
+	public void RegisterPresentationMenu(string label, MenuDefinition menuDef)
+	{
+		menuDef.Name = PresentationMenuReservedName;
+		_menuCollection.Menus[PresentationMenuReservedName] = menuDef;
+		_scriptContext.GetPresentationMenuItemLabelFunc = () => label;
+		_scriptContext.OpenPresentationMenuAction = () => NavigateToMenu(PresentationMenuReservedName);
+	}
 	/// <summary>
 	/// Navigate to a menu by name.
 	/// If FadeTransitionCallback is set, wraps the navigation in a fade transition.
@@ -322,9 +338,25 @@ public class MenuManager
 	/// Items with Condition="true" (from InGame="true") show only when a game is in progress.
 	/// Items with Condition="false" show only when no game is in progress.
 	/// Items with no Condition are always visible.
+	/// Presentation slots are included only when the presentation layer has registered a label.
 	/// </summary>
-	private List<MenuItemDefinition> GetVisibleItems(MenuDefinition menuDef) => [.. menuDef.Items
-		.Where(item => IsItemVisible(item, _scriptContext.IsGameInProgress()))];
+	private List<MenuItemDefinition> GetVisibleItems(MenuDefinition menuDef)
+	{
+		bool inGame = _scriptContext.IsGameInProgress();
+		List<MenuItemDefinition> result = [];
+		foreach (MenuItemDefinition item in menuDef.Items)
+		{
+			if (item.IsPresentationSlot)
+			{
+				string label = _scriptContext.GetPresentationMenuItemLabelFunc?.Invoke();
+				if (!string.IsNullOrEmpty(label))
+					result.Add(new MenuItemDefinition { Text = label, IsPresentationSlot = true });
+			}
+			else if (IsItemVisible(item, inGame))
+				result.Add(item);
+		}
+		return result;
+	}
 	/// <summary>
 	/// Returns true if the item should be shown given the current in-game state.
 	/// </summary>
@@ -645,6 +677,18 @@ public class MenuManager
 	/// <param name="item">Menu item to execute</param>
 	private void ExecuteMenuItemAction(MenuItemDefinition item)
 	{
+		// Play selection sound: item-level overrides menu-level (which already inherits collection default)
+		string selectSound = item.SelectSound;
+		if (selectSound == null && _menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition currentMenu))
+			selectSound = currentMenu.SelectSound;
+		if (!string.IsNullOrEmpty(selectSound))
+			PlayAdLibSoundImpl(selectSound);
+
+		if (item.IsPresentationSlot)
+		{
+			_scriptContext.OpenPresentationMenuAction?.Invoke();
+			return;
+		}
 		if (string.IsNullOrEmpty(item.Script))
 			return;
 		try

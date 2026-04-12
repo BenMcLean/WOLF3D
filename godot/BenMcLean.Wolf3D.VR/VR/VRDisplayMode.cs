@@ -37,7 +37,7 @@ public class VRDisplayMode : IDisplayMode
 	private XRController3D _leftGripController;
 	private XRController3D _rightGripController;
 	private Node _parent;
-	private readonly VRPlayMode _playMode;
+	private VRPlayMode _playMode;
 
 	// Movement validation for collision detection
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
@@ -58,6 +58,16 @@ public class VRDisplayMode : IDisplayMode
 	/// Turning is suppressed while teleportation mode is active.
 	/// </summary>
 	public bool IsTeleportModeActive => _teleportModeActive;
+
+	/// <summary>
+	/// Controls how the VR camera height is handled.
+	/// Can be changed at runtime to switch between Roomscale and 5DOF play modes.
+	/// </summary>
+	public VRPlayMode PlayMode
+	{
+		get => _playMode;
+		set => _playMode = value;
+	}
 
 	public event Action<int, string> HandButtonPressed;
 	public event Action<int, string> HandButtonReleased;

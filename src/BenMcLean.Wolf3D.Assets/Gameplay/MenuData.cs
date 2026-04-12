@@ -439,10 +439,27 @@ public class MenuItemDefinition
 	/// </summary>
 	public string Condition { get; set; }
 	/// <summary>
+	/// Sound to play when this specific item is selected.
+	/// Overrides the menu-level and global SelectSound defaults.
+	/// Null inherits from the menu or global default; empty string explicitly suppresses sound for this item.
+	/// </summary>
+	public string SelectSound { get; set; }
+	/// <summary>
+	/// True when this item is a presentation layer slot (&lt;PresentationMenuItem&gt; in XML).
+	/// The display text and action are provided by the presentation layer at runtime.
+	/// If the presentation layer provides no label, this item is hidden and skipped.
+	/// </summary>
+	public bool IsPresentationSlot { get; set; }
+	/// <summary>
 	/// Additional custom properties that can be defined in XML.
 	/// Allows for extensibility without modifying the core class.
 	/// </summary>
 	public Dictionary<string, string> CustomProperties { get; set; } = [];
+	/// <summary>
+	/// Creates a MenuItemDefinition for a presentation layer slot.
+	/// The display text and action are provided by the presentation layer at runtime.
+	/// </summary>
+	public static MenuItemDefinition CreatePresentationSlot() => new() { IsPresentationSlot = true };
 	/// <summary>
 	/// Creates a MenuItemDefinition instance from an XElement.
 	/// </summary>
@@ -454,7 +471,8 @@ public class MenuItemDefinition
 		{
 			Text = element.Attribute("Text")?.Value ?? string.Empty,
 			Script = element.Value?.Trim(),
-			Condition = element.Attribute("Condition")?.Value ?? element.Attribute("InGame")?.Value
+			Condition = element.Attribute("Condition")?.Value ?? element.Attribute("InGame")?.Value,
+			SelectSound = element.Attribute("SelectSound")?.Value,
 		};
 
 		// Store any additional attributes as custom properties
@@ -462,7 +480,7 @@ public class MenuItemDefinition
 		{
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
-			if (attrName is not ("Text" or "Condition" or "InGame"))
+			if (attrName is not ("Text" or "Condition" or "InGame" or "SelectSound"))
 			{
 				item.CustomProperties[attrName] = attr.Value;
 			}
@@ -502,6 +520,12 @@ public class MenuDefinition
 	/// Music track name to play while in this menu
 	/// </summary>
 	public string Music { get; set; }
+	/// <summary>
+	/// Sound to play when any item in this menu is selected.
+	/// Overrides the global default from MenuCollection.DefaultSelectSound.
+	/// Null inherits the global default; empty string explicitly suppresses sound for this menu.
+	/// </summary>
+	public string SelectSound { get; set; }
 	/// <summary>
 	/// Sound to play when cursor moves to a different menu item (e.g., "MOVEGUN2SND")
 	/// </summary>
@@ -596,6 +620,7 @@ public class MenuDefinition
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Menu element must have a Name attribute"),
 			Font = element.Attribute("Font")?.Value,
 			Music = element.Attribute("Music")?.Value ?? element.Attribute("Song")?.Value,
+			SelectSound = element.Attribute("SelectSound")?.Value,
 			CursorPic = element.Attribute("CursorPic")?.Value,
 			CursorMoveSound = element.Attribute("CursorMoveSound")?.Value,
 			OnSelectionChanged = element.Element("OnSelectionChanged")?.Value?.Trim(),
@@ -645,12 +670,12 @@ public class MenuDefinition
 		IEnumerable<XElement> pauseElements = element.Elements("Pause");
 		if (pauseElements != null)
 			menu.Pauses = [.. pauseElements.Select(MenuPauseDefinition.FromXElement)];
-		// Parse menu items
-		IEnumerable<XElement> menuItemElements = element.Elements("MenuItem");
-		if (menuItemElements != null)
-		{
-			menu.Items = [.. menuItemElements.Select(MenuItemDefinition.FromXElement)];
-		}
+		// Parse menu items and presentation slots in document order to preserve position
+		menu.Items = [.. element.Elements()
+			.Where(e => e.Name.LocalName is "MenuItem" or "PresentationMenuItem")
+			.Select(e => e.Name.LocalName == "PresentationMenuItem"
+				? MenuItemDefinition.CreatePresentationSlot()
+				: MenuItemDefinition.FromXElement(e))];
 
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())
@@ -658,7 +683,7 @@ public class MenuDefinition
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
 			if (attrName is not ("Name" or "BordColor"
-				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CurPos" or "CursorPic" or "CursorMoveSound"))
+				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CurPos" or "CursorPic" or "SelectSound" or "CursorMoveSound"))
 			{
 				menu.CustomProperties[attrName] = attr.Value;
 			}
@@ -743,6 +768,12 @@ public class MenuCollection
 	/// If null or empty, no sound is played on cancel.
 	/// </summary>
 	public string EscPressedSound { get; set; }
+	/// <summary>
+	/// Default sound to play when any menu item is selected (e.g., "SHOOTSND").
+	/// Absent or empty means no selection sound plays by default.
+	/// Overridable per menu via MenuDefinition.SelectSound and per item via MenuItemDefinition.SelectSound.
+	/// </summary>
+	public string DefaultSelectSound { get; set; }
 	/// <summary>
 	/// Default sound to play when cursor moves to different menu item (e.g., "MOVEGUN2SND")
 	/// </summary>
@@ -844,6 +875,7 @@ public class MenuCollection
 
 			// Apply default sound, music, cursor, and font
 			// Note: Empty string ("") won't be replaced - allows explicit "no cursor/sound/music/font"
+			menu.SelectSound ??= DefaultSelectSound;
 			menu.CursorMoveSound ??= DefaultCursorMoveSound;
 			menu.Music ??= DefaultMusic;
 			menu.CursorPic ??= DefaultCursorPic;
@@ -885,6 +917,7 @@ public class MenuCollection
 		{
 			PauseMenu = menusElement.Attribute("Pause")?.Value,
 			EscPressedSound = menusElement.Attribute("EscPressedSnd")?.Value,
+			DefaultSelectSound = menusElement.Attribute("SelectSound")?.Value,
 			DefaultCursorMoveSound = menusElement.Attribute("CursorMoveSound")?.Value,
 			DefaultMusic = menusElement.Attribute("Music")?.Value,
 			DefaultCursorPic = menusElement.Attribute("CursorPic")?.Value,

@@ -231,6 +231,10 @@ public partial class MenuRoom : Node3D, IRoom
 			return $"Level {levelIndex + 1}";
 		};
 
+		// Register VR-specific presentation menu (Roomscale vs 5DOF mode selection)
+		if (_displayMode.IsVRActive)
+			RegisterVRModeMenu();
+
 		// If in intermission mode, override start menu and pass completion stats
 		if (!string.IsNullOrEmpty(StartMenuOverride))
 		{
@@ -257,6 +261,37 @@ public partial class MenuRoom : Node3D, IRoom
 		}
 	}
 
+	/// <summary>
+	/// Registers the VR mode selection sub-menu with the menu manager.
+	/// The &lt;PresentationMenuItem&gt; slot in the game XML will show as "Change View"
+	/// and open this sub-menu. Items let the player switch between Roomscale and 5DOF.
+	/// </summary>
+	private void RegisterVRModeMenu()
+	{
+		Assets.Gameplay.MenuDefinition vrModeMenu = new()
+		{
+			// Positioning matches the original ChangeView menu
+			X = 76, Y = 55, Indent = 24, Spacing = 13,
+			Font = "BIG",
+			OnCancel = "NavigateToMenu(\"Main\")",
+		};
+		vrModeMenu.Items.Add(new Assets.Gameplay.MenuItemDefinition
+		{
+			Text = "Roomscale",
+			Script = "SetVRMode(\"Roomscale\") NavigateToMenu(\"Main\")",
+		});
+		vrModeMenu.Items.Add(new Assets.Gameplay.MenuItemDefinition
+		{
+			Text = "5DOF",
+			Script = "SetVRMode(\"FiveDOF\") NavigateToMenu(\"Main\")",
+		});
+		vrModeMenu.Items.Add(new Assets.Gameplay.MenuItemDefinition
+		{
+			Text = "Back",
+			Script = "NavigateToMenu(\"Main\")",
+		});
+		_menuManager.RegisterPresentationMenu("Change View", vrModeMenu);
+	}
 	/// <summary>
 	/// Sets up the menu as a floating 3D panel for VR.
 	/// </summary>
@@ -504,6 +539,16 @@ public partial class MenuRoom : Node3D, IRoom
 		if (_menuManager?.ScriptContext?.ContinueToNextLevelRequested == true && LevelTransition != null)
 		{
 			PendingLevelTransition = LevelTransition;
+		}
+
+		// Apply VR play mode changes from the menu session state
+		if (_displayMode is VRDisplayMode vrDisplayMode && _menuManager != null)
+		{
+			VRPlayMode targetMode = _menuManager.SessionState.VRMode == VRMode.Roomscale
+				? VRPlayMode.Roomscale
+				: VRPlayMode.FiveDOF;
+			if (vrDisplayMode.PlayMode != targetMode)
+				vrDisplayMode.PlayMode = targetMode;
 		}
 
 		// In VR mode, orient the player toward the panel once after XR tracking is active

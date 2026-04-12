@@ -366,6 +366,17 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="SelectSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Default sound to play automatically when any menu item is selected.
+						Absent or empty means no selection sound plays by default.
+						Can be overridden per menu via the Menu element's SelectSound attribute,
+						and per item via the MenuItem element's SelectSound attribute.
+						WL_MENU.C:CP_MainMenu — SD_PlaySound(SHOOTSND) before each action.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="CursorMoveSound" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Default sound when cursor moves to different menu item (e.g., "MOVEGUN2SND")</xs:documentation>
@@ -504,6 +515,7 @@
 				<xs:element ref="Ticker"/>
 				<xs:element ref="Pause"/>
 				<xs:element ref="MenuItem"/>
+				<xs:element ref="PresentationMenuItem"/>
 				<xs:element name="OnSelectionChanged" type="xs:string">
 					<xs:annotation>
 						<xs:documentation>
@@ -560,6 +572,15 @@
 			<xs:attribute name="Music" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Music track name to play while in this menu</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="SelectSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound to play when any item in this menu is selected.
+						Overrides the global default from the Menus element.
+						Absent inherits the global default; empty string explicitly suppresses sound for this menu.
+					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:attribute name="CursorMoveSound" type="xs:string">
@@ -664,6 +685,15 @@
 							<xs:documentation>Optional Lua expression for visibility/enabled state</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
+					<xs:attribute name="SelectSound" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>
+								Sound to play when this specific item is selected.
+								Overrides both the menu-level and global SelectSound defaults.
+								Absent inherits from the menu or global default; empty string explicitly suppresses sound for this item.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 					<xs:attribute name="ExtraSpacing" type="xs:integer">
 						<xs:annotation>
 							<xs:documentation>
@@ -676,6 +706,20 @@
 				</xs:extension>
 			</xs:simpleContent>
 		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="PresentationMenuItem">
+		<xs:annotation>
+			<xs:documentation>
+				Placeholder for a menu item whose label and action are provided by the presentation layer at runtime.
+				The presentation layer (e.g., VR) registers a label string and a sub-menu definition.
+				If the presentation layer provides no label, this item is hidden and skipped entirely.
+				Sub-menu styling (colors, fonts, spacing) is inherited from the game definition.
+				Allows presentation-specific options (e.g., VR Roomscale vs 5DOF) without modifying game XML.
+				Different presentation layers (VR, isometric) can register different content for this slot.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType/>
 	</xs:element>
 
 	<xs:element name="Box">
