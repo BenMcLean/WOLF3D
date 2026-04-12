@@ -106,8 +106,9 @@ public class AssetManager
 			stateCollection.LoadActorDefinitionsFromXml(actorElements);
 		// Phase 2: Link state references
 		stateCollection.LinkStates();
-		// Phase 3: Validate function references
-		stateCollection.ValidateFunctionReferences();
+		// Note: ValidateFunctionReferences is NOT called here.
+		// It runs in the Simulator constructor after default scripts are merged in,
+		// so references to default scripts are valid before validation occurs.
 		return stateCollection;
 	}
 	private static WeaponCollection LoadWeaponCollection(XElement xml)

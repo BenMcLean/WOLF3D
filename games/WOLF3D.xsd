@@ -1537,8 +1537,8 @@
 				Referenced by ObjectType elements via Script attribute.
 				Can also be referenced by enemy drop definitions.
 
-				Script receives ItemScriptContext with player state methods.
-				Return true to consume the item, false to leave it.
+				Script receives BonusScriptContext with player state methods.
+				Return true to consume the bonus, false to leave it.
 
 				Example:
 				&lt;BonusScript Name="health_small"&gt;

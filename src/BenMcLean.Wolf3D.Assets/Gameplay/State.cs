@@ -408,37 +408,37 @@ public class StateCollection
 		}
 	}
 	/// <summary>
+	/// Merges default scripts into the Functions collection.
+	/// Defaults are only added when no XML-defined function with the same name exists,
+	/// so game description XML files can override any default by defining a Function with the same name.
+	/// Call this before ValidateFunctionReferences.
+	/// </summary>
+	/// <param name="defaults">Name/code pairs from the embedded default scripts</param>
+	public void MergeDefaults(IEnumerable<(string Name, string Code)> defaults)
+	{
+		foreach ((string name, string code) in defaults)
+			if (!Functions.ContainsKey(name))
+				Functions[name] = new ActionFunction { Name = name, Code = code };
+	}
+	/// <summary>
 	/// Validates that all Think and Action function references in states exist in the Functions collection.
-	/// Call this after loading all states and functions from XML (Phase 3).
+	/// Call this after MergeDefaults so default scripts are included in the check.
+	/// Throws InvalidOperationException if any reference is unresolved.
 	/// </summary>
 	public void ValidateFunctionReferences()
 	{
-		// TODO: In final release, this should throw hard errors with helpful messages for modders.
-		// For now, just log warnings to allow testing with incomplete function sets.
-		// Final behavior should be:
-		//   throw new InvalidOperationException($"State '{state.Name}' references unknown Think function '{state.Think}'. Please add a <Function Name=\"{state.Think}\"> element to define this function.");
-
 		foreach (State state in States.Values)
 		{
-			// Validate Think function reference if present
-			if (!string.IsNullOrEmpty(state.Think))
-			{
-				if (!Functions.ContainsKey(state.Think))
-				{
-					// TODO: Restore hard error for final release (see method summary)
-					System.Diagnostics.Debug.WriteLine($"WARNING: State '{state.Name}' references unknown Think function '{state.Think}' - function will be skipped during execution");
-				}
-			}
-
-			// Validate Action function reference if present
-			if (!string.IsNullOrEmpty(state.Action))
-			{
-				if (!Functions.ContainsKey(state.Action))
-				{
-					// TODO: Restore hard error for final release (see method summary)
-					System.Diagnostics.Debug.WriteLine($"WARNING: State '{state.Name}' references unknown Action function '{state.Action}' - function will be skipped during execution");
-				}
-			}
+			if (!string.IsNullOrEmpty(state.Think) && !Functions.ContainsKey(state.Think))
+				throw new InvalidOperationException(
+					$"State '{state.Name}' references unknown Think function '{state.Think}'. " +
+					$"Add a <Function Name=\"{state.Think}\"> element to the game description XML " +
+					$"or add {state.Think}.lua to the Simulator's DefaultScripts folder.");
+			if (!string.IsNullOrEmpty(state.Action) && !Functions.ContainsKey(state.Action))
+				throw new InvalidOperationException(
+					$"State '{state.Name}' references unknown Action function '{state.Action}'. " +
+					$"Add a <Function Name=\"{state.Action}\"> element to the game description XML " +
+					$"or add {state.Action}.lua to the Simulator's DefaultScripts folder.");
 		}
 	}
 	/// <summary>

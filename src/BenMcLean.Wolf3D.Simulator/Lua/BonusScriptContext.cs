@@ -4,9 +4,9 @@ using BenMcLean.Wolf3D.Simulator.Entities;
 namespace BenMcLean.Wolf3D.Simulator.Lua;
 
 /// <summary>
-/// Script context for item pickup scripts.
-/// Extends EntityScriptContext with item-specific properties.
-/// Item scripts return true to consume the item, false to leave it.
+/// Script context for bonus (item pickup) scripts.
+/// Extends EntityScriptContext with bonus-specific properties.
+/// Bonus scripts return true to consume the bonus, false to leave it.
 ///
 /// Uses generic inventory API inherited from ActionScriptContext:
 /// - GetValue(name), SetValue(name, value), AddValue(name, delta)
@@ -40,7 +40,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// return true
 /// </code>
 /// </summary>
-public class ItemScriptContext(
+public class BonusScriptContext(
 	Simulator simulator,
 	StatObj item,
 	RNG rng,
@@ -48,21 +48,22 @@ public class ItemScriptContext(
 	ILogger logger = null) : EntityScriptContext(simulator, rng, gameClock, item.TileX, item.TileY, logger)
 {
 	/// <summary>
-	/// Tile X coordinate of the item (exposed to Lua).
+	/// Tile X coordinate of the bonus (exposed to Lua).
 	/// </summary>
-	public int ItemTileX => item.TileX;
+	public int BonusTileX => item.TileX;
 	/// <summary>
-	/// Tile Y coordinate of the item (exposed to Lua).
+	/// Tile Y coordinate of the bonus (exposed to Lua).
 	/// </summary>
-	public int ItemTileY => item.TileY;
+	public int BonusTileY => item.TileY;
 	/// <summary>
 	/// Item number/type (e.g., bo_food, bo_clip - exposed to Lua).
+	/// WL_DEF.H:bo_* constants
 	/// </summary>
-	public int ItemNumber => item.ItemNumber;
+	public int BonusNumber => item.ItemNumber;
 	/// <summary>
-	/// Shape number of the item sprite (exposed to Lua).
+	/// Shape number of the bonus sprite (exposed to Lua).
 	/// </summary>
-	public int ItemShape => item.ShapeNum;
+	public int BonusShape => item.ShapeNum;
 	#region Weapon Switching
 	/// <summary>
 	/// Switch to the named weapon in all weapon slots.

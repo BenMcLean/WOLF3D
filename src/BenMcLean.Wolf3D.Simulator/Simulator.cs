@@ -366,8 +366,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		this.rng = rng ?? throw new ArgumentNullException(nameof(rng));
 		this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
 		this.logger = logger;
-		// Initialize Lua script engine and compile all state functions
+		// Initialize Lua script engine and compile all state functions.
+		// Merge default scripts first so XML-defined functions can override them,
+		// then validate that all state references resolve, then compile.
 		luaScriptEngine = new Lua.LuaScriptEngine(logger);
+		stateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
+		stateCollection.ValidateFunctionReferences();
 		luaScriptEngine.CompileAllActionFunctions(stateCollection);
 		// Wire Inventory.ValueChanged to PlayerStateChanged and auto-text StatusBar updates.
 		// Auto-text: if the inventory key matches a StatusBar Text Id, emit StatusBarTextChanged
@@ -2830,12 +2834,17 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <summary>
 	/// Load item scripts from game configuration.
 	/// Called during level load to set up item pickup behavior.
+	/// Default bonus scripts from Lua/DefaultScripts/Bonuses/ are merged in automatically;
+	/// any script defined in the game XML overrides the matching default.
 	/// </summary>
 	/// <param name="scripts">Dictionary mapping script name to Lua code</param>
 	/// <param name="itemNumberToScriptMap">Dictionary mapping ItemNumber (byte) to script name</param>
 	public void LoadItemScripts(Dictionary<string, string> scripts, Dictionary<byte, string> itemNumberToScriptMap)
 	{
 		itemScripts = scripts ?? [];
+		foreach ((string name, string code) in DefaultScriptLoader.LoadBonusScripts())
+			if (!itemScripts.ContainsKey(name))
+				itemScripts[name] = code;
 		itemNumberToScript = itemNumberToScriptMap ?? [];
 	}
 
@@ -2932,7 +2941,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 
 		// Create script context for this item
-		Lua.ItemScriptContext context = new(
+		Lua.BonusScriptContext context = new(
 			this,
 			item,
 			rng,

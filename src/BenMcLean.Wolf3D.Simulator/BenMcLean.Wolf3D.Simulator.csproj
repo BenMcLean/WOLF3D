@@ -14,4 +14,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\BenMcLean.Wolf3D.Assets\BenMcLean.Wolf3D.Assets.csproj" />
 	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Lua\DefaultScripts\**\*.lua" />
+	</ItemGroup>
 </Project>
