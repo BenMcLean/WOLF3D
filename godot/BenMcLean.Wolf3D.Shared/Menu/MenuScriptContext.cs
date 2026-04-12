@@ -457,7 +457,7 @@ public class MenuScriptContext(
 	/// <param name="targetValue">Target value to display</param>
 	public void StartTicker(string name, int targetValue)
 	{
-		if (ActiveSequence != null && UpdateTickerAction != null)
+		if (ActiveSequence is not null && UpdateTickerAction is not null)
 		{
 			// Look up the ticker definition for sound configuration
 			MenuTickerDefinition tickerDef = GetTickerDefinitionFunc?.Invoke(name);

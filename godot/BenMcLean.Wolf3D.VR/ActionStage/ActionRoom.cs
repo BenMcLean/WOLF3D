@@ -458,13 +458,13 @@ void sky() {
 			// WL_GAME.C:NewGame — sets initial inventory values (health, ammo, weapons, etc.)
 			// Must run after status bar events are wired so display updates are received.
 			// Must run before EquipStartingWeapon so weapon ownership is set correctly.
-			if (_existingSimulator == null && _loadSnapshot == null && _savedInventory == null)
+			if (_existingSimulator is null && _loadSnapshot is null && _savedInventory is null)
 				_simulatorController.Simulator.ExecuteOnNewGameScript();
 
 			// Equip starting weapon based on inventory (new game or level transition).
 			// New game: SelectedWeapon0 set by OnNewGame script above.
 			// Level transition: SelectedWeapon0 restored from savedInventory.
-			if (_existingSimulator == null && _loadSnapshot == null)
+			if (_existingSimulator is null && _loadSnapshot is null)
 				_simulatorController.Simulator.EquipStartingWeapon();
 
 			// Create automap renderer — needed in both VR (wristwatch) and flatscreen modes.
@@ -726,7 +726,7 @@ void sky() {
 	private void CycleWeapon(int handIndex, int direction)
 	{
 		WeaponCollection collection = _simulatorController.Simulator?.WeaponCollection;
-		if (collection == null)
+		if (collection is null)
 			return;
 
 		List<int> weaponNumbers = [.. collection.Weapons.Values

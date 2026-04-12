@@ -89,7 +89,7 @@ public partial class Weapons : Node3D
 	/// </summary>
 	public void Unsubscribe()
 	{
-		if (simulator != null)
+		if (simulator is not null)
 		{
 			simulator.WeaponEquipped -= OnWeaponEquipped;
 			simulator.WeaponSpriteChanged -= OnWeaponSpriteChanged;
@@ -140,7 +140,7 @@ public partial class Weapons : Node3D
 	/// <param name="shape">Sprite page number</param>
 	private void UpdateWeaponSprite(ushort shape)
 	{
-		if (weaponSprite == null)
+		if (weaponSprite is null)
 			return;
 		// Get material for this sprite (same as actors do)
 		if (spriteMaterials.TryGetValue(shape, out StandardMaterial3D material))

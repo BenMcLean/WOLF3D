@@ -64,7 +64,7 @@ public class AssetManager
 			if (File.Exists(wallSpawnsPath))
 				wallSpawnsByLevel = Gameplay.WallSpawns.LoadAll(wallSpawnsPath);
 		}
-		MapAnalyses = wallSpawnsByLevel != null
+		MapAnalyses = wallSpawnsByLevel is not null
 			? [.. maps.Select(map =>
 				map.Number < wallSpawnsByLevel.Length
 					? MapAnalyzer.Analyze(map, wallSpawnsByLevel[map.Number])
@@ -83,26 +83,26 @@ public class AssetManager
 		// Sprite name resolver - uses VSwap.SpritesByName dictionary
 		short ResolveSpriteNameToNumber(string spriteName)
 		{
-			if (VSwap?.SpritesByName != null && VSwap.SpritesByName.TryGetValue(spriteName, out ushort spriteNum))
+			if (VSwap?.SpritesByName is not null && VSwap.SpritesByName.TryGetValue(spriteName, out ushort spriteNum))
 				return (short)spriteNum;
 			return -1; // Unknown sprite
 		}
 		// Find the Actors element inside VSwap
 		XElement vswapElement = xml.Element("VSwap");
 		XElement actorsElement = vswapElement?.Element("Actors");
-		if (actorsElement == null)
+		if (actorsElement is null)
 			return stateCollection; // No states defined
 									// Load state functions first
 		IEnumerable<XElement> functionElements = actorsElement.Elements("Function");
-		if (functionElements != null)
+		if (functionElements is not null)
 			stateCollection.LoadFunctionsFromXml(functionElements);
 		// Load states (Phase 1: Create all state objects)
 		IEnumerable<XElement> stateElements = actorsElement.Elements("State");
-		if (stateElements != null)
+		if (stateElements is not null)
 			stateCollection.LoadStatesFromXml(stateElements, ResolveSpriteNameToNumber);
 		// Load actor definitions (for death states, chase states, etc.)
 		IEnumerable<XElement> actorElements = actorsElement.Elements("Actor");
-		if (actorElements != null)
+		if (actorElements is not null)
 			stateCollection.LoadActorDefinitionsFromXml(actorElements);
 		// Phase 2: Link state references
 		stateCollection.LinkStates();

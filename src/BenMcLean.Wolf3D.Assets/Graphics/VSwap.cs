@@ -21,7 +21,7 @@ public sealed class VSwap
 	public static VSwap Load(XElement xml, string folder = "")
 	{
 		string name = xml.Element("VSwap")?.Attribute("Name")?.Value;
-		if (name == null)
+		if (name is null)
 			return null;
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);

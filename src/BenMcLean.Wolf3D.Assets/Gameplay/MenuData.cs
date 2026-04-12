@@ -650,25 +650,25 @@ public class MenuDefinition
 
 		// Parse boxes
 		IEnumerable<XElement> boxElements = element.Elements("Box");
-		if (boxElements != null)
+		if (boxElements is not null)
 			menu.Boxes = [.. boxElements.Select(MenuBoxDefinition.FromXElement)];
 
 		// Parse decorative pictures
 		IEnumerable<XElement> pictureElements = element.Elements("Picture");
-		if (pictureElements != null)
+		if (pictureElements is not null)
 			menu.Pictures = [.. pictureElements.Select(PictureDefinition.FromXElement)];
 
 		// Parse text labels
 		IEnumerable<XElement> textElements = element.Elements("Text");
-		if (textElements != null)
+		if (textElements is not null)
 			menu.Texts = [.. textElements.Select(TextDefinition.FromXElement)];
 		// Parse tickers
 		IEnumerable<XElement> tickerElements = element.Elements("Ticker");
-		if (tickerElements != null)
+		if (tickerElements is not null)
 			menu.Tickers = [.. tickerElements.Select(MenuTickerDefinition.FromXElement)];
 		// Parse pause steps
 		IEnumerable<XElement> pauseElements = element.Elements("Pause");
-		if (pauseElements != null)
+		if (pauseElements is not null)
 			menu.Pauses = [.. pauseElements.Select(MenuPauseDefinition.FromXElement)];
 		// Parse menu items and presentation slots in document order to preserve position
 		menu.Items = [.. element.Elements()
@@ -808,7 +808,7 @@ public class MenuCollection
 	/// <param name="function">The MenuFunction to add</param>
 	public void AddFunction(MenuFunction function)
 	{
-		if (function == null)
+		if (function is null)
 			throw new ArgumentNullException(nameof(function));
 		if (string.IsNullOrEmpty(function.Name))
 			throw new ArgumentException("MenuFunction must have a non-empty Name");
@@ -821,7 +821,7 @@ public class MenuCollection
 	/// <param name="menu">The MenuDefinition to add</param>
 	public void AddMenu(MenuDefinition menu)
 	{
-		if (menu == null)
+		if (menu is null)
 			throw new ArgumentNullException(nameof(menu));
 		if (string.IsNullOrEmpty(menu.Name))
 			throw new ArgumentException("MenuDefinition must have a non-empty Name");
@@ -834,7 +834,7 @@ public class MenuCollection
 	/// <param name="functionElements">Collection of &lt;MenuFunction&gt; elements</param>
 	public void LoadFunctionsFromXml(IEnumerable<XElement> functionElements)
 	{
-		if (functionElements == null)
+		if (functionElements is null)
 			return;
 
 		foreach (XElement element in functionElements)
@@ -849,7 +849,7 @@ public class MenuCollection
 	/// <param name="menuElements">Collection of &lt;Menu&gt; elements</param>
 	public void LoadMenusFromXml(IEnumerable<XElement> menuElements)
 	{
-		if (menuElements == null)
+		if (menuElements is null)
 			return;
 
 		foreach (XElement element in menuElements)
@@ -859,39 +859,45 @@ public class MenuCollection
 		}
 	}
 	/// <summary>
+	/// Applies collection-level defaults to a single menu definition.
+	/// Uses ??= so empty string ("") is treated as an explicit value and won't be overridden.
+	/// Call this when adding menus programmatically after the collection has been loaded,
+	/// e.g. in RegisterPresentationMenu, so the programmatic menu inherits game styling.
+	/// </summary>
+	public void ApplyDefaultsTo(MenuDefinition menu)
+	{
+		// Apply default colors to menu
+		menu.BordColor ??= DefaultBordColor;
+		menu.TextColor ??= DefaultTextColor;
+		menu.Highlight ??= DefaultHighlight;
+
+		// Apply default sound, music, cursor, and font
+		// Note: Empty string ("") won't be replaced - allows explicit "no cursor/sound/music/font"
+		menu.SelectSound ??= DefaultSelectSound;
+		menu.CursorMoveSound ??= DefaultCursorMoveSound;
+		menu.Music ??= DefaultMusic;
+		menu.CursorPic ??= DefaultCursorPic;
+		menu.Font ??= DefaultFont;
+		// Apply default spacing
+		menu.Spacing ??= DefaultSpacing;
+
+		// Apply default colors to boxes
+		foreach (MenuBoxDefinition box in menu.Boxes)
+		{
+			// Boxes use BKGDCOLOR for background, not BORDCOLOR
+			box.BkgdColor ??= DefaultBkgdColor;
+			box.Deactive ??= DefaultDeactive;
+			box.Bord2Color ??= DefaultBord2Color;
+		}
+	}
+	/// <summary>
 	/// Applies default colors, sounds, and music from the collection to menus and boxes that don't specify their own.
-	/// Note: Uses ??= operator, so empty string ("") is considered an explicit value and won't be overridden.
-	/// This allows menus to explicitly disable features by setting attributes to empty strings.
 	/// Should be called after all menus are loaded but before validation.
 	/// </summary>
 	private void ApplyDefaults()
 	{
 		foreach (MenuDefinition menu in Menus.Values)
-		{
-			// Apply default colors to menus
-			menu.BordColor ??= DefaultBordColor;
-			menu.TextColor ??= DefaultTextColor;
-			menu.Highlight ??= DefaultHighlight;
-
-			// Apply default sound, music, cursor, and font
-			// Note: Empty string ("") won't be replaced - allows explicit "no cursor/sound/music/font"
-			menu.SelectSound ??= DefaultSelectSound;
-			menu.CursorMoveSound ??= DefaultCursorMoveSound;
-			menu.Music ??= DefaultMusic;
-			menu.CursorPic ??= DefaultCursorPic;
-			menu.Font ??= DefaultFont;
-			// Apply default spacing
-			menu.Spacing ??= DefaultSpacing;
-
-			// Apply default colors to boxes
-			foreach (MenuBoxDefinition box in menu.Boxes)
-			{
-				// Boxes use BKGDCOLOR for background, not BORDCOLOR
-				box.BkgdColor ??= DefaultBkgdColor;
-				box.Deactive ??= DefaultDeactive;
-				box.Bord2Color ??= DefaultBord2Color;
-			}
-		}
+			ApplyDefaultsTo(menu);
 	}
 	/// <summary>
 	/// Validates menu data (currently a no-op since menu items use inline Lua scripts).
@@ -910,7 +916,7 @@ public class MenuCollection
 	/// <returns>A populated MenuCollection</returns>
 	public static MenuCollection Load(XElement menusElement)
 	{
-		if (menusElement == null)
+		if (menusElement is null)
 			return new MenuCollection(); // Return empty collection if no menus defined
 
 		MenuCollection collection = new()

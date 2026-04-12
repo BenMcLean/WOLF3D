@@ -254,12 +254,12 @@ public class MenuSequence
 	/// <summary>
 	/// Whether the sequence has finished (no more steps to process).
 	/// </summary>
-	public bool IsComplete => _currentStep == null && _steps.Count == 0;
+	public bool IsComplete => _currentStep is null && _steps.Count == 0;
 
 	/// <summary>
 	/// Whether the sequence has any steps queued.
 	/// </summary>
-	public bool HasSteps => _currentStep != null || _steps.Count > 0;
+	public bool HasSteps => _currentStep is not null || _steps.Count > 0;
 
 	/// <summary>
 	/// Add a step to the end of the sequence.

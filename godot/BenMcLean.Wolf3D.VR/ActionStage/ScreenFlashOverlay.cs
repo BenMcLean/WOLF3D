@@ -72,7 +72,7 @@ public partial class ScreenFlashOverlay : Node
 	{
 		_vrFlashMesh = null; // Old mesh was freed with old camera
 
-		if (camera == null)
+		if (camera is null)
 			return;
 
 		// Create shader material once; it persists across camera changes because
@@ -123,7 +123,7 @@ void fragment() {
 	/// </summary>
 	public void Subscribe(SimulatorController controller)
 	{
-		if (controller == null)
+		if (controller is null)
 			throw new ArgumentNullException(nameof(controller));
 		controller.ScreenFlash += OnScreenFlash;
 	}
@@ -171,12 +171,12 @@ void fragment() {
 		}
 
 		// VR: veil quad parented to XRCamera3D, visible in both headset eyes
-		if (_vrFlashMesh != null && GodotObject.IsInstanceValid(_vrFlashMesh))
+		if (_vrFlashMesh is not null && GodotObject.IsInstanceValid(_vrFlashMesh))
 		{
 			_vrFlashMesh.Visible = flashAlpha > 0f;
 			_vrFlashMaterial.SetShaderParameter("color", new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha));
 		}
-		else if (_vrFlashMesh != null)
+		else if (_vrFlashMesh is not null)
 		{
 			_vrFlashMesh = null; // Freed with old camera
 		}

@@ -45,6 +45,6 @@ public class GodotLogger(string categoryName) : ILogger
 	public class GodotLoggerProvider : ILoggerProvider
 	{
 		public ILogger CreateLogger(string categoryName) => new GodotLogger(categoryName);
-		public void Dispose() { }
+		public void Dispose() => GC.SuppressFinalize(this);
 	}
 }

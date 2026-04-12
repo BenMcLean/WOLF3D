@@ -30,7 +30,7 @@ public class FlatscreenDisplayMode : IDisplayMode
 	// Hand 1 is offset to the left for asymmetric dual-wield layout.
 	public Vector3 GetHandPosition(int handIndex)
 	{
-		if (_camera == null)
+		if (_camera is null)
 			return Vector3.Zero;
 
 		Vector3 base0 = _camera.GlobalPosition
@@ -43,7 +43,7 @@ public class FlatscreenDisplayMode : IDisplayMode
 			: base0;
 	}
 
-	public Vector3 GetHandForward(int handIndex) => _camera != null
+	public Vector3 GetHandForward(int handIndex) => _camera is not null
 		? -_camera.GlobalBasis.Z
 		: Vector3.Forward;
 
@@ -126,7 +126,7 @@ public class FlatscreenDisplayMode : IDisplayMode
 		set
 		{
 			_locomotionEnabled = value;
-			if (_camera != null)
+			if (_camera is not null)
 				_camera.MovementEnabled = value;
 		}
 	}

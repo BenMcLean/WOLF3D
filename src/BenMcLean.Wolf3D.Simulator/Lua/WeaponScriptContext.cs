@@ -214,15 +214,15 @@ public class WeaponScriptContext(
 	public void SwitchToLowestWeapon()
 	{
 		WeaponCollection weaponCollection = simulator.WeaponCollection;
-		if (weaponCollection != null)
+		if (weaponCollection is not null)
 		{
 			WeaponInfo lowest = null;
 			foreach (WeaponInfo weapon in weaponCollection.Weapons.Values)
 			{
-				if (lowest == null || weapon.Number < lowest.Number)
+				if (lowest is null || weapon.Number < lowest.Number)
 					lowest = weapon;
 			}
-			if (lowest != null)
+			if (lowest is not null)
 			{
 				simulator.EquipWeapon(slotIndex, lowest.Name);
 				_logger?.LogDebug("WeaponScriptContext: SwitchToLowestWeapon() -> {weaponName} for slot {slotIndex}",

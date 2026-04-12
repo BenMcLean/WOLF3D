@@ -68,7 +68,7 @@ public sealed class GameMap
 		XElement el  = xml.Element("Maps");
 		string head  = el?.Attribute("MapHead")?.Value;
 		string gmaps = el?.Attribute("GameMaps")?.Value;
-		if (head == null || gmaps == null)
+		if (head is null || gmaps is null)
 			return [];
 		return Load(
 			mapHead:   Path.Combine(folder, head),

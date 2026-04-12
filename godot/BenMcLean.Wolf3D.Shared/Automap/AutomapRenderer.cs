@@ -127,7 +127,7 @@ public partial class AutomapRenderer : Control
 
 		// WL_MAP.C:DrawMapWalls — iterate flat array, skip floor/empty sentinel
 		byte[][] vgaGraphTiles = SharedAssetManager.CurrentGame?.VgaGraph?.Tiles;
-		bool useVgaGraphWalls = _mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles != null;
+		bool useVgaGraphWalls = _mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles is not null;
 		byte[][] vswapPages = SharedAssetManager.CurrentGame?.VSwap?.Pages;
 		int pageSqrt = SharedAssetManager.CurrentGame?.VSwap?.TileSqrt ?? 64;
 		for (int i = 0; i < _automapData.Count; i++)
@@ -146,7 +146,7 @@ public partial class AutomapRenderer : Control
 					PaintTileFromRgbaBytes(_dimImage, x, y, tileData);
 				}
 			}
-			else if (vswapPages != null)
+			else if (vswapPages is not null)
 			{
 				// VSwap path: downsample wall/door texture directly from raw RGBA page to 8×8.
 				if (tileOrPage < vswapPages.Length && vswapPages[tileOrPage] is byte[] litPage)
@@ -273,14 +273,14 @@ public partial class AutomapRenderer : Control
 				bool seen = idx < _fogEverSeen.Count && _fogEverSeen[idx];
 				if (!seen) continue;
 				Rect2I rect = new(pwX * TilePixels, pwY * TilePixels, TilePixels, TilePixels);
-				if (_mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles != null)
+				if (_mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles is not null)
 				{
 					if (tileOrPage < vgaGraphTiles.Length && vgaGraphTiles[tileOrPage] is byte[] tileData)
 						PaintTileFromRgbaBytes(_compositeImage, pwX, pwY, tileData);
 					else
 						_compositeImage.FillRect(rect, visible ? _floorColor : _ceilingColor);
 				}
-				else if (vswapPages != null)
+				else if (vswapPages is not null)
 				{
 					ushort page = (!visible && _mapAnalysis.PushWallsHaveDimVariant)
 						? (ushort)(tileOrPage + 1) : tileOrPage;

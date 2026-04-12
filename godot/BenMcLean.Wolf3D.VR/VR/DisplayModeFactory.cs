@@ -69,12 +69,12 @@ public static class DisplayModeFactory
 		// Try to find and initialize OpenXR
 		XRInterface xrInterface = XRServer.FindInterface("OpenXR");
 
-		if (xrInterface != null)
+		if (xrInterface is not null)
 		{
 			if (xrInterface.Initialize())
 			{
 				GD.Print("OpenXR initialized successfully");
-				return new VRDisplayMode(xrInterface, playMode);
+				return new VRDisplayMode(playMode);
 			}
 			else
 			{

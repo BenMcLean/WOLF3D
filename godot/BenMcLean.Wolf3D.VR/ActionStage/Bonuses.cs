@@ -365,7 +365,7 @@ public partial class Bonuses : Node3D
 	/// </summary>
 	public void Unsubscribe()
 	{
-		if (_simulator == null)
+		if (_simulator is null)
 			return;
 
 		_simulator.BonusSpawned -= OnBonusSpawned;

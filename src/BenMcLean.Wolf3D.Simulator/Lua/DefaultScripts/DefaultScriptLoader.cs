@@ -41,9 +41,9 @@ internal static class DefaultScriptLoader
 			if (!resourceName.StartsWith(ResourcePrefix, StringComparison.Ordinal) ||
 				!resourceName.EndsWith(ResourceSuffix, StringComparison.Ordinal))
 				continue;
-			if (only != null && !resourceName.StartsWith(only, StringComparison.Ordinal))
+			if (only is not null && !resourceName.StartsWith(only, StringComparison.Ordinal))
 				continue;
-			if (exclude != null && resourceName.StartsWith(exclude, StringComparison.Ordinal))
+			if (exclude is not null && resourceName.StartsWith(exclude, StringComparison.Ordinal))
 				continue;
 			// Strip prefix and suffix to get "SubFolder.FunctionName",
 			// then take only the last segment so the subfolder is not part of the function name.

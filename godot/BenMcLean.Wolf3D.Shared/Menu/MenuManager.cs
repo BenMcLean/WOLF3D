@@ -190,6 +190,7 @@ public class MenuManager
 	public void RegisterPresentationMenu(string label, MenuDefinition menuDef)
 	{
 		menuDef.Name = PresentationMenuReservedName;
+		_menuCollection.ApplyDefaultsTo(menuDef);
 		_menuCollection.Menus[PresentationMenuReservedName] = menuDef;
 		_scriptContext.GetPresentationMenuItemLabelFunc = () => label;
 		_scriptContext.OpenPresentationMenuAction = () => NavigateToMenu(PresentationMenuReservedName);
@@ -207,7 +208,7 @@ public class MenuManager
 			_logger?.LogError("Menu '{menuName}' not found", menuName);
 			return;
 		}
-		if (FadeTransitionCallback != null)
+		if (FadeTransitionCallback is not null)
 		{
 			FadeTransitionCallback(() => NavigateToMenuImmediate(menuName));
 			return;
@@ -225,7 +226,7 @@ public class MenuManager
 		// null  = no Music attribute and no Menus-level default → do nothing
 		// ""    = Music attribute present but empty → explicit silence
 		// else  → play named track
-		if (menuDef.Music == null)
+		if (menuDef.Music is null)
 			return;
 		if (menuDef.Music == "")
 		{
@@ -260,7 +261,7 @@ public class MenuManager
 		ExecuteOnShow(menuDef);
 		_scriptContext.ActiveSequence = null;
 		// Queue Pause elements after OnShow steps (tickers/delays run first, then pauses)
-		if (menuDef.Pauses != null)
+		if (menuDef.Pauses is not null)
 			foreach (MenuPauseDefinition pauseDef in menuDef.Pauses)
 			{
 				// Capture pauseDef for the closure
@@ -440,7 +441,7 @@ public class MenuManager
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
 		PictureDefinition picture = menuDef.Pictures.FirstOrDefault(p => p.Id == id);
-		if (picture == null)
+		if (picture is null)
 		{
 			GD.PrintErr($"ERROR: SetPicture: No picture with Id '{id}' in menu '{_currentMenuName}'");
 			return;
@@ -679,7 +680,7 @@ public class MenuManager
 	{
 		// Play selection sound: item-level overrides menu-level (which already inherits collection default)
 		string selectSound = item.SelectSound;
-		if (selectSound == null && _menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition currentMenu))
+		if (selectSound is null && _menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition currentMenu))
 			selectSound = currentMenu.SelectSound;
 		if (!string.IsNullOrEmpty(selectSound))
 			PlayAdLibSoundImpl(selectSound);

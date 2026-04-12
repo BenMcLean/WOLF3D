@@ -65,7 +65,7 @@ public class ActorScriptContext(
 	/// Check if actor has a valid direction (not nodir/null).
 	/// For Lua scripts to check ob->dir != nodir.
 	/// </summary>
-	public bool HasDirection() => actor.Facing != null;
+	public bool HasDirection() => actor.Facing is not null;
 	#endregion Actor Property Accessors
 	#region Actor Mutation Methods
 	/// <summary>

@@ -519,7 +519,7 @@ public class RNG : System.Random
 	{
 		if (collection is IList<T> list && list.Count > 0)
 			return list[NextSignedInt(list.Count)];
-		if (collection != null && collection.Count > 0 && collection.GetEnumerator() is IEnumerator<T> e)
+		if (collection is not null && collection.Count > 0 && collection.GetEnumerator() is IEnumerator<T> e)
 		{
 			for (int target = NextSignedInt(collection.Count); target > 0; target--)
 				e.MoveNext();

@@ -16,7 +16,7 @@ public sealed class AudioT
 		XElement el   = xml.Element("Audio");
 		string head   = el?.Attribute("AudioHead")?.Value;
 		string audioT = el?.Attribute("AudioT")?.Value;
-		if (head == null || audioT == null)
+		if (head is null || audioT is null)
 			return null;
 		using FileStream audioHead    = new(Path.Combine(folder, head),   FileMode.Open);
 		using FileStream audioTStream = new(Path.Combine(folder, audioT), FileMode.Open);

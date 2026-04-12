@@ -135,7 +135,7 @@ public class MenuRenderer
 		// Render pointer crosshairs (VR controllers / mouse)
 		RenderCrosshairs();
 		// Render modal overlay if active (on top of everything except crosshairs)
-		if (modal != null && modal.IsPending)
+		if (modal is not null && modal.IsPending)
 			RenderModal(modal, menuDef);
 	}
 	/// <summary>
@@ -487,7 +487,7 @@ public class MenuRenderer
 	public void UpdateCrosshairs()
 	{
 		// Update primary crosshair
-		if (_primaryCrosshair != null)
+		if (_primaryCrosshair is not null)
 		{
 			if (_primaryPointer.IsActive && IsPositionOnScreen(_primaryPointer.Position))
 			{

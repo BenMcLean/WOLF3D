@@ -91,7 +91,7 @@ public partial class AimIndicator : Node3D
 		UpdateAimPoint(_aimPoint0, Hit0, 0);
 
 		// Hand 1 (left in VR only)
-		if (_aimPoint1 != null)
+		if (_aimPoint1 is not null)
 		{
 			Vector3 origin1 = _displayMode.GetHandPosition(1);
 			Hit1 = IsControllerAccessible(origin1, headPosition)

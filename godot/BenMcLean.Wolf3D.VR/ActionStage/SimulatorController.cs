@@ -74,7 +74,7 @@ public partial class SimulatorController : Node3D
 	{
 		// TODO: Load stateCollection from WL1.xml or game data file
 		// For now, create a placeholder if none provided
-		if (stateCollection == null)
+		if (stateCollection is null)
 		{
 			GD.PrintErr("WARNING: No StateCollection provided - creating empty collection (actors will not function)");
 			stateCollection = new StateCollection();
@@ -130,7 +130,7 @@ public partial class SimulatorController : Node3D
 
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
-		if (statusBar != null)
+		if (statusBar is not null)
 			simulator.InitializeInventory(statusBar, difficulty, 2, weaponCollection, savedInventory, savedLevelStats);
 
 		// Load doors into simulator (no spawn events - doors are fixed count)
@@ -160,7 +160,7 @@ public partial class SimulatorController : Node3D
 		// HP and initial states are now read from ActorDefinition in XML
 		simulator.LoadActorsFromMapAnalysis(mapAnalysis);
 
-		if (weaponCollection == null || weaponCollection.Weapons.Count == 0)
+		if (weaponCollection is null || weaponCollection.Weapons.Count == 0)
 			GD.PrintErr("WARNING: No WeaponCollection provided - weapons will not function");
 
 		// When loading a saved game, restore simulator state before emitting.
@@ -225,19 +225,19 @@ public partial class SimulatorController : Node3D
 
 	public override void _ExitTree()
 	{
-		if (simulator != null)
+		if (simulator is not null)
 		{
-			if (_elevatorHandler != null)
+			if (_elevatorHandler is not null)
 				simulator.ElevatorActivated -= _elevatorHandler;
-			if (_playerStateHandler != null)
+			if (_playerStateHandler is not null)
 				simulator.PlayerStateChanged -= _playerStateHandler;
-			if (_screenFlashHandler != null)
+			if (_screenFlashHandler is not null)
 				simulator.ScreenFlash -= _screenFlashHandler;
-			if (_navigateToMenuHandler != null)
+			if (_navigateToMenuHandler is not null)
 				simulator.NavigateToMenu -= _navigateToMenuHandler;
-			if (_playerDiedHandler != null)
+			if (_playerDiedHandler is not null)
 				simulator.PlayerDied -= _playerDiedHandler;
-			if (_playGlobalSoundHandler != null)
+			if (_playGlobalSoundHandler is not null)
 				simulator.PlayGlobalSound -= _playGlobalSoundHandler;
 		}
 	}
@@ -248,7 +248,7 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	public override void _Process(double delta)
 	{
-		if (simulator == null || getPlayerPosition == null)
+		if (simulator is null || getPlayerPosition is null)
 			return;
 
 		// Get player position and angle from delegate (Wolf3D 16.16 fixed-point coordinates, 0-359 angle)
@@ -267,7 +267,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="doorIndex">Index of the door to operate</param>
 	public void OperateDoor(ushort doorIndex)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new OperateDoorAction
@@ -284,7 +284,7 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	public void UseNormalWall()
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new UseNormalWallAction());
@@ -300,7 +300,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="direction">Direction the player is facing (pushwall moves away from player)</param>
 	public void ActivatePushWall(ushort tileX, ushort tileY, Direction direction)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new ActivatePushWallAction
@@ -321,7 +321,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="direction">Direction the player is facing (determines which face is activated)</param>
 	public void ActivateElevator(ushort tileX, ushort tileY, Direction direction)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new ActivateElevatorAction
@@ -341,7 +341,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>
 	public void FireWeapon(int slotIndex)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new FireWeaponAction
@@ -359,7 +359,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>
 	public void ReleaseWeaponTrigger(int slotIndex)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new ReleaseWeaponTriggerAction
@@ -377,7 +377,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="weaponType">Weapon type identifier (e.g., "knife", "pistol", "machinegun", "chaingun")</param>
 	public void SwitchWeapon(int slotIndex, string weaponType)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.QueueAction(new EquipWeaponAction
@@ -417,7 +417,7 @@ public partial class SimulatorController : Node3D
 	/// <returns>Validated position (X, Z) in meters</returns>
 	public (float X, float Z) ValidateMovement(float currentX, float currentZ, float desiredX, float desiredZ)
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return (desiredX, desiredZ);
 
 		// Convert meters to fixed-point
@@ -446,7 +446,7 @@ public partial class SimulatorController : Node3D
 	/// <param name="enabled">True to enable NoClip, false to disable</param>
 	public void SetNoClip(bool enabled)
 	{
-		if (simulator != null)
+		if (simulator is not null)
 			simulator.NoClip = enabled;
 	}
 

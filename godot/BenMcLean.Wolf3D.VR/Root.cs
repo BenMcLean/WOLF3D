@@ -209,7 +209,7 @@ public partial class Root : Node3D
 		if (_currentScene is MenuRoom menuRoom)
 		{
 			// Game selected from the procedural game selection menu
-			if (menuRoom.SelectedGameXmlPath != null)
+			if (menuRoom.SelectedGameXmlPath is not null)
 			{
 				TransitionTo(new SetupRoom(DisplayMode, menuRoom.SelectedGameXmlPath, isInitialLoad: false));
 				return;
@@ -225,7 +225,7 @@ public partial class Root : Node3D
 			{
 				LoadSavedGame(loadSlot);
 			}
-			else if (menuRoom.PendingResumeGame && _suspendedGame != null)
+			else if (menuRoom.PendingResumeGame && _suspendedGame is not null)
 			{
 				ResumeGame();
 			}
@@ -264,7 +264,7 @@ public partial class Root : Node3D
 					// Screen is now fully black — run OnDeath script to reset inventory
 					string deathResult = sim.ExecuteOnDeathScript();
 					// Swap to appropriate scene based on script result
-					if (_currentScene != null)
+					if (_currentScene is not null)
 					{
 						RemoveChild(_currentScene);
 						_currentScene.QueueFree();
@@ -391,10 +391,10 @@ public partial class Root : Node3D
 		{
 			NavigateToMenuAction = menuName =>
 			{
-				if (Shared.SharedAssetManager.CurrentGame.VgaGraph == null)
+				if (Shared.SharedAssetManager.CurrentGame.VgaGraph is null)
 					throw new InvalidOperationException(
 						$"LoadMenu(\"{menuName}\") called but game has no VgaGraph.");
-				if (Shared.SharedAssetManager.CurrentGame.MenuCollection?.GetMenu(menuName) == null)
+				if (Shared.SharedAssetManager.CurrentGame.MenuCollection?.GetMenu(menuName) is null)
 					throw new InvalidOperationException(
 						$"LoadMenu(\"{menuName}\"): menu \"{menuName}\" not found.");
 				TransitionTo(new MenuRoom(DisplayMode) { StartMenuOverride = menuName, MenuWeaponSprite = CurrentGameMenuWeaponSprite() });
@@ -402,7 +402,7 @@ public partial class Root : Node3D
 			StartLevelAction = mapIndex =>
 			{
 				MapAnalyzer.MapAnalysis[] analyses = Shared.SharedAssetManager.CurrentGame.MapAnalyses;
-				if (analyses == null || analyses.Length == 0)
+				if (analyses is null || analyses.Length == 0)
 					throw new InvalidOperationException(
 						$"StartLevel({mapIndex}) called but game has no maps.");
 				if (mapIndex < 0 || mapIndex >= analyses.Length)
@@ -437,7 +437,7 @@ public partial class Root : Node3D
 		_pendingScene = menuRoom;
 		StartFade(() =>
 		{
-			if (_currentScene != null)
+			if (_currentScene is not null)
 			{
 				RemoveChild(_currentScene);
 				_currentScene.QueueFree();
@@ -459,7 +459,7 @@ public partial class Root : Node3D
 	/// </summary>
 	private void ResumeGame()
 	{
-		if (_suspendedGame == null)
+		if (_suspendedGame is null)
 			return;
 
 		SuspendedGameState state = _suspendedGame;
@@ -479,7 +479,7 @@ public partial class Root : Node3D
 	private void LoadSavedGame(int slot)
 	{
 		SaveGameFile saveFile = SaveGameManager.Load(slot);
-		if (saveFile?.Snapshot == null)
+		if (saveFile?.Snapshot is null)
 		{
 			GD.PrintErr($"ERROR: Failed to load save game from slot {slot}");
 			return;
@@ -512,7 +512,7 @@ public partial class Root : Node3D
 		if (skipFadeOut)
 		{
 			// Current scene already has a black background — swap immediately then fade in.
-			if (_currentScene != null)
+			if (_currentScene is not null)
 			{
 				RemoveChild(_currentScene);
 				_currentScene.QueueFree();
@@ -533,7 +533,7 @@ public partial class Root : Node3D
 			StartFade(() =>
 			{
 				// Swap scenes while screen is fully black
-				if (_currentScene != null)
+				if (_currentScene is not null)
 				{
 					RemoveChild(_currentScene);
 					_currentScene.QueueFree();
@@ -566,7 +566,7 @@ public partial class Root : Node3D
 		if (_errorMode)
 			return;
 
-		if (_currentScene != null)
+		if (_currentScene is not null)
 		{
 			RemoveChild(_currentScene);
 			_currentScene.QueueFree();
@@ -652,7 +652,7 @@ public partial class Root : Node3D
 
 		// Not in a SetupRoom (e.g. error during ActionRoom/MenuRoom) — discard the current
 		// scene and create a fresh SetupRoom solely for error display.
-		if (_currentScene != null)
+		if (_currentScene is not null)
 		{
 			RemoveChild(_currentScene);
 			_currentScene.QueueFree();

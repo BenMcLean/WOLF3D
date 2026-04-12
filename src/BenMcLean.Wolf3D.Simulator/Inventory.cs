@@ -114,16 +114,16 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// <param name="savedState">Snapshot containing saved inventory values and max values</param>
 	public void Load(InventorySnapshot savedState)
 	{
-		if (savedState == null)
+		if (savedState is null)
 			return;
 
-		if (savedState.MaxValues != null)
+		if (savedState.MaxValues is not null)
 		{
 			foreach (KeyValuePair<string, int> kvp in savedState.MaxValues)
 				_maxValues[kvp.Key] = kvp.Value;
 		}
 
-		if (savedState.Values != null)
+		if (savedState.Values is not null)
 		{
 			foreach (KeyValuePair<string, int> kvp in savedState.Values)
 				SetValue(kvp.Key, kvp.Value);

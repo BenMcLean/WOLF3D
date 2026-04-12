@@ -164,7 +164,7 @@ void fragment() {
 	/// </summary>
 	public void Unsubscribe()
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 		simulator.PushWallPositionChanged -= OnPushWallPositionChanged;
 		simulator.PushWallPlaySound -= OnPushWallPlaySound;
@@ -352,7 +352,7 @@ void fragment() {
 		// Debug: Check material validity
 		if (material is null)
 			GD.PrintErr($"ERROR: Material is null for shape {shape}");
-		else if (material.AlbedoTexture == null)
+		else if (material.AlbedoTexture is null)
 			GD.PrintErr($"WARNING: Material for shape {shape} has null AlbedoTexture");
 		// Create MultiMesh with exact size (walls + reserved pushwall faces)
 		MultiMesh multiMesh = new()

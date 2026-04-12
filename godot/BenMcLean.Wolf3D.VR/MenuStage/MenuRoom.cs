@@ -144,7 +144,7 @@ public partial class MenuRoom : Node3D, IRoom
 	/// </summary>
 	public void SetFadeTransitionHandler(Action<Action> handler)
 	{
-		if (_menuManager != null)
+		if (_menuManager is not null)
 			_menuManager.FadeTransitionCallback = handler;
 	}
 
@@ -223,7 +223,7 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;
 		_menuManager.GetMapNameFunc = () =>
 		{
-			if (SuspendedSimulator == null)
+			if (SuspendedSimulator is null)
 				return "Unknown";
 			int levelIndex = SuspendedLevelIndex;
 			if (levelIndex >= 0 && levelIndex < SharedAssetManager.CurrentGame.Maps.Length)
@@ -239,10 +239,10 @@ public partial class MenuRoom : Node3D, IRoom
 		if (!string.IsNullOrEmpty(StartMenuOverride))
 		{
 			// Pass completion stats to the script context for Lua access
-			if (LevelTransition?.CompletionStats != null)
+			if (LevelTransition?.CompletionStats is not null)
 				_menuManager.ScriptContext.CompletionStats = LevelTransition.CompletionStats;
 			// Pass accumulated stats for Victory screen
-			if (LevelTransition?.AllLevelStats != null)
+			if (LevelTransition?.AllLevelStats is not null)
 				_menuManager.ScriptContext.AllLevelStats = LevelTransition.AllLevelStats;
 			// Navigate to the override menu (e.g., "LevelComplete") instead of default
 			_menuManager.NavigateToMenu(StartMenuOverride);
@@ -252,13 +252,9 @@ public partial class MenuRoom : Node3D, IRoom
 		AddChild(_menuManager.Renderer.Viewport);
 
 		if (_displayMode.IsVRActive)
-		{
 			SetupVRMenuPanel();
-		}
 		else
-		{
 			SetupFlatscreenMenu();
-		}
 	}
 
 	/// <summary>
@@ -271,7 +267,10 @@ public partial class MenuRoom : Node3D, IRoom
 		Assets.Gameplay.MenuDefinition vrModeMenu = new()
 		{
 			// Positioning matches the original ChangeView menu
-			X = 76, Y = 55, Indent = 24, Spacing = 13,
+			X = 76,
+			Y = 55,
+			Indent = 24,
+			Spacing = 13,
 			Font = "BIG",
 			OnCancel = "NavigateToMenu(\"Main\")",
 		};
@@ -377,14 +376,14 @@ public partial class MenuRoom : Node3D, IRoom
 			if (VRAssetManager.VoxelAtlas is not null)
 			{
 				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand))
-					{ Name = $"MenuVoxelWeapon{hand}" };
+				{ Name = $"MenuVoxelWeapon{hand}" };
 				aimNode.AddChild(voxelWeapon);
 				voxelWeapon.ShowModel(pageNum);
 			}
 			else
 			{
 				WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand)
-					{ Name = $"MenuWeaponHandMesh{hand}" };
+				{ Name = $"MenuWeaponHandMesh{hand}" };
 				aimNode.AddChild(handMesh);
 				handMesh.ShowTexture(pageNum);
 			}
@@ -485,7 +484,7 @@ public partial class MenuRoom : Node3D, IRoom
 	/// </summary>
 	private void UpdateMenuPanelRotation()
 	{
-		if (_menuPanel == null || _displayMode.Camera == null)
+		if (_menuPanel is null || _displayMode.Camera is null)
 			return;
 
 		Vector3 cameraPos = _displayMode.ViewerPosition;
@@ -501,9 +500,9 @@ public partial class MenuRoom : Node3D, IRoom
 
 	private void OnBordColorChanged(Color color)
 	{
-		if (_marginBackground != null)
+		if (_marginBackground is not null)
 			_marginBackground.Color = color;
-		if (_worldEnvironment != null)
+		if (_worldEnvironment is not null)
 			_worldEnvironment.Environment.BackgroundColor = color;
 	}
 
@@ -520,7 +519,7 @@ public partial class MenuRoom : Node3D, IRoom
 
 		// If a game selection was made, Root is already handling the transition.
 		// Skip all other menu processing to avoid spurious state changes.
-		if (SelectedGameXmlPath != null)
+		if (SelectedGameXmlPath is not null)
 			return;
 
 		// Quit: user confirmed quit dialog
@@ -536,13 +535,13 @@ public partial class MenuRoom : Node3D, IRoom
 			PendingEndGame = true;
 		}
 		// Check if intermission screen was dismissed (Lua called ContinueToNextLevel)
-		if (_menuManager?.ScriptContext?.ContinueToNextLevelRequested == true && LevelTransition != null)
+		if (_menuManager?.ScriptContext?.ContinueToNextLevelRequested == true && LevelTransition is not null)
 		{
 			PendingLevelTransition = LevelTransition;
 		}
 
 		// Apply VR play mode changes from the menu session state
-		if (_displayMode is VRDisplayMode vrDisplayMode && _menuManager != null)
+		if (_displayMode is VRDisplayMode vrDisplayMode && _menuManager is not null)
 		{
 			VRPlayMode targetMode = _menuManager.SessionState.VRMode == VRMode.Roomscale
 				? VRPlayMode.Roomscale
@@ -560,7 +559,7 @@ public partial class MenuRoom : Node3D, IRoom
 		}
 
 		// Rotate panel to face camera every frame (true billboard)
-		if (_displayMode.IsVRActive && _menuPanel != null)
+		if (_displayMode.IsVRActive && _menuPanel is not null)
 		{
 			UpdateMenuPanelRotation();
 		}

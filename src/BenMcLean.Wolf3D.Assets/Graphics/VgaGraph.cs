@@ -21,7 +21,7 @@ public sealed class VgaGraph
 		string head = el?.Attribute("VgaHead")?.Value;
 		string graph = el?.Attribute("VgaGraph")?.Value;
 		string dict = el?.Attribute("VgaDict")?.Value;
-		if (head == null || graph == null || dict == null)
+		if (head is null || graph is null || dict is null)
 			return null;
 		if (!Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);

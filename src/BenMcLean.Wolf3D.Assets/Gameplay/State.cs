@@ -116,7 +116,7 @@ public class State
 				// Direct numeric value
 				state.Shape = shapeNum;
 			}
-			else if (spriteResolver != null)
+			else if (spriteResolver is not null)
 			{
 				// Sprite name - resolve using provided function
 				state.Shape = spriteResolver(shapeAttr);
@@ -353,12 +353,12 @@ public class StateCollection
 		XElement actionFunctionElement = element.Element("ActionFunction");
 
 		// Register inline functions if they exist
-		if (thinkFunctionElement != null)
+		if (thinkFunctionElement is not null)
 		{
 			ActionFunction thinkFunc = ActionFunction.FromXElement(thinkFunctionElement);
 			AddFunction(thinkFunc);
 		}
-		if (actionFunctionElement != null)
+		if (actionFunctionElement is not null)
 		{
 			ActionFunction actionFunc = ActionFunction.FromXElement(actionFunctionElement);
 			AddFunction(actionFunc);

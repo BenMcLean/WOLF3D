@@ -171,7 +171,7 @@ public class VRMenuInput : IMenuInput
 		_anySelectPressed = faceSelect0 || faceSelect1;
 		_anyCancelPressed = cancel0 || cancel1;
 
-		if (_menuPanel == null || !_displayMode.IsVRActive)
+		if (_menuPanel is null || !_displayMode.IsVRActive)
 		{
 			_primaryPointer = new PointerState { IsActive = false };
 			_secondaryPointer = new PointerState { IsActive = false };

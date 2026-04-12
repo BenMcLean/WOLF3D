@@ -115,7 +115,7 @@ public partial class ScreenFadeOverlay : Node
 		_vrCamera = camera;
 		_vrFadeMesh = null; // Old mesh was freed with old camera
 
-		if (camera == null)
+		if (camera is null)
 			return;
 
 		// Create material once; it persists across camera changes because
@@ -200,11 +200,11 @@ public partial class ScreenFadeOverlay : Node
 
 		// VR: veil sphere parented to XRCamera3D, visible in both headset eyes.
 		// Mesh stays Visible=true always; material alpha controls opacity.
-		if (_vrFadeMesh != null && GodotObject.IsInstanceValid(_vrFadeMesh))
+		if (_vrFadeMesh is not null && GodotObject.IsInstanceValid(_vrFadeMesh))
 		{
 			_vrFadeMaterial.AlbedoColor = new Color(0f, 0f, 0f, alpha);
 		}
-		else if (_vrFadeMesh != null)
+		else if (_vrFadeMesh is not null)
 		{
 			_vrFadeMesh = null; // Freed with old camera
 		}

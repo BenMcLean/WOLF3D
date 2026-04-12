@@ -207,7 +207,7 @@ public partial class FPSCamera : Camera3D
 			// Calculate desired movement in local space
 			Vector3 localMovement = new Vector3(_velocity.X, 0, _velocity.Z) * delta * speedMulti;
 
-			if (_validateMovement != null)
+			if (_validateMovement is not null)
 			{
 				// Convert local movement to global movement
 				Vector3 currentGlobal = GlobalPosition;

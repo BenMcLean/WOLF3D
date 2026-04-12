@@ -1225,7 +1225,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		while (actor.TicCount <= 0)
 		{
 			// WL_PLAY.C:1746 - Transition to next state
-			if (actor.CurrentState.Next == null)
+			if (actor.CurrentState.Next is null)
 				break; // No next state, stop transitioning
 
 			// TransitionActorState executes the Action function when entering the new state
@@ -2151,7 +2151,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		WeaponSlot slot = weaponSlots[slotIndex];
 
 		// Empty slot or no state - nothing to update
-		if (slot.CurrentState == null || slot.WeaponType == null)
+		if (slot.CurrentState is null || slot.WeaponType is null)
 			return;
 
 		// Non-transitional state (tics == 0) - stays in state, no auto-transition
@@ -2164,7 +2164,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		while (slot.TicCount <= 0)
 		{
-			if (slot.CurrentState.Next == null)
+			if (slot.CurrentState.Next is null)
 				break;
 
 			TransitionWeaponState(slotIndex, slot.CurrentState.Next);
@@ -2308,7 +2308,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		WeaponSlot slot = weaponSlots[action.SlotIndex];
 
 		// Validate: slot must have a weapon
-		if (slot.WeaponType == null)
+		if (slot.WeaponType is null)
 			return;
 
 		// WL_AGENT.C:T_Attack lines 2119-2120 - fresh presses during attack are eaten/ignored.
@@ -2867,7 +2867,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			StatObj item = StatObjList[i];
 
 			// Skip empty/despawned slots
-			if (item == null || item.IsFree)
+			if (item is null || item.IsFree)
 				continue;
 
 			// Item center in fixed-point coordinates
@@ -2999,7 +2999,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		for (int i = 0; i < lastStatObj; i++)
 		{
 			StatObj item = StatObjList[i];
-			if (item == null || item.IsFree || item.TileX != tileX || item.TileY != tileY)
+			if (item is null || item.IsFree || item.TileX != tileX || item.TileY != tileY)
 				continue;
 
 			if (TryPickupBonus(i, item, out bool navigationTriggered))
@@ -3420,7 +3420,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public void RevealEntireMap()
 	{
-		if (_everSeen == null) return;
+		if (_everSeen is null) return;
 		for (int i = 0; i < _everSeen.Length; i++)
 			_everSeen[i] = true;
 		_fogVersion++;
@@ -3428,7 +3428,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 	public void RecomputeVisibilityIfNeeded()
 	{
-		if (_everSeen == null) return;
+		if (_everSeen is null) return;
 		if (PlayerTileX != _lastFogTileX || PlayerTileY != _lastFogTileY || _fogDirty)
 			RecomputeVisibility();
 	}
@@ -4096,7 +4096,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				if (snapshot.StatObjList[i] is not null)
 				{
-					if (StatObjList[i] == null)
+					if (StatObjList[i] is null)
 						StatObjList[i] = new StatObj();
 					StatObjList[i].Load(snapshot.StatObjList[i]);
 				}
@@ -4200,7 +4200,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	private void RebuildAreaConnect()
 	{
-		if (AreaConnect == null || mapAnalysis == null)
+		if (AreaConnect is null || mapAnalysis is null)
 			return;
 
 		// Reset all connections to zero

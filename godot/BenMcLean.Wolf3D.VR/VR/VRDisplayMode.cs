@@ -27,9 +27,8 @@ public enum VRPlayMode
 /// Creates XROrigin3D with XRCamera3D and controller nodes.
 /// Hand 0 = right controller, hand 1 = left controller.
 /// </summary>
-public class VRDisplayMode : IDisplayMode
+public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.FiveDOF) : IDisplayMode
 {
-	private XRInterface _xrInterface;
 	private XROrigin3D _origin;
 	private XRCamera3D _camera;
 	private XRController3D _leftController;
@@ -37,7 +36,6 @@ public class VRDisplayMode : IDisplayMode
 	private XRController3D _leftGripController;
 	private XRController3D _rightGripController;
 	private Node _parent;
-	private VRPlayMode _playMode;
 
 	// Movement validation for collision detection
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
@@ -65,8 +63,8 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	public VRPlayMode PlayMode
 	{
-		get => _playMode;
-		set => _playMode = value;
+		get => playMode;
+		set => playMode = value;
 	}
 
 	public event Action<int, string> HandButtonPressed;
@@ -85,12 +83,12 @@ public class VRDisplayMode : IDisplayMode
 	public Vector3 GetHandForward(int handIndex)
 	{
 		if (handIndex == 1)
-			return _leftController != null
+			return _leftController is not null
 				? -_leftController.GlobalBasis.Z
-				: _camera != null ? -_camera.GlobalBasis.Z : Vector3.Forward;
-		return _rightController != null
+				: _camera is not null ? -_camera.GlobalBasis.Z : Vector3.Forward;
+		return _rightController is not null
 			? -_rightController.GlobalBasis.Z
-			: _camera != null ? -_camera.GlobalBasis.Z : Vector3.Forward;
+			: _camera is not null ? -_camera.GlobalBasis.Z : Vector3.Forward;
 	}
 
 	public Node3D GetHandNode(int handIndex) => handIndex == 1 ? _leftController : _rightController;
@@ -98,12 +96,6 @@ public class VRDisplayMode : IDisplayMode
 	public Camera3D Camera => _camera;
 
 	public Node3D Origin => _origin;
-
-	public VRDisplayMode(XRInterface xrInterface, VRPlayMode playMode = VRPlayMode.FiveDOF)
-	{
-		_xrInterface = xrInterface;
-		_playMode = playMode;
-	}
 
 	public void Initialize(Node parent)
 	{
@@ -190,7 +182,7 @@ public class VRDisplayMode : IDisplayMode
 		// In 5DOF mode, lock the camera height to HalfTileHeight by adjusting the origin Y.
 		// Formula: origin.Y = HalfTileHeight - camera.Position.Y (local Y relative to origin)
 		// This keeps camera.GlobalPosition.Y == HalfTileHeight regardless of real head height.
-		if (_playMode == VRPlayMode.FiveDOF && _origin != null && _camera != null)
+		if (playMode == VRPlayMode.FiveDOF && _origin is not null && _camera is not null)
 		{
 			Vector3 originPos = _origin.Position;
 			_origin.Position = new Vector3(originPos.X, Constants.HalfTileHeight - _camera.Position.Y, originPos.Z);
@@ -207,7 +199,7 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	private void ApplyLocomotion(float delta)
 	{
-		if (_origin == null || _leftController == null || _camera == null)
+		if (_origin is null || _leftController is null || _camera is null)
 			return;
 
 		Vector2 stick = _leftController.GetVector2("primary");
@@ -234,7 +226,7 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	private void ApplyTurn(float delta)
 	{
-		if (_rightController == null)
+		if (_rightController is null)
 			return;
 
 		Vector2 stick = _rightController.GetVector2("primary");
@@ -263,7 +255,7 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	private void ApplySnapTurn()
 	{
-		if (_origin == null || _rightController == null || _camera == null)
+		if (_origin is null || _rightController is null || _camera is null)
 			return;
 
 		float x = _rightController.GetVector2("primary").X;
@@ -295,7 +287,7 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	private void ApplySmoothTurn(float delta)
 	{
-		if (_origin == null || _rightController == null || _camera == null)
+		if (_origin is null || _rightController is null || _camera is null)
 			return;
 
 		float x = _rightController.GetVector2("primary").X;
@@ -327,7 +319,7 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	private void ValidateVRPosition()
 	{
-		if (_validateMovement == null || _camera == null || _origin == null)
+		if (_validateMovement is null || _camera is null || _origin is null)
 			return;
 
 		// Get current HMD world position
@@ -365,7 +357,7 @@ public class VRDisplayMode : IDisplayMode
 
 	public Vector2 GetMovementInput()
 	{
-		if (_leftController == null)
+		if (_leftController is null)
 			return Vector2.Zero;
 
 		// Left thumbstick for movement
@@ -374,7 +366,7 @@ public class VRDisplayMode : IDisplayMode
 
 	public Vector2 GetTurnInput()
 	{
-		if (_rightController == null)
+		if (_rightController is null)
 			return Vector2.Zero;
 
 		// Right thumbstick for turning
@@ -396,7 +388,7 @@ public class VRDisplayMode : IDisplayMode
 	/// </summary>
 	public void ResetPositionFacing(Vector3 panelWorldPos, Vector3 spawnWorldPos)
 	{
-		if (_origin == null || _camera == null)
+		if (_origin is null || _camera is null)
 			return;
 
 		// Desired yaw: camera should face from spawn toward panel (XZ plane only)

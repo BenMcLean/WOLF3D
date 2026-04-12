@@ -267,7 +267,7 @@ public partial class Doors : Node3D
 			return;
 		}
 
-		if (meshInstance?.Multimesh == null)
+		if (meshInstance?.Multimesh is null)
 		{
 			GD.PrintErr($"ERROR: MultiMesh or Multimesh is null for texture {textureIndex}");
 			return;
@@ -300,7 +300,7 @@ public partial class Doors : Node3D
 		string cullTypeSuffix)
 	{
 		// Debug: Check material validity
-		if (material == null)
+		if (material is null)
 			GD.PrintErr($"ERROR: Material is null for shape {shape}");
 
 		// Create MultiMesh with exact size
@@ -334,7 +334,7 @@ public partial class Doors : Node3D
 	/// <param name="sim">The simulator instance to subscribe to</param>
 	public void Subscribe(Simulator.Simulator sim)
 	{
-		if (sim == null)
+		if (sim is null)
 			throw new ArgumentNullException(nameof(sim));
 
 		// Unsubscribe from previous simulator if any
@@ -357,7 +357,7 @@ public partial class Doors : Node3D
 	/// </summary>
 	public void Unsubscribe()
 	{
-		if (simulator == null)
+		if (simulator is null)
 			return;
 
 		simulator.DoorOpening -= OnDoorOpening;
@@ -422,7 +422,7 @@ public partial class Doors : Node3D
 		}
 
 		DoorData door = doors[evt.DoorIndex];
-		if (door.Speaker == null)
+		if (door.Speaker is null)
 		{
 			GD.PrintErr($"ERROR: Door {evt.DoorIndex} has no speaker");
 			return;

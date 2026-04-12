@@ -623,7 +623,7 @@ public class MapAnalyzer
 					continue;
 
 				ObjectInfo objInfo = mapAnalyzer.GetObjectInfo(objectCode);
-				if (objInfo == null || !objInfo.ObjectClass.HasValue)
+				if (objInfo is null || !objInfo.ObjectClass.HasValue)
 					continue;
 
 				ushort x = gameMap.X(i);
@@ -797,7 +797,7 @@ public class MapAnalyzer
 					// Skipped when pre-baked wall spawns are provided (EastWest/NorthSouth
 					// use the Wolf3D tile-to-page formula, which is wrong for games like KOD
 					// that assign distinct textures to each face of a block).
-					if (prebuiltWalls == null)
+					if (prebuiltWalls is null)
 					{
 						EastWest(x, y);
 						NorthSouth(x, y);
@@ -811,7 +811,7 @@ public class MapAnalyzer
 			Array.Fill(automapData, ushort.MaxValue);
 			// _automapHasDimVariant: true where dim layer should use page+1 (EW/dark paired variant)
 			BitArray hasDimVariant = new(realWalls.Length, false);
-			if (prebuiltWalls != null)
+			if (prebuiltWalls is not null)
 			{
 				// Pre-baked path (e.g. KOD): each face may have a distinct texture; first per tile wins.
 				// No light/dark pairing available, so hasDimVariant stays false throughout.
@@ -904,7 +904,7 @@ public class MapAnalyzer
 			PushWallsHaveDimVariant = !mapAnalyzer.UniformWallTextures;
 
 			// Use pre-baked spawns when provided; otherwise use the wall scan results.
-			Walls = prebuiltWalls != null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);
+			Walls = prebuiltWalls is not null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);
 			PushWalls = Array.AsReadOnly([.. pushWalls]);
 			Elevators = Array.AsReadOnly([.. elevators]);
 			AltElevators = Array.AsReadOnly([.. altElevators]);
