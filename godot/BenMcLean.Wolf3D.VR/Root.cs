@@ -23,6 +23,18 @@ public partial class Root : Node3D
 	{
 		Idle,
 		FadingOut,
+		/// <summary>
+		/// Fade-out just completed (alpha=1). Waiting one full render frame with the old room
+		/// still in the scene tree so the VR compositor presents at least one guaranteed
+		/// fully-black frame before the heavy scene-swap work begins.
+		/// </summary>
+		BlackBeforeSwap,
+		/// <summary>
+		/// Scene has been swapped. Waiting one full render frame with the new room behind the
+		/// fully-black overlay so the VR compositor presents at least one guaranteed
+		/// fully-black frame after scene-swap GPU work completes, before fade-in begins.
+		/// </summary>
+		BlackAfterSwap,
 		FadingIn,
 	}
 
@@ -102,6 +114,51 @@ public partial class Root : Node3D
 			{
 				ExceptionHandler.HandleException(ex);
 			}
+		}
+
+		// BlackBeforeSwap: one fully-black frame has been rendered with the old room behind the
+		// overlay. Now execute the scene swap while still fully black, then wait one more frame.
+		if (_transitionState == TransitionState.BlackBeforeSwap)
+		{
+			try
+			{
+				_pendingMidFadeAction?.Invoke();
+				_pendingMidFadeAction = null;
+			}
+			catch (Exception ex)
+			{
+				_pendingMidFadeAction = null;
+				_skipFadeIn = false;
+				_transitionState = TransitionState.Idle;
+				Simulator.Simulator.Paused = false;
+				GetTree().Paused = false;
+				ExceptionHandler.HandleException(ex);
+				return;
+			}
+			if (_skipFadeIn)
+			{
+				_skipFadeIn = false;
+				_transitionState = TransitionState.Idle;
+				Simulator.Simulator.Paused = false;
+				GetTree().Paused = false;
+				_fadeOverlay.SetTransparent();
+			}
+			else
+			{
+				// Wait one more frame so the new room renders at least one fully-black frame
+				// before the fade-in animation begins.
+				_transitionState = TransitionState.BlackAfterSwap;
+			}
+			return;
+		}
+
+		// BlackAfterSwap: one fully-black frame has been rendered with the new room behind the
+		// overlay. Now start the fade-in animation.
+		if (_transitionState == TransitionState.BlackAfterSwap)
+		{
+			_transitionState = TransitionState.FadingIn;
+			_fadeOverlay.FadeFromBlack();
+			return;
 		}
 
 		// Don't poll for new transitions while one is in progress
@@ -555,39 +612,15 @@ public partial class Root : Node3D
 	}
 
 	/// <summary>
-	/// Called when fade-to-black completes. Executes mid-fade action and starts fade-in,
-	/// unless skipFadeIn was set (incoming scene has a black background).
+	/// Called when fade-to-black completes (alpha = 1).
+	/// Transitions to BlackBeforeSwap so _Process guarantees at least one fully-black
+	/// rendered frame before the scene swap, and at least one more after it, before
+	/// starting the fade-in. This prevents the VR compositor from displaying partial
+	/// frames during the heavy scene-swap work.
 	/// </summary>
 	private void OnFadeOutComplete()
 	{
-		try
-		{
-			_pendingMidFadeAction?.Invoke();
-			_pendingMidFadeAction = null;
-
-			if (_skipFadeIn)
-			{
-				_skipFadeIn = false;
-				_transitionState = TransitionState.Idle;
-				Simulator.Simulator.Paused = false;
-				GetTree().Paused = false;
-				_fadeOverlay.SetTransparent();
-			}
-			else
-			{
-				_transitionState = TransitionState.FadingIn;
-				_fadeOverlay.FadeFromBlack();
-			}
-		}
-		catch (Exception ex)
-		{
-			_pendingMidFadeAction = null;
-			_skipFadeIn = false;
-			_transitionState = TransitionState.Idle;
-			Simulator.Simulator.Paused = false;
-			GetTree().Paused = false;
-			ExceptionHandler.HandleException(ex);
-		}
+		_transitionState = TransitionState.BlackBeforeSwap;
 	}
 
 	/// <summary>
