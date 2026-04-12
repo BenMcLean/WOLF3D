@@ -127,15 +127,18 @@ public partial class SoundBlaster : Node
 		if (musicName == currentMusicName)
 			return;
 		OplPlayer.AdlibSignaller?.Silence(OplPlayer.Opl);
-		currentMusicName = musicName;
-		// Stop music if null or music disabled
+		// Stop music if null or music disabled — don't update currentMusicName so that
+		// when music is re-enabled, PlayMusicImpl can call PlayMusic again without being
+		// short-circuited by the "same song already playing" check at the top.
 		if (string.IsNullOrEmpty(musicName) || SharedAssetManager.Config?.MusicEnabled != true)
 		{
+			currentMusicName = null;
 			ImfSignaller.ImfQueue.Enqueue(null);
 			MidiSignaller.Midi = null;
 			OplPlayer.AdlibSignaller = new AdlibMultiplexer(ImfSignaller, IdAdlSignaller);
 			return;
 		}
+		currentMusicName = musicName;
 		// Check pre-loaded raw IMF songs (no game/AudioT needed)
 		if (SharedAssetManager.RawImfSongs.TryGetValue(musicName, out Imf[] rawImf))
 		{
