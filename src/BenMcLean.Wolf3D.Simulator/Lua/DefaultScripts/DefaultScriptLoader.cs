@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace BenMcLean.Wolf3D.Simulator;
+namespace BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 
 /// <summary>
 /// Loads default Lua scripts embedded in the Simulator assembly.
@@ -27,7 +27,7 @@ internal static class DefaultScriptLoader
 
 	/// <summary>
 	/// Loads all bonus default scripts (Bonuses/ subfolder).
-	/// These are merged into the item scripts dictionary in LoadItemScripts.
+	/// These are merged into the bonus scripts dictionary in LoadBonusScripts.
 	/// </summary>
 	public static IEnumerable<(string Name, string Code)> LoadBonusScripts() =>
 		LoadFromSubfolders(only: BonusesSubPrefix);

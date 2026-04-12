@@ -331,27 +331,27 @@ public class MapAnalyzer
 		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
 
 	/// <summary>
-	/// Build item script dictionaries for the Simulator.
-	/// Returns the named BonusScripts dictionary and a mapping from item number to script name.
+	/// Build bonus script dictionaries for the Simulator.
+	/// Returns the named BonusScripts dictionary and a mapping from bonus number to script name.
 	/// </summary>
-	/// <returns>Tuple of (script name to code, item number to script name) dictionaries</returns>
-	public (Dictionary<string, string> Scripts, Dictionary<byte, string> ItemNumberToScript) GetItemScripts()
+	/// <returns>Tuple of (script name to code, bonus number to script name) dictionaries</returns>
+	public (Dictionary<string, string> Scripts, Dictionary<byte, string> BonusNumberToScript) GetBonusScripts()
 	{
-		Dictionary<byte, string> itemNumberToScript = [];
+		Dictionary<byte, string> bonusNumberToScript = [];
 
 		foreach (KeyValuePair<ushort, ObjectInfo> kvp in Objects)
 		{
 			ushort number = kvp.Key;
 			ObjectInfo info = kvp.Value;
 
-			// Map item number to script name (if script reference exists)
+			// Map bonus number to script name (if script reference exists)
 			if (number <= byte.MaxValue && !string.IsNullOrEmpty(info.Script))
-				itemNumberToScript[(byte)number] = info.Script;
+				bonusNumberToScript[(byte)number] = info.Script;
 		}
 
 		// Return the BonusScripts dictionary directly (script name -> code)
-		// and the item number to script name mapping
-		return (new Dictionary<string, string>(BonusScripts), itemNumberToScript);
+		// and the bonus number to script name mapping
+		return (new Dictionary<string, string>(BonusScripts), bonusNumberToScript);
 	}
 
 	// Wolf3D object class categorization (using enum)

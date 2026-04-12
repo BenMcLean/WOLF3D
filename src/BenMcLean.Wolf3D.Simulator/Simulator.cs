@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Entities;
+using BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
 using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
@@ -192,10 +193,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Dynamically sized (no hardcoded max) for game-agnostic modding support.
 	/// </summary>
 	public List<LevelCompletionStats> LevelRatios { get; } = [];
-	// Item scripts loaded from game config (maps script name to Lua code)
-	private Dictionary<string, string> itemScripts = [];
-	// Map from ItemNumber (byte) to script name for lookup
-	private Dictionary<byte, string> itemNumberToScript = [];
+	// Bonus scripts loaded from game config (maps script name to Lua code)
+	private Dictionary<string, string> bonusScripts = [];
+	// Map from bonus number (byte) to script name for lookup
+	private Dictionary<byte, string> bonusNumberToScript = [];
 	#region C# Events for Observer Pattern
 	/// <summary>
 	/// Fired when a door starts opening (position was 0).
@@ -2832,20 +2833,20 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 
 	/// <summary>
-	/// Load item scripts from game configuration.
-	/// Called during level load to set up item pickup behavior.
+	/// Load bonus scripts from game configuration.
+	/// Called during level load to set up bonus pickup behavior.
 	/// Default bonus scripts from Lua/DefaultScripts/Bonuses/ are merged in automatically;
 	/// any script defined in the game XML overrides the matching default.
 	/// </summary>
 	/// <param name="scripts">Dictionary mapping script name to Lua code</param>
-	/// <param name="itemNumberToScriptMap">Dictionary mapping ItemNumber (byte) to script name</param>
-	public void LoadItemScripts(Dictionary<string, string> scripts, Dictionary<byte, string> itemNumberToScriptMap)
+	/// <param name="bonusNumberToScriptMap">Dictionary mapping bonus number (byte) to script name</param>
+	public void LoadBonusScripts(Dictionary<string, string> scripts, Dictionary<byte, string> bonusNumberToScriptMap)
 	{
-		itemScripts = scripts ?? [];
+		bonusScripts = scripts ?? [];
 		foreach ((string name, string code) in DefaultScriptLoader.LoadBonusScripts())
-			if (!itemScripts.ContainsKey(name))
-				itemScripts[name] = code;
-		itemNumberToScript = itemNumberToScriptMap ?? [];
+			if (!bonusScripts.ContainsKey(name))
+				bonusScripts[name] = code;
+		bonusNumberToScript = bonusNumberToScriptMap ?? [];
 	}
 
 	/// <summary>
@@ -2881,7 +2882,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (deltaX < HALF_TILE && deltaY < HALF_TILE)
 			{
 				// Player is touching item - try to pick it up
-				if (TryPickupItem(i, item, out _))
+				if (TryPickupBonus(i, item, out _))
 				{
 					// Item was consumed - mark as despawned
 					item.ShapeNum = -1;
@@ -2907,27 +2908,27 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="item">The item to pick up</param>
 	/// <param name="navigationTriggered">Set to true if the script called NavigateToMenu (e.g. level exit)</param>
 	/// <returns>True if item was consumed, false if not (e.g., health at max)</returns>
-	private bool TryPickupItem(int itemIndex, StatObj item, out bool navigationTriggered)
+	private bool TryPickupBonus(int itemIndex, StatObj item, out bool navigationTriggered)
 	{
 		// Use a local variable; out params can't be captured in lambdas (CS1628)
 		bool navLocal = false;
 
 		// Look up script name by ItemNumber
-		if (!itemNumberToScript.TryGetValue(item.ItemNumber, out string scriptName))
+		if (!bonusNumberToScript.TryGetValue(item.ItemNumber, out string scriptName))
 		{
 			// No script mapping - item has no script, consume by default
-			logger?.LogWarning("TryPickupItem: No script mapping for ItemNumber {ItemNumber} (index {Index}). Available keys: {Keys}",
+			logger?.LogWarning("TryPickupBonus: No script mapping for ItemNumber {ItemNumber} (index {Index}). Available keys: {Keys}",
 				item.ItemNumber, itemIndex,
-				string.Join(", ", itemNumberToScript.Keys.Select(k => k.ToString())));
+				string.Join(", ", bonusNumberToScript.Keys.Select(k => k.ToString())));
 			navigationTriggered = false;
 			return true;
 		}
 
-		if (!itemScripts.TryGetValue(scriptName, out string script))
+		if (!bonusScripts.TryGetValue(scriptName, out string script))
 		{
 			// Script name not found - consume by default
-			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' not found in itemScripts. Available: {Scripts}",
-				scriptName, string.Join(", ", itemScripts.Keys));
+			logger?.LogWarning("TryPickupBonus: Script '{ScriptName}' not found in bonusScripts. Available: {Scripts}",
+				scriptName, string.Join(", ", bonusScripts.Keys));
 			navigationTriggered = false;
 			return true;
 		}
@@ -2935,7 +2936,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (string.IsNullOrWhiteSpace(script))
 		{
 			// Empty script - consume by default
-			logger?.LogWarning("TryPickupItem: Script '{ScriptName}' is empty or whitespace", scriptName);
+			logger?.LogWarning("TryPickupBonus: Script '{ScriptName}' is empty or whitespace", scriptName);
 			navigationTriggered = false;
 			return true;
 		}
@@ -3001,7 +3002,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (item == null || item.IsFree || item.TileX != tileX || item.TileY != tileY)
 				continue;
 
-			if (TryPickupItem(i, item, out bool navigationTriggered))
+			if (TryPickupBonus(i, item, out bool navigationTriggered))
 			{
 				item.ShapeNum = -1;
 				BonusPickedUp?.Invoke(new BonusPickedUpEvent
@@ -3979,7 +3980,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Prerequisites (caller must do before calling this):
 	/// 1. Simulator constructed with same stateCollection, rng, gameClock
 	/// 2. Level loaded (LoadDoorsFromMapAnalysis, LoadPushWallsFromMapAnalysis,
-	///    LoadActorsFromMapAnalysis, LoadBonusesFromMapAnalysis, LoadItemScripts)
+	///    LoadActorsFromMapAnalysis, LoadBonusesFromMapAnalysis, LoadBonusScripts)
 	///
 	/// This method:
 	/// 1. Validates GameName matches

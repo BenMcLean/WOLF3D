@@ -139,11 +139,11 @@ public partial class SimulatorController : Node3D
 		// Load pushwalls into simulator (no spawn events - pushwalls are fixed count)
 		simulator.LoadPushWallsFromMapAnalysis(mapAnalysis.PushWalls);
 
-		// Load item scripts from game configuration
+		// Load bonus scripts from game configuration
 		// Scripts define conditional pickup behavior (e.g., health only if needed)
 		(System.Collections.Generic.Dictionary<string, string> scripts,
-		 System.Collections.Generic.Dictionary<byte, string> itemNumberToScript) = mapAnalyzer.GetItemScripts();
-		simulator.LoadItemScripts(scripts, itemNumberToScript);
+		 System.Collections.Generic.Dictionary<byte, string> bonusNumberToScript) = mapAnalyzer.GetBonusScripts();
+		simulator.LoadBonusScripts(scripts, bonusNumberToScript);
 
 		// Load bonuses into simulator (populates StatObjList only - no events emitted).
 		// Always called regardless of snapshot; if loading, Load() will overwrite StatObjList afterward.
