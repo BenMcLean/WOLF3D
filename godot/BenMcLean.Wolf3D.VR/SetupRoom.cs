@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Setup;
 using BenMcLean.Wolf3D.VR.VR;
@@ -92,36 +94,46 @@ public partial class SetupRoom : Node3D, IRoom
 		_hasExternalError = true;
 		if (_dosScreen is null)
 			return;
-		// Line budget: 3 header lines already on screen, 22 remaining.
-		// 1  ERROR: {type}
-		// 4  message (truncated)        +1 if truncated
-		// 1  Stack:
-		// 14 stack frames               +1 if truncated
-		// = 21-22 lines max
-		_dosScreen.WriteLine(Trunc($"ERROR: {ex.GetType().FullName}", 80));
-		WriteLines(ex.Message, maxLines: 4);
-		_dosScreen.WriteLine("Stack:");
-		string[] frames = (ex.StackTrace ?? string.Empty)
-			.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-		int show = Math.Min(frames.Length, 14);
-		for (int i = 0; i < show; i++)
-			_dosScreen.WriteLine(Trunc(frames[i].Trim(), 80));
-		if (frames.Length > show)
-			_dosScreen.WriteLine($"...{frames.Length - show} more frames");
+		// Vital info first so stack trace cannot push it off screen.
+		// Full exception is in the ADB log; this is summary only.
+		string text =
+			$"ERROR: {ex.GetType().FullName}\n" +
+			$"{ex.Message}\n" +
+			$"Stack:\n" +
+			(ex.StackTrace ?? "(no stack trace)");
+		foreach (string line in WordWrap(text, width: 80).Take(25))
+			_dosScreen.WriteLine(line);
 	}
 
-	private void WriteLines(string text, int maxLines)
+	/// <summary>
+	/// Splits <paramref name="text"/> on newlines, word-wraps each line at
+	/// <paramref name="width"/> columns, and yields the resulting display lines.
+	/// Falls back to a hard break when no word boundary exists within the limit.
+	/// Normalizes \r\n and bare \r to \n before splitting.
+	/// </summary>
+	private static IEnumerable<string> WordWrap(string text, int width)
 	{
-		string[] lines = text.Split('\n');
-		int count = Math.Min(lines.Length, maxLines);
-		for (int i = 0; i < count; i++)
-			_dosScreen.WriteLine(Trunc(lines[i].TrimEnd(), 80));
-		if (lines.Length > maxLines)
-			_dosScreen.WriteLine($"...({lines.Length - maxLines} more lines)");
+		// Normalize all line ending styles to \n before splitting
+		string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+		foreach (string paragraph in normalized.Split('\n'))
+		{
+			if (paragraph.Length == 0)
+			{
+				yield return string.Empty;
+				continue;
+			}
+			string remaining = paragraph;
+			while (remaining.Length > width)
+			{
+				int breakAt = remaining.LastIndexOf(' ', width);
+				if (breakAt <= 0)
+					breakAt = width; // no word boundary — hard break
+				yield return remaining[..breakAt];
+				remaining = remaining[breakAt..].TrimStart();
+			}
+			yield return remaining;
+		}
 	}
-
-	private static string Trunc(string s, int max) =>
-		s.Length <= max ? s : s[..max];
 
 	/// <summary>
 	/// Attaches the DosScreen as a quad to the camera so it is always visible (head-locked).
