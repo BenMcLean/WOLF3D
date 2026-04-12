@@ -40,7 +40,6 @@ public partial class Root : Node3D
 	private Node _currentScene;
 	private Node _pendingScene;
 	private Action _pendingMidFadeAction;
-	private DosScreen _errorScreen;
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
 	private TransitionState _transitionState = TransitionState.Idle;
@@ -92,13 +91,17 @@ public partial class Root : Node3D
 	{
 		// Always update display mode so VR head tracking and camera continue during fades.
 		// Only SimulatorController is Pausable — presentation nodes keep rendering.
-		try
+		// Skip in error mode — the error screen is head-locked so no update needed.
+		if (!_errorMode)
 		{
-			DisplayMode?.Update(delta);
-		}
-		catch (Exception ex)
-		{
-			ExceptionHandler.HandleException(ex);
+			try
+			{
+				DisplayMode?.Update(delta);
+			}
+			catch (Exception ex)
+			{
+				ExceptionHandler.HandleException(ex);
+			}
 		}
 
 		// Don't poll for new transitions while one is in progress
@@ -600,14 +603,22 @@ public partial class Root : Node3D
 	/// <summary>
 	/// Displays an exception to the user via DOS screen.
 	/// Called by ExceptionHandler when an unhandled exception occurs.
+	/// Routes to the current SetupRoom if one is active; otherwise creates a fresh SetupRoom.
+	/// SetupRoom owns the DosScreen and all display setup (VR quad or flatscreen canvas).
 	/// </summary>
 	/// <param name="ex">The exception to display</param>
 	private void ShowErrorScreen(Exception ex)
 	{
-		// Enter error mode - prevent further scene transitions
 		_errorMode = true;
 
-		// Remove current scene if it exists
+		if (_currentScene is SetupRoom setupRoom)
+		{
+			setupRoom.ShowError(ex);
+			return;
+		}
+
+		// Not in a SetupRoom (e.g. error during ActionRoom/MenuRoom) — discard the current
+		// scene and create a fresh SetupRoom solely for error display.
 		if (_currentScene != null)
 		{
 			RemoveChild(_currentScene);
@@ -615,37 +626,18 @@ public partial class Root : Node3D
 			_currentScene = null;
 		}
 
-		// Create error screen if not already created
-		if (_errorScreen == null)
+		try
 		{
-			_errorScreen = new DosScreen();
-			AddChild(_errorScreen);
+			SetupRoom errorRoom = new(DisplayMode, xmlPath: string.Empty, isInitialLoad: false);
+			_currentScene = errorRoom;
+			AddChild(errorRoom); // triggers _Ready(): initializes display and DosScreen
+			OnSceneAdded();
+			errorRoom.ShowError(ex);
 		}
-
-		// Display exception information
-		_errorScreen.WriteLine("=".PadRight(80, '='));
-		_errorScreen.WriteLine("UNHANDLED EXCEPTION");
-		_errorScreen.WriteLine("=".PadRight(80, '='));
-		_errorScreen.WriteLine("");
-		_errorScreen.WriteLine($"Type: {ex.GetType().FullName}");
-		_errorScreen.WriteLine("");
-		_errorScreen.WriteLine($"Message: {ex.Message}");
-		_errorScreen.WriteLine("");
-		_errorScreen.WriteLine("Stack Trace:");
-		_errorScreen.WriteLine(ex.StackTrace ?? "(no stack trace available)");
-
-		// Include inner exceptions if present
-		Exception innerEx = ex.InnerException;
-		int innerCount = 1;
-		while (innerEx != null)
+		catch (Exception displayEx)
 		{
-			_errorScreen.WriteLine("");
-			_errorScreen.WriteLine($"--- Inner Exception #{innerCount} ---");
-			_errorScreen.WriteLine($"Type: {innerEx.GetType().FullName}");
-			_errorScreen.WriteLine($"Message: {innerEx.Message}");
-			_errorScreen.WriteLine(innerEx.StackTrace ?? "(no stack trace available)");
-			innerEx = innerEx.InnerException;
-			innerCount++;
+			GD.PrintErr($"ERROR: Failed to display error screen: {displayEx}");
+			System.Environment.FailFast($"Unhandled exception: {ex.Message}", ex);
 		}
 	}
 }

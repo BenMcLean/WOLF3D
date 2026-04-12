@@ -34,6 +34,7 @@ public static class ExceptionHandler
 		{
 			// If display fails, log that too
 			GD.PrintErr($"ERROR: Failed to display error screen: {displayEx}");
+			System.Environment.FailFast($"Unhandled exception: {ex.Message}", ex);
 		}
 	}
 }
