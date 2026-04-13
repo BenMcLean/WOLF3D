@@ -41,10 +41,15 @@ render_mode unshaded, depth_draw_always, cull_back;
 //   and direction automatically account for it.
 //
 // VR MULTIVIEW:
-//   PROJECTION_MATRIX and VIEW_MATRIX are per-eye in the vertex shader.
-//   INV_VIEW_MATRIX is per-eye in the fragment shader.
-//   camera_world_center is the eye-independent HMD midpoint used for billboard
-//   orientation; per-eye camera_world (from INV_VIEW_MATRIX) drives ray directions.
+//   VIEW_MATRIX / INV_VIEW_MATRIX are the MIDPOINT (cyclopean) view matrices in
+//   Godot multiview — identical for both eyes.  CAMERA_POSITION_WORLD is likewise
+//   the midpoint.  Per-eye separation is provided via EYE_OFFSET (vec3, in view
+//   space, e.g. ±ipd/2 along X).
+//   Per-eye ray origin:     (INV_VIEW_MATRIX * vec4(EYE_OFFSET, 1.0)).xyz
+//   Per-eye ray direction:  normalize(view_frag.xyz − EYE_OFFSET) → world via
+//                           INV_VIEW_MATRIX with w=0.
+//   camera_world_center is the eye-independent HMD midpoint used ONLY for
+//   billboard orientation so the quad faces the same way for both eyes.
 // =============================================================================
 
 // =============================================================================
@@ -166,7 +171,11 @@ int fetch_voxel(ivec3 pos) {
 //   planes in that direction).
 //
 // All inputs are in DDA voxel space [0, model_size).
-vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
+// hit_pos_dda is set to the centre of the first filled voxel hit (voxel_pos + 0.5),
+// still in DDA voxel space.  The caller uses this to compute the correct clip-space
+// depth of the voxel surface for the depth buffer.
+vec4 raymarch(vec3 ray_origin, vec3 ray_dir, out vec3 hit_pos_dda) {
+	hit_pos_dda = vec3(0.0);
 	// ---- Starting voxel ----
 	// Nudge ray_origin slightly in the ray travel direction before flooring.
 	// Without this, floating-point imprecision at the AABB entry point can place
@@ -226,6 +235,8 @@ vec4 raymarch(vec3 ray_origin, vec3 ray_dir) {
 		int palette_idx = fetch_voxel(voxel_pos);
 		if (palette_idx > 0) {
 			// First non-empty voxel hit: look up its colour in the palette LUT.
+			// Record the voxel centre so the caller can write the correct depth.
+			hit_pos_dda = vec3(voxel_pos) + vec3(0.5);
 			vec4 color = texelFetch(palette, ivec2(palette_idx, 0), 0);
 			return vec4(color.rgb, 1.0);
 		}
@@ -334,16 +345,29 @@ void vertex() {
 
 void fragment() {
 	// ---- Per-eye camera position ----
-	// INV_VIEW_MATRIX is per-eye in VR multiview.  Multiplying the view-space
-	// origin (0,0,0,1) by the inverse view matrix gives the eye position in world
-	// space for the current eye.
-	vec3 camera_world = (INV_VIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	// In Godot VR multiview, CAMERA_POSITION_WORLD is documented as the MIDPOINT
+	// between the two eyes, and VIEW_MATRIX is a midpoint/cyclopean view matrix.
+	// EYE_OFFSET is the per-eye position offset IN VIEW SPACE (e.g. ±ipd/2 on X).
+	// To get the per-eye world-space eye position, treat EYE_OFFSET as a point in
+	// the midpoint view space and transform it to world space via INV_VIEW_MATRIX:
+	//   (INV_VIEW_MATRIX * vec4(EYE_OFFSET, 1.0)).xyz
+	// Using vec4(0,0,0,1) instead would give CAMERA_POSITION_WORLD (midpoint),
+	// which is IDENTICAL for both eyes and produces no stereo parallax.
+	vec3 camera_world = (INV_VIEW_MATRIX * vec4(EYE_OFFSET, 1.0)).xyz;
 
 	// ---- Per-eye ray direction ----
-	// vertex_world is eye-independent geometry (set in the vertex shader using the
-	// HMD midpoint).  camera_world differs per eye.  Together they give each eye
-	// its own ray direction, producing correct stereo parallax for the voxel model.
-	vec3 ray_world_dir = normalize(vertex_world - camera_world);
+	// Unproject the fragment's SCREEN_UV through the (midpoint) projection frustum to
+	// get the fragment position in view space, then cast the ray FROM the per-eye
+	// position (EYE_OFFSET in view space) THROUGH that fragment point.
+	// This ensures the ray direction also accounts for the IPD offset, not just the
+	// ray origin — without this, the direction would be from the midpoint through the
+	// fragment, which is nearly correct but geometrically inconsistent with the origin.
+	// INV_VIEW_MATRIX with w=0 applies only rotation (no translation), transforming
+	// the view-space direction to world space.
+	vec4 view_frag = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.0, 1.0);
+	view_frag /= view_frag.w;
+	vec3 ray_dir_view = normalize(view_frag.xyz - EYE_OFFSET);
+	vec3 ray_world_dir = normalize((INV_VIEW_MATRIX * vec4(ray_dir_view, 0.0)).xyz);
 
 	// ---- World space → mesh local space ----
 	// inv_model_matrix is the inverse of _meshInstance.GlobalTransform.
@@ -448,7 +472,25 @@ void fragment() {
 		camera_voxel + ray_dir * max(t_enter, 0.0),
 		vec3(0.0), box_max - vec3(1e-4));
 
-	vec4 color = raymarch(ray_origin, ray_dir);
+	vec3 hit_pos_dda;
+	vec4 color = raymarch(ray_origin, ray_dir, hit_pos_dda);
 	if (color.a < 0.5) discard;
 	ALBEDO = color.rgb;
+
+	// ---- Write correct depth for the hit voxel surface ----
+	// Without this, the depth buffer stores the billboard quad's flat depth.
+	// On the Meta Quest 3 (and any OpenXR compositor using depth for ATW/ASW
+	// reprojection), wrong depth causes the compositor to treat the weapon as a
+	// flat plane and warp it as such, cancelling the per-eye stereo parallax that
+	// the DDA correctly computed.
+	//
+	// Reverse transformation chain:  DDA voxel space → mesh local → world → clip
+	//   1. Undo half_size shift: back to swizzled mesh-local space centred at origin.
+	//   2. Undo Ry(+π/2) swizzle (forward: (x,y,z)→(z,y,−x); inverse: (x,y,z)→(−z,y,x)).
+	//   3. MODEL_MATRIX → world space.
+	//   4. PROJECTION_MATRIX * VIEW_MATRIX → clip space (per-eye in VR multiview).
+	vec3 hit_shifted = hit_pos_dda - half_size;
+	vec3 hit_local = vec3(-hit_shifted.z, hit_shifted.y, hit_shifted.x);
+	vec4 hit_clip = PROJECTION_MATRIX * VIEW_MATRIX * MODEL_MATRIX * vec4(hit_local, 1.0);
+	DEPTH = hit_clip.z / hit_clip.w;
 }

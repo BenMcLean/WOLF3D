@@ -18,10 +18,10 @@ namespace BenMcLean.Wolf3D.VR;
 public static class VRAssetManager
 {
 	/// <summary>
-	/// Scale factor for upscaling textures. Default is 8x (64x64 -> 512x512).
+	/// Scale factor for upscaling textures. Default is 1x (native 64x64).
 	/// 4x gives 256x256, 8x gives 512x512, 16x gives 1024x1024.
 	/// </summary>
-	public static byte ScaleFactor { get; private set; } = 8;
+	public static byte ScaleFactor { get; private set; } = 1;
 	/// <summary>
 	/// Opaque materials (used for walls and normal door quads), indexed by VSwap page number.
 	/// </summary>
@@ -78,8 +78,8 @@ void fragment() {
 	/// Eagerly converts all wall and sprite textures to 3D materials.
 	/// Should be called once after SharedAssetManager.LoadGame().
 	/// </summary>
-	/// <param name="scaleFactor">Upscaling factor (default 8x for 512x512 textures)</param>
-	public static void Initialize(byte scaleFactor = 8)
+	/// <param name="scaleFactor">Upscaling factor (default 1x for native 64x64 textures)</param>
+	public static void Initialize(byte scaleFactor = 1)
 	{
 		// Get VSwap from SharedAssetManager
 		_vswap = Shared.SharedAssetManager.CurrentGame?.VSwap
