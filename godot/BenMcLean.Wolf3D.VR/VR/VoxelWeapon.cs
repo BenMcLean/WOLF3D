@@ -42,10 +42,10 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		// Must always process so _Process() keeps shader uniforms current even when
 		// the parent scene (e.g. MenuRoom) is paused during fade transitions.
 		ProcessMode = ProcessModeEnum.Always;
-		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/voxel_atlas_raymarch.gdshader") };
+		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/VoxelWeapon.gdshader") };
 		if (voxelShader is null)
 		{
-			GD.PrintErr("Warning: voxel_atlas_raymarch.gdshader not found");
+			GD.PrintErr("Warning: VoxelWeapon.gdshader not found");
 			return;
 		}
 		_material = new ShaderMaterial { Shader = voxelShader };

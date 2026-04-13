@@ -22,10 +22,10 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 
 	public override void _Ready()
 	{
-		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/WeaponSpriteVoxelDDA.gdshader") };
+		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/WeaponHandMesh.gdshader") };
 		if (voxelShader is null)
 		{
-			GD.PrintErr("Warning: WeaponSpriteVoxelDDA.gdshader not found");
+			GD.PrintErr("Warning: WeaponHandMesh.gdshader not found");
 			return;
 		}
 		_material = new ShaderMaterial { Shader = voxelShader };
