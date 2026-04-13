@@ -32,14 +32,19 @@ void vertex() {
 }
 
 void fragment() {
-	// Reconstruct camera ray from screen space for consistent rendering across all mesh
-	// fragments. INV_VIEW_MATRIX and INV_PROJECTION_MATRIX are per-eye in Godot 4 VR
-	// multiview, so this is VR-safe.
-	vec3 camera_world = INV_VIEW_MATRIX[3].xyz;
+	// Reconstruct per-eye camera ray from screen space.
+	// In Godot VR multiview, VIEW_MATRIX is the midpoint (cyclopean) view matrix,
+	// so INV_VIEW_MATRIX[3].xyz == CAMERA_POSITION_WORLD — the same midpoint for
+	// both eyes.  EYE_OFFSET is the per-eye position in midpoint view space (e.g.
+	// ±ipd/2 on X); transforming it as a point gives the actual per-eye world position.
+	vec3 camera_world = (INV_VIEW_MATRIX * vec4(EYE_OFFSET, 1.0)).xyz;
 
-	vec4 view_ray = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.0, 1.0);
-	view_ray.xyz /= view_ray.w;
-	vec3 ray_dir_world = normalize((INV_VIEW_MATRIX * vec4(view_ray.xyz, 0.0)).xyz);
+	// Unproject SCREEN_UV to a point in midpoint view space, then cast the ray from
+	// the per-eye eye position (EYE_OFFSET) through that point so that both the ray
+	// origin and direction account for the IPD offset.
+	vec4 view_frag = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.0, 1.0);
+	view_frag.xyz /= view_frag.w;
+	vec3 ray_dir_world = normalize((INV_VIEW_MATRIX * vec4(normalize(view_frag.xyz - EYE_OFFSET), 0.0)).xyz);
 
 	mat4 inv_model = inverse(MODEL_MATRIX);
 	vec3 v_ray_origin = (inv_model * vec4(camera_world, 1.0)).xyz;
