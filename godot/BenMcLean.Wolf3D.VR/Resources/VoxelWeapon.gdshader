@@ -111,9 +111,9 @@ uniform mat4 inv_model_matrix;
 // =============================================================================
 
 // World-space position of this quad vertex after billboard transformation.
-// Carried as a varying (not reconstructed from POSITION / gl_FragCoord) so that
-// it interpolates correctly in VR multiview, where PROJECTION_MATRIX is per-eye
-// but vertex_world represents pre-projection world geometry shared by both eyes.
+// Not read in the fragment stage (ray direction comes from SCREEN_UV + EYE_OFFSET),
+// but kept as a varying so Godot interpolates it correctly across the quad and
+// the GPU's vertex/fragment interface is stable.
 varying vec3 vertex_world;
 
 // =============================================================================
@@ -176,16 +176,7 @@ int fetch_voxel(ivec3 pos) {
 // depth of the voxel surface for the depth buffer.
 vec4 raymarch(vec3 ray_origin, vec3 ray_dir, out vec3 hit_pos_dda) {
 	hit_pos_dda = vec3(0.0);
-	// ---- Starting voxel ----
-	// Nudge ray_origin slightly in the ray travel direction before flooring.
-	// Without this, floating-point imprecision at the AABB entry point can place
-	// ray_origin just below a voxel boundary (e.g. 2.9999997 instead of 3.0),
-	// causing floor() to start the DDA one voxel short and miss the first filled
-	// voxel, producing a visible gap when viewed at certain angles.
-	// The per-axis sign(ray_dir) nudge is directionally correct independently for
-	// each axis: positive travel nudges positive, negative travel nudges negative,
-	// and zero travel (sign = 0) leaves that axis unaffected.
-	ivec3 voxel_pos = ivec3(floor(ray_origin + 1e-4 * sign(ray_dir)));
+	ivec3 voxel_pos = ivec3(floor(ray_origin));
 
 	// t-interval between consecutive grid planes for each axis.
 	// Computed as abs(1 / ray_dir[i]) so it is always positive regardless of
@@ -458,16 +449,8 @@ void fragment() {
 	// max(t_enter, 0.0): if t_enter < 0 the camera is already inside the volume,
 	// so start from the camera position itself (t = 0) rather than going backwards.
 	//
-	// Axis-aligned clamp to [0, box_max − 1e-4]:
-	//   Lower bound (0): recovers from NaN produced by the 0 * ∞ AABB edge case,
-	//   ensuring the DDA always starts inside a valid voxel row.
-	//   Upper bound (box_max − 1e-4): prevents floor(ray_origin) from reaching
-	//   model_size (e.g. floor(32.0) = 32), which is out of bounds.  The 1e-4
-	//   margin keeps floor in the last valid voxel [model_size − 1].
-	//   Axis-aligned clamping is used rather than a uniform t-space nudge because
-	//   a directional nudge (ray_dir * epsilon) can shift coordinates in all three
-	//   axes simultaneously, potentially landing on the wrong side of an interior
-	//   voxel boundary in a non-primary axis.
+	// Clamp to [0, box_max - 1e-4]: lower bound recovers from NaN on 0*∞ AABB edge case;
+	// upper bound keeps voxel_pos = floor(ray_origin) within [0, model_size - 1].
 	vec3 ray_origin = clamp(
 		camera_voxel + ray_dir * max(t_enter, 0.0),
 		vec3(0.0), box_max - vec3(1e-4));
