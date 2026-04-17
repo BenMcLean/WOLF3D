@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Simulator;
 using Microsoft.Extensions.Logging;
 
@@ -124,6 +125,19 @@ public class MenuScriptContext(
 	/// Exposed to Lua. Delegates to CloseAllMenusAction which signals MenuRoom.
 	/// </summary>
 	public void ResumeGame() => CloseAllMenusAction?.Invoke();
+	/// <summary>
+	/// Delegate for navigating to an article screen by name.
+	/// Set by MenuManager after context creation.
+	/// WL_TEXT.C: ShowArticle() / HelpScreens() / CP_ReadThis()
+	/// </summary>
+	public Action<string> NavigateToArticleAction { get; set; }
+	/// <summary>
+	/// Navigate to a named article screen (multi-page text display).
+	/// Exposed to Lua. Delegates to MenuManager.
+	/// WL_TEXT.C: HelpScreens() / ShowArticle()
+	/// </summary>
+	/// <param name="articleName">Name of article to display (e.g., "ReadThis")</param>
+	public void NavigateToArticle(string articleName) => NavigateToArticleAction?.Invoke(articleName);
 	#endregion Navigation
 	#region Session State (Episode/Difficulty Selection)
 	/// <summary>

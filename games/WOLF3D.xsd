@@ -53,6 +53,7 @@
 				<xs:element ref="Fonts" minOccurs="0"/>
 				<xs:element ref="Pics" minOccurs="0"/>
 				<xs:element ref="StatusBar" minOccurs="0"/>
+				<xs:element ref="TextChunks" minOccurs="0"/>
 				<xs:element ref="Menus" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="VgaDict" type="xs:string"/>
@@ -345,12 +346,51 @@
 		</xs:complexType>
 	</xs:element>
 
+	<xs:element name="TextChunks">
+		<xs:annotation>
+			<xs:documentation>
+				Wolf3D PageLayout-format text articles loaded from external files or VGAGRAPH chunks.
+				WL_TEXT.C: CA_LoadFile(helpfilename) for shareware; CA_CacheGrChunk(T_HELPART) for registered.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="TextChunk" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:attribute name="Name" type="xs:string" use="required">
+							<xs:annotation>
+								<xs:documentation>Logical name for this chunk (e.g., "T_HELPART", "T_ENDART1").</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Number" type="xs:nonNegativeInteger">
+							<xs:annotation>
+								<xs:documentation>
+									Absolute VGAGRAPH chunk index for embedded text (registered/WL6 builds).
+									GFXV_APO.H: T_HELPART=150, T_ENDART1=155 through T_ENDART6=160.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="File" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>
+									External filename relative to game data folder (e.g., "HELPART.WL1").
+									WL_TEXT.C: char helpfilename[13] = "HELPART." for WL1 shareware.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
 	<xs:element name="Menus">
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
 				<xs:element name="EndString" type="xs:string"/>
 				<xs:element ref="MenuFunction"/>
 				<xs:element ref="Menu"/>
+				<xs:element ref="Article"/>
 			</xs:choice>
 			<xs:attribute name="Music" type="xs:string">
 				<xs:annotation>
@@ -621,6 +661,43 @@
 						WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 for difficulty menu (4-item version).
 						If absent, defaults to 0 (first item).
 					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Article">
+		<xs:annotation>
+			<xs:documentation>
+				A navigable multi-page article screen that displays Wolf3D PageLayout-format text.
+				Page-flip navigation uses Up/Down (or equivalent input); Cancel exits.
+				WL_TEXT.C: ShowArticle() / HelpScreens() / CP_ReadThis()
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="OnCancel" type="xs:string" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>
+							Lua script executed when the player presses ESC/Cancel.
+							WL_TEXT.C: ShowArticle exits on sc_Escape.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="Name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>Unique identifier for this article (e.g., "ReadThis", "EndArt1").</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ChunkName" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>Name of the TextChunk to display (e.g., "T_HELPART").</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Music" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Music track to play while showing this article (e.g., "CORNER_MUS").</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 		</xs:complexType>

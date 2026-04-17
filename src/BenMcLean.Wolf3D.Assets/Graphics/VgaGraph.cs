@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 
@@ -42,9 +43,26 @@ public sealed class VgaGraph
 	public ushort[] Sizes { get; private init; }
 	public uint[] Palette { get; private init; }
 	/// <summary>
+	/// Absolute VGAGRAPH chunk index of the first pic (STARTPICS in GFXV_*.H).
+	/// Used by ArticleLayoutEngine ^G resolver: absIndex - StartPic = relative index.
+	/// </summary>
+	public uint StartPic { get; private init; }
+	/// <summary>
+	/// Embedded text chunks decoded from VGAGRAPH during load, keyed by logical name.
+	/// Populated from &lt;TextChunks&gt;&lt;TextChunk Number=... Name=...&gt; in XML.
+	/// File-based text chunks (external files) are loaded by AssetManager.
+	/// WL_TEXT.C: CA_CacheGrChunk(T_HELPART) — APO/WL6 registered builds only.
+	/// </summary>
+	public Dictionary<string, string> TextChunks { get; private init; }
+	/// <summary>
 	/// Dictionary mapping Pic names to their indices in the Pics[] array.
 	/// </summary>
 	public Dictionary<string, int> PicsByName { get; private init; }
+	/// <summary>
+	/// Inverse of PicsByName: maps relative pic index (0-based from STARTPICS) to pic name.
+	/// Used by ArticleLayoutEngine to resolve ^G absolute chunk indices to names.
+	/// </summary>
+	public Dictionary<int, string> PicNamesByRelativeIndex { get; private init; }
 	/// <summary>
 	/// Dictionary mapping chunk font names to their indices in the Fonts[] array.
 	/// Chunk fonts are loaded from VGAGRAPH file chunks.
@@ -72,6 +90,7 @@ public sealed class VgaGraph
 			Sizes = Load16BitPairs(sizes);
 		uint startFont = (uint)vgaGraph.Element("Fonts").Attribute("Start"),
 			startPic = (uint)vgaGraph.Element("Pics").Attribute("Start");
+		StartPic = startPic;
 		Fonts = [.. Enumerable.Range(0, (int)(startPic - startFont))
 			.Parallelize(i =>
 			{
@@ -114,6 +133,18 @@ public sealed class VgaGraph
 				continue;
 			if (picNumber < Pics.Length)
 				PicsByName[name] = picNumber;
+		}
+		// Build inverse pic index lookup for ^G article graphic resolution
+		PicNamesByRelativeIndex = PicsByName.ToDictionary(kv => kv.Value, kv => kv.Key);
+		// Extract embedded text chunks (APO/WL6 registered builds — WL_TEXT.C: T_HELPART etc.)
+		TextChunks = [];
+		foreach (XElement textChunk in vgaGraph.Element("TextChunks")?.Elements("TextChunk") ?? [])
+		{
+			string name = textChunk.Attribute("Name")?.Value;
+			if (string.IsNullOrEmpty(name)) continue;
+			if (!uint.TryParse(textChunk.Attribute("Number")?.Value, out uint chunkIdx)) continue;
+			if (chunkIdx < file.Length && file[chunkIdx] is not null)
+				TextChunks[name] = Encoding.ASCII.GetString(file[chunkIdx]);
 		}
 		// Build font dictionaries
 		ChunkFontsByName = [];

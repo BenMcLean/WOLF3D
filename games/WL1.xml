@@ -165,6 +165,12 @@
 			<Picture Id="SilverKey" Name="NOKEYPIC" X="240" Y="20" />
 			<Picture Id="WeaponPic" Name="GUNPIC" X="256" Y="8" />
 		</StatusBar>
+		<!-- WL_TEXT.C: help/end-art text chunks loaded from external files for WL1 shareware -->
+		<!-- WL_TEXT.C: char helpfilename[13] = "HELPART." — extension appended at runtime -->
+		<TextChunks>
+			<TextChunk Name="T_HELPART" Number="150" />
+			<TextChunk Name="T_ENDART1" Number="155" />
+		</TextChunks>
 		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
 		<!-- WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND) — played universally on any menu cancel -->
 		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" EscPressedSnd="ESCPRESSEDSND" SelectSound="SHOOTSND" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
@@ -177,6 +183,10 @@
 			<EndString>Heroes, press N.&#10;Wimps, press Y.</EndString>
 			<EndString>You are at an intersection.&#10;A sign says, 'Press Y to quit.'&#10;&gt;</EndString>
 			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
+			<!-- WL_TEXT.C: HelpScreens() — CP_ReadThis() in WL_MENU.C loads HELPART.WL1 and shows article -->
+			<Article Name="ReadThis" ChunkName="T_HELPART" Music="CORNER_MUS">
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
+			</Article>
 			<Menu Name="Credits" Music="NAZI_NOR_MUS">
 				<Picture Name="CREDITSPIC" X="0" Y="0" />
 				<Pause Duration="00:00:10">NavigateToMenu("Title")</Pause>
@@ -214,6 +224,10 @@
 					NavigateToMenu("SaveGame")
 				</MenuItem>
 				<PresentationMenuItem />
+				<!-- WL_MENU.C:CP_ReadThis — shows HELPART.WL1 help text, WL1 shareware only -->
+				<MenuItem Text="Read This!">
+					NavigateToArticle("ReadThis")
+				</MenuItem>
 				<MenuItem Text="View Scores">
 					NavigateToMenu("ViewScores")
 				</MenuItem>

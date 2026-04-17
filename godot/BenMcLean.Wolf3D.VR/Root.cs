@@ -1,5 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Simulator.Lua;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;

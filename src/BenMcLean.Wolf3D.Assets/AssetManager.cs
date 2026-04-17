@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Assets.Sound;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,12 @@ public class AssetManager
 	public readonly StateCollection StateCollection;
 	public readonly WeaponCollection WeaponCollection;
 	public readonly MenuCollection MenuCollection;
+	/// <summary>
+	/// Raw ASCII text of all loaded text chunks, keyed by logical name (e.g., "T_HELPART").
+	/// Populated from external files (WL1 shareware) and embedded VGAGRAPH chunks (APO/WL6).
+	/// WL_TEXT.C: CA_LoadFile(helpfilename) / CA_CacheGrChunk(T_HELPART)
+	/// </summary>
+	public readonly Dictionary<string, string> TextChunks;
 	public static AssetManager Load(string xmlPath, ILoggerFactory loggerFactory = null)
 	{
 		XElement xml = XDocument.Load(xmlPath).Root;
@@ -76,6 +83,8 @@ public class AssetManager
 		WeaponCollection = LoadWeaponCollection(xml);
 		// Load MenuCollection from XML
 		MenuCollection = LoadMenuCollection(xml);
+		// Load text chunks (external files + embedded VGAGRAPH chunks)
+		TextChunks = LoadTextChunks(xml, folder);
 	}
 	private StateCollection LoadStateCollection(XElement xml)
 	{
@@ -125,14 +134,32 @@ public class AssetManager
 			weaponCollection.LoadFromXml(weaponElements);
 		return weaponCollection;
 	}
-	private MenuCollection LoadMenuCollection(XElement xml)
+	private Dictionary<string, string> LoadTextChunks(XElement xml, string folder)
 	{
-		// Find the Menus element inside VgaGraph
+		// Start with any embedded chunks already extracted by VgaGraph
+		Dictionary<string, string> chunks = VgaGraph?.TextChunks is not null
+			? new(VgaGraph.TextChunks)
+			: [];
+		// Load external file chunks (WL_TEXT.C: CA_LoadFile path for WL1 shareware)
 		XElement vgaGraphElement = xml.Element("VgaGraph");
-		XElement menusElement = vgaGraphElement?.Element("Menus");
-		if (menusElement is null)
-			return new MenuCollection(); // No menus defined
-										 // Use MenuCollection.Load static method to parse entire structure
-		return MenuCollection.Load(menusElement);
+		foreach (XElement chunkEl in vgaGraphElement?.Element("TextChunks")?.Elements("TextChunk") ?? [])
+		{
+			string name = chunkEl.Attribute("Name")?.Value;
+			string fileName = chunkEl.Attribute("File")?.Value;
+			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(fileName))
+				continue;
+			string filePath = Path.Combine(folder, fileName);
+			if (!File.Exists(filePath))
+			{
+				Console.Error.WriteLine($"Warning: TextChunk '{name}' file not found: {filePath}");
+				continue;
+			}
+			chunks[name] = File.ReadAllText(filePath, System.Text.Encoding.ASCII);
+		}
+		return chunks;
 	}
+	private static MenuCollection LoadMenuCollection(XElement xml) =>
+		xml?.Element("VgaGraph")?.Element("Menus") is XElement menusElement
+			? MenuCollection.Load(menusElement)
+			: new MenuCollection();
 }

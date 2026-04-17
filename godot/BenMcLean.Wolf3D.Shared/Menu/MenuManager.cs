@@ -4,8 +4,8 @@ using System.Linq;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
 using BenMcLean.Wolf3D.Simulator.Lua;
 using Godot;
-using Microsoft.Extensions.Logging;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
@@ -24,10 +24,12 @@ public class MenuManager
 	private readonly MenuRenderer _renderer;
 	private IMenuInput _input;
 	private readonly MenuScriptContext _scriptContext;
-	private readonly ILogger _logger;
 	private string _currentMenuName;
 	private int _selectedItemIndex = 0;
 	private string _currentMenuMusic = null;
+	private ArticleDefinition _currentArticle;
+	private ArticlePageLayout[] _articlePages;
+	private int _articlePageIndex;
 	private Rect2[] _currentMenuItemBounds = [];
 	private ClickablePictureBounds[] _currentClickablePictureBounds = [];
 	private MenuSequence _activeSequence;
@@ -98,26 +100,24 @@ public class MenuManager
 	/// </summary>
 	/// <param name="menuCollection">Menu data from AssetManager.MenuCollection</param>
 	/// <param name="config">Game configuration</param>
-	/// <param name="logger">Logger for debug output</param>
 	public MenuManager(
 		MenuCollection menuCollection,
-		Config config,
-		ILogger logger = null)
+		Config config)
 	{
 		_menuCollection = menuCollection ?? throw new ArgumentNullException(nameof(menuCollection));
 		_config = config ?? throw new ArgumentNullException(nameof(config));
-		_logger = logger;
 		// Create session state
 		_sessionState = new MenuState();
 		// Create Lua engine with MenuScriptContext support only
-		_luaEngine = new LuaScriptEngine([typeof(MenuScriptContext)], logger);
+		_luaEngine = new LuaScriptEngine([typeof(MenuScriptContext)]);
 		// Compile all menu functions
 		CompileMenuFunctions();
 		// Create script context (menus don't need RNG/GameClock - not deterministic)
-		_scriptContext = new MenuScriptContext(_sessionState, _config, logger)
+		_scriptContext = new MenuScriptContext(_sessionState, _config)
 		{
 			// Wire up script context delegates
 			NavigateToMenuAction = NavigateToMenu,
+			NavigateToArticleAction = NavigateToArticle,
 			CloseAllMenusAction = CloseAllMenus,
 			// IsGameInProgressFunc is wired up by MenuRoom after construction
 			ShowConfirmFunc = ShowConfirm,
@@ -171,11 +171,10 @@ public class MenuManager
 				try
 				{
 					_luaEngine.CompileActionFunction(function.Name, function.Code);
-					_logger?.LogDebug("Compiled menu function: {name}", function.Name);
 				}
 				catch (Exception ex)
 				{
-					_logger?.LogError(ex, "Failed to compile menu function '{name}'", function.Name);
+					GD.PrintErr($"ERROR: Failed to compile menu function '{function.Name}': {ex.Message}");
 				}
 	}
 	private const string PresentationMenuReservedName = "__PresentationMenu__";
@@ -205,7 +204,7 @@ public class MenuManager
 	{
 		if (!_menuCollection.Menus.ContainsKey(menuName))
 		{
-			_logger?.LogError("Menu '{menuName}' not found", menuName);
+			GD.PrintErr($"ERROR: Menu '{menuName}' not found");
 			return;
 		}
 		if (FadeTransitionCallback is not null)
@@ -214,6 +213,70 @@ public class MenuManager
 			return;
 		}
 		NavigateToMenuImmediate(menuName);
+	}
+	/// <summary>
+	/// Navigate to a named article screen (multi-page text display).
+	/// Loads the article's TextChunk, lays out all pages, renders the first page.
+	/// WL_TEXT.C: ShowArticle() / HelpScreens() / CP_ReadThis()
+	/// </summary>
+	/// <param name="articleName">Name of article to display (e.g., "ReadThis")</param>
+	public void NavigateToArticle(string articleName)
+	{
+		if (!_menuCollection.Articles.TryGetValue(articleName, out ArticleDefinition articleDef))
+		{
+			GD.PrintErr($"ERROR: Article '{articleName}' not found in MenuCollection");
+			return;
+		}
+		string rawText = SharedAssetManager.CurrentGame?.TextChunks?.GetValueOrDefault(articleDef.ChunkName);
+		if (rawText is null)
+		{
+			GD.PrintErr($"ERROR: TextChunk '{articleDef.ChunkName}' not found for article '{articleName}' — ensure the file exists in the game data folder");
+			return;
+		}
+		Assets.Graphics.Font smallFont = null;
+		if (SharedAssetManager.CurrentGame?.VgaGraph?.ChunkFontsByName?.TryGetValue("SMALL", out int fontIdx) == true)
+			if (fontIdx < SharedAssetManager.CurrentGame.VgaGraph.Fonts.Length)
+				smallFont = SharedAssetManager.CurrentGame.VgaGraph.Fonts[fontIdx];
+		Func<int, string> picNameResolver = absIdx =>
+		{
+			int relIdx = absIdx - (int)SharedAssetManager.CurrentGame.VgaGraph.StartPic;
+			return SharedAssetManager.CurrentGame.VgaGraph.PicNamesByRelativeIndex?.GetValueOrDefault(relIdx);
+		};
+		ArticlePageLayout[] pages;
+		try
+		{
+			pages = ArticleLayoutEngine.Layout(rawText, smallFont, picNameResolver);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: ArticleLayoutEngine.Layout failed for '{articleName}': {ex.Message}");
+			return;
+		}
+		if (pages.Length == 0)
+		{
+			GD.PrintErr($"ERROR: Article '{articleName}' produced no pages after layout");
+			return;
+		}
+		_currentArticle = articleDef;
+		_articlePages = pages;
+		_articlePageIndex = 0;
+		_currentMenuName = null; // suspend menu mode
+		if (!string.IsNullOrEmpty(articleDef.Music))
+			_scriptContext.PlayMusic(articleDef.Music);
+		_renderer.RenderArticle(_articlePages[_articlePageIndex]);
+	}
+	/// <summary>
+	/// Exit the current article and run its OnCancel script.
+	/// WL_TEXT.C: ShowArticle exits on sc_Escape — typically navigates back to a menu.
+	/// </summary>
+	private void ExitArticle()
+	{
+		string onCancel = _currentArticle?.OnCancel;
+		_currentArticle = null;
+		_articlePages = null;
+		_articlePageIndex = 0;
+		if (!string.IsNullOrEmpty(onCancel))
+			_luaEngine.DoString(onCancel, _scriptContext);
 	}
 	/// <summary>
 	/// Apply music for the given menu.
@@ -277,7 +340,6 @@ public class MenuManager
 			}
 		// Activate the sequence if it has steps, otherwise discard
 		_activeSequence = sequence.HasSteps ? sequence : null;
-		_logger?.LogDebug("Navigated to menu: {menuName}", menuName);
 	}
 	/// <summary>
 	/// Execute the OnCancel Lua script for a menu.
@@ -299,7 +361,6 @@ public class MenuManager
 		catch (Exception ex)
 		{
 			GD.PrintErr($"ERROR: Failed to execute OnCancel for menu '{menuDef.Name}': {ex.Message}");
-			_logger?.LogError(ex, "Failed to execute OnCancel for menu '{name}'", menuDef.Name);
 		}
 	}
 	/// <summary>
@@ -308,7 +369,9 @@ public class MenuManager
 	public void CloseAllMenus()
 	{
 		_currentMenuName = null;
-		_logger?.LogDebug("Closed all menus");
+		_currentArticle = null;
+		_articlePages = null;
+		_articlePageIndex = 0;
 		// TODO: Signal to Root.cs or game manager that menus are closed?
 	}
 	/// <summary>
@@ -388,7 +451,6 @@ public class MenuManager
 		catch (Exception ex)
 		{
 			GD.PrintErr($"ERROR: Failed to execute OnSelectionChanged for menu '{menuDef.Name}': {ex.Message}");
-			_logger?.LogError(ex, "Failed to execute OnSelectionChanged for menu '{name}'", menuDef.Name);
 		}
 	}
 	/// <summary>
@@ -408,7 +470,6 @@ public class MenuManager
 		catch (Exception ex)
 		{
 			GD.PrintErr($"ERROR: Failed to execute OnShow for menu '{menuDef.Name}': {ex.Message}");
-			_logger?.LogError(ex, "Failed to execute OnShow for menu '{name}'", menuDef.Name);
 		}
 	}
 	/// <summary>
@@ -425,7 +486,6 @@ public class MenuManager
 		catch (Exception ex)
 		{
 			GD.PrintErr($"ERROR: Failed to execute Pause script: {ex.Message}");
-			_logger?.LogError(ex, "Failed to execute Pause script");
 		}
 	}
 	/// <summary>
@@ -458,6 +518,31 @@ public class MenuManager
 	/// <param name="delta">Time since last frame in seconds</param>
 	public void Update(float delta)
 	{
+		// Article mode — Up/Down flips pages, Cancel runs OnCancel script
+		if (_currentArticle is not null)
+		{
+			_input.Update(delta);
+			MenuInputState articleInput = _input.GetState();
+			if (articleInput.DownPressed || articleInput.SelectPressed)
+			{
+				// Next page (WL_TEXT.C: BackPage logic — Down/Select advances)
+				if (_articlePageIndex < _articlePages.Length - 1)
+				{
+					_articlePageIndex++;
+					_renderer.RenderArticle(_articlePages[_articlePageIndex]);
+				}
+				else if (articleInput.SelectPressed)
+					ExitArticle(); // last page + Select → exit
+			}
+			else if (articleInput.UpPressed && _articlePageIndex > 0)
+			{
+				_articlePageIndex--;
+				_renderer.RenderArticle(_articlePages[_articlePageIndex]);
+			}
+			else if (articleInput.CancelPressed)
+				ExitArticle();
+			return;
+		}
 		if (string.IsNullOrEmpty(_currentMenuName))
 			return;
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
@@ -699,7 +784,6 @@ public class MenuManager
 		catch (Exception ex)
 		{
 			GD.PrintErr($"ERROR: Failed to execute menu script for '{item.Text}': {ex.Message}");
-			_logger?.LogError(ex, "Failed to execute menu script for '{text}'", item.Text);
 		}
 	}
 	/// <summary>
@@ -730,7 +814,6 @@ public class MenuManager
 		catch (Exception ex)
 		{
 			GD.PrintErr($"ERROR: Failed to execute picture script for '{pictureDef.Name}': {ex.Message}");
-			_logger?.LogError(ex, "Failed to execute picture script for '{name}'", pictureDef.Name);
 		}
 	}
 	/// <summary>
@@ -789,7 +872,7 @@ public class MenuManager
 	{
 		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds is null)
 		{
-			_logger?.LogWarning("Cannot play AdLib sound '{soundName}' - no AudioT loaded", soundName);
+			GD.PrintErr($"Warning: Cannot play AdLib sound '{soundName}' - no AudioT loaded");
 			return;
 		}
 		EventBus.Emit(GameEvent.PlaySound, soundName);
@@ -803,7 +886,7 @@ public class MenuManager
 		if (SharedAssetManager.CurrentGame?.AudioT?.Songs is null &&
 			!SharedAssetManager.RawImfSongs.ContainsKey(musicName))
 		{
-			_logger?.LogWarning("Cannot play music '{musicName}' - no AudioT loaded", musicName);
+			GD.PrintErr($"Warning: Cannot play music '{musicName}' - no AudioT loaded");
 			return;
 		}
 		EventBus.Emit(GameEvent.PlayMusic, musicName);
@@ -899,7 +982,6 @@ public class MenuManager
 	private bool ShowConfirm(string message)
 	{
 		// TODO: Implement actual confirmation dialog using ModalDialog
-		_logger?.LogDebug("ShowConfirm: {message} (TODO: implement)", message);
 		return true; // Placeholder: always confirm
 	}
 	/// <summary>
@@ -910,7 +992,6 @@ public class MenuManager
 	private void ShowMessage(string message)
 	{
 		// TODO: Implement actual message dialog using ModalDialog
-		_logger?.LogDebug("ShowMessage: {message} (TODO: implement)", message);
 	}
 	#endregion UI Dialog Helpers
 }

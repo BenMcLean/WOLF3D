@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 using Godot;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
@@ -96,6 +96,16 @@ public class MenuRenderer
 	/// </summary>
 	/// <param name="menuDef">Menu definition from AssetManager.Menus</param>
 	/// <param name="selectedIndex">Currently selected item index (into visibleItems)</param>
+	/// <summary>
+	/// Clear the canvas and render an article page.
+	/// Delegates to ArticleRenderer.RenderPage using the shared viewport canvas.
+	/// WL_TEXT.C: PageLayout rendering per page.
+	/// </summary>
+	public void RenderArticle(ArticlePageLayout page)
+	{
+		Clear();
+		ArticleRenderer.RenderPage(_canvas, page);
+	}
 	/// <param name="visibleItems">Pre-filtered list of visible menu items. If null, uses all items in menuDef.</param>
 	/// <param name="modal">Optional active modal dialog to render over the menu.</param>
 	public void RenderMenu(
@@ -653,7 +663,7 @@ public class MenuRenderer
 
 		// Modal-specific colors from XML (PixelRect: Color/NWColor/SEColor/TextColor)
 		// Each has a dedicated ModalXxx attribute; falls back to menu default if absent.
-		Assets.Gameplay.MenuCollection menuCollection = SharedAssetManager.CurrentGame?.MenuCollection;
+		MenuCollection menuCollection = SharedAssetManager.CurrentGame?.MenuCollection;
 		// PixelRect.Color — box fill
 		byte bgColorIndex = menuCollection?.DefaultModalColor ?? 0x17,
 			// PixelRect text label color

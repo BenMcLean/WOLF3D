@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 
 namespace BenMcLean.Wolf3D.Shared.StatusBar;
 

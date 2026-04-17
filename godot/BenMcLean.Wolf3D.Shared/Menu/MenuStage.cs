@@ -1,6 +1,6 @@
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 using Godot;
-using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
@@ -37,13 +37,10 @@ public partial class MenuStage : Node
 		// Get config from SharedAssetManager (or create default)
 		// Initialize SharedAssetManager.Config if not already set
 		SharedAssetManager.Config ??= new Config();
-		// Create logger (TODO: Wire up to actual logger factory)
-		ILogger logger = null; // Use null logger for now
 		// Create MenuManager (menus don't need RNG/GameClock - not deterministic)
 		_menuManager = new MenuManager(
 			menuCollection,
-			SharedAssetManager.Config,
-			logger);
+			SharedAssetManager.Config);
 		// Add the SubViewport to scene tree (required for rendering, but not as child of container)
 		AddChild(_menuManager.Renderer.Viewport);
 		// Create CanvasLayer to render 2D menu on top of 3D scene

@@ -6,6 +6,7 @@ using BenMcLean.Wolf3D.Simulator.Entities;
 using BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
 using Microsoft.Extensions.Logging;
+using BenMcLean.Wolf3D.Assets.Menu;
 using static BenMcLean.Wolf3D.Assets.Gameplay.MapAnalyzer;
 
 namespace BenMcLean.Wolf3D.Simulator;
@@ -1331,7 +1332,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Build auto-text map: StatusBar Text Id → field width from initial XML content length.
 		// When SetValue fires for a matching key, the value is right-justified to this width.
 		_statusBarTextWidths.Clear();
-		foreach (Assets.Gameplay.TextDefinition text in statusBar.Texts)
+		foreach (TextDefinition text in statusBar.Texts)
 			if (!string.IsNullOrEmpty(text.Id))
 				_statusBarTextWidths[text.Id] = (text.Content ?? string.Empty).Length;
 		faceController = !string.IsNullOrEmpty(onFaceFunctionName)

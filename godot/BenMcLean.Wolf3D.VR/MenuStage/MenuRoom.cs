@@ -1,4 +1,5 @@
 using System;
+using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
@@ -123,7 +124,7 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Optional override MenuCollection for procedural menus (e.g., game selection screen).
 	/// When set, used instead of SharedAssetManager.CurrentGame.MenuCollection.
 	/// </summary>
-	public Assets.Gameplay.MenuCollection MenuCollectionOverride { get; set; }
+	public MenuCollection MenuCollectionOverride { get; set; }
 	/// <summary>
 	/// VSwap sprite name to display on VR controllers while this menu is active.
 	/// Set by the creator (Root) from the game XML's WeaponSprite attribute, or directly
@@ -183,7 +184,7 @@ public partial class MenuRoom : Node3D, IRoom
 		// Create menu manager
 		// MenuCollectionOverride allows procedural menus (e.g., game selection screen)
 		// without requiring a fully-loaded game.
-		Assets.Gameplay.MenuCollection menuCollection = MenuCollectionOverride
+		MenuCollection menuCollection = MenuCollectionOverride
 			?? SharedAssetManager.CurrentGame?.MenuCollection;
 		if (menuCollection is null)
 		{
@@ -194,8 +195,7 @@ public partial class MenuRoom : Node3D, IRoom
 		SharedAssetManager.Config ??= new Assets.Gameplay.Config();
 		_menuManager = new MenuManager(
 			menuCollection,
-			SharedAssetManager.Config,
-			logger: null);
+			SharedAssetManager.Config);
 		// Wire up game selection (used when MenuCollectionOverride is the procedural game list)
 		_menuManager.ScriptContext.SelectGameAction = path => SelectedGameXmlPath = path;
 		// Wire up in-game state so menu items with InGame conditions show/hide correctly
@@ -264,7 +264,7 @@ public partial class MenuRoom : Node3D, IRoom
 	/// </summary>
 	private void RegisterVRModeMenu()
 	{
-		Assets.Gameplay.MenuDefinition vrModeMenu = new()
+		MenuDefinition vrModeMenu = new()
 		{
 			// Positioning matches the original ChangeView menu
 			X = 76,
@@ -274,17 +274,17 @@ public partial class MenuRoom : Node3D, IRoom
 			Font = "BIG",
 			OnCancel = "NavigateToMenu(\"Main\")",
 		};
-		vrModeMenu.Items.Add(new Assets.Gameplay.MenuItemDefinition
+		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Roomscale",
 			Script = "SetVRMode(\"Roomscale\") NavigateToMenu(\"Main\")",
 		});
-		vrModeMenu.Items.Add(new Assets.Gameplay.MenuItemDefinition
+		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "5DOF",
 			Script = "SetVRMode(\"FiveDOF\") NavigateToMenu(\"Main\")",
 		});
-		vrModeMenu.Items.Add(new Assets.Gameplay.MenuItemDefinition
+		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Back",
 			Script = "NavigateToMenu(\"Main\")",
