@@ -142,6 +142,9 @@ public partial class ScreenFadeOverlay : Node
 			NoDepthTest = true,
 			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
 			AlbedoColor = new Color(0f, 0f, 0f, 0f),
+			// RenderPriority 2: renders in front of DeathFizzleOverlay (1) and ScreenFlashOverlay (0).
+			// Higher RenderPriority = rendered last = in front. Belt-and-suspenders with SortingOffset.
+			RenderPriority = 2,
 		};
 
 		_vrFadeMesh = new MeshInstance3D
@@ -156,6 +159,9 @@ public partial class ScreenFadeOverlay : Node
 			// Toggling Visible on/off has multi-frame latency in the OpenXR compositor,
 			// which would cause the level to show unobscured at the start of every fade-to-black.
 			Visible = true,
+			// SortingOffset 0: must render on top of DeathFizzleOverlay (-1) and ScreenFlashOverlay (-2).
+			// Godot 4: HIGHER SortingOffset = rendered LAST = in front. See DeathFizzleOverlay for ordering.
+			SortingOffset = 0f,
 		};
 		camera.AddChild(_vrFadeMesh);
 

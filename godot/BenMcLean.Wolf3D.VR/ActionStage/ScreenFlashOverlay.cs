@@ -110,6 +110,9 @@ void fragment() {
 			MaterialOverride = _vrFlashMaterial,
 			CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
 			Visible = false,
+			// SortingOffset -2: renders behind DeathFizzleOverlay (-1) and ScreenFadeOverlay (0).
+			// Godot 4: HIGHER SortingOffset = rendered LAST = in front. See DeathFizzleOverlay.
+			SortingOffset = -2f,
 		};
 		camera.AddChild(_vrFlashMesh);
 

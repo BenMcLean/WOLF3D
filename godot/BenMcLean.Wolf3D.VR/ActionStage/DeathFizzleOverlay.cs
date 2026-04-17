@@ -15,11 +15,12 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// controlled solely by the progress shader parameter (progress=0 → all pixels ALPHA=0 →
 /// fully transparent) to avoid the multi-frame OpenXR compositor latency that occurs when
 /// toggling Visible on/off (see ScreenFadeOverlay for documentation of that issue).
-/// Render order vs other camera-child overlays is determined by tree insertion order
-/// (same sort depth = equal-depth transparent objects render in insertion order):
-///   1. ScreenFlashOverlay quad  — added first in ActionRoom._Ready  → renders below fizzle
-///   2. DeathFizzleOverlay quad  — added second in ActionRoom._Ready  → renders above flash
-///   3. ScreenFadeOverlay sphere — added third in Root.OnSceneAdded   → renders above fizzle
+/// Render order vs other camera-child overlays is controlled by SortingOffset + RenderPriority:
+///   ScreenFlashOverlay quad  SortingOffset=-2, RenderPriority=0 → behind (first)
+///   DeathFizzleOverlay quad  SortingOffset=-1, RenderPriority=1 → middle
+///   ScreenFadeOverlay sphere SortingOffset= 0, RenderPriority=2 → in front (last)
+/// Godot 4: HIGHER SortingOffset/RenderPriority = rendered LAST = in front.
+/// Both mechanisms enforce the same order for belt-and-suspenders reliability.
 /// This ensures the black fade-to-black correctly covers the red fizzle screen.
 ///
 /// Flatscreen: CanvasLayer ColorRect with canvas_item shader — same UV-based fizzle texture lookup.
@@ -140,6 +141,9 @@ void fragment() {
 
 		_vrFizzleMaterial ??= new ShaderMaterial
 		{
+			// RenderPriority 1: renders in front of ScreenFlashOverlay (0) but behind ScreenFadeOverlay (2).
+			// Belt-and-suspenders with SortingOffset. See class summary for full overlay render order.
+			RenderPriority = 1,
 			Shader = new Shader
 			{
 				// spatial shader: same NDC full-screen quad trick as ScreenFlashOverlay.
@@ -194,6 +198,9 @@ void fragment() {
 			// Toggling Visible on/off has multi-frame latency in the OpenXR compositor.
 			// See ScreenFadeOverlay.SetVRCamera for documentation of this constraint.
 			Visible = true,
+			// SortingOffset -1: must render in front of ScreenFlashOverlay (-2) but behind
+			// ScreenFadeOverlay (0). See class summary for full overlay render order.
+			SortingOffset = -1f,
 		};
 		camera.AddChild(_vrFizzleMesh);
 
@@ -224,6 +231,15 @@ void fragment() {
 			_vrFizzleMaterial.SetShaderParameter("fizzle_color", color);
 			_vrFizzleMaterial.SetShaderParameter("progress", 0f);
 		}
+	}
+
+	public override void _ExitTree()
+	{
+		// _vrFizzleMesh is parented to the camera, not to this node, so it is not freed
+		// automatically when this overlay is removed. Free it explicitly to avoid an orphan.
+		if (_vrFizzleMesh is not null && GodotObject.IsInstanceValid(_vrFizzleMesh))
+			_vrFizzleMesh.QueueFree();
+		_vrFizzleMesh = null;
 	}
 
 	public override void _Process(double delta)
