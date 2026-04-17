@@ -237,15 +237,24 @@ public class MenuManager
 		if (SharedAssetManager.CurrentGame?.VgaGraph?.ChunkFontsByName?.TryGetValue("SMALL", out int fontIdx) == true)
 			if (fontIdx < SharedAssetManager.CurrentGame.VgaGraph.Fonts.Length)
 				smallFont = SharedAssetManager.CurrentGame.VgaGraph.Fonts[fontIdx];
+		Assets.Graphics.VgaGraph vgaGraph = SharedAssetManager.CurrentGame?.VgaGraph;
 		Func<int, string> picNameResolver = absIdx =>
 		{
-			int relIdx = absIdx - (int)SharedAssetManager.CurrentGame.VgaGraph.StartPic;
-			return SharedAssetManager.CurrentGame.VgaGraph.PicNamesByRelativeIndex?.GetValueOrDefault(relIdx);
+			int relIdx = absIdx - (int)vgaGraph.StartPic;
+			return vgaGraph.PicNamesByRelativeIndex?.GetValueOrDefault(relIdx);
+		};
+		Func<int, (int width, int height)?> picSizeResolver = absIdx =>
+		{
+			int relIdx = absIdx - (int)vgaGraph.StartPic;
+			int sizeIdx = relIdx * 2;
+			if (relIdx < 0 || vgaGraph.Sizes is null || sizeIdx + 1 >= vgaGraph.Sizes.Length)
+				return null;
+			return (vgaGraph.Sizes[sizeIdx], vgaGraph.Sizes[sizeIdx + 1]);
 		};
 		ArticlePageLayout[] pages;
 		try
 		{
-			pages = ArticleLayoutEngine.Layout(rawText, smallFont, picNameResolver);
+			pages = ArticleLayoutEngine.Layout(rawText, smallFont, picNameResolver, picSizeResolver);
 		}
 		catch (Exception ex)
 		{

@@ -64,11 +64,17 @@ public static class ArticleLayoutEngine
 	/// Returns null for unknown indices.
 	/// WL_TEXT.C: ^G command picnum → VWB_DrawPic(picnum)
 	/// </param>
+	/// <param name="picSizeResolver">
+	/// Resolves an absolute VGAGRAPH chunk index to (width, height) in pixels.
+	/// Used to adjust per-row margins so text flows around graphics.
+	/// WL_TEXT.C: pictable[picnum-STARTPICS].width/height
+	/// </param>
 	/// <returns>One ArticlePageLayout per page, in order.</returns>
 	public static ArticlePageLayout[] Layout(
 		string rawText,
 		Font font,
-		Func<int, string> picNameResolver)
+		Func<int, string> picNameResolver,
+		Func<int, (int width, int height)?> picSizeResolver = null)
 	{
 		if (string.IsNullOrEmpty(rawText))
 			return [];
@@ -79,7 +85,7 @@ public static class ArticleLayoutEngine
 		int pos = 0;
 		for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
 		{
-			ArticlePageLayout page = LayoutPage(rawText, ref pos, font, picNameResolver, pageIndex + 1, totalPages);
+			ArticlePageLayout page = LayoutPage(rawText, ref pos, font, picNameResolver, picSizeResolver, pageIndex + 1, totalPages);
 			pages.Add(page);
 		}
 		return [.. pages];
@@ -108,6 +114,7 @@ public static class ArticleLayoutEngine
 		ref int pos,
 		Font font,
 		Func<int, string> picNameResolver,
+		Func<int, (int width, int height)?> picSizeResolver,
 		int pageNumber,
 		int totalPages)
 	{
@@ -155,7 +162,7 @@ public static class ArticleLayoutEngine
 					text, ref pos,
 					ref px, ref py, ref rowOn, ref layoutDone, ref fontColor,
 					leftMargin, rightMargin,
-					font, picNameResolver,
+					font, picNameResolver, picSizeResolver,
 					page);
 			}
 			else if (ch == '\t') // TAB: align to next 8-pixel boundary
@@ -199,7 +206,7 @@ public static class ArticleLayoutEngine
 		string text, ref int pos,
 		ref int px, ref int py, ref int rowOn, ref bool layoutDone, ref byte fontColor,
 		int[] leftMargin, int[] rightMargin,
-		Font font, Func<int, string> picNameResolver,
+		Font font, Func<int, string> picNameResolver, Func<int, (int width, int height)?> picSizeResolver,
 		ArticlePageLayout page)
 	{
 		pos++; // skip '^'
@@ -239,11 +246,33 @@ public static class ArticleLayoutEngine
 			int alignedX = picx & ~7; // WL_TEXT.C: VWB_DrawPic(picx&~7, picy, picnum)
 			page.Graphics.Add(new ArticleGraphicItem { X = alignedX, Y = picy, PicName = picName });
 
-			// Adjust per-row margins for text flow around graphic
-			// WL_TEXT.C: pictable[picnum-STARTPICS].width/height
-			// We use the actual Sizes from VgaGraph if available; otherwise skip margin adjustment.
-			// Margin adjustment is stored but we need pic dimensions — stored by renderer using Sizes.
-			// For layout purposes we record the graphic and let ArticleRenderer query dimensions.
+			// Adjust per-row margins so text flows around the graphic
+			// WL_TEXT.C: HandleCommand case 'G' margin adjustment
+			(int width, int height)? size = picSizeResolver?.Invoke(picnum);
+			if (size.HasValue)
+			{
+				int picwidth = size.Value.width;
+				int picheight = size.Value.height;
+				// WL_TEXT.C: picmid = picx + picwidth/2; if (picmid > SCREENMID) new right margin else new left margin
+				int picmid = picx + picwidth / 2;
+				int margin = picmid > ScreenMid
+					? picx - PicMargin             // image on right: shrink right margin
+					: picx + picwidth + PicMargin; // image on left: shrink left margin
+				int top = (picy - TopMargin) / FontHeight;
+				if (top < 0) top = 0;
+				int bottom = (picy + picheight - TopMargin) / FontHeight;
+				if (bottom >= TextRows) bottom = TextRows - 1;
+				for (int i = top; i <= bottom; i++)
+				{
+					if (picmid > ScreenMid)
+						rightMargin[i] = margin;
+					else
+						leftMargin[i] = margin;
+				}
+				// WL_TEXT.C: if (px < leftmargin[rowon]) px = leftmargin[rowon];
+				if (px < leftMargin[rowOn])
+					px = leftMargin[rowOn];
+			}
 			break;
 		}
 
