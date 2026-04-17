@@ -154,7 +154,7 @@
 			<Pic Number="142" Name="PAUSEDPIC" />
 			<Pic Number="143" Name="GETPSYCHEDPIC" />
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame">
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame" FizzleFadeColor="4">
 			<Text Id="Floor" X="16" Y="16"> 1</Text>
 			<Text Id="Score" X="48" Y="16">     0</Text>
 			<Text Id="Lives" X="112" Y="16"> 3</Text>
@@ -183,13 +183,20 @@
 			<EndString>Heroes, press N.&#10;Wimps, press Y.</EndString>
 			<EndString>You are at an intersection.&#10;A sign says, 'Press Y to quit.'&#10;&gt;</EndString>
 			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
-			<!-- WL_TEXT.C: HelpScreens() — CP_ReadThis() in WL_MENU.C loads HELPART.WL1 and shows article -->
 			<Article Name="ReadThis" ChunkName="T_HELPART" Music="CORNER_MUS">
 				<Picture Name="H_TOPWINDOWPIC" X="0" Y="0" />
 				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
 				<Picture Name="H_RIGHTWINDOWPIC" X="312" Y="8" />
 				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
+			</Article>
+			<!-- WL_TEXT.C:EndText() — shown after Victory sequence (WL_INTER.C), same window border as ReadThis -->
+			<Article Name="EndArt1" ChunkName="T_ENDART1" Music="URAHERO_MUS">
+				<Picture Name="H_TOPWINDOWPIC" X="0" Y="0" />
+				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
+				<Picture Name="H_RIGHTWINDOWPIC" X="312" Y="8" />
+				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
 			</Article>
 			<Menu Name="Credits" Music="NAZI_NOR_MUS">
 				<Picture Name="CREDITSPIC" X="0" Y="0" />
@@ -778,7 +785,7 @@ end
 				<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Pause>NavigateToMenu("HighScores")</Pause>
+				<Pause>NavigateToArticle("EndArt1")</Pause>
 				<OnShow>
 					<![CDATA[
 SetText("TotalTimeValue", FormatTime(GetTotalTime()))

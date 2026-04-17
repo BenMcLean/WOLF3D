@@ -343,6 +343,17 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="FizzleFadeColor" type="xs:unsignedByte">
+				<xs:annotation>
+					<xs:documentation>
+						VGA palette color index (0-255) to use for the death fizzle-fade effect.
+						ID_VH.C:FizzleFade — pseudo-random pixel-by-pixel screen transition over 70 tics.
+						WL_GAME.C:Died — VW_Bar fills the view with this color, then FizzleFade reveals it.
+						Wolf3D uses color index 4 (red). Absent = no fizzle; plain fade to black instead.
+						S3DNA omits this to skip the blood-colored fizzle (#ifndef GAMEVER_NOAH3D).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

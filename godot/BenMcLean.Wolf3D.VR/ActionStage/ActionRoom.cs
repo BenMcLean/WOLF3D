@@ -125,6 +125,7 @@ void sky() {
 	private Weapons _weapons;
 	private SimulatorController _simulatorController;
 	private ScreenFlashOverlay _screenFlashOverlay;
+	private DeathFizzleOverlay _deathFizzleOverlay;
 	private PixelPerfectAiming _pixelPerfectAiming;
 	private AimIndicator _aimIndicator;
 	private TeleportationOverlay _teleportOverlay;
@@ -402,6 +403,13 @@ void sky() {
 			AddChild(_screenFlashOverlay);
 			_screenFlashOverlay.Subscribe(_simulatorController);
 			_screenFlashOverlay.SetVRCamera(_displayMode.IsVRActive ? _displayMode.Camera : null);
+
+			// Create death fizzle overlay (ID_VH.C:FizzleFade to red on player death)
+			// WL_GAME.C:Died: VW_Bar fills view with color 4 (red), FizzleFade reveals it over 70 tics
+			_deathFizzleOverlay = new DeathFizzleOverlay();
+			AddChild(_deathFizzleOverlay);
+			_deathFizzleOverlay.SetVRCamera(_displayMode.IsVRActive ? _displayMode.Camera : null);
+			_deathFizzleOverlay.FizzleComplete += OnDeathFizzleComplete;
 
 			// Subscribe to elevator activation for level transitions
 			_simulatorController.ElevatorActivated += OnElevatorActivated;
@@ -1099,6 +1107,10 @@ void sky() {
 			_simulatorController.PlayerDied -= OnPlayerDied;
 		}
 
+		// Unsubscribe death fizzle overlay
+		if (_deathFizzleOverlay is not null)
+			_deathFizzleOverlay.FizzleComplete -= OnDeathFizzleComplete;
+
 		// Unsubscribe from simulator status bar events to prevent ObjectDisposedException
 		// when the ActionRoom exits the scene (e.g., pausing to menu) while the simulator
 		// is retained. Without this, the old lambdas fire against disposed Godot Labels.
@@ -1155,11 +1167,34 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Handles player death event from OnDeath script.
-	/// Sets PendingDeath or PendingGameOver for Root to poll.
-	/// WL_GAME.C:Died() → restart level or game over.
+	/// Handles player death event.
+	/// If FizzleFadeColor is defined in XML, starts the fizzle-to-color animation (PendingDeathFadeOut
+	/// is set after fizzle completes). If absent, skips fizzle and sets PendingDeathFadeOut immediately.
+	/// WL_GAME.C:Died: VW_Bar fills view with VGA color 4 (red), FizzleFade reveals it over 70 tics.
+	/// S3DNA skips FizzleFade (#ifndef GAMEVER_NOAH3D) and fades to black instead.
 	/// </summary>
 	private void OnPlayerDied(PlayerDiedEvent e)
+	{
+		byte? fizzleColorIndex = Shared.SharedAssetManager.StatusBar?.FizzleFadeColor;
+		if (fizzleColorIndex.HasValue)
+		{
+			// WL_GAME.C:Died: VW_Bar fills view with the configured palette color, then FizzleFade
+			Color fizzleColor = Shared.SharedAssetManager.GetPaletteColor(fizzleColorIndex.Value);
+			_deathFizzleOverlay?.TriggerFizzle(fizzleColor);
+		}
+		else
+		{
+			// No FizzleFadeColor defined: skip fizzle, go straight to fade to black
+			PendingDeathFadeOut = true;
+		}
+	}
+
+	/// <summary>
+	/// Handles fizzle animation complete: screen is now fully red.
+	/// Sets PendingDeathFadeOut for Root to initiate the fade to black.
+	/// WL_GAME.C:Died: after FizzleFade, IN_UserInput(100) pauses, then SD_WaitSoundDone, then lives--.
+	/// </summary>
+	private void OnDeathFizzleComplete()
 	{
 		PendingDeathFadeOut = true;
 	}

@@ -52,6 +52,13 @@ public class StatusBarDefinition
 	/// </summary>
 	public string OnNewGame { get; set; }
 	/// <summary>
+	/// VGA palette color index for the death fizzle-fade effect, or null to skip the fizzle.
+	/// ID_VH.C:FizzleFade — pseudo-random pixel reveal over 70 tics.
+	/// WL_GAME.C:Died — VW_Bar fills the view with this color, then FizzleFade reveals it.
+	/// Wolf3D uses 4 (red). Null = plain fade to black (S3DNA behavior: #ifndef GAMEVER_NOAH3D).
+	/// </summary>
+	public byte? FizzleFadeColor { get; set; }
+	/// <summary>
 	/// Creates a StatusBarDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing status bar data (&lt;StatusBar&gt;)</param>
@@ -65,6 +72,7 @@ public class StatusBarDefinition
 		OnFace = element.Attribute("OnFace")?.Value,
 		OnDeath = element.Attribute("OnDeath")?.Value,
 		OnNewGame = element.Attribute("OnNewGame")?.Value,
-		FaceTics = int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics) ? faceTics : 2
+		FaceTics = int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics) ? faceTics : 2,
+		FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
 	};
 }
