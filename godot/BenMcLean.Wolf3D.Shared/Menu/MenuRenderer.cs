@@ -97,14 +97,22 @@ public class MenuRenderer
 	/// <param name="menuDef">Menu definition from AssetManager.Menus</param>
 	/// <param name="selectedIndex">Currently selected item index (into visibleItems)</param>
 	/// <summary>
-	/// Clear the canvas and render an article page.
+	/// Clear the canvas and render an article page with its fixed border pictures.
+	/// Fires BordColorChanged with the article's background color.
 	/// Delegates to ArticleRenderer.RenderPage using the shared viewport canvas.
 	/// WL_TEXT.C: PageLayout rendering per page.
 	/// </summary>
-	public void RenderArticle(ArticlePageLayout page)
+	public void RenderArticle(ArticleDefinition articleDef, ArticlePageLayout page)
 	{
 		Clear();
-		ArticleRenderer.RenderPage(_canvas, page);
+		byte backColorIndex = articleDef?.BackColor ?? ArticleLayoutEngine.BackColor;
+		Color backColor = SharedAssetManager.GetPaletteColor(backColorIndex);
+		if (_currentBordColor != backColor)
+		{
+			_currentBordColor = backColor;
+			BordColorChanged?.Invoke(backColor);
+		}
+		ArticleRenderer.RenderPage(_canvas, page, articleDef?.Pictures);
 	}
 	/// <param name="visibleItems">Pre-filtered list of visible menu items. If null, uses all items in menuDef.</param>
 	/// <param name="modal">Optional active modal dialog to render over the menu.</param>

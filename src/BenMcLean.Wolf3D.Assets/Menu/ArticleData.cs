@@ -49,20 +49,39 @@ public class ArticleDefinition
 	/// <summary>Music track to play while showing this article (e.g., "CORNER_MUS").</summary>
 	public string Music { get; set; }
 	/// <summary>
+	/// VGA palette index for the article background fill and viewport border.
+	/// Null = use ArticleLayoutEngine.BackColor (0x11, dark blue).
+	/// WL_TEXT.C: BACKCOLOR = 0x11
+	/// </summary>
+	public byte? BackColor { get; set; }
+	/// <summary>
+	/// Fixed pictures rendered on every page (window borders, decorations).
+	/// WL_TEXT.C: H_TOPWINDOWPIC / H_LEFTWINDOWPIC / H_RIGHTWINDOWPIC / H_BOTTOMINFOPIC
+	/// </summary>
+	public List<PictureDefinition> Pictures { get; set; } = [];
+	/// <summary>
 	/// Lua script executed when the player presses ESC/Cancel.
 	/// WL_TEXT.C: ShowArticle exits on sc_Escape.
 	/// </summary>
 	public string OnCancel { get; set; }
 
-	public static ArticleDefinition FromXElement(XElement element) => new()
+	public static ArticleDefinition FromXElement(XElement element)
 	{
-		Name = element.Attribute("Name")?.Value
-			?? throw new ArgumentException("Article must have a Name attribute"),
-		ChunkName = element.Attribute("ChunkName")?.Value
-			?? throw new ArgumentException("Article must have a ChunkName attribute"),
-		Music = element.Attribute("Music")?.Value,
-		OnCancel = element.Element("OnCancel")?.Value?.Trim(),
-	};
+		ArticleDefinition def = new()
+		{
+			Name = element.Attribute("Name")?.Value
+				?? throw new ArgumentException("Article must have a Name attribute"),
+			ChunkName = element.Attribute("ChunkName")?.Value
+				?? throw new ArgumentException("Article must have a ChunkName attribute"),
+			Music = element.Attribute("Music")?.Value,
+			OnCancel = element.Element("OnCancel")?.Value?.Trim(),
+		};
+		if (byte.TryParse(element.Attribute("BackColor")?.Value, out byte bc))
+			def.BackColor = bc;
+		foreach (XElement picEl in element.Elements("Picture"))
+			def.Pictures.Add(PictureDefinition.FromXElement(picEl));
+		return def;
+	}
 }
 
 /// <summary>
@@ -113,6 +132,11 @@ public class ArticlePageLayout
 	public int PageNumber { get; set; }
 	/// <summary>Total page count in this article.</summary>
 	public int TotalPages { get; set; }
+	/// <summary>
+	/// VGA palette index for the background fill of this page.
+	/// WL_TEXT.C: VWB_Bar(0,0,320,200,BACKCOLOR)
+	/// </summary>
+	public byte BackColor { get; set; }
 	/// <summary>Text runs in draw order.</summary>
 	public List<ArticleTextRun> TextRuns { get; } = [];
 	/// <summary>Graphics in draw order.</summary>

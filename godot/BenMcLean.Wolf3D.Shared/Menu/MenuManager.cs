@@ -254,7 +254,8 @@ public class MenuManager
 		ArticlePageLayout[] pages;
 		try
 		{
-			pages = ArticleLayoutEngine.Layout(rawText, smallFont, picNameResolver, picSizeResolver);
+			pages = ArticleLayoutEngine.Layout(rawText, smallFont, picNameResolver, picSizeResolver,
+				backColor: articleDef.BackColor ?? ArticleLayoutEngine.BackColor);
 		}
 		catch (Exception ex)
 		{
@@ -272,7 +273,7 @@ public class MenuManager
 		_currentMenuName = null; // suspend menu mode
 		if (!string.IsNullOrEmpty(articleDef.Music))
 			_scriptContext.PlayMusic(articleDef.Music);
-		_renderer.RenderArticle(_articlePages[_articlePageIndex]);
+		_renderer.RenderArticle(_currentArticle, _articlePages[_articlePageIndex]);
 	}
 	/// <summary>
 	/// Exit the current article and run its OnCancel script.
@@ -538,7 +539,7 @@ public class MenuManager
 				if (_articlePageIndex < _articlePages.Length - 1)
 				{
 					_articlePageIndex++;
-					_renderer.RenderArticle(_articlePages[_articlePageIndex]);
+					_renderer.RenderArticle(_currentArticle, _articlePages[_articlePageIndex]);
 				}
 				else if (articleInput.SelectPressed)
 					ExitArticle(); // last page + Select → exit
@@ -546,7 +547,7 @@ public class MenuManager
 			else if (articleInput.UpPressed && _articlePageIndex > 0)
 			{
 				_articlePageIndex--;
-				_renderer.RenderArticle(_articlePages[_articlePageIndex]);
+				_renderer.RenderArticle(_currentArticle, _articlePages[_articlePageIndex]);
 			}
 			else if (articleInput.CancelPressed)
 				ExitArticle();

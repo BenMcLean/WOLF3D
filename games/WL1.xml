@@ -185,6 +185,10 @@
 			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
 			<!-- WL_TEXT.C: HelpScreens() — CP_ReadThis() in WL_MENU.C loads HELPART.WL1 and shows article -->
 			<Article Name="ReadThis" ChunkName="T_HELPART" Music="CORNER_MUS">
+				<Picture Name="H_TOPWINDOWPIC" X="0" Y="0" />
+				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
+				<Picture Name="H_RIGHTWINDOWPIC" X="312" Y="8" />
+				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Article>
 			<Menu Name="Credits" Music="NAZI_NOR_MUS">

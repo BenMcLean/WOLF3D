@@ -74,7 +74,8 @@ public static class ArticleLayoutEngine
 		string rawText,
 		Font font,
 		Func<int, string> picNameResolver,
-		Func<int, (int width, int height)?> picSizeResolver = null)
+		Func<int, (int width, int height)?> picSizeResolver = null,
+		byte backColor = BackColor)
 	{
 		if (string.IsNullOrEmpty(rawText))
 			return [];
@@ -85,7 +86,7 @@ public static class ArticleLayoutEngine
 		int pos = 0;
 		for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
 		{
-			ArticlePageLayout page = LayoutPage(rawText, ref pos, font, picNameResolver, picSizeResolver, pageIndex + 1, totalPages);
+			ArticlePageLayout page = LayoutPage(rawText, ref pos, font, picNameResolver, picSizeResolver, backColor, pageIndex + 1, totalPages);
 			pages.Add(page);
 		}
 		return [.. pages];
@@ -115,6 +116,7 @@ public static class ArticleLayoutEngine
 		Font font,
 		Func<int, string> picNameResolver,
 		Func<int, (int width, int height)?> picSizeResolver,
+		byte backColor,
 		int pageNumber,
 		int totalPages)
 	{
@@ -122,6 +124,7 @@ public static class ArticleLayoutEngine
 		{
 			PageNumber = pageNumber,
 			TotalPages = totalPages,
+			BackColor = backColor,
 		};
 
 		// Per-row margin arrays (WL_TEXT.C: leftmargin[], rightmargin[])
@@ -137,7 +140,7 @@ public static class ArticleLayoutEngine
 		int py = TopMargin;
 		int rowOn = 0;
 		bool layoutDone = false;
-		byte fontColor = 0; // WL_TEXT.C: fontcolor=0 initially (VGA)
+		byte fontColor = 0; // WL_TEXT.C: fontcolor initialized to 0 before PageLayout
 
 		// Advance past whitespace before ^P
 		while (pos < text.Length && text[pos] <= ' ')

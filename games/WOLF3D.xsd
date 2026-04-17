@@ -676,6 +676,7 @@
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
+				<xs:element ref="Picture" minOccurs="0" maxOccurs="unbounded"/>
 				<xs:element name="OnCancel" type="xs:string" minOccurs="0">
 					<xs:annotation>
 						<xs:documentation>
@@ -698,6 +699,11 @@
 			<xs:attribute name="Music" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Music track to play while showing this article (e.g., "CORNER_MUS").</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="BackColor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>VGA palette index for background fill and viewport border. Default 0x11 (17, dark blue). WL_TEXT.C: BACKCOLOR.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 		</xs:complexType>
