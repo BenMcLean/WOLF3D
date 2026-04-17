@@ -470,6 +470,24 @@ public partial class MenuRoom : Node3D, IRoom
 	}
 
 	/// <summary>
+	/// Orients the VR player to face the menu panel while the screen is still fully black,
+	/// before the fade-in begins. Sets _playerOriented so _Process() does not reposition
+	/// again after the fade completes.
+	/// If tracking is not yet active (first launch, HMD not yet reporting position),
+	/// does nothing — _Process() will handle orientation once tracking becomes available.
+	/// </summary>
+	public bool PrepareForFadeIn()
+	{
+		if (!_displayMode.IsVRActive)
+			return true;
+		if (_displayMode.ViewerPosition == Vector3.Zero)
+			return false; // tracking not yet active — hold the black screen, try next frame
+		_displayMode.ResetPositionFacing(MenuPanelWorldPos, SpawnWorldPos);
+		_playerOriented = true;
+		return true;
+	}
+
+	/// <summary>
 	/// Handles left controller menu button: resets player position to face the virtual screen.
 	/// </summary>
 	private void OnHandButtonPressed(int handIndex, string buttonName)
@@ -550,8 +568,10 @@ public partial class MenuRoom : Node3D, IRoom
 				vrDisplayMode.PlayMode = targetMode;
 		}
 
-		// In VR mode, orient the player toward the panel once after XR tracking is active
-		// (Camera position is zero until tracking starts)
+		// In VR mode, orient the player toward the panel once after XR tracking is active.
+		// PrepareForFadeIn() handles this for normal transitions while the screen is black.
+		// This fallback fires if tracking was not yet active at PrepareForFadeIn() time
+		// (e.g. very first launch before the HMD has reported a non-zero position).
 		if (_displayMode.IsVRActive && !_playerOriented && _displayMode.ViewerPosition != Vector3.Zero)
 		{
 			_displayMode.ResetPositionFacing(MenuPanelWorldPos, SpawnWorldPos);

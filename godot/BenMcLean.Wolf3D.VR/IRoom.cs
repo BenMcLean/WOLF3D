@@ -19,4 +19,12 @@ public interface IRoom
 	/// Rooms that do not navigate internally can ignore this (default no-op).
 	/// </summary>
 	void SetFadeTransitionHandler(Action<Action> handler) { }
+
+	/// <summary>
+	/// Called by Root each frame while the screen is fully black, before the fade-in begins.
+	/// Returns true when the room is ready to start fading in.
+	/// Return false to hold the black screen for another frame (e.g. waiting for VR tracking).
+	/// The default implementation is always ready.
+	/// </summary>
+	bool PrepareForFadeIn() => true;
 }

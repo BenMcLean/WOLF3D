@@ -103,6 +103,18 @@ public partial class ScreenFadeOverlay : Node
 	}
 
 	/// <summary>
+	/// Instantly sets the overlay to fully opaque black without firing FadeOutComplete.
+	/// Used when skipping the fade-out (e.g. incoming scene from a SkipFade room) but still
+	/// needing a black screen while waiting for the new room to become ready (e.g. VR tracking).
+	/// </summary>
+	public void SetBlack()
+	{
+		alpha = 1f;
+		targetAlpha = 1f;
+		UpdateVisuals();
+	}
+
+	/// <summary>
 	/// Attaches a veil sphere to the given VR camera so fades appear in the headset.
 	/// The sphere is a child of the camera so it is always centered on the viewer.
 	/// StandardMaterial3D with CullMode.Front and NoDepthTest is used so the inside

@@ -153,10 +153,14 @@ public partial class Root : Node3D
 			return;
 		}
 
-		// BlackAfterSwap: one fully-black frame has been rendered with the new room behind the
-		// overlay. Now start the fade-in animation.
+		// BlackAfterSwap: screen is fully black and the new room is rendered behind the overlay.
+		// Poll PrepareForFadeIn() each frame until the room signals it is ready (e.g. VR
+		// tracking has reported a non-zero position). Once ready, start the fade-in.
 		if (_transitionState == TransitionState.BlackAfterSwap)
 		{
+			bool ready = (_currentScene as IRoom)?.PrepareForFadeIn() ?? true;
+			if (!ready)
+				return; // hold black, try again next frame
 			_transitionState = TransitionState.FadingIn;
 			_fadeOverlay.FadeFromBlack();
 			return;
@@ -524,10 +528,12 @@ public partial class Root : Node3D
 			OnSceneAdded();
 			(_currentScene as IRoom)?.SetFadeTransitionHandler(StartMenuFade);
 
-			_transitionState = TransitionState.FadingIn;
+			// Ensure the overlay is opaque while we wait for the room to become ready,
+			// then let BlackAfterSwap poll PrepareForFadeIn() before starting the fade-in.
+			_fadeOverlay.SetBlack();
 			Simulator.Simulator.Paused = true;
 			GetTree().Paused = true;
-			_fadeOverlay.FadeFromBlack();
+			_transitionState = TransitionState.BlackAfterSwap;
 		}
 		else
 		{
