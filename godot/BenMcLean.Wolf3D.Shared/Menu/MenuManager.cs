@@ -533,9 +533,9 @@ public class MenuManager
 		{
 			_input.Update(delta);
 			MenuInputState articleInput = _input.GetState();
-			if (articleInput.DownPressed || articleInput.SelectPressed)
+			if (articleInput.DownPressed || articleInput.RightPressed || articleInput.SelectPressed)
 			{
-				// Next page (WL_TEXT.C: BackPage logic — Down/Select advances)
+				// Next page (WL_TEXT.C: BackPage logic — Down/Right/Select advances)
 				if (_articlePageIndex < _articlePages.Length - 1)
 				{
 					_articlePageIndex++;
@@ -544,7 +544,7 @@ public class MenuManager
 				else if (articleInput.SelectPressed)
 					ExitArticle(); // last page + Select → exit
 			}
-			else if (articleInput.UpPressed && _articlePageIndex > 0)
+			else if ((articleInput.UpPressed || articleInput.LeftPressed) && _articlePageIndex > 0)
 			{
 				_articlePageIndex--;
 				_renderer.RenderArticle(_currentArticle, _articlePages[_articlePageIndex]);
