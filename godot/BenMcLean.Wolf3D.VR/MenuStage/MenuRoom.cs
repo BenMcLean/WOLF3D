@@ -210,7 +210,7 @@ public partial class MenuRoom : Node3D, IRoom
 
 		// Wire player name for high score entries ("VR Player 2026-02-18 3:45 PM")
 		_menuManager.ScriptContext.GetPlayerNameFunc = () =>
-			"VR Player " + DateTime.Now.ToString("yyyy-MM-dd h:mm tt");
+			"VR " + DateTime.Now.ToString("yyyy-MM-dd");
 
 		// Pass pending high score data to session state
 		if (PendingHighScoreScore.HasValue)

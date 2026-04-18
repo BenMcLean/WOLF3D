@@ -603,33 +603,32 @@ end
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
-				  X="0" Y="0" Indent="0" Spacing="0">
+			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
 				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
 				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
-				<Text Id="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-				<Text Id="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-				<Text Id="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-				<Text Id="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-				<Text Id="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-				<Text Id="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-				<Text Id="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-				<Text Id="Level2" X="160" Y="108" Font="SMALL"> </Text>
-				<Text Id="Score2" X="224" Y="108" Font="SMALL"> </Text>
-				<Text Id="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-				<Text Id="Level3" X="160" Y="124" Font="SMALL"> </Text>
-				<Text Id="Score3" X="224" Y="124" Font="SMALL"> </Text>
-				<Text Id="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-				<Text Id="Level4" X="160" Y="140" Font="SMALL"> </Text>
-				<Text Id="Score4" X="224" Y="140" Font="SMALL"> </Text>
-				<Text Id="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-				<Text Id="Level5" X="160" Y="156" Font="SMALL"> </Text>
-				<Text Id="Score5" X="224" Y="156" Font="SMALL"> </Text>
-				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
-				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Text Id="Name0"  X="32"  Y="76"> </Text>
+				<Text Id="Level0" X="160" Y="76"> </Text>
+				<Text Id="Score0" X="224" Y="76"> </Text>
+				<Text Id="Name1"  X="32"  Y="92"> </Text>
+				<Text Id="Level1" X="160" Y="92"> </Text>
+				<Text Id="Score1" X="224" Y="92"> </Text>
+				<Text Id="Name2"  X="32"  Y="108"> </Text>
+				<Text Id="Level2" X="160" Y="108"> </Text>
+				<Text Id="Score2" X="224" Y="108"> </Text>
+				<Text Id="Name3"  X="32"  Y="124"> </Text>
+				<Text Id="Level3" X="160" Y="124"> </Text>
+				<Text Id="Score3" X="224" Y="124"> </Text>
+				<Text Id="Name4"  X="32"  Y="140"> </Text>
+				<Text Id="Level4" X="160" Y="140"> </Text>
+				<Text Id="Score4" X="224" Y="140"> </Text>
+				<Text Id="Name5"  X="32"  Y="156"> </Text>
+				<Text Id="Level5" X="160" Y="156"> </Text>
+				<Text Id="Score5" X="224" Y="156"> </Text>
+				<Text Id="Name6"  X="32"  Y="172"> </Text>
+				<Text Id="Level6" X="160" Y="172"> </Text>
+				<Text Id="Score6" X="224" Y="172"> </Text>
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
 				<Pause>NavigateToMenu("Main")</Pause>
 				<OnShow>
@@ -714,8 +713,7 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
 			<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41"
-				  X="0" Y="0" Indent="0" Spacing="0">
+			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
 				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
@@ -725,27 +723,27 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
 				<!-- 7 rows at PrintY = 76 + 16*i -->
-				<Text Id="Name0"  X="32"  Y="76"  Font="SMALL"> </Text>
-				<Text Id="Level0" X="160" Y="76"  Font="SMALL"> </Text>
-				<Text Id="Score0" X="224" Y="76"  Font="SMALL"> </Text>
-				<Text Id="Name1"  X="32"  Y="92"  Font="SMALL"> </Text>
-				<Text Id="Level1" X="160" Y="92"  Font="SMALL"> </Text>
-				<Text Id="Score1" X="224" Y="92"  Font="SMALL"> </Text>
-				<Text Id="Name2"  X="32"  Y="108" Font="SMALL"> </Text>
-				<Text Id="Level2" X="160" Y="108" Font="SMALL"> </Text>
-				<Text Id="Score2" X="224" Y="108" Font="SMALL"> </Text>
-				<Text Id="Name3"  X="32"  Y="124" Font="SMALL"> </Text>
-				<Text Id="Level3" X="160" Y="124" Font="SMALL"> </Text>
-				<Text Id="Score3" X="224" Y="124" Font="SMALL"> </Text>
-				<Text Id="Name4"  X="32"  Y="140" Font="SMALL"> </Text>
-				<Text Id="Level4" X="160" Y="140" Font="SMALL"> </Text>
-				<Text Id="Score4" X="224" Y="140" Font="SMALL"> </Text>
-				<Text Id="Name5"  X="32"  Y="156" Font="SMALL"> </Text>
-				<Text Id="Level5" X="160" Y="156" Font="SMALL"> </Text>
-				<Text Id="Score5" X="224" Y="156" Font="SMALL"> </Text>
-				<Text Id="Name6"  X="32"  Y="172" Font="SMALL"> </Text>
-				<Text Id="Level6" X="160" Y="172" Font="SMALL"> </Text>
-				<Text Id="Score6" X="224" Y="172" Font="SMALL"> </Text>
+				<Text Id="Name0"  X="32"  Y="76"> </Text>
+				<Text Id="Level0" X="160" Y="76"> </Text>
+				<Text Id="Score0" X="224" Y="76"> </Text>
+				<Text Id="Name1"  X="32"  Y="92"> </Text>
+				<Text Id="Level1" X="160" Y="92"> </Text>
+				<Text Id="Score1" X="224" Y="92"> </Text>
+				<Text Id="Name2"  X="32"  Y="108"> </Text>
+				<Text Id="Level2" X="160" Y="108"> </Text>
+				<Text Id="Score2" X="224" Y="108"> </Text>
+				<Text Id="Name3"  X="32"  Y="124"> </Text>
+				<Text Id="Level3" X="160" Y="124"> </Text>
+				<Text Id="Score3" X="224" Y="124"> </Text>
+				<Text Id="Name4"  X="32"  Y="140"> </Text>
+				<Text Id="Level4" X="160" Y="140"> </Text>
+				<Text Id="Score4" X="224" Y="140"> </Text>
+				<Text Id="Name5"  X="32"  Y="156"> </Text>
+				<Text Id="Level5" X="160" Y="156"> </Text>
+				<Text Id="Score5" X="224" Y="156"> </Text>
+				<Text Id="Name6"  X="32"  Y="172"> </Text>
+				<Text Id="Level6" X="160" Y="172"> </Text>
+				<Text Id="Score6" X="224" Y="172"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
 				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
 				<OnShow>
