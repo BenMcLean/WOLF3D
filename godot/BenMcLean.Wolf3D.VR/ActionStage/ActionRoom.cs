@@ -36,7 +36,8 @@ public partial class ActionRoom : Node3D, IRoom
 		byte? floorColor = null,
 		byte? ceilingColor = null,
 		ushort? floorTilePage = null,
-		ushort? ceilingTilePage = null)
+		ushort? ceilingTilePage = null,
+		IReadOnlyList<ushort?> equippedWeaponShapes = null)
 	{
 		public int LevelIndex { get; } = levelIndex;
 		public InventorySnapshot SavedInventory { get; } = savedInventory;
@@ -47,6 +48,9 @@ public partial class ActionRoom : Node3D, IRoom
 		public byte? CeilingColor { get; } = ceilingColor;
 		public ushort? FloorTilePage { get; } = floorTilePage;
 		public ushort? CeilingTilePage { get; } = ceilingTilePage;
+		// VSwap page numbers for each weapon slot at transition time.
+		// Used by MenuRoom elevator environment to show the same weapons the player had equipped.
+		public IReadOnlyList<ushort?> EquippedWeaponShapes { get; } = equippedWeaponShapes;
 
 		/// <summary>
 		/// Menu to show for this transition. Defaults to "LevelComplete" for elevator transitions.
@@ -610,7 +614,8 @@ void sky() {
 					floorColor: MapAnalysis.Floor,
 					ceilingColor: MapAnalysis.Ceiling,
 					floorTilePage: MapAnalysis.FloorTile,
-					ceilingTilePage: MapAnalysis.CeilingTile);
+					ceilingTilePage: MapAnalysis.CeilingTile,
+					equippedWeaponShapes: GetEquippedWeaponShapes());
 				return;
 			}
 
@@ -1153,6 +1158,21 @@ void sky() {
 	}
 
 	/// <summary>
+	/// Returns the current VSwap page number for each weapon slot, or null if the slot is empty.
+	/// Used to preserve the player's equipped weapons on the elevator intermission screen.
+	/// </summary>
+	private ushort?[] GetEquippedWeaponShapes()
+	{
+		IReadOnlyList<Simulator.Entities.WeaponSlot> slots = _simulatorController?.Simulator?.WeaponSlots;
+		if (slots is null)
+			return null;
+		ushort?[] shapes = new ushort?[slots.Count];
+		for (int i = 0; i < slots.Count; i++)
+			shapes[i] = slots[i].ShapeNum >= 0 ? (ushort?)slots[i].ShapeNum : null;
+		return shapes;
+	}
+
+	/// <summary>
 	/// Handles elevator activation - captures player state and sets PendingTransition
 	/// for Root to poll and initiate a fade transition.
 	/// WL_AGENT.C:Cmd_Use elevator completion triggers gamestate.victoryflag.
@@ -1181,7 +1201,8 @@ void sky() {
 			floorColor: MapAnalysis.Floor,
 			ceilingColor: MapAnalysis.Ceiling,
 			floorTilePage: MapAnalysis.FloorTile,
-			ceilingTilePage: MapAnalysis.CeilingTile);
+			ceilingTilePage: MapAnalysis.CeilingTile,
+			equippedWeaponShapes: GetEquippedWeaponShapes());
 	}
 
 	/// <summary>
@@ -1241,6 +1262,7 @@ void sky() {
 			floorColor: MapAnalysis.Floor,
 			ceilingColor: MapAnalysis.Ceiling,
 			floorTilePage: MapAnalysis.FloorTile,
-			ceilingTilePage: MapAnalysis.CeilingTile);
+			ceilingTilePage: MapAnalysis.CeilingTile,
+			equippedWeaponShapes: GetEquippedWeaponShapes());
 	}
 }

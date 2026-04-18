@@ -352,17 +352,18 @@ public partial class MenuRoom : Node3D, IRoom
 		};
 		AddChild(_worldEnvironment);
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
-		SetupVRControllerWeapons();
 
 		if (LevelTransition is not null)
 		{
 			VRElevatorEnvironmentDefinition elevatorEnv = GetElevatorEnvironmentDefinition();
 			if (elevatorEnv is not null)
-			{
 				_elevatorMode = true;
-				SetupElevatorEnvironment(elevatorEnv, LevelTransition);
-			}
 		}
+
+		SetupVRControllerWeapons();
+
+		if (_elevatorMode)
+			SetupElevatorEnvironment(GetElevatorEnvironmentDefinition(), LevelTransition);
 	}
 
 	/// <summary>
@@ -373,35 +374,55 @@ public partial class MenuRoom : Node3D, IRoom
 	/// </summary>
 	private void SetupVRControllerWeapons()
 	{
-		if (string.IsNullOrEmpty(MenuWeaponSprite))
-			return;
-		Assets.Graphics.VSwap vswap = Shared.SharedAssetManager.CurrentGame?.VSwap;
-		if (vswap is null)
-			return;
 		if (VRAssetManager.SpriteTextures is null)
 			return;
-		if (!vswap.SpritesByName.TryGetValue(MenuWeaponSprite, out ushort pageNum))
+
+		// In elevator mode, use the page numbers the player actually had equipped.
+		// Otherwise fall back to the XML-specified menu weapon sprite.
+		IReadOnlyList<ushort?> elevatorShapes = _elevatorMode
+			? LevelTransition?.EquippedWeaponShapes
+			: null;
+
+		// Resolve the fallback page number from MenuWeaponSprite (used when not in elevator mode,
+		// or when a slot has no equipped weapon).
+		ushort? fallbackPage = null;
+		if (!string.IsNullOrEmpty(MenuWeaponSprite))
 		{
-			GD.PrintErr($"Warning: WeaponSprite \"{MenuWeaponSprite}\" not found in VSwap sprite names");
-			return;
+			Assets.Graphics.VSwap vswap = Shared.SharedAssetManager.CurrentGame?.VSwap;
+			if (vswap is not null)
+			{
+				if (vswap.SpritesByName.TryGetValue(MenuWeaponSprite, out ushort resolved))
+					fallbackPage = resolved;
+				else
+					GD.PrintErr($"Warning: WeaponSprite \"{MenuWeaponSprite}\" not found in VSwap sprite names");
+			}
 		}
+
 		for (int hand = 0; hand <= 1; hand++)
 		{
 			if (_displayMode.GetHandNode(hand) is not Node3D aimNode)
 				continue;
+
+			ushort? pageNum = (elevatorShapes is not null && hand < elevatorShapes.Count)
+				? elevatorShapes[hand]
+				: fallbackPage;
+
+			if (pageNum is null)
+				continue;
+
 			if (VRAssetManager.VoxelAtlas is not null)
 			{
 				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand))
 				{ Name = $"MenuVoxelWeapon{hand}" };
 				aimNode.AddChild(voxelWeapon);
-				voxelWeapon.ShowModel(pageNum);
+				voxelWeapon.ShowModel(pageNum.Value);
 			}
 			else
 			{
 				WeaponHandMesh handMesh = new(VRAssetManager.SpriteTextures, hand)
 				{ Name = $"MenuWeaponHandMesh{hand}" };
 				aimNode.AddChild(handMesh);
-				handMesh.ShowTexture(pageNum);
+				handMesh.ShowTexture(pageNum.Value);
 			}
 		}
 	}
