@@ -490,6 +490,31 @@ public class MenuItemDefinition
 }
 
 /// <summary>
+/// VR-only elevator illusion environment for menus shown after level completion.
+/// Maps to a &lt;VRElevatorEnvironment&gt; child element of &lt;Menu&gt; in XML.
+/// Ignored in flatscreen mode.
+/// </summary>
+public class VRElevatorEnvironmentDefinition
+{
+	/// <summary>VSwap wall page for the front wall (elevator switch texture).</summary>
+	public ushort SwitchPage { get; set; }
+	/// <summary>VSwap wall page for the back wall (elevator door texture).</summary>
+	public ushort DoorPage { get; set; }
+	/// <summary>VSwap wall page for the two side walls (elevator interior).</summary>
+	public ushort SideWallPage { get; set; }
+	/// <summary>VSwap wall page for the two doorframe strips flanking the door.</summary>
+	public ushort DoorframePage { get; set; }
+
+	public static VRElevatorEnvironmentDefinition FromXElement(XElement element) => new()
+	{
+		SwitchPage = ushort.TryParse(element.Attribute("SwitchPage")?.Value, out ushort sw) ? sw : (ushort)0,
+		DoorPage = ushort.TryParse(element.Attribute("DoorPage")?.Value, out ushort door) ? door : (ushort)0,
+		SideWallPage = ushort.TryParse(element.Attribute("SideWallPage")?.Value, out ushort side) ? side : (ushort)0,
+		DoorframePage = ushort.TryParse(element.Attribute("DoorframePage")?.Value, out ushort frame) ? frame : (ushort)0,
+	};
+}
+
+/// <summary>
 /// Represents a menu screen definition.
 /// Maps to a &lt;Menu&gt; element in XML.
 /// </summary>
@@ -603,6 +628,12 @@ public class MenuDefinition
 	/// </summary>
 	public List<MenuItemDefinition> Items { get; set; } = [];
 	/// <summary>
+	/// VR-only elevator illusion environment. When set, MenuRoom spawns elevator walls and
+	/// floor/ceiling around the VR player using the previous level's environment colors.
+	/// Null means no elevator environment (default menu room appearance).
+	/// </summary>
+	public VRElevatorEnvironmentDefinition VRElevatorEnvironment { get; set; }
+	/// <summary>
 	/// Additional custom properties that can be defined in XML.
 	/// Allows for extensibility without modifying the core class.
 	/// </summary>
@@ -675,6 +706,10 @@ public class MenuDefinition
 			.Select(e => e.Name.LocalName == "PresentationMenuItem"
 				? MenuItemDefinition.CreatePresentationSlot()
 				: MenuItemDefinition.FromXElement(e))];
+
+		XElement vrEnvElement = element.Element("VRElevatorEnvironment");
+		if (vrEnvElement is not null)
+			menu.VRElevatorEnvironment = VRElevatorEnvironmentDefinition.FromXElement(vrEnvElement);
 
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())

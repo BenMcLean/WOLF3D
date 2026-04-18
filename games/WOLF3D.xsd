@@ -594,6 +594,39 @@
 						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
+				<xs:element name="VRElevatorEnvironment" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>
+							VR-only elevator illusion for menus shown after level completion (VR mode only, ignored in flatscreen).
+							When present on a menu shown via StartMenuOverride (e.g. LevelComplete, Victory), spawns six
+							wall quads and floor/ceiling around the VR player using the previous level's environment colors.
+							Six walls: switch front wall (behind menu panel), elevator door (backed up half a tile behind
+							the player), two elevator side walls (inner half), two doorframe strips (outer half flanking door).
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="SwitchPage" type="xs:nonNegativeInteger" use="required">
+							<xs:annotation>
+								<xs:documentation>VSwap wall page for the front wall (elevator switch texture, placed behind the menu panel).</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="DoorPage" type="xs:nonNegativeInteger" use="required">
+							<xs:annotation>
+								<xs:documentation>VSwap wall page for the back wall (elevator door texture, backed up half a tile beyond the room boundary).</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="SideWallPage" type="xs:nonNegativeInteger" use="required">
+							<xs:annotation>
+								<xs:documentation>VSwap wall page for the two side walls (elevator interior, inner half of room depth).</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="DoorframePage" type="xs:nonNegativeInteger" use="required">
+							<xs:annotation>
+								<xs:documentation>VSwap wall page for the two doorframe strips (outer half of room depth, flanking the elevator door).</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
 			</xs:choice>
 			<xs:attribute name="Name" type="xs:string" use="required">
 				<xs:annotation>

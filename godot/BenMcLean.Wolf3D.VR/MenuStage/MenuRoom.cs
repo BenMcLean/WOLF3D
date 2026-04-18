@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
@@ -24,6 +25,7 @@ public partial class MenuRoom : Node3D, IRoom
 	private ColorRect _marginBackground;
 	private WorldEnvironment _worldEnvironment;
 	private bool _playerOriented;
+	private bool _elevatorMode;
 	private IMenuInput _menuInput;
 
 	// Menu panel sizing in VR (in meters)
@@ -302,7 +304,10 @@ public partial class MenuRoom : Node3D, IRoom
 			Size = new Vector2(PanelWidth, PanelHeight),
 		};
 
-		// Create material that displays the menu viewport texture
+		// RenderPriority=1: panel renders before default-priority (0) objects in the opaque pass,
+		// so it writes its depth first. Elevator walls (priority 0, rendered after) then fail
+		// the depth test wherever the panel is closer. Weapons (also priority 0 but physically
+		// at arm's length ~0.5m vs panel's ~2.4m) still pass that depth test and appear in front.
 		StandardMaterial3D material = new()
 		{
 			AlbedoTexture = _menuManager.Renderer.ViewportTexture,
@@ -311,6 +316,7 @@ public partial class MenuRoom : Node3D, IRoom
 			DisableAmbientLight = true,
 			CullMode = BaseMaterial3D.CullModeEnum.Back,
 			Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
+			RenderPriority = 1,
 		};
 
 		// Create the mesh instance
@@ -347,6 +353,16 @@ public partial class MenuRoom : Node3D, IRoom
 		AddChild(_worldEnvironment);
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
 		SetupVRControllerWeapons();
+
+		if (LevelTransition is not null)
+		{
+			VRElevatorEnvironmentDefinition elevatorEnv = GetElevatorEnvironmentDefinition();
+			if (elevatorEnv is not null)
+			{
+				_elevatorMode = true;
+				SetupElevatorEnvironment(elevatorEnv, LevelTransition);
+			}
+		}
 	}
 
 	/// <summary>
@@ -388,6 +404,179 @@ public partial class MenuRoom : Node3D, IRoom
 				handMesh.ShowTexture(pageNum);
 			}
 		}
+	}
+
+	/// <summary>
+	/// Returns the VRElevatorEnvironmentDefinition for the menu being shown, or null if not defined.
+	/// </summary>
+	private VRElevatorEnvironmentDefinition GetElevatorEnvironmentDefinition()
+	{
+		if (string.IsNullOrEmpty(StartMenuOverride))
+			return null;
+		MenuCollection collection = MenuCollectionOverride
+			?? Shared.SharedAssetManager.CurrentGame?.MenuCollection;
+		return collection?.GetMenu(StartMenuOverride)?.VRElevatorEnvironment;
+	}
+
+	/// <summary>
+	/// Spawns the six elevator walls, floor, ceiling, and sky environment for VR-only
+	/// LevelComplete/Victory screens, preserving the illusion of being in the elevator.
+	/// Geometry uses two TileWidth×TileHeight quads per side (inner elevator wall + doorframe strip)
+	/// so each quad maps its texture 1:1 without stretching.
+	/// The menu panel renders on top via RenderPriority=1 set on its material.
+	/// </summary>
+	private void SetupElevatorEnvironment(
+		VRElevatorEnvironmentDefinition envDef,
+		ActionRoom.LevelTransitionRequest levelTransition)
+	{
+		IReadOnlyDictionary<ushort, StandardMaterial3D> materials = VRAssetManager.OpaqueMaterials;
+		if (materials is null)
+			return;
+
+		Node3D env = new() { Name = "ElevatorEnvironment" };
+		AddChild(env);
+
+		// Front wall (switch) — parented to the panel so it billboard-rotates with it.
+		// Local Z = -0.005 keeps it exactly 5 mm behind the panel face in the panel's own
+		// frame, so depth testing always wins at every rotation angle without moving the wall.
+		if (materials.TryGetValue(envDef.SwitchPage, out StandardMaterial3D switchMat))
+		{
+			MeshInstance3D switchWall = new()
+			{
+				Name = "ElevatorSwitchWall",
+				Mesh = Constants.WallMesh,
+				MaterialOverride = switchMat,
+				Position = new Vector3(0f, 0f, -0.005f),
+			};
+			_menuPanel.AddChild(switchWall);
+		}
+
+		// Back wall (door) — sits at the mouth of the doorframe alcove (+HalfTileWidth).
+		SpawnElevatorWall(env, materials, envDef.DoorPage,
+			new Vector3(0f, Constants.HalfTileHeight, Constants.HalfTileWidth),
+			new Vector3(0f, Mathf.Pi, 0f));  // Rotated 180° to face -Z (toward player)
+
+		// Left and right inner elevator walls — cover the front half of room depth (Z: -TileWidth to 0).
+		// R_y(+90°) rotates the default +Z normal to +X (facing inward from left wall toward player).
+		// R_y(-90°) rotates the default +Z normal to -X (facing inward from right wall toward player).
+		SpawnElevatorWall(env, materials, envDef.SideWallPage,
+			new Vector3(-Constants.HalfTileWidth, Constants.HalfTileHeight, -Constants.HalfTileWidth),
+			new Vector3(0f, Constants.HalfPi, 0f));   // Faces +X (inward from left)
+		SpawnElevatorWall(env, materials, envDef.SideWallPage,
+			new Vector3(Constants.HalfTileWidth, Constants.HalfTileHeight, -Constants.HalfTileWidth),
+			new Vector3(0f, -Constants.HalfPi, 0f));  // Faces -X (inward from right)
+
+		// Left and right doorframe strips — cover the back half of room depth (Z: 0 to +TileWidth),
+		// forming the stone frame visible on each side of the elevator door.
+		SpawnElevatorWall(env, materials, envDef.DoorframePage,
+			new Vector3(-Constants.HalfTileWidth, Constants.HalfTileHeight, Constants.HalfTileWidth),
+			new Vector3(0f, Constants.HalfPi, 0f));   // Faces +X (inward from left)
+		SpawnElevatorWall(env, materials, envDef.DoorframePage,
+			new Vector3(Constants.HalfTileWidth, Constants.HalfTileHeight, Constants.HalfTileWidth),
+			new Vector3(0f, -Constants.HalfPi, 0f));  // Faces -X (inward from right)
+
+		// Floor and ceiling — span from the switch wall to the door.
+		// Z range: [-(TileWidth + HalfTileWidth), +HalfTileWidth] = 2×TileWidth total, centred at -HalfTileWidth.
+		Vector2 floorSize = new(Constants.TileWidth, Constants.TileWidth * 2f);
+		Vector3 floorCenter = new(0f, 0f, -Constants.HalfTileWidth);
+
+		Material floorMat = CreateElevatorFloorCeilingMaterial(levelTransition.FloorTilePage, levelTransition.FloorColor);
+		if (floorMat is not null)
+		{
+			MeshInstance3D floor = new()
+			{
+				Name = "ElevatorFloor",
+				Mesh = new QuadMesh { Size = floorSize },
+				MaterialOverride = floorMat,
+				Position = floorCenter,
+			};
+			floor.RotateX(-Mathf.Pi / 2f);
+			env.AddChild(floor);
+		}
+
+		Material ceilMat = CreateElevatorFloorCeilingMaterial(levelTransition.CeilingTilePage, levelTransition.CeilingColor);
+		if (ceilMat is not null)
+		{
+			MeshInstance3D ceiling = new()
+			{
+				Name = "ElevatorCeiling",
+				Mesh = new QuadMesh { Size = floorSize },
+				MaterialOverride = ceilMat,
+				Position = floorCenter with { Y = Constants.TileHeight },
+			};
+			ceiling.RotateX(Mathf.Pi / 2f);
+			env.AddChild(ceiling);
+		}
+
+		// Replace the flat BordColor background with the previous level's sky shader so any
+		// visible gaps in the geometry show the correct floor/ceiling colors rather than a
+		// solid menu border color.
+		if (_worldEnvironment is not null)
+		{
+			uint[] palette = Shared.SharedAssetManager.CurrentGame?.VSwap?.Palette;
+			if (palette is not null)
+			{
+				Color floorColor = levelTransition.FloorColor is byte fc
+					? palette[fc].ToColor()
+					: new Color(0.33f, 0.33f, 0.33f);
+				Color ceilingColor = levelTransition.CeilingColor is byte cc
+					? palette[cc].ToColor()
+					: new Color(0.2f, 0.2f, 0.2f);
+				ShaderMaterial skyMaterial = new()
+				{
+					Shader = new Shader
+					{
+						Code = """
+shader_type sky;
+
+uniform vec4 floor_color;
+uniform vec4 ceiling_color;
+
+void sky() {
+	COLOR = mix(floor_color.rgb, ceiling_color.rgb, step(0.0, EYEDIR.y));
+}
+"""
+					}
+				};
+				skyMaterial.SetShaderParameter("floor_color", floorColor);
+				skyMaterial.SetShaderParameter("ceiling_color", ceilingColor);
+				_worldEnvironment.Environment.BackgroundMode = Godot.Environment.BGMode.Sky;
+				_worldEnvironment.Environment.Sky = new Sky { SkyMaterial = skyMaterial };
+			}
+		}
+	}
+
+	private static void SpawnElevatorWall(
+		Node3D parent,
+		IReadOnlyDictionary<ushort, StandardMaterial3D> materials,
+		ushort page,
+		Vector3 position,
+		Vector3 rotation)
+	{
+		if (!materials.TryGetValue(page, out StandardMaterial3D mat))
+			return;
+		MeshInstance3D wall = new()
+		{
+			Mesh = Constants.WallMesh,
+			MaterialOverride = mat,
+			Position = position,
+			Rotation = rotation,
+		};
+		parent.AddChild(wall);
+	}
+
+	private static Material CreateElevatorFloorCeilingMaterial(ushort? tilePage, byte? paletteColor)
+	{
+		if (tilePage.HasValue
+			&& VRAssetManager.OpaqueMaterials?.TryGetValue(tilePage.Value, out StandardMaterial3D tileMat) == true)
+			return tileMat;
+		if (paletteColor.HasValue)
+			return new StandardMaterial3D
+			{
+				ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+				AlbedoColor = Shared.SharedAssetManager.GetPaletteColor(paletteColor.Value),
+			};
+		return null;
 	}
 
 	/// <summary>
@@ -578,8 +767,9 @@ public partial class MenuRoom : Node3D, IRoom
 			_playerOriented = true;
 		}
 
-		// Rotate panel to face camera every frame (true billboard)
-		if (_displayMode.IsVRActive && _menuPanel is not null)
+		// Rotate panel to face camera every frame (true billboard) — disabled in elevator mode
+		// so the screen stays fixed relative to the switch wall behind it.
+		if (_displayMode.IsVRActive && _menuPanel is not null && !_elevatorMode)
 		{
 			UpdateMenuPanelRotation();
 		}

@@ -32,11 +32,21 @@ public partial class ActionRoom : Node3D, IRoom
 		InventorySnapshot savedInventory,
 		LevelCompletionStats completionStats = null,
 		string menuName = "LevelComplete",
-		IReadOnlyList<LevelCompletionStats> allLevelStats = null)
+		IReadOnlyList<LevelCompletionStats> allLevelStats = null,
+		byte? floorColor = null,
+		byte? ceilingColor = null,
+		ushort? floorTilePage = null,
+		ushort? ceilingTilePage = null)
 	{
 		public int LevelIndex { get; } = levelIndex;
 		public InventorySnapshot SavedInventory { get; } = savedInventory;
 		public LevelCompletionStats CompletionStats { get; } = completionStats;
+		// MapAnalysis.Floor/Ceiling palette indices and optional VSwap tile pages for the previous level.
+		// Used by MenuRoom to recreate the elevator environment on LevelComplete/Victory screens in VR.
+		public byte? FloorColor { get; } = floorColor;
+		public byte? CeilingColor { get; } = ceilingColor;
+		public ushort? FloorTilePage { get; } = floorTilePage;
+		public ushort? CeilingTilePage { get; } = ceilingTilePage;
 
 		/// <summary>
 		/// Menu to show for this transition. Defaults to "LevelComplete" for elevator transitions.
@@ -596,7 +606,11 @@ void sky() {
 				_simulatorController?.Simulator?.AddCompletionStats(stats);
 				PendingTransition = new LevelTransitionRequest(
 					destinationLevel, savedInventory, stats,
-					allLevelStats: _simulatorController?.Simulator?.LevelRatios);
+					allLevelStats: _simulatorController?.Simulator?.LevelRatios,
+					floorColor: MapAnalysis.Floor,
+					ceilingColor: MapAnalysis.Ceiling,
+					floorTilePage: MapAnalysis.FloorTile,
+					ceilingTilePage: MapAnalysis.CeilingTile);
 				return;
 			}
 
@@ -1163,7 +1177,11 @@ void sky() {
 
 		PendingTransition = new LevelTransitionRequest(
 			e.DestinationLevel, savedInventory, stats,
-			allLevelStats: _simulatorController?.Simulator?.LevelRatios);
+			allLevelStats: _simulatorController?.Simulator?.LevelRatios,
+			floorColor: MapAnalysis.Floor,
+			ceilingColor: MapAnalysis.Ceiling,
+			floorTilePage: MapAnalysis.FloorTile,
+			ceilingTilePage: MapAnalysis.CeilingTile);
 	}
 
 	/// <summary>
@@ -1219,6 +1237,10 @@ void sky() {
 		PendingTransition = new LevelTransitionRequest(
 			0, savedInventory, stats,
 			menuName: e.MenuName,
-			allLevelStats: _simulatorController?.Simulator?.LevelRatios);
+			allLevelStats: _simulatorController?.Simulator?.LevelRatios,
+			floorColor: MapAnalysis.Floor,
+			ceilingColor: MapAnalysis.Ceiling,
+			floorTilePage: MapAnalysis.FloorTile,
+			ceilingTilePage: MapAnalysis.CeilingTile);
 	}
 }
