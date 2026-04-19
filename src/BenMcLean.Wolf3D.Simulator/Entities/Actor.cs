@@ -123,6 +123,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 	/// <param name="hitPoints">Starting hit points</param>
 	public Actor(string actorType, GameplayState initialState, ushort tileX, ushort tileY, Direction facing, short hitPoints)
 	{
+		ArgumentException.ThrowIfNullOrEmpty(actorType);
 		ActorType = actorType;
 		CurrentState = initialState;
 		TicCount = initialState.Tics;

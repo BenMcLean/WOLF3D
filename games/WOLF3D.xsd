@@ -1960,6 +1960,24 @@
 			<xs:attribute name="Pain" type="xs:string"/>
 			<xs:attribute name="Pain1" type="xs:string"/>
 			<xs:attribute name="Ambush" type="xs:boolean"/>
+			<xs:attribute name="ShootSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound to play when this actor fires (WL_ACT2.C:T_Shoot switch(ob->obclass)).
+						Defaults to NAZIFIRESND if absent.
+						Examples: BOSSFIRESND for boss-class enemies, SSFIRESND for SS-class enemies.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="AimBonus" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						Whether this actor gets the aim bonus (dist = dist*2/3) in T_Shoot.
+						WL_ACT2.C:4177 - only ssobj and bossobj get this bonus.
+						Set to true for SS-class and boss-class actors.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

@@ -240,7 +240,7 @@ public class LuaScriptEngine
 					: returnType == typeof(bool)
 					? DynValue.NewBoolean((bool)result)
 					: returnType == typeof(string)
-					? DynValue.NewString((string)result)
+					? (result is null ? DynValue.Nil : DynValue.NewString((string)result))
 					: DynValue.FromObject(luaScript, result);
 			});
 		}

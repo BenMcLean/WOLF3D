@@ -2,8 +2,8 @@
 
 local dodge = false
 
--- Check line of sight to player
-if CheckSight() then
+-- WL_ACT2.C:3757 - Check line of sight to player (not CheckSight - no FOV restriction in chase)
+if CheckLine() then
 	-- Calculate distance
 	local dx = GetPlayerTileX() - GetTileX()
 	local dy = GetPlayerTileY() - GetTileY()
@@ -22,15 +22,13 @@ if CheckSight() then
 
 	-- Random chance to attack
 	if US_RndT() < chance then
-		local actorType = GetActorType()
-		if actorType == "Guard" then
-			ChangeState("s_grdshoot1")
-		elseif actorType == "SS" then
-			ChangeState("s_ssshoot1")
-		elseif actorType == "Hans" then
-			ChangeState("s_bossshoot1")
+		-- WL_ACT2.C:3772-3828 - Enter attack state based on actor type.
+		-- Use data-driven AttackState from XML actor definition instead of hardcoded names.
+		local attackState = GetAttackState()
+		if attackState ~= nil and attackState ~= "" then
+			ChangeState(attackState)
+			return
 		end
-		return
 	end
 
 	dodge = true  -- Saw player, use evasive movement

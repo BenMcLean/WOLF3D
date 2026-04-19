@@ -391,12 +391,13 @@ public class ActorScriptContext(
 				y += sy;
 				movedY = true;
 			}
-			// If we moved diagonally, check the intermediate tile we might have cut through
-			// This prevents seeing through corners
+			// If we moved diagonally, check both intermediate corner tiles.
+			// Original Wolf3D CheckLine uses two separate DDA sweeps which naturally check both.
 			if (movedX && movedY)
 			{
-				// Check the tile at (x - sx, y) - the tile we passed through horizontally
 				if (!simulator.IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
+					return false;
+				if (!simulator.IsTileTransparentForSight((ushort)x, (ushort)(y - sy)))
 					return false;
 			}
 		}
@@ -405,8 +406,8 @@ public class ActorScriptContext(
 	/// Check if there's a clear line to player, ignoring field of view (used for shooting).
 	/// WL_STATE.C:CheckLine (lines 1203-1489)
 	/// Pure raycast - only checks if walls/doors block the line, no FOV or area checks.
-	/// Called by CheckSight after FOV verification, and by T_Shoot to verify shot clearance.
-	/// The actor can shoot even if not perfectly facing the player (chase already turned them).
+	/// Used by T_Chase (WL_ACT2.C:3757) to decide whether to attack, and by T_Shoot to verify
+	/// shot clearance. No FOV restriction — once chasing, the enemy can shoot from any facing.
 	/// </summary>
 	public bool CheckLine() =>
 		mapAnalysis is null
@@ -416,6 +417,44 @@ public class ActorScriptContext(
 			fromY: actor.TileY,
 			toX: simulator.PlayerTileX,
 			toY: simulator.PlayerTileY);
+	/// <summary>
+	/// Get the chase state name for this actor type from the game definition XML.
+	/// WL_STATE.C:FirstSighting uses ob->obclass to select the chase state.
+	/// This is the data-driven equivalent.
+	/// </summary>
+	public string GetChaseState() =>
+		simulator.GetActorChaseState(actor.ActorType);
+	/// <summary>
+	/// Get the alert sound name for this actor type. WL_STATE.C:FirstSighting switch(ob->obclass).
+	/// Returns null if not configured (T_Stand/T_Path should skip PlayLocalDigiSound if null).
+	/// </summary>
+	public string GetAlertSound() =>
+		simulator.GetActorAlertDigiSound(actor.ActorType);
+	/// <summary>
+	/// Compute reaction time from this actor's Reaction range (XML) and a random value.
+	/// WL_STATE.C:SightPlayer - ob->temp2 = reaction formula varies by obclass.
+	/// </summary>
+	public short GetReactionTime(int random) =>
+		simulator.ComputeActorReactionTime(actor.ActorType, random);
+	/// <summary>
+	/// Get the attack state name for this actor type from the game definition XML.
+	/// WL_ACT2.C:T_Chase uses ob->obclass to switch to the right shoot state.
+	/// This is the data-driven equivalent.
+	/// </summary>
+	public string GetAttackState() =>
+		simulator.GetActorAttackState(actor.ActorType);
+	/// <summary>
+	/// Get the shoot sound name for this actor type. WL_ACT2.C:T_Shoot switch(ob->obclass).
+	/// Returns null if not configured (T_Shoot.lua should default to NAZIFIRESND).
+	/// </summary>
+	public string GetShootSound() =>
+		simulator.GetActorShootSound(actor.ActorType);
+	/// <summary>
+	/// Whether this actor type gets the aim bonus (2/3 distance) in T_Shoot.
+	/// WL_ACT2.C:4177 - only ssobj and bossobj.
+	/// </summary>
+	public bool HasAimBonus() =>
+		simulator.GetActorHasAimBonus(actor.ActorType);
 	#endregion Line of Sight
 	#region Pathfinding & Navigation
 	/// <summary>

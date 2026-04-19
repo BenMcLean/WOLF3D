@@ -30,42 +30,20 @@ if not CheckSight() then
 else
 	-- Player is visible!
 	if reactionTimer == 0 and GetReactionTimer() == 0 then
-		-- First time seeing player, set reaction time based on actor type
-		local actorType = GetActorType()
-		local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
-
-		if actorType == "Guard" then
-			SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
-		elseif actorType == "Dog" then
-			SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8
-		elseif actorType == "SS" then
-			SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6
-		elseif actorType == "Hans" then
-			SetReactionTimer(1)  -- Immediate
-		else
-			SetReactionTimer(1)
-		end
-
+		-- First time seeing player, set reaction time from XML actor definition.
+		SetReactionTimer(GetReactionTime(US_RndT()))
 		return  -- Don't transition yet, wait for timer
 	end
 
 	-- Timer has expired - call FirstSighting
-	local actorType = GetActorType()
-
-	if actorType == "Guard" then
-		PlayLocalDigiSound("HALTSND")
-		ChangeState("s_grdchase1")
-	elseif actorType == "Dog" then
-		PlayLocalDigiSound("DOGBARKSND")
-		ChangeState("s_dogchase1")
-	elseif actorType == "SS" then
-		PlayLocalDigiSound("SCHUTZADSND")
-		ChangeState("s_sschase1")
-	elseif actorType == "Hans" then
-		PlayLocalDigiSound("GUTENTAGSND")
-		ChangeState("s_bosschase1")
-	else
-		ChangeState("s_grdchase1")
+	-- Use data-driven ChaseState and AlertDigiSound from XML actor definition.
+	local chaseState = GetChaseState()
+	if chaseState ~= nil and chaseState ~= "" then
+		local alertSound = GetAlertSound()
+		if alertSound ~= nil and alertSound ~= "" then
+			PlayLocalDigiSound(alertSound)
+		end
+		ChangeState(chaseState)
 	end
 
 	SetFlag(0x10)  -- FL_ATTACKMODE

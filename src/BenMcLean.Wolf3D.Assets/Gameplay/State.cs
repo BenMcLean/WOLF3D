@@ -259,6 +259,28 @@ public class ActorDefinition
 	/// </summary>
 	public bool Ambush { get; set; }
 	/// <summary>
+	/// Sound to play when this actor fires. WL_ACT2.C:T_Shoot switch(ob->obclass).
+	/// Defaults to NAZIFIRESND if null.
+	/// </summary>
+	public string ShootSound { get; set; }
+	/// <summary>
+	/// Whether this actor type gets the aim bonus (2/3 distance) in T_Shoot.
+	/// WL_ACT2.C:4177 - only ssobj and bossobj get this bonus.
+	/// </summary>
+	public bool AimBonus { get; set; }
+	/// <summary>
+	/// Minimum reaction time in tics when actor first spots player.
+	/// WL_STATE.C:SightPlayer - ob->temp2 = reaction formula varies by obclass.
+	/// Parsed from Reaction="min-max" XML attribute (e.g. "1-64").
+	/// </summary>
+	public short ReactionMin { get; set; } = 1;
+	/// <summary>
+	/// Maximum reaction time in tics when actor first spots player.
+	/// Parsed from Reaction="min-max" XML attribute (e.g. "1-64").
+	/// If Reaction="1" (no range), ReactionMax == ReactionMin.
+	/// </summary>
+	public short ReactionMax { get; set; } = 1;
+	/// <summary>
 	/// Returns hit points for the given difficulty level.
 	/// No clamping — throws IndexOutOfRangeException on bad index (informative crash).
 	/// </summary>
@@ -273,6 +295,15 @@ public class ActorDefinition
 		if (!string.IsNullOrEmpty(hpAttr))
 			hitPoints = hpAttr.Split(',').Select(s => short.Parse(s.Trim())).ToArray();
 
+		string reactionAttr = element.Attribute("Reaction")?.Value;
+		short reactionMin = 1, reactionMax = 1;
+		if (!string.IsNullOrEmpty(reactionAttr))
+		{
+			string[] reactionParts = reactionAttr.Split('-');
+			reactionMin = short.Parse(reactionParts[0]);
+			reactionMax = reactionParts.Length > 1 ? short.Parse(reactionParts[1]) : reactionMin;
+		}
+
 		return new ActorDefinition
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Actor element must have a Name attribute"),
@@ -284,7 +315,11 @@ public class ActorDefinition
 			PainState = element.Attribute("Pain")?.Value,
 			PainState1 = element.Attribute("Pain1")?.Value,
 			InitialState = element.Attribute("Stand")?.Value,
-			Ambush = element.IsTrue("Ambush")
+			Ambush = element.IsTrue("Ambush"),
+			ShootSound = element.Attribute("ShootSound")?.Value,
+			AimBonus = element.IsTrue("AimBonus"),
+			ReactionMin = reactionMin,
+			ReactionMax = reactionMax,
 		};
 	}
 }

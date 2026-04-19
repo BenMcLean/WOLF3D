@@ -3332,6 +3332,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
 	public void EmitActorPlaySound(int actorIndex, string soundName)
 	{
+		if (string.IsNullOrEmpty(soundName))
+			return;
 		ActorPlaySound?.Invoke(new ActorPlaySoundEvent
 		{
 			ActorIndex = actorIndex,
@@ -3604,6 +3606,66 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		return true;
 	}
+
+	/// <summary>
+	/// Returns the chase state name for the given actor type from the game definition.
+	/// WL_STATE.C:FirstSighting uses ob->obclass to select the chase state; this is the data-driven equivalent.
+	/// </summary>
+	public string GetActorChaseState(string actorType) =>
+		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+		? def.ChaseState
+		: null;
+
+	/// <summary>
+	/// Returns the alert sound name for the given actor type.
+	/// WL_STATE.C:FirstSighting plays a sound per obclass when actor spots player.
+	/// Returns null if not configured (caller should skip sound).
+	/// </summary>
+	public string GetActorAlertDigiSound(string actorType) =>
+		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+		? def.AlertDigiSound
+		: null;
+
+	/// <summary>
+	/// Computes a reaction time for an actor based on its Reaction range from XML.
+	/// WL_STATE.C:SightPlayer - ob->temp2 formula varies by obclass.
+	/// Formula: ReactionMin + random * (ReactionMax - ReactionMin) / 255.
+	/// </summary>
+	public short ComputeActorReactionTime(string actorType, int random)
+	{
+		if (!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def))
+			return (short)(1 + random / 4); // Fallback: guard formula
+		if (def.ReactionMax <= def.ReactionMin)
+			return def.ReactionMin;
+		return (short)(def.ReactionMin + random * (def.ReactionMax - def.ReactionMin) / 255);
+	}
+
+	/// <summary>
+	/// Returns the attack state name for the given actor type from the game definition.
+	/// WL_ACT2.C:T_Chase uses ob->obclass to switch to the shoot state; this is the data-driven equivalent.
+	/// </summary>
+	public string GetActorAttackState(string actorType) =>
+		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+		? def.AttackState
+		: null;
+
+	/// <summary>
+	/// Returns the shoot sound name for the given actor type.
+	/// WL_ACT2.C:T_Shoot switch(ob->obclass) selects sound; this is the data-driven equivalent.
+	/// Returns null if actor type not found (caller should default to NAZIFIRESND).
+	/// </summary>
+	public string GetActorShootSound(string actorType) =>
+		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+		? def.ShootSound
+		: null;
+
+	/// <summary>
+	/// Returns whether the given actor type gets the aim bonus (2/3 distance) in T_Shoot.
+	/// WL_ACT2.C:4177 - only ssobj and bossobj.
+	/// </summary>
+	public bool GetActorHasAimBonus(string actorType) =>
+		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+		&& def.AimBonus;
 
 	/// <summary>
 	/// Bresenham tile-based line-of-sight check between two tile positions.

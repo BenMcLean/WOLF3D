@@ -31,46 +31,22 @@ end
 
 -- Player is visible!
 if reactionTimer == 0 and GetReactionTimer() == 0 then
-	-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type
-	local actorType = GetActorType()
-	local random = US_RndT()  -- WL_DEF.H:US_RndT() - returns 0-255
-
-	if actorType == "Guard" then
-		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/4
-	elseif actorType == "Dog" then
-		SetReactionTimer(1 + BitShiftRight(random, 3))  -- 1 + random/8 (fastest!)
-	elseif actorType == "SS" then
-		SetReactionTimer(1 + BitShiftRight(random, 2))  -- 1 + random/6 (approx)
-	elseif actorType == "Hans" then
-		SetReactionTimer(1)  -- Immediate reaction
-	else
-		-- Default for unknown types
-		SetReactionTimer(1)
-	end
-
-	-- WL_STATE.C:1913 - return false (don't transition yet, wait for timer)
+	-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type.
+	-- Use data-driven Reaction range from XML actor definition.
+	SetReactionTimer(GetReactionTime(US_RndT()))
 	return
 end
 
--- Timer has expired (was > 0, now == 0) - WL_STATE.C:1916 - call FirstSighting
--- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type
-local actorType = GetActorType()
-
-if actorType == "Guard" then
-	PlayLocalDigiSound("HALTSND")
-	ChangeState("s_grdchase1")
-elseif actorType == "Dog" then
-	PlayLocalDigiSound("DOGBARKSND")
-	ChangeState("s_dogchase1")
-elseif actorType == "SS" then
-	PlayLocalDigiSound("SCHUTZADSND")
-	ChangeState("s_sschase1")
-elseif actorType == "Hans" then
-	PlayLocalDigiSound("GUTENTAGSND")
-	ChangeState("s_bosschase1")
-else
-	-- Default fallback
-	ChangeState("s_grdchase1")
+-- Timer has expired - WL_STATE.C:1916 - call FirstSighting
+-- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type.
+-- Use data-driven ChaseState and AlertDigiSound from XML actor definition.
+local chaseState = GetChaseState()
+if chaseState ~= nil and chaseState ~= "" then
+	local alertSound = GetAlertSound()
+	if alertSound ~= nil and alertSound ~= "" then
+		PlayLocalDigiSound(alertSound)
+	end
+	ChangeState(chaseState)
 end
 
 -- Set attack mode flags (all actor types)

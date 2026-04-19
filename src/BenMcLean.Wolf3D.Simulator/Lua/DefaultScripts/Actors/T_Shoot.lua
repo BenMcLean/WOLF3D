@@ -2,7 +2,7 @@
 -- Attempt to shoot the player based on line of sight and distance
 
 -- WL_ACT2.C:4157-4158 - Check if player is in the same area
--- (skipped - assume player is always reachable for now)
+-- (skipped - areabyplayer system not yet implemented)
 
 -- WL_ACT2.C:4160-4168 - Check line of sight
 if not CheckLine() then
@@ -19,15 +19,17 @@ local dist = dx
 if dy > dx then dist = dy end
 
 -- WL_ACT2.C:4177-4179 - SS and bosses are better shots (2/3 distance)
-local actorType = GetActorType()
-if actorType == "SS" or actorType == "Hans" then
+-- Controlled by AimBonus="true" on the Actor element in the game XML.
+if HasAimBonus() then
 	dist = (dist * 2) / 3
 end
 
--- WL_ACT2.C:4181-4194 - Calculate hit chance based on distance and player speed
--- TODO: Check player speed when that's implemented
--- For now, assume player is moving and visible
-local hitchance = 160 - (dist * 16)
+-- WL_ACT2.C:4181-4194 - Calculate hit chance based on distance.
+-- Original branches on thrustspeed >= RUNSPEED (player running vs. standing).
+-- Player speed tracking not yet implemented; use standing-player formula (256 base)
+-- which is more dangerous and matches the typical peek-around-corner scenario.
+-- TODO: expose player thrust speed and use 160 base when player is running.
+local hitchance = 256 - (dist * 16)
 
 -- WL_ACT2.C:4196-4210 - Roll for hit and calculate damage
 if US_RndT() < hitchance then
@@ -44,12 +46,12 @@ if US_RndT() < hitchance then
 	DamagePlayer(damage)
 end
 
--- WL_ACT2.C:4219-4256 - Play appropriate firing sound based on actor type
-if actorType == "SS" then
-	PlayLocalDigiSound("SSFIRESND")
-elseif actorType == "Hans" then
-	PlayLocalDigiSound("BOSSFIRESND")
+-- WL_ACT2.C:4219-4256 - Play appropriate firing sound.
+-- Sound name comes from ShootSound attribute on the Actor XML element.
+-- Defaults to NAZIFIRESND (guards, officers, mutants, gretelobj).
+local shootSound = GetShootSound()
+if shootSound ~= nil and shootSound ~= "" then
+	PlayLocalDigiSound(shootSound)
 else
-	-- Guards, officers, and other enemies use NAZIFIRESND
 	PlayLocalDigiSound("NAZIFIRESND")
 end
