@@ -1467,7 +1467,7 @@ return false
 			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Action="A_DeathScream" Alive="false" />
 			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3" Alive="false" Mark="false" />
 			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
-			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
+			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Action="A_StartDeathCam" Next="s_bossdie4" Alive="false" Mark="false" />
 			<State Name="s_bossshoot1" Shape="SPR_BOSS_SHOOT1" Tics="30" Speed="0" Next="s_bossshoot2" />
 			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot3" />
 			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot4" />
