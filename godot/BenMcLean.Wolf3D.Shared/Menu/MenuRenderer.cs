@@ -283,15 +283,16 @@ public class MenuRenderer
 			Texture2D texture = SpriteTextureProvider((ushort)startState.Shape);
 			if (texture is null)
 				continue;
-			float w = SpriteNativeSize * animDef.Scale;
-			float h = SpriteNativeSize * animDef.Scale;
+			float displaySize = SpriteNativeSize * animDef.Scale;
+			// Scale the node transform so the upscaled texture renders at native display size.
+			// Size property alone doesn't constrain TextureRect when texture is larger than Size.
+			float nodeScale = texture.GetWidth() > 0 ? displaySize / texture.GetWidth() : 1f;
 			TextureRect rect = new()
 			{
 				Texture = texture,
-				Position = new Vector2(animDef.X - w / 2f, animDef.Y - h / 2f),
-				Size = new Vector2(w, h),
+				Position = new Vector2(animDef.X - displaySize / 2f, animDef.Y - displaySize / 2f),
+				Scale = new Vector2(nodeScale, nodeScale),
 				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 				ZIndex = 5,
 			};
 			_canvas.AddChild(rect);
@@ -323,15 +324,14 @@ public class MenuRenderer
 			Texture2D texture = SpriteTextureProvider(page.Value);
 			if (texture is null)
 				continue;
-			float w = SpriteNativeSize * spriteDef.Scale;
-			float h = SpriteNativeSize * spriteDef.Scale;
+			float displaySize = SpriteNativeSize * spriteDef.Scale;
+			float nodeScale = texture.GetWidth() > 0 ? displaySize / texture.GetWidth() : 1f;
 			TextureRect rect = new()
 			{
 				Texture = texture,
-				Position = new Vector2(spriteDef.X - w / 2f, spriteDef.Y - h / 2f),
-				Size = new Vector2(w, h),
+				Position = new Vector2(spriteDef.X - displaySize / 2f, spriteDef.Y - displaySize / 2f),
+				Scale = new Vector2(nodeScale, nodeScale),
 				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 				ZIndex = 5,
 			};
 			_canvas.AddChild(rect);
