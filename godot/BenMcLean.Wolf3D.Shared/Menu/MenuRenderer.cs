@@ -24,13 +24,23 @@ public class MenuRenderer
 	private readonly Dictionary<string, Label> _tickerLabels = [];
 	private readonly List<AnimatedPictureState> _animatedPictures = [];
 	private readonly List<ActorAnimationState> _actorAnimations = [];
-	private bool _pendingAutoAdvance;
 	private Color _currentBordColor = Colors.Black;
 	/// <summary>
 	/// Delegate for resolving VSWAP sprite page numbers to Godot textures.
 	/// Set by the VR layer (MenuRoom) so the Shared renderer can display actor sprites.
 	/// </summary>
 	public Func<ushort, Texture2D> SpriteTextureProvider { get; set; }
+	/// <summary>
+	/// Delegate for resolving VSWAP sprite names to page numbers.
+	/// Set by the VR layer (MenuRoom) so StaticSprite elements can look up pages by name.
+	/// </summary>
+	public Func<string, ushort?> SpritePageByNameProvider { get; set; }
+	/// <summary>
+	/// Native display size of a Wolf3D sprite in menu canvas pixels (default 64).
+	/// Corrects for VR upscaling: textures may be 512px but should display at 64px on a 320x200 canvas.
+	/// Set by MenuRoom from VSwap.TileSqrt.
+	/// </summary>
+	public int SpriteNativeSize { get; set; } = 64;
 	private Input.PointerState _primaryPointer;
 	private Input.PointerState _secondaryPointer;
 	private TextureRect _primaryCrosshair;
@@ -98,7 +108,6 @@ public class MenuRenderer
 		_tickerLabels.Clear();
 		_animatedPictures.Clear();
 		_actorAnimations.Clear();
-		_pendingAutoAdvance = false;
 	}
 	/// <summary>
 	/// Render a menu definition to the canvas.
@@ -150,6 +159,8 @@ public class MenuRenderer
 		}
 		// Render pictures (backgrounds and decorative images - WL_MENU.C:DrawMainMenu)
 		RenderPictures(menuDef);
+		// Render static VSWAP sprites (e.g., SPR_DEATHCAM title - WL_ACT2.C:A_StartDeathCam)
+		RenderStaticSprites(menuDef);
 		// Render actor animations (e.g., boss death cam - WL_ACT2.C:A_StartDeathCam)
 		RenderActorAnimations(menuDef);
 		// Render menu boxes (WL_MENU.C:DrawWindow)
@@ -272,9 +283,8 @@ public class MenuRenderer
 			Texture2D texture = SpriteTextureProvider((ushort)startState.Shape);
 			if (texture is null)
 				continue;
-			float scale = animDef.Scale;
-			float w = texture.GetWidth() * scale;
-			float h = texture.GetHeight() * scale;
+			float w = SpriteNativeSize * animDef.Scale;
+			float h = SpriteNativeSize * animDef.Scale;
 			TextureRect rect = new()
 			{
 				Texture = texture,
@@ -290,8 +300,41 @@ public class MenuRenderer
 				TextureRect = rect,
 				CurrentState = startState,
 				Elapsed = 0f,
-				AutoAdvance = animDef.AutoAdvance,
 			});
+		}
+	}
+	/// <summary>
+	/// Render static VSWAP sprites (non-animated) on the menu panel.
+	/// WL_ACT2.C:A_StartDeathCam - SPR_DEATHCAM title displayed during death replay.
+	/// </summary>
+	private void RenderStaticSprites(MenuDefinition menuDef)
+	{
+		if (menuDef.StaticSprites is null || menuDef.StaticSprites.Count == 0
+			|| SpriteTextureProvider is null || SpritePageByNameProvider is null)
+			return;
+		foreach (StaticSpriteDefinition spriteDef in menuDef.StaticSprites)
+		{
+			ushort? page = SpritePageByNameProvider(spriteDef.Name);
+			if (page is null)
+			{
+				GD.PrintErr($"ERROR: StaticSprite '{spriteDef.Name}' not found in sprite name map");
+				continue;
+			}
+			Texture2D texture = SpriteTextureProvider(page.Value);
+			if (texture is null)
+				continue;
+			float w = SpriteNativeSize * spriteDef.Scale;
+			float h = SpriteNativeSize * spriteDef.Scale;
+			TextureRect rect = new()
+			{
+				Texture = texture,
+				Position = new Vector2(spriteDef.X - w / 2f, spriteDef.Y - h / 2f),
+				Size = new Vector2(w, h),
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+				ZIndex = 5,
+			};
+			_canvas.AddChild(rect);
 		}
 	}
 	/// <summary>
@@ -717,11 +760,7 @@ public class MenuRenderer
 			// Terminal state: Tics==0 and Next==self (loops to itself)
 			bool isTerminal = current.Tics == 0 && current.Next == current;
 			if (isTerminal)
-			{
-				if (anim.AutoAdvance && !_pendingAutoAdvance)
-					_pendingAutoAdvance = true;
 				continue;
-			}
 			if (current.Tics <= 0)
 				continue;
 			anim.Elapsed += delta;
@@ -733,10 +772,6 @@ public class MenuRenderer
 				if (next is null)
 					continue;
 				anim.CurrentState = next;
-				// Terminal state after advancing: Tics==0 and Next==self
-				bool nextIsTerminal = next.Tics == 0 && next.Next == next;
-				if (nextIsTerminal && anim.AutoAdvance && !_pendingAutoAdvance)
-					_pendingAutoAdvance = true;
 				if (next.Shape >= 0)
 				{
 					Texture2D newTexture = SpriteTextureProvider((ushort)next.Shape);
@@ -745,17 +780,6 @@ public class MenuRenderer
 				}
 			}
 		}
-	}
-	/// <summary>
-	/// Returns true (once) when an actor animation with AutoAdvance reached its terminal state.
-	/// Consumed by MenuManager to auto-complete the current PauseSequenceStep.
-	/// </summary>
-	public bool ConsumeAutoAdvance()
-	{
-		if (!_pendingAutoAdvance)
-			return false;
-		_pendingAutoAdvance = false;
-		return true;
 	}
 	/// <summary>
 	/// Render a modal confirmation dialog over the current menu.
@@ -995,6 +1019,5 @@ internal class ActorAnimationState
 	public State CurrentState { get; set; }
 	/// <summary>Time elapsed in the current state (seconds).</summary>
 	public float Elapsed { get; set; }
-	/// <summary>When true, fires ConsumeAutoAdvance when the terminal state is reached.</summary>
-	public bool AutoAdvance { get; set; }
+
 }

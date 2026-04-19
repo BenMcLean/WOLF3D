@@ -518,6 +518,38 @@ public class VRElevatorEnvironmentDefinition
 /// Defines an actor death state animation displayed on the menu panel.
 /// Used by the DeathCam sequence. WL_ACT2.C:A_StartDeathCam.
 /// </summary>
+/// <summary>
+/// Represents a static VSWAP sprite displayed on a menu panel (no animation).
+/// WL_ACT2.C:A_StartDeathCam - "DEATHCAM" title sprite shown during boss death replay.
+/// </summary>
+public class StaticSpriteDefinition
+{
+	/// <summary>Sprite name as defined in the VSwap Sprites list (e.g., "SPR_DEATHCAM").</summary>
+	public string Name { get; set; }
+	/// <summary>Horizontal center position on the 320x200 menu canvas.</summary>
+	public int X { get; set; }
+	/// <summary>Vertical center position on the 320x200 menu canvas.</summary>
+	public int Y { get; set; }
+	/// <summary>Scale multiplier applied to the sprite's natural pixel size.</summary>
+	public float Scale { get; set; } = 1f;
+
+	public static StaticSpriteDefinition FromXElement(XElement element)
+	{
+		StaticSpriteDefinition def = new()
+		{
+			Name = element.Attribute("Name")?.Value
+				?? throw new ArgumentException("StaticSprite element must have a Name attribute"),
+		};
+		if (int.TryParse(element.Attribute("X")?.Value, out int x)) def.X = x;
+		if (int.TryParse(element.Attribute("Y")?.Value, out int y)) def.Y = y;
+		if (float.TryParse(element.Attribute("Scale")?.Value,
+			System.Globalization.NumberStyles.Float,
+			System.Globalization.CultureInfo.InvariantCulture,
+			out float scale)) def.Scale = scale;
+		return def;
+	}
+}
+
 public class ActorAnimationDefinition
 {
 	/// <summary>Name of the first state in the death animation chain (e.g., "s_bossdie1").</summary>
@@ -528,11 +560,6 @@ public class ActorAnimationDefinition
 	public int Y { get; set; }
 	/// <summary>Scale multiplier applied to the sprite's natural pixel size.</summary>
 	public float Scale { get; set; } = 1f;
-	/// <summary>
-	/// When true, automatically completes the pending Pause when the terminal state is reached.
-	/// </summary>
-	public bool AutoAdvance { get; set; } = true;
-
 	public static ActorAnimationDefinition FromXElement(XElement element)
 	{
 		ActorAnimationDefinition def = new()
@@ -546,8 +573,6 @@ public class ActorAnimationDefinition
 			System.Globalization.NumberStyles.Float,
 			System.Globalization.CultureInfo.InvariantCulture,
 			out float scale)) def.Scale = scale;
-		if (bool.TryParse(element.Attribute("AutoAdvance")?.Value, out bool autoAdvance))
-			def.AutoAdvance = autoAdvance;
 		return def;
 	}
 }
@@ -683,6 +708,11 @@ public class MenuDefinition
 	/// </summary>
 	public List<ActorAnimationDefinition> ActorAnimations { get; set; } = [];
 	/// <summary>
+	/// Static VSWAP sprites to display on the menu panel (no animation).
+	/// WL_ACT2.C:A_StartDeathCam - "DEATHCAM" title sprite.
+	/// </summary>
+	public List<StaticSpriteDefinition> StaticSprites { get; set; } = [];
+	/// <summary>
 	/// Additional custom properties that can be defined in XML.
 	/// Allows for extensibility without modifying the core class.
 	/// </summary>
@@ -766,6 +796,10 @@ public class MenuDefinition
 		IEnumerable<XElement> actorAnimElements = element.Elements("ActorAnimation");
 		if (actorAnimElements is not null)
 			menu.ActorAnimations = [.. actorAnimElements.Select(ActorAnimationDefinition.FromXElement)];
+
+		IEnumerable<XElement> staticSpriteElements = element.Elements("StaticSprite");
+		if (staticSpriteElements is not null)
+			menu.StaticSprites = [.. staticSpriteElements.Select(StaticSpriteDefinition.FromXElement)];
 
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())

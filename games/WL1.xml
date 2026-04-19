@@ -196,7 +196,7 @@
 				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
 				<Picture Name="H_RIGHTWINDOWPIC" X="312" Y="8" />
 				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
-				<OnCancel>EndGame()</OnCancel>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
 			</Article>
 			<Menu Name="Credits" Music="NAZI_NOR_MUS">
 				<Picture Name="CREDITSPIC" X="0" Y="0" />
@@ -747,7 +747,8 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 				<Text Id="Level6" X="160" Y="172"> </Text>
 				<Text Id="Score6" X="224" Y="172"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
-				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
+				<!-- After high scores, game is over: discard suspended game and return to startup -->
+				<Pause Duration="00:00:09">EndGame()</Pause>
 				<OnShow>
 					<![CDATA[
 CheckAndAddHighScore()
@@ -812,7 +813,9 @@ StartTicker("AvgTreasureRatio", tr)
 			</Menu>
 			<!-- WL_ACT2.C:A_StartDeathCam - Hans death animation replay -->
 			<Menu Name="DeathCam_Hans_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<ActorAnimation StartState="s_bossdie1" X="160" Y="100"/>
+				<!-- WL_ACT2.C:A_StartDeathCam - SPR_DEATHCAM title at top of screen, centered -->
+				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
+				<ActorAnimation StartState="s_bossdie1" X="160" Y="130"/>
 				<Pause>ResumeGame()</Pause>
 			</Menu>
 		</Menus>

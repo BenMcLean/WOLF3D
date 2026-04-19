@@ -259,8 +259,18 @@ public partial class MenuRoom : Node3D, IRoom
 		// Wire sprite texture provider for actor animations (boss death cam etc.)
 		// Must be set before NavigateToMenu so the first RenderMenu call can use it.
 		if (VRAssetManager.SpriteTextures is not null)
+		{
 			_menuManager.Renderer.SpriteTextureProvider = page =>
 				VRAssetManager.SpriteTextures.TryGetValue(page, out Texture2D tex) ? tex : null;
+			// Correct for VR upscaling: native display size is TileSqrt, not the upscaled texture size
+			int tileSqrt = Shared.SharedAssetManager.CurrentGame?.VSwap?.TileSqrt ?? 64;
+			_menuManager.Renderer.SpriteNativeSize = tileSqrt;
+			// Wire sprite name→page lookup for StaticSprite elements
+			Assets.Graphics.VSwap vswap = Shared.SharedAssetManager.CurrentGame?.VSwap;
+			if (vswap?.SpritesByName is not null)
+				_menuManager.Renderer.SpritePageByNameProvider = name =>
+					vswap.SpritesByName.TryGetValue(name, out ushort page) ? (ushort?)page : null;
+		}
 
 		// If in intermission mode, override start menu and pass completion stats
 		if (!string.IsNullOrEmpty(StartMenuOverride))

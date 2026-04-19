@@ -594,12 +594,43 @@
 						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
+				<xs:element name="StaticSprite" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							Displays a single static VSWAP sprite on the menu panel.
+							Uses the SpriteTextureProvider to look up the texture by absolute VSWAP page number.
+							WL_ACT2.C:A_StartDeathCam - "DEATHCAM" title sprite shown during boss death replay.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="Name" type="xs:string" use="required">
+							<xs:annotation>
+								<xs:documentation>Sprite name as defined in the VSwap Sprites list (e.g., "SPR_DEATHCAM"). Looked up by name to resolve the VSWAP page number.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="X" type="xs:integer" use="required">
+							<xs:annotation>
+								<xs:documentation>Horizontal center position on the 320x200 menu canvas.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Y" type="xs:integer" use="required">
+							<xs:annotation>
+								<xs:documentation>Vertical center position on the 320x200 menu canvas.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Scale" type="xs:float" use="optional" default="1">
+							<xs:annotation>
+								<xs:documentation>Scale multiplier applied to the sprite's natural pixel size.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
 				<xs:element name="ActorAnimation" minOccurs="0" maxOccurs="unbounded">
 					<xs:annotation>
 						<xs:documentation>
 							Plays an actor death state animation on the menu panel.
 							Walks the state chain from StartState, displaying each VSWAP sprite frame for the state's Tics duration.
-							When the terminal state is reached (Tics=0 and Next=self), AutoAdvance fires the pending Pause automatically.
+							Stops at the terminal state (Tics=0 and Next=self); player input advances the Pause.
 							WL_ACT2.C:A_StartDeathCam - boss death cam animation.
 						</xs:documentation>
 					</xs:annotation>
@@ -622,11 +653,6 @@
 						<xs:attribute name="Scale" type="xs:float" use="optional" default="1">
 							<xs:annotation>
 								<xs:documentation>Scale multiplier applied to the sprite's natural pixel size.</xs:documentation>
-							</xs:annotation>
-						</xs:attribute>
-						<xs:attribute name="AutoAdvance" type="xs:boolean" use="optional" default="true">
-							<xs:annotation>
-								<xs:documentation>When true, automatically completes the pending Pause when the terminal state is reached (no button press required).</xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
 					</xs:complexType>

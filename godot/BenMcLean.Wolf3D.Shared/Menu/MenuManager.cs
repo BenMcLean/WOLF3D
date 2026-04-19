@@ -580,8 +580,7 @@ public class MenuManager
 			secondary = _input.SecondaryPointer;
 		bool anyButtonPressed = inputState.AnyButtonPressed ||
 			primary.SelectPressed || primary.CancelPressed ||
-			secondary.SelectPressed || secondary.CancelPressed ||
-			_renderer.ConsumeAutoAdvance();
+			secondary.SelectPressed || secondary.CancelPressed;
 		// If a presentation sequence is active, process it instead of normal menu input
 		if (_activeSequence is not null && !_activeSequence.IsComplete)
 		{

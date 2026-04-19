@@ -1189,9 +1189,21 @@ void sky() {
 		IReadOnlyList<Simulator.Entities.WeaponSlot> slots = _simulatorController?.Simulator?.WeaponSlots;
 		if (slots is null)
 			return null;
+		Assets.Gameplay.WeaponCollection weapons = Shared.SharedAssetManager.CurrentGame?.WeaponCollection;
+		Assets.Gameplay.StateCollection states = Shared.SharedAssetManager.CurrentGame?.StateCollection;
 		ushort?[] shapes = new ushort?[slots.Count];
 		for (int i = 0; i < slots.Count; i++)
-			shapes[i] = slots[i].ShapeNum >= 0 ? (ushort?)slots[i].ShapeNum : null;
+		{
+			string weaponType = slots[i].WeaponType;
+			if (weaponType is null)
+				continue;
+			// Use IdleState shape so menu shows weapon at rest, not mid-animation (e.g., not firing frame)
+			if (weapons?.TryGetWeapon(weaponType, out Assets.Gameplay.WeaponInfo info) == true
+				&& info?.IdleState is not null
+				&& states?.States.TryGetValue(info.IdleState, out Assets.Gameplay.State idleState) == true
+				&& idleState.Shape >= 0)
+				shapes[i] = (ushort)idleState.Shape;
+		}
 		return shapes;
 	}
 
