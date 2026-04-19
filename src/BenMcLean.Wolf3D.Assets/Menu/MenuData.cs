@@ -515,6 +515,44 @@ public class VRElevatorEnvironmentDefinition
 }
 
 /// <summary>
+/// Defines an actor death state animation displayed on the menu panel.
+/// Used by the DeathCam sequence. WL_ACT2.C:A_StartDeathCam.
+/// </summary>
+public class ActorAnimationDefinition
+{
+	/// <summary>Name of the first state in the death animation chain (e.g., "s_bossdie1").</summary>
+	public string StartState { get; set; }
+	/// <summary>Horizontal center position on the 320x200 menu canvas.</summary>
+	public int X { get; set; }
+	/// <summary>Vertical center position on the 320x200 menu canvas.</summary>
+	public int Y { get; set; }
+	/// <summary>Scale multiplier applied to the sprite's natural pixel size.</summary>
+	public float Scale { get; set; } = 1f;
+	/// <summary>
+	/// When true, automatically completes the pending Pause when the terminal state is reached.
+	/// </summary>
+	public bool AutoAdvance { get; set; } = true;
+
+	public static ActorAnimationDefinition FromXElement(XElement element)
+	{
+		ActorAnimationDefinition def = new()
+		{
+			StartState = element.Attribute("StartState")?.Value
+				?? throw new ArgumentException("ActorAnimation element must have a StartState attribute"),
+		};
+		if (int.TryParse(element.Attribute("X")?.Value, out int x)) def.X = x;
+		if (int.TryParse(element.Attribute("Y")?.Value, out int y)) def.Y = y;
+		if (float.TryParse(element.Attribute("Scale")?.Value,
+			System.Globalization.NumberStyles.Float,
+			System.Globalization.CultureInfo.InvariantCulture,
+			out float scale)) def.Scale = scale;
+		if (bool.TryParse(element.Attribute("AutoAdvance")?.Value, out bool autoAdvance))
+			def.AutoAdvance = autoAdvance;
+		return def;
+	}
+}
+
+/// <summary>
 /// Represents a menu screen definition.
 /// Maps to a &lt;Menu&gt; element in XML.
 /// </summary>
@@ -634,6 +672,17 @@ public class MenuDefinition
 	/// </summary>
 	public VRElevatorEnvironmentDefinition VRElevatorEnvironment { get; set; }
 	/// <summary>
+	/// When true, VR controller weapons show the player's actual equipped shapes (same as elevator rooms).
+	/// When false, uses the XML fallback sprite (MenuWeaponSprite on the Menus element).
+	/// </summary>
+	public bool KeepWeapons { get; set; }
+	/// <summary>
+	/// Actor death state animations to display on the menu panel.
+	/// Used by the DeathCam sequence to play boss death animations.
+	/// WL_ACT2.C:A_StartDeathCam
+	/// </summary>
+	public List<ActorAnimationDefinition> ActorAnimations { get; set; } = [];
+	/// <summary>
 	/// Additional custom properties that can be defined in XML.
 	/// Allows for extensibility without modifying the core class.
 	/// </summary>
@@ -711,13 +760,20 @@ public class MenuDefinition
 		if (vrEnvElement is not null)
 			menu.VRElevatorEnvironment = VRElevatorEnvironmentDefinition.FromXElement(vrEnvElement);
 
+		if (bool.TryParse(element.Attribute("KeepWeapons")?.Value, out bool keepWeapons))
+			menu.KeepWeapons = keepWeapons;
+
+		IEnumerable<XElement> actorAnimElements = element.Elements("ActorAnimation");
+		if (actorAnimElements is not null)
+			menu.ActorAnimations = [.. actorAnimElements.Select(ActorAnimationDefinition.FromXElement)];
+
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())
 		{
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
 			if (attrName is not ("Name" or "BordColor"
-				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CurPos" or "CursorPic" or "SelectSound" or "CursorMoveSound"))
+				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CurPos" or "CursorPic" or "SelectSound" or "CursorMoveSound" or "KeepWeapons"))
 			{
 				menu.CustomProperties[attrName] = attr.Value;
 			}

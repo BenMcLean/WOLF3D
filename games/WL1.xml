@@ -196,7 +196,7 @@
 				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
 				<Picture Name="H_RIGHTWINDOWPIC" X="312" Y="8" />
 				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
-				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnCancel>EndGame()</OnCancel>
 			</Article>
 			<Menu Name="Credits" Music="NAZI_NOR_MUS">
 				<Picture Name="CREDITSPIC" X="0" Y="0" />
@@ -644,7 +644,7 @@ end
 				</OnShow>
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
-				  X="112" Y="168" Indent="0" Spacing="13">
+				  X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
 				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
 				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
@@ -764,7 +764,7 @@ end
 			<!-- Victory screen: WL_INTER.C:Victory -->
 			<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
 			<Menu Name="Victory" Font="L" BordColor="127" Music="URAHERO_MUS"
-				  X="0" Y="0" Indent="0" Spacing="13">
+				  X="0" Y="0" Indent="0" Spacing="13" KeepWeapons="true">
 				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
 				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
 				<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
@@ -804,6 +804,16 @@ StartTicker("AvgSecretRatio", sr)
 StartTicker("AvgTreasureRatio", tr)
 ]]>
 				</OnShow>
+			</Menu>
+			<!-- WL_ACT2.C:A_StartDeathCam - "Let's see that again!" screen (FOREIGN.H:STR_SEEAGAIN) -->
+			<Menu Name="DeathCam_Hans_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
+				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
+				<Pause>NavigateToMenu("DeathCam_Hans_Cam")</Pause>
+			</Menu>
+			<!-- WL_ACT2.C:A_StartDeathCam - Hans death animation replay -->
+			<Menu Name="DeathCam_Hans_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
+				<ActorAnimation StartState="s_bossdie1" X="160" Y="100"/>
+				<Pause>ResumeGame()</Pause>
 			</Menu>
 		</Menus>
 	</VgaGraph>

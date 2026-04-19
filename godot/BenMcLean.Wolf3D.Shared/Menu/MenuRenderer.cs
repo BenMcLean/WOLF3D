@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
 using Godot;
 
@@ -22,7 +23,14 @@ public class MenuRenderer
 	private readonly Dictionary<string, Label> _namedTextLabels = [];
 	private readonly Dictionary<string, Label> _tickerLabels = [];
 	private readonly List<AnimatedPictureState> _animatedPictures = [];
+	private readonly List<ActorAnimationState> _actorAnimations = [];
+	private bool _pendingAutoAdvance;
 	private Color _currentBordColor = Colors.Black;
+	/// <summary>
+	/// Delegate for resolving VSWAP sprite page numbers to Godot textures.
+	/// Set by the VR layer (MenuRoom) so the Shared renderer can display actor sprites.
+	/// </summary>
+	public Func<ushort, Texture2D> SpriteTextureProvider { get; set; }
 	private Input.PointerState _primaryPointer;
 	private Input.PointerState _secondaryPointer;
 	private TextureRect _primaryCrosshair;
@@ -89,6 +97,8 @@ public class MenuRenderer
 		_namedTextLabels.Clear();
 		_tickerLabels.Clear();
 		_animatedPictures.Clear();
+		_actorAnimations.Clear();
+		_pendingAutoAdvance = false;
 	}
 	/// <summary>
 	/// Render a menu definition to the canvas.
@@ -140,6 +150,8 @@ public class MenuRenderer
 		}
 		// Render pictures (backgrounds and decorative images - WL_MENU.C:DrawMainMenu)
 		RenderPictures(menuDef);
+		// Render actor animations (e.g., boss death cam - WL_ACT2.C:A_StartDeathCam)
+		RenderActorAnimations(menuDef);
 		// Render menu boxes (WL_MENU.C:DrawWindow)
 		RenderMenuBoxes(menuDef);
 		// Render text labels (WL_MENU.C:US_Print - "How tough are you?")
@@ -235,6 +247,51 @@ public class MenuRenderer
 						Elapsed = 0f
 					});
 			}
+		}
+	}
+	/// <summary>
+	/// Render actor animations defined in the menu (e.g., boss death cam).
+	/// WL_ACT2.C:A_StartDeathCam - renders sprite frames from VSWAP at tic rate (1/70s).
+	/// </summary>
+	private void RenderActorAnimations(MenuDefinition menuDef)
+	{
+		if (menuDef.ActorAnimations is null || menuDef.ActorAnimations.Count == 0 || SpriteTextureProvider is null)
+			return;
+		StateCollection stateCollection = SharedAssetManager.CurrentGame?.StateCollection;
+		if (stateCollection is null)
+			return;
+		foreach (ActorAnimationDefinition animDef in menuDef.ActorAnimations)
+		{
+			if (!stateCollection.States.TryGetValue(animDef.StartState, out State startState))
+			{
+				GD.PrintErr($"ERROR: ActorAnimation StartState '{animDef.StartState}' not found in StateCollection");
+				continue;
+			}
+			if (startState.Shape < 0)
+				continue;
+			Texture2D texture = SpriteTextureProvider((ushort)startState.Shape);
+			if (texture is null)
+				continue;
+			float scale = animDef.Scale;
+			float w = texture.GetWidth() * scale;
+			float h = texture.GetHeight() * scale;
+			TextureRect rect = new()
+			{
+				Texture = texture,
+				Position = new Vector2(animDef.X - w / 2f, animDef.Y - h / 2f),
+				Size = new Vector2(w, h),
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+				ZIndex = 5,
+			};
+			_canvas.AddChild(rect);
+			_actorAnimations.Add(new ActorAnimationState
+			{
+				TextureRect = rect,
+				CurrentState = startState,
+				Elapsed = 0f,
+				AutoAdvance = animDef.AutoAdvance,
+			});
 		}
 	}
 	/// <summary>
@@ -651,6 +708,54 @@ public class MenuRenderer
 					state.TextureRect.Texture = texture;
 			}
 		}
+		if (SpriteTextureProvider is null)
+			return;
+		for (int i = 0; i < _actorAnimations.Count; i++)
+		{
+			ActorAnimationState anim = _actorAnimations[i];
+			State current = anim.CurrentState;
+			// Terminal state: Tics==0 and Next==self (loops to itself)
+			bool isTerminal = current.Tics == 0 && current.Next == current;
+			if (isTerminal)
+			{
+				if (anim.AutoAdvance && !_pendingAutoAdvance)
+					_pendingAutoAdvance = true;
+				continue;
+			}
+			if (current.Tics <= 0)
+				continue;
+			anim.Elapsed += delta;
+			float stateDuration = current.Tics / 70f;
+			if (anim.Elapsed >= stateDuration)
+			{
+				anim.Elapsed -= stateDuration;
+				State next = current.Next;
+				if (next is null)
+					continue;
+				anim.CurrentState = next;
+				// Terminal state after advancing: Tics==0 and Next==self
+				bool nextIsTerminal = next.Tics == 0 && next.Next == next;
+				if (nextIsTerminal && anim.AutoAdvance && !_pendingAutoAdvance)
+					_pendingAutoAdvance = true;
+				if (next.Shape >= 0)
+				{
+					Texture2D newTexture = SpriteTextureProvider((ushort)next.Shape);
+					if (newTexture is not null)
+						anim.TextureRect.Texture = newTexture;
+				}
+			}
+		}
+	}
+	/// <summary>
+	/// Returns true (once) when an actor animation with AutoAdvance reached its terminal state.
+	/// Consumed by MenuManager to auto-complete the current PauseSequenceStep.
+	/// </summary>
+	public bool ConsumeAutoAdvance()
+	{
+		if (!_pendingAutoAdvance)
+			return false;
+		_pendingAutoAdvance = false;
+		return true;
 	}
 	/// <summary>
 	/// Render a modal confirmation dialog over the current menu.
@@ -876,4 +981,20 @@ internal class AnimatedPictureState
 	public int CurrentFrame { get; set; }
 	/// <summary>Time elapsed since last frame change.</summary>
 	public float Elapsed { get; set; }
+}
+
+/// <summary>
+/// Tracks state for an actor animation walking the state machine chain.
+/// Used for boss death cam sequences (WL_ACT2.C:A_StartDeathCam).
+/// </summary>
+internal class ActorAnimationState
+{
+	/// <summary>The TextureRect node being animated.</summary>
+	public TextureRect TextureRect { get; set; }
+	/// <summary>Current state in the actor's state machine.</summary>
+	public State CurrentState { get; set; }
+	/// <summary>Time elapsed in the current state (seconds).</summary>
+	public float Elapsed { get; set; }
+	/// <summary>When true, fires ConsumeAutoAdvance when the terminal state is reached.</summary>
+	public bool AutoAdvance { get; set; }
 }

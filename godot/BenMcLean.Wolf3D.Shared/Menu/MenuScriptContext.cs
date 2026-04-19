@@ -126,6 +126,18 @@ public class MenuScriptContext(
 	/// </summary>
 	public void ResumeGame() => CloseAllMenusAction?.Invoke();
 	/// <summary>
+	/// Delegate for ending the current game without a confirmation dialog.
+	/// Set by MenuManager. Used by Victory end-art to discard the suspended game.
+	/// WL_INTER.C:Victory — game is definitively over after end art.
+	/// </summary>
+	public Action ForceEndGameAction { get; set; }
+	/// <summary>
+	/// End the current game without a confirmation dialog.
+	/// Exposed to Lua. Used after Victory end art — no "New Game +" mode.
+	/// WL_INTER.C:Victory → game is over, no resume possible.
+	/// </summary>
+	public void EndGame() => ForceEndGameAction?.Invoke();
+	/// <summary>
 	/// Delegate for navigating to an article screen by name.
 	/// Set by MenuManager after context creation.
 	/// WL_TEXT.C: ShowArticle() / HelpScreens() / CP_ReadThis()

@@ -594,6 +594,43 @@
 						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
+				<xs:element name="ActorAnimation" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							Plays an actor death state animation on the menu panel.
+							Walks the state chain from StartState, displaying each VSWAP sprite frame for the state's Tics duration.
+							When the terminal state is reached (Tics=0 and Next=self), AutoAdvance fires the pending Pause automatically.
+							WL_ACT2.C:A_StartDeathCam - boss death cam animation.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="StartState" type="xs:string" use="required">
+							<xs:annotation>
+								<xs:documentation>Name of the first state to play (e.g., "s_bossdie1"). Walks Next links until terminal state.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="X" type="xs:integer" use="required">
+							<xs:annotation>
+								<xs:documentation>Horizontal center position on the 320x200 menu canvas.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Y" type="xs:integer" use="required">
+							<xs:annotation>
+								<xs:documentation>Vertical center position on the 320x200 menu canvas.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Scale" type="xs:float" use="optional" default="1">
+							<xs:annotation>
+								<xs:documentation>Scale multiplier applied to the sprite's natural pixel size.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="AutoAdvance" type="xs:boolean" use="optional" default="true">
+							<xs:annotation>
+								<xs:documentation>When true, automatically completes the pending Pause when the terminal state is reached (no button press required).</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
 				<xs:element name="VRElevatorEnvironment" minOccurs="0">
 					<xs:annotation>
 						<xs:documentation>
@@ -704,6 +741,15 @@
 						WL_MENU.H:CP_iteminfo:curpos
 						WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 for difficulty menu (4-item version).
 						If absent, defaults to 0 (first item).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="KeepWeapons" type="xs:boolean" use="optional" default="false">
+				<xs:annotation>
+					<xs:documentation>
+						When true, the VR controller weapon display uses the player's actual equipped weapon shapes
+						from the ActionRoom (same as elevator rooms). When false or absent, uses the XML fallback
+						sprite (MenuWeaponSprite attribute on Menus element).
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

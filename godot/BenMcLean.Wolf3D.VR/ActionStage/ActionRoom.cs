@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Automap;
 using BenMcLean.Wolf3D.Shared.StatusBar;
@@ -75,6 +76,28 @@ public partial class ActionRoom : Node3D, IRoom
 	/// Set when the player presses ESC. Root polls this to transition back to the main menu.
 	/// </summary>
 	public bool PendingReturnToMenu { get; private set; }
+
+	/// <summary>
+	/// When set, overrides the default pause menu with a specific menu name.
+	/// Used by NavigateToMenu events from Lua (e.g., DeathCam_Hans).
+	/// </summary>
+	public string PendingMenuOverride { get; private set; }
+
+	/// <summary>
+	/// Equipped weapon shapes to preserve when transitioning to a menu with KeepWeapons=true.
+	/// </summary>
+	public IReadOnlyList<ushort?> PendingEquippedWeaponShapes { get; private set; }
+
+	/// <summary>
+	/// Completion stats captured at the time of NavigateToMenu (e.g., Victory screen).
+	/// Null when navigating to menus that don't need stats (e.g., DeathCam_Hans, pause menu).
+	/// </summary>
+	public LevelCompletionStats PendingCompletionStats { get; private set; }
+
+	/// <summary>
+	/// Accumulated level stats captured at NavigateToMenu time (for Victory screen total).
+	/// </summary>
+	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { get; private set; }
 
 	/// <summary>
 	/// Set when the player dies. Root polls this to initiate the death fadeout.
@@ -1239,30 +1262,31 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Handles menu navigation events from item scripts (e.g., VictoryTile).
-	/// Captures completion stats and sets a pending transition to the requested menu.
-	/// WL_AGENT.C:VictoryTile → gamestate.victoryflag.
+	/// Handles menu navigation events from Lua scripts (e.g., VictoryTile, A_DeathScream).
+	/// Suspends the game and shows the requested menu; the menu's Lua is responsible for
+	/// calling ContinueToNextLevel() if a level advance is desired.
+	/// WL_AGENT.C:VictoryTile → gamestate.victoryflag; WL_ACT2.C:A_StartDeathCam.
 	/// </summary>
 	private void OnNavigateToMenu(NavigateToMenuEvent e)
 	{
-		// Capture player inventory state
-		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
-
-		// Capture level completion stats
-		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
+		Simulator.Simulator sim = _simulatorController?.Simulator;
+		MenuDefinition menuDef = SharedAssetManager.CurrentGame?.MenuCollection?.GetMenu(e.MenuName);
+		PendingMenuOverride = e.MenuName;
+		PendingEquippedWeaponShapes = menuDef?.KeepWeapons == true ? GetEquippedWeaponShapes() : null;
+		// Release all weapon triggers so weapons don't continue firing after resuming.
+		// Equivalent to the player releasing all fire buttons before the menu appears.
+		if (sim?.WeaponSlots is not null)
+			for (int i = 0; i < sim.WeaponSlots.Count; i++)
+				_simulatorController.ReleaseWeaponTrigger(i);
+		// Capture and record completion stats for menus that show level stats (e.g., Victory)
+		LevelCompletionStats stats = sim?.GetCompletionStats(
 			_initialLevelIndex + 1, false, MapAnalysis.Par);
-
-		// Record current level stats in Simulator's accumulated list
-		_simulatorController?.Simulator?.AddCompletionStats(stats);
-
-		PendingTransition = new LevelTransitionRequest(
-			0, savedInventory, stats,
-			menuName: e.MenuName,
-			allLevelStats: _simulatorController?.Simulator?.LevelRatios,
-			floorColor: MapAnalysis.Floor,
-			ceilingColor: MapAnalysis.Ceiling,
-			floorTilePage: MapAnalysis.FloorTile,
-			ceilingTilePage: MapAnalysis.CeilingTile,
-			equippedWeaponShapes: GetEquippedWeaponShapes());
+		if (stats is not null)
+		{
+			sim.AddCompletionStats(stats);
+			PendingCompletionStats = stats;
+			PendingAllLevelStats = sim.LevelRatios;
+		}
+		PendingReturnToMenu = true;
 	}
 }

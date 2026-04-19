@@ -143,6 +143,8 @@ public class MenuManager
 			GetSaveSlotNameFunc = GetSaveSlotNameImpl,
 			// Wire up config save for high score persistence
 			SaveConfigAction = SharedAssetManager.SaveConfig,
+			// Wire up forced end-game (no dialog) for Victory end art
+			ForceEndGameAction = () => { PendingEndGame = true; },
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();
@@ -216,11 +218,20 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Navigate to a named article screen (multi-page text display).
-	/// Loads the article's TextChunk, lays out all pages, renders the first page.
+	/// If FadeTransitionCallback is set, wraps the navigation in a fade transition.
 	/// WL_TEXT.C: ShowArticle() / HelpScreens() / CP_ReadThis()
 	/// </summary>
 	/// <param name="articleName">Name of article to display (e.g., "ReadThis")</param>
 	public void NavigateToArticle(string articleName)
+	{
+		if (FadeTransitionCallback is not null)
+		{
+			FadeTransitionCallback(() => NavigateToArticleImmediate(articleName));
+			return;
+		}
+		NavigateToArticleImmediate(articleName);
+	}
+	private void NavigateToArticleImmediate(string articleName)
 	{
 		if (!_menuCollection.Articles.TryGetValue(articleName, out ArticleDefinition articleDef))
 		{
@@ -569,7 +580,8 @@ public class MenuManager
 			secondary = _input.SecondaryPointer;
 		bool anyButtonPressed = inputState.AnyButtonPressed ||
 			primary.SelectPressed || primary.CancelPressed ||
-			secondary.SelectPressed || secondary.CancelPressed;
+			secondary.SelectPressed || secondary.CancelPressed ||
+			_renderer.ConsumeAutoAdvance();
 		// If a presentation sequence is active, process it instead of normal menu input
 		if (_activeSequence is not null && !_activeSequence.IsComplete)
 		{

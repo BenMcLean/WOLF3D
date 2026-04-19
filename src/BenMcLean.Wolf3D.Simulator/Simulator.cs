@@ -1182,6 +1182,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 	#endregion
 	#region Actor Update Logic
+	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger)
+	{
+		NavigateToMenuAction = menuName => NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName })
+	};
 	/// <summary>
 	/// WL_PLAY.C actor update loop (lines 1690-1774)
 	/// Handles both transitional (tictime > 0) and non-transitional (tictime == 0) states
@@ -1201,7 +1205,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// Execute Think function if present
 			if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 			{
-				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+				Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
 				try
 				{
 					luaScriptEngine.ExecuteActionFunction(actor.CurrentState.Think, context);
@@ -1248,7 +1252,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// WL_PLAY.C:1763-1770 - Execute Think function
 		if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 		{
-			Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+			Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
 			try
 			{
 				luaScriptEngine.ExecuteActionFunction(actor.CurrentState.Think, context);
@@ -1294,7 +1298,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Execute Action function if present
 		if (!string.IsNullOrEmpty(nextState.Action))
 		{
-			Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+			Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
 			try
 			{
 				luaScriptEngine.ExecuteActionFunction(nextState.Action, context);
@@ -1623,7 +1627,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
 			{
-				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+				Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
 				try
 				{
 					luaScriptEngine.ExecuteActionFunction(initialState.Action, context);
@@ -3102,7 +3106,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			long dy = posY - actor.Y;
 			if (dx * dx + dy * dy < radius * radius)
 			{
-				Lua.ActorScriptContext context = new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger);
+				Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
 				try
 				{
 					luaScriptEngine.ExecuteActionFunction(state.CollidableScript, context);

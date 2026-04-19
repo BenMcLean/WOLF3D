@@ -4,6 +4,7 @@ using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
+using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.VR.ActionStage;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
@@ -141,6 +142,24 @@ public partial class MenuRoom : Node3D, IRoom
 	public string SelectedGameXmlPath { get; private set; }
 
 	/// <summary>
+	/// Equipped weapon shapes from the ActionRoom to display on VR controllers.
+	/// When set (KeepWeapons=true menus), overrides the LevelTransition weapon shapes.
+	/// </summary>
+	public IReadOnlyList<ushort?> EquippedWeaponShapes { get; init; }
+
+	/// <summary>
+	/// Completion stats captured from the ActionRoom at NavigateToMenu time.
+	/// Used by Victory screen (and similar) when LevelTransition is not set.
+	/// </summary>
+	public LevelCompletionStats PendingCompletionStats { private get; init; }
+
+	/// <summary>
+	/// All accumulated level stats at NavigateToMenu time.
+	/// Used by Victory screen for total/average calculations.
+	/// </summary>
+	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { private get; init; }
+
+	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// Must be called after _Ready (when MenuManager exists).
@@ -237,15 +256,27 @@ public partial class MenuRoom : Node3D, IRoom
 		if (_displayMode.IsVRActive)
 			RegisterVRModeMenu();
 
+		// Wire sprite texture provider for actor animations (boss death cam etc.)
+		// Must be set before NavigateToMenu so the first RenderMenu call can use it.
+		if (VRAssetManager.SpriteTextures is not null)
+			_menuManager.Renderer.SpriteTextureProvider = page =>
+				VRAssetManager.SpriteTextures.TryGetValue(page, out Texture2D tex) ? tex : null;
+
 		// If in intermission mode, override start menu and pass completion stats
 		if (!string.IsNullOrEmpty(StartMenuOverride))
 		{
-			// Pass completion stats to the script context for Lua access
+			// Pass completion stats to the script context for Lua access.
+			// Elevator path: stats come from LevelTransition.
+			// Suspend path (Victory, DeathCam, etc.): stats come from PendingCompletionStats.
 			if (LevelTransition?.CompletionStats is not null)
 				_menuManager.ScriptContext.CompletionStats = LevelTransition.CompletionStats;
+			else if (PendingCompletionStats is not null)
+				_menuManager.ScriptContext.CompletionStats = PendingCompletionStats;
 			// Pass accumulated stats for Victory screen
 			if (LevelTransition?.AllLevelStats is not null)
 				_menuManager.ScriptContext.AllLevelStats = LevelTransition.AllLevelStats;
+			else if (PendingAllLevelStats is not null)
+				_menuManager.ScriptContext.AllLevelStats = PendingAllLevelStats;
 			// Navigate to the override menu (e.g., "LevelComplete") instead of default
 			_menuManager.NavigateToMenu(StartMenuOverride);
 		}
@@ -377,13 +408,11 @@ public partial class MenuRoom : Node3D, IRoom
 		if (VRAssetManager.SpriteTextures is null)
 			return;
 
-		// In elevator mode, use the page numbers the player actually had equipped.
-		// Otherwise fall back to the XML-specified menu weapon sprite.
-		IReadOnlyList<ushort?> elevatorShapes = _elevatorMode
-			? LevelTransition?.EquippedWeaponShapes
-			: null;
+		// EquippedWeaponShapes (from KeepWeapons=true menus) takes priority;
+		// fall back to LevelTransition shapes for the elevator path.
+		IReadOnlyList<ushort?> equippedShapes = EquippedWeaponShapes ?? LevelTransition?.EquippedWeaponShapes;
 
-		// Resolve the fallback page number from MenuWeaponSprite (used when not in elevator mode,
+		// Resolve the fallback page number from MenuWeaponSprite (used when no equipped shapes,
 		// or when a slot has no equipped weapon).
 		ushort? fallbackPage = null;
 		if (!string.IsNullOrEmpty(MenuWeaponSprite))
@@ -403,8 +432,8 @@ public partial class MenuRoom : Node3D, IRoom
 			if (_displayMode.GetHandNode(hand) is not Node3D aimNode)
 				continue;
 
-			ushort? pageNum = (elevatorShapes is not null && hand < elevatorShapes.Count)
-				? elevatorShapes[hand]
+			ushort? pageNum = (equippedShapes is not null && hand < equippedShapes.Count)
+				? equippedShapes[hand]
 				: fallbackPage;
 
 			if (pageNum is null)

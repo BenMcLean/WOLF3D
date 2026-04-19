@@ -31,4 +31,5 @@ elseif actorType == "Hans" then
 	AddValue("Score", 5000)
 	PlaceItemType(43, 128)  -- bo_key1 (gold key)
 	PlayLocalDigiSound("MUTTISND")
+	NavigateToMenu("DeathCam_Hans_See")  -- WL_ACT2.C:A_StartDeathCam
 end

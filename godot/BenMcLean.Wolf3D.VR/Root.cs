@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Simulator.Lua;
@@ -316,7 +317,11 @@ public partial class Root : Node3D
 			}
 			else if (actionStage.PendingReturnToMenu)
 			{
-				SuspendToMenu(actionStage);
+				SuspendToMenu(actionStage,
+					menuOverride: actionStage.PendingMenuOverride,
+					equippedWeaponShapes: actionStage.PendingEquippedWeaponShapes,
+					completionStats: actionStage.PendingCompletionStats,
+					allLevelStats: actionStage.PendingAllLevelStats);
 			}
 			else if (actionStage.PendingTransition is ActionRoom.LevelTransitionRequest request)
 			{
@@ -424,7 +429,7 @@ public partial class Root : Node3D
 	/// Suspends the current game and transitions to the main menu.
 	/// Captures the Simulator and player state before destroying the ActionStage.
 	/// </summary>
-	private void SuspendToMenu(ActionRoom actionStage)
+	private void SuspendToMenu(ActionRoom actionStage, string menuOverride = null, IReadOnlyList<ushort?> equippedWeaponShapes = null, Simulator.LevelCompletionStats completionStats = null, IReadOnlyList<Simulator.LevelCompletionStats> allLevelStats = null)
 	{
 		// Capture state before ActionStage is destroyed
 		// Player position/angle are already in the Simulator (updated each frame)
@@ -434,10 +439,13 @@ public partial class Root : Node3D
 		MenuRoom menuRoom = new(DisplayMode)
 		{
 			HasSuspendedGame = true,
-			StartMenuOverride = SharedAssetManager.CurrentGame?.MenuCollection?.PauseMenu,
+			StartMenuOverride = menuOverride ?? SharedAssetManager.CurrentGame?.MenuCollection?.PauseMenu,
 			SuspendedSimulator = _suspendedGame.Simulator,
 			SuspendedLevelIndex = _suspendedGame.Simulator.Inventory.GetValue("MapOn"),
 			MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
+			EquippedWeaponShapes = equippedWeaponShapes,
+			PendingCompletionStats = completionStats,
+			PendingAllLevelStats = allLevelStats,
 		};
 		_pendingScene = menuRoom;
 		StartFade(() =>
