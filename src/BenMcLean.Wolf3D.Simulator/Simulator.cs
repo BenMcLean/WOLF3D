@@ -3639,10 +3639,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				y += sy;
 				movedY = true;
 			}
-			// Prevent seeing through corners
+			// Prevent seeing through corners - check both adjacent tiles at the diagonal crossing.
+			// Original Wolf3D CheckLine uses two separate DDA sweeps (X and Y directions),
+			// which naturally checks both corner tiles. We replicate that by checking both here.
 			if (movedX && movedY)
 			{
 				if (!IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
+					return false;
+				if (!IsTileTransparentForSight((ushort)x, (ushort)(y - sy)))
 					return false;
 			}
 		}
