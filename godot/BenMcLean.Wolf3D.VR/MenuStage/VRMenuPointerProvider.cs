@@ -14,33 +14,33 @@ public class VRMenuInput : IMenuInput
 {
 	private readonly IDisplayMode _displayMode;
 	private readonly KeyboardMenuInput _keyboard = new();
-	private PointerState _primaryPointer;
-	private PointerState _secondaryPointer;
+	private PointerState _primaryPointer,
+		_secondaryPointer;
 	private MeshInstance3D _menuPanel;
-	private float _panelWidth;
-	private float _panelHeight;
-
+	private float _panelWidth,
+		_panelHeight,
+		_thumbstickUpDownCooldown,
+		_thumbstickLeftRightCooldown;
 	// Event-driven button states, indexed by hand (0 = right, 1 = left)
 	// _selectPressed: trigger + face buttons — passed to ray cast so pointing always works
 	// _faceSelectPressed: face buttons only (A/B/X/Y) — also drives directional select off-panel
-	private bool _selectPressed0;
-	private bool _cancelPressed0;
-	private bool _selectPressed1;
-	private bool _cancelPressed1;
-	private bool _faceSelectPressed0;
-	private bool _faceSelectPressed1;
-
-	// Aggregated button states for MenuInputState (survive Update into GetState)
-	// _anySelectPressed uses face buttons only — trigger is pointer-only (requires ray hit)
-	private bool _anySelectPressed;
-	private bool _anyCancelPressed;
-
-	// Thumbstick navigation state
-	private bool _thumbstickUp;
-	private bool _thumbstickDown;
-	private float _thumbstickCooldown;
-	private const float ThumbstickThreshold = 0.5f;
-	private const float ThumbstickRepeatDelay = 0.3f;
+	private bool _selectPressed0,
+		_cancelPressed0,
+		_selectPressed1,
+		_cancelPressed1,
+		_faceSelectPressed0,
+		_faceSelectPressed1,
+		// Aggregated button states for MenuInputState (survive Update into GetState)
+		// _anySelectPressed uses face buttons only — trigger is pointer-only (requires ray hit)
+		_anySelectPressed,
+		_anyCancelPressed,
+		// Thumbstick navigation state
+		_thumbstickUp,
+		_thumbstickDown,
+		_thumbstickLeft,
+		_thumbstickRight;
+	private const float ThumbstickThreshold = 0.5f,
+		ThumbstickRepeatDelay = 0.3f;
 
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
@@ -61,10 +61,7 @@ public class VRMenuInput : IMenuInput
 	/// <summary>
 	/// Unsubscribes from display mode events. Call when the owning MenuRoom exits the tree.
 	/// </summary>
-	public void Dispose()
-	{
-		_displayMode.HandButtonPressed -= OnHandButtonPressed;
-	}
+	public void Dispose() => _displayMode.HandButtonPressed -= OnHandButtonPressed;
 
 	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
@@ -123,43 +120,58 @@ public class VRMenuInput : IMenuInput
 		_keyboard.Update(delta);
 
 		// Advance thumbstick repeat cooldown
-		if (_thumbstickCooldown > 0)
-			_thumbstickCooldown -= delta;
+		if (_thumbstickLeftRightCooldown > 0f)
+			_thumbstickLeftRightCooldown -= delta;
+		if (_thumbstickUpDownCooldown > 0f)
+			_thumbstickUpDownCooldown -= delta;
 
 		// Compute thumbstick directional navigation from either stick's Y axis
 		_thumbstickUp = false;
 		_thumbstickDown = false;
+		_thumbstickLeft = false;
+		_thumbstickRight = false;
 		if (_displayMode.IsVRActive)
 		{
-			float leftY = _displayMode.GetMovementInput().Y;
-			float rightY = _displayMode.GetTurnInput().Y;
-			// Use whichever stick is deflected more
-			float stickY = Mathf.Abs(leftY) >= Mathf.Abs(rightY) ? leftY : rightY;
-			if (Mathf.Abs(stickY) < ThumbstickThreshold)
-			{
+			float leftX = _displayMode.GetMovementInput().X,
+				leftY = _displayMode.GetMovementInput().Y,
+				rightX = _displayMode.GetTurnInput().X,
+				rightY = _displayMode.GetTurnInput().Y,
+				// Use whichever stick is deflected more
+				stickX = Mathf.Abs(leftX) >= Mathf.Abs(rightX) ? leftX : rightX,
+				stickY = Mathf.Abs(leftY) >= Mathf.Abs(rightY) ? leftY : rightY;
+			if (Mathf.Abs(stickX) < ThumbstickThreshold)
 				// Both sticks returned to centre — reset cooldown so next deflection fires immediately
-				_thumbstickCooldown = 0;
-			}
-			else if (_thumbstickCooldown <= 0)
-			{
-				// Stick.Y > 0 = pushed forward = up in menu
+				_thumbstickLeftRightCooldown = 0f;
+			else if (_thumbstickLeftRightCooldown <= 0f)
+				if (stickX > ThumbstickThreshold)
+				{
+					_thumbstickRight = true;
+					_thumbstickLeftRightCooldown = ThumbstickRepeatDelay;
+				}
+				else if (stickY < -ThumbstickThreshold)
+				{
+					_thumbstickLeft = true;
+					_thumbstickLeftRightCooldown = ThumbstickRepeatDelay;
+				}
+			if (Mathf.Abs(stickY) < ThumbstickThreshold)
+				_thumbstickUpDownCooldown = 0f;
+			else if (_thumbstickUpDownCooldown <= 0f)
 				if (stickY > ThumbstickThreshold)
 				{
 					_thumbstickUp = true;
-					_thumbstickCooldown = ThumbstickRepeatDelay;
+					_thumbstickUpDownCooldown = ThumbstickRepeatDelay;
 				}
 				else if (stickY < -ThumbstickThreshold)
 				{
 					_thumbstickDown = true;
-					_thumbstickCooldown = ThumbstickRepeatDelay;
+					_thumbstickUpDownCooldown = ThumbstickRepeatDelay;
 				}
-			}
 		}
 
 		// Capture and clear button states (set by event handler)
-		bool select0 = _selectPressed0, cancel0 = _cancelPressed0;
-		bool select1 = _selectPressed1, cancel1 = _cancelPressed1;
-		bool faceSelect0 = _faceSelectPressed0, faceSelect1 = _faceSelectPressed1;
+		bool select0 = _selectPressed0, cancel0 = _cancelPressed0,
+			select1 = _selectPressed1, cancel1 = _cancelPressed1,
+			faceSelect0 = _faceSelectPressed0, faceSelect1 = _faceSelectPressed1;
 		_selectPressed0 = false;
 		_cancelPressed0 = false;
 		_selectPressed1 = false;
@@ -197,12 +209,12 @@ public class VRMenuInput : IMenuInput
 	public MenuInputState GetState()
 	{
 		MenuInputState keyState = _keyboard.GetState();
-		bool select = keyState.SelectPressed || _anySelectPressed;
-		bool cancel = keyState.CancelPressed || _anyCancelPressed;
-		bool up = keyState.UpPressed || _thumbstickUp;
-		bool down = keyState.DownPressed || _thumbstickDown;
-		bool left = keyState.LeftPressed;
-		bool right = keyState.RightPressed;
+		bool select = keyState.SelectPressed || _anySelectPressed,
+			cancel = keyState.CancelPressed || _anyCancelPressed,
+			up = keyState.UpPressed || _thumbstickUp,
+			down = keyState.DownPressed || _thumbstickDown,
+			left = keyState.LeftPressed || _thumbstickLeft,
+			right = keyState.RightPressed || _thumbstickRight;
 		return new MenuInputState
 		{
 			CursorPosition = keyState.CursorPosition,
@@ -213,7 +225,7 @@ public class VRMenuInput : IMenuInput
 			LeftPressed = left,
 			RightPressed = right,
 			AnyButtonPressed = select || cancel || up || down || left || right,
-			HoveredItemIndex = -1
+			HoveredItemIndex = -1,
 		};
 	}
 
@@ -232,8 +244,8 @@ public class VRMenuInput : IMenuInput
 	{
 		// Get panel transform
 		Transform3D panelTransform = _menuPanel.GlobalTransform;
-		Vector3 panelPosition = panelTransform.Origin;
-		Vector3 panelNormal = panelTransform.Basis.Z; // Panel's front face (+Z) points toward camera
+		Vector3 panelPosition = panelTransform.Origin,
+			panelNormal = panelTransform.Basis.Z; // Panel's front face (+Z) points toward camera
 
 		// Ray-plane intersection
 		// t = dot(panelPosition - origin, normal) / dot(direction, normal)
@@ -250,20 +262,19 @@ public class VRMenuInput : IMenuInput
 			return new PointerState { IsActive = false, CancelPressed = cancelPressed };
 
 		// Calculate intersection point in world space
-		Vector3 intersection = origin + direction * t;
-
-		// Convert to panel-local coordinates
-		// The panel is centered at panelPosition, with X going right and Y going up
-		Vector3 localPoint = panelTransform.AffineInverse() * intersection;
+		Vector3 intersection = origin + direction * t,
+			// Convert to panel-local coordinates
+			// The panel is centered at panelPosition, with X going right and Y going up
+			localPoint = panelTransform.AffineInverse() * intersection;
 
 		// Convert from local 3D coords to 2D panel coords
 		// Panel mesh is centered at origin, so coordinates range from -width/2 to width/2
-		float u = (localPoint.X + _panelWidth / 2f) / _panelWidth;
-		float v = (-localPoint.Y + _panelHeight / 2f) / _panelHeight; // Flip Y for screen coords
+		float u = (localPoint.X + _panelWidth / 2f) / _panelWidth,
+			v = (-localPoint.Y + _panelHeight / 2f) / _panelHeight; // Flip Y for screen coords
 
 		// Check if within panel bounds
 		if (u < 0 || u > 1 || v < 0 || v > 1)
-			return new PointerState { IsActive = false, CancelPressed = cancelPressed };
+			return new PointerState { IsActive = false, CancelPressed = cancelPressed, };
 
 		// Convert to menu viewport coordinates (0-320 x 0-200)
 		return new PointerState
@@ -271,7 +282,7 @@ public class VRMenuInput : IMenuInput
 			IsActive = true,
 			Position = new Vector2(u * 320f, v * 200f),
 			SelectPressed = selectPressed,
-			CancelPressed = cancelPressed
+			CancelPressed = cancelPressed,
 		};
 	}
 }
