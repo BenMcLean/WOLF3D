@@ -816,6 +816,7 @@ StartTicker("AvgTreasureRatio", tr)
 				<!-- WL_ACT2.C:A_StartDeathCam - SPR_DEATHCAM title at top of screen, centered -->
 				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
 				<ActorAnimation StartState="s_bossdie1" X="160" Y="130"/>
+				<OnShow>PlayDigiSound("MUTTISND")</OnShow>
 				<Pause>ResumeGame()</Pause>
 			</Menu>
 		</Menus>

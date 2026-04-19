@@ -127,6 +127,7 @@ public class MenuManager
 			GetSelectedIndexFunc = () => _selectedItemIndex,
 			SetPictureAction = SetPicture,
 			// Wire up sound playback
+			PlayDigiSoundAction = PlayAdLibSoundImpl,
 			PlayAdLibSoundAction = PlayAdLibSoundImpl,
 			PlayMusicAction = PlayMusicImpl,
 			StopMusicAction = StopMusicImpl,
