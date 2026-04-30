@@ -1255,7 +1255,7 @@ return false
 		</DigiSounds>
 		<StatInfo UseWallSound="DONOTHINGSND">
 			<BonusScript Name="VictoryTile">
-				NavigateToMenu("Victory")
+				SpawnBJVictory()
 				return true
 			</BonusScript>
 			<ObjectType Number="19" ObClass="playerobj" Direction="E" Name="Player Start East" />
@@ -1582,6 +1582,18 @@ SetValue("StatusBarWeapon", 1)
 SetPicture("WeaponPic", "GUNPIC")
 ]]>
 			</Function>
+		<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->
+		<Actor Name="BJ" HP="1,1,1,1" />
+		<State Name="s_bjrun1"  Shape="SPR_BJ_W1"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun1s" />
+		<State Name="s_bjrun1s" Shape="SPR_BJ_W1"    Tics="3"                    Speed="2048" Next="s_bjrun2" />
+		<State Name="s_bjrun2"  Shape="SPR_BJ_W2"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun3" />
+		<State Name="s_bjrun3"  Shape="SPR_BJ_W3"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun3s" />
+		<State Name="s_bjrun3s" Shape="SPR_BJ_W3"    Tics="3"                    Speed="2048" Next="s_bjrun4" />
+		<State Name="s_bjrun4"  Shape="SPR_BJ_W4"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun1" />
+		<State Name="s_bjjump1" Shape="SPR_BJ_JUMP1" Tics="14"  Think="T_BJJump" Speed="680"  Next="s_bjjump2" />
+		<State Name="s_bjjump2" Shape="SPR_BJ_JUMP2" Tics="14"  Think="T_BJJump" Speed="680"  Action="A_BJYell" Next="s_bjjump3" />
+		<State Name="s_bjjump3" Shape="SPR_BJ_JUMP3" Tics="14"  Think="T_BJJump" Speed="680"  Next="s_bjjump4" />
+		<State Name="s_bjjump4" Shape="SPR_BJ_JUMP4" Tics="300"                  Speed="0"    Action="A_BJDone" Next="s_bjjump4" />
 		</Actors>
 	</VSwap>
 	<Palettes>

@@ -37,6 +37,7 @@ public partial class SimulatorController : Node3D
 	private Action<NavigateToMenuEvent> _navigateToMenuHandler;
 	private Action<PlayerDiedEvent> _playerDiedHandler;
 	private Action<PlayGlobalSoundEvent> _playGlobalSoundHandler;
+	private Action<VictoryStartedEvent> _victoryStartedHandler;
 
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
@@ -128,6 +129,10 @@ public partial class SimulatorController : Node3D
 		_playGlobalSoundHandler = e => EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 		simulator.PlayGlobalSound += _playGlobalSoundHandler;
 
+		// Forward victory started events for VR teleport and tile confinement
+		_victoryStartedHandler = e => VictoryStarted?.Invoke(e);
+		simulator.VictoryStarted += _victoryStartedHandler;
+
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar is not null)
@@ -218,6 +223,8 @@ public partial class SimulatorController : Node3D
 		simulator.PlayerDied += _playerDiedHandler;
 		_playGlobalSoundHandler = e => EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 		simulator.PlayGlobalSound += _playGlobalSoundHandler;
+		_victoryStartedHandler = e => VictoryStarted?.Invoke(e);
+		simulator.VictoryStarted += _victoryStartedHandler;
 
 		// Replay current state to newly subscribed presentation layers
 		simulator.EmitAllEntityState();
@@ -239,6 +246,8 @@ public partial class SimulatorController : Node3D
 				simulator.PlayerDied -= _playerDiedHandler;
 			if (_playGlobalSoundHandler is not null)
 				simulator.PlayGlobalSound -= _playGlobalSoundHandler;
+			if (_victoryStartedHandler is not null)
+				simulator.VictoryStarted -= _victoryStartedHandler;
 		}
 	}
 
@@ -517,4 +526,17 @@ public partial class SimulatorController : Node3D
 	/// WL_AGENT.C:TakeDamage death check → WL_GAME.C:Died().
 	/// </summary>
 	public event Action<PlayerDiedEvent> PlayerDied;
+
+	/// <summary>
+	/// Event fired when BJ victory animation starts.
+	/// VR layer uses this to teleport player to viewing tile and enable tile confinement.
+	/// WL_ACT2.C:SpawnBJVictory → VictoryStarted
+	/// </summary>
+	public event Action<VictoryStartedEvent> VictoryStarted;
+
+	/// <summary>
+	/// True while the BJ victory animation is playing.
+	/// WL_AGENT.C:gamestate.victoryflag equivalent.
+	/// </summary>
+	public bool VictoryFlag => simulator?.VictoryFlag ?? false;
 }

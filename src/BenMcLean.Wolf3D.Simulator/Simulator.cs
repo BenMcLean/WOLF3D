@@ -168,6 +168,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public bool IsDead { get; private set; }
 	/// <summary>
+	/// When true, the BJ victory animation is playing.
+	/// Blocks weapon firing and push wall activation until BJ finishes.
+	/// Cleared automatically when A_BJDone calls NavigateToMenu.
+	/// WL_AGENT.C:gamestate.victoryflag
+	/// </summary>
+	public bool VictoryFlag { get; private set; }
+	/// <summary>
 	/// When true, applies original Wolf3D distance-based miss chance on top of hit detection.
 	/// VR sets this to false (pixel-perfect aiming handles accuracy).
 	/// Traditional/Iso presentation layers set this to true.
@@ -336,6 +343,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// WL_AGENT.C:VictoryTile
 	/// </summary>
 	public event Action<NavigateToMenuEvent> NavigateToMenu;
+	/// <summary>
+	/// Fired when the BJ victory animation starts (player stepped on VictoryTile).
+	/// VR presentation: teleport player to northernmost navigable tile and confine to it.
+	/// WL_AGENT.C:VictoryTile + WL_ACT2.C:SpawnBJVictory
+	/// </summary>
+	public event Action<VictoryStartedEvent> VictoryStarted;
 	/// <summary>
 	/// Fired when an action script calls SetPicture() to update a named status bar picture.
 	/// Presentation layer swaps the displayed VgaGraph picture for the named element.
@@ -510,6 +523,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 	private void ProcessAction(PlayerAction action)
 	{
+		// WL_AGENT.C:victoryflag - block weapon fire and push during BJ victory animation
+		if (VictoryFlag && (action is FireWeaponAction || action is ActivatePushWallAction))
+			return;
 		if (action is UseNormalWallAction)
 		{
 			// WL_AGENT.C:Cmd_Use else branch: SD_PlaySound(DONOTHINGSND) / NOWAYSND
@@ -1184,7 +1200,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	#region Actor Update Logic
 	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger)
 	{
-		NavigateToMenuAction = menuName => NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName })
+		NavigateToMenuAction = menuName =>
+		{
+			// WL_ACT2.C:T_BJDone sets playstate = ex_victorious; we clear victoryflag here
+			VictoryFlag = false;
+			NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName });
+		}
 	};
 	/// <summary>
 	/// WL_PLAY.C actor update loop (lines 1690-1774)
@@ -1666,6 +1687,72 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			patrolDirectionAtTile[tileKey] = patrolPoint.Turn;
 		}
 	}
+	/// <summary>
+	/// Spawns BJ Blazkowicz for the shareware victory animation and sets VictoryFlag.
+	/// Walks north from the player's column to find the northernmost navigable tile,
+	/// teleports the player there via VictoryStarted, and spawns BJ heading north for
+	/// exactly enough tiles to stop one tile south of the viewer.
+	/// WL_ACT2.C:SpawnBJVictory (original fixed 6 tiles; here dynamic for any corridor length)
+	/// </summary>
+	public void SpawnBJVictory()
+	{
+		if (!stateCollection.States.TryGetValue("s_bjrun1", out State initialState))
+		{
+			logger?.LogError("ERROR: BJ victory state 's_bjrun1' not found — add BJ actor to game XML");
+			return;
+		}
+		ushort originTileX = PlayerTileX;
+		ushort originTileY = PlayerTileY;
+		// Walk north until hitting a wall to find the viewing tile
+		ushort viewTileY = originTileY;
+		while (viewTileY > 0 && IsTileNavigable(originTileX, (ushort)(viewTileY - 1)))
+			viewTileY--;
+		// BJ spawns one tile south of the player's current position, facing north
+		// WL_ACT2.C:SpawnBJVictory: SpawnNewObj(player->tilex, player->tiley+1, &s_bjrun1)
+		ushort bjSpawnTileX = originTileX;
+		ushort bjSpawnTileY = (ushort)(originTileY + 1);
+		// Tiles to run: from spawn (originTileY+1) to one south of viewer (viewTileY+1)
+		// = (originTileY+1) - (viewTileY+1) = originTileY - viewTileY
+		int runTiles = originTileY - viewTileY;
+		if (runTiles < 1) runTiles = 1;
+		Actor bj = new(
+			actorType: "BJ",
+			initialState: initialState,
+			tileX: bjSpawnTileX,
+			tileY: bjSpawnTileY,
+			facing: Direction.N,
+			hitPoints: 1);
+		// ReactionTimer (ob->temp2) stores remaining tile count
+		// WL_ACT2.C:SpawnBJVictory: new->temp1 = 6 (original fixed; dynamic here)
+		bj.ReactionTimer = (short)runTiles;
+		// Pre-initialise movement: advance TileY to first destination, same pattern as
+		// LoadActorsFromMapAnalysis patrol init (WL_ACT2.C:SpawnPatrol)
+		int spawnTileIdx = GetTileIndex(bjSpawnTileX, bjSpawnTileY);
+		actorAtTile[spawnTileIdx] = -1;
+		bj.TileY--;
+		bj.Distance = 0x10000; // TILEGLOBAL
+		int destTileIdx = GetTileIndex(bj.TileX, bj.TileY);
+		if (destTileIdx >= 0 && destTileIdx < actorAtTile.Length)
+			actorAtTile[destTileIdx] = (short)actors.Count;
+		actors.Add(bj);
+		int bjIndex = actors.Count - 1;
+		VictoryFlag = true;
+		ActorSpawned?.Invoke(new ActorSpawnedEvent
+		{
+			ActorIndex = bjIndex,
+			TileX = bjSpawnTileX,
+			TileY = bjSpawnTileY,
+			Facing = Direction.N,
+			Shape = (ushort)bj.ShapeNum,
+			IsRotated = false
+		});
+		VictoryStarted?.Invoke(new VictoryStartedEvent
+		{
+			ViewTileX = originTileX,
+			ViewTileY = viewTileY
+		});
+	}
+
 	/// <summary>
 	/// Helper for ActorScriptContext.SelectPathDir() - looks up patrol direction at a tile.
 	/// </summary>

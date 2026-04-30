@@ -457,6 +457,9 @@ void sky() {
 			// Subscribe to player death events
 			_simulatorController.PlayerDied += OnPlayerDied;
 
+			// Subscribe to victory started event for BJ animation teleport and tile confinement
+			_simulatorController.VictoryStarted += OnVictoryStarted;
+
 			// Subscribe to display mode button events for shooting and using objects
 			_displayMode.HandButtonPressed += OnHandButtonPressed;
 			_displayMode.HandButtonReleased += OnHandButtonReleased;
@@ -616,10 +619,11 @@ void sky() {
 	{
 		if (@event is InputEventKey keyEvent && keyEvent.Pressed)
 		{
-			// ESC returns to main menu
+			// ESC returns to main menu (blocked during BJ victory animation)
 			if (keyEvent.Keycode == Key.Escape)
 			{
-				PendingReturnToMenu = true;
+				if (!(_simulatorController?.VictoryFlag ?? false))
+					PendingReturnToMenu = true;
 				return;
 			}
 
@@ -686,7 +690,11 @@ void sky() {
 		else if (buttonName == "by_button")
 			CycleWeapon(handIndex, +1);
 		else if (buttonName == "menu_button" && handIndex == 1)
-			PendingReturnToMenu = true;
+		{
+			// Blocked during BJ victory animation
+			if (!(_simulatorController?.VictoryFlag ?? false))
+				PendingReturnToMenu = true;
+		}
 		else if (buttonName == "primary_click")
 		{
 			if (handIndex == 0)
@@ -1147,6 +1155,7 @@ void sky() {
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
 			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
 			_simulatorController.PlayerDied -= OnPlayerDied;
+			_simulatorController.VictoryStarted -= OnVictoryStarted;
 		}
 
 		// Unsubscribe death fizzle overlay
@@ -1271,6 +1280,66 @@ void sky() {
 	private void OnDeathFizzleComplete()
 	{
 		PendingDeathFadeOut = true;
+	}
+
+	/// <summary>
+	/// Handles the start of the BJ Blazkowicz victory animation.
+	/// Teleports the player to the viewing tile (northernmost navigable tile in their column),
+	/// faces them south toward BJ, and confines them to that tile via movement validator.
+	/// WL_ACT2.C:SpawnBJVictory → Simulator.VictoryStarted → here
+	/// </summary>
+	private void OnVictoryStarted(VictoryStartedEvent e)
+	{
+		float viewWorldX = e.ViewTileX.ToMetersCentered();
+		float viewWorldZ = e.ViewTileY.ToMetersCentered();
+
+		// Shift XROrigin so HMD lands at the viewing tile center
+		if (_displayMode.Origin is not null)
+		{
+			Vector3 hmdPos = _displayMode.ViewerPosition;
+			Vector3 originPos = _displayMode.Origin.GlobalPosition;
+			_displayMode.Origin.GlobalPosition = new Vector3(
+				originPos.X + (viewWorldX - hmdPos.X),
+				originPos.Y,
+				originPos.Z + (viewWorldZ - hmdPos.Z));
+		}
+
+		// Orient player to face south (toward BJ running north from below)
+		// Godot Y rotation π = facing +Z = south in Wolf3D
+		float southRotation = Mathf.Pi;
+		if (_displayMode.IsVRActive)
+		{
+			// VR: ResetPositionFacing compensates for HMD physical rotation
+			Vector3 viewXZ = new(viewWorldX, 0f, viewWorldZ);
+			_displayMode.ResetPositionFacing(
+				viewXZ + new Vector3(Mathf.Sin(southRotation), 0f, -Mathf.Cos(southRotation)),
+				viewXZ);
+		}
+		else
+		{
+			// Flatscreen: ResetPositionFacing is a no-op; set camera global rotation directly
+			if (_displayMode.Camera is not null)
+				_displayMode.Camera.GlobalRotation = new Vector3(0, southRotation, 0);
+		}
+
+		// Register new position with simulator (system-driven, no item sweep)
+		_simulatorController.Simulator.PlacePlayer(
+			viewWorldX.ToFixedPoint(),
+			viewWorldZ.ToFixedPoint(),
+			southRotation.ToWolf3DAngle());
+
+		// Confine player to viewing tile with the same HeadXZ buffer the wall system uses,
+		// so the player cannot approach the tile edge any closer than a normal wall allows.
+		float tileMinX = e.ViewTileX.ToMeters() + Constants.HeadXZ;
+		float tileMaxX = tileMinX + Constants.TileWidth - Constants.HeadXZ * 2f;
+		float tileMinZ = e.ViewTileY.ToMeters() + Constants.HeadXZ;
+		float tileMaxZ = tileMinZ + Constants.TileWidth - Constants.HeadXZ * 2f;
+		_displayMode.SetMovementValidator((currentX, currentZ, desiredX, desiredZ) =>
+		{
+			(float validX, float validZ) = _simulatorController.ValidateMovement(currentX, currentZ, desiredX, desiredZ);
+			return (Mathf.Clamp(validX, tileMinX, tileMaxX),
+			        Mathf.Clamp(validZ, tileMinZ, tileMaxZ));
+		});
 	}
 
 	/// <summary>

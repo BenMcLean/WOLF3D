@@ -402,6 +402,27 @@ public struct ScreenFlashEvent
 public struct PlayerDiedEvent { }
 
 /// <summary>
+/// BJ Blazkowicz victory animation has started.
+/// Fired when the player steps on VictoryTile and BJ is spawned.
+/// VR presentation: teleport player to northernmost navigable tile in BJ's column,
+/// face them south toward BJ, and confine movement to that tile during the animation.
+/// WL_AGENT.C:VictoryTile + WL_ACT2.C:SpawnBJVictory
+/// </summary>
+public struct VictoryStartedEvent
+{
+	/// <summary>
+	/// Northernmost navigable tile in the player's column — VR viewing position.
+	/// Wolf3D X coordinate (= Godot X axis).
+	/// </summary>
+	public required ushort ViewTileX { get; init; }
+	/// <summary>
+	/// Northernmost navigable tile in the player's column — VR viewing position.
+	/// Wolf3D Y coordinate (= Godot Z axis).
+	/// </summary>
+	public required ushort ViewTileY { get; init; }
+}
+
+/// <summary>
 /// An item script requested navigation to a named menu screen.
 /// Generic mechanism — any BonusScript can trigger any menu defined in XML.
 /// WL_AGENT.C:VictoryTile sets gamestate.victoryflag → Victory screen.

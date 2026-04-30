@@ -64,6 +64,13 @@ public class BonusScriptContext(
 	/// Shape number of the bonus sprite (exposed to Lua).
 	/// </summary>
 	public int BonusShape => item.ShapeNum;
+	/// <summary>
+	/// Spawns BJ Blazkowicz for the shareware victory animation.
+	/// Sets VictoryFlag and fires VictoryStarted for the VR layer to teleport the player.
+	/// Called by the VictoryTile BonusScript in WL1.xml instead of NavigateToMenu("Victory").
+	/// WL_AGENT.C:VictoryTile → WL_ACT2.C:SpawnBJVictory
+	/// </summary>
+	public void SpawnBJVictory() => simulator.SpawnBJVictory();
 	#region Weapon Switching
 	/// <summary>
 	/// Switch to the named weapon in all weapon slots.
