@@ -433,6 +433,7 @@ public partial class Root : Node3D
 	{
 		// Capture state before ActionStage is destroyed
 		// Player position/angle are already in the Simulator (updated each frame)
+		actionStage.SimulatorController.PreserveSimulator = true;
 		_suspendedGame = new SuspendedGameState(
 			actionStage.SimulatorController.Simulator);
 

@@ -1,4 +1,3 @@
-using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using Microsoft.Extensions.Logging;
@@ -92,13 +91,8 @@ public class ActorScriptContext(
 	/// Triggers state transition with Action function execution.
 	/// </summary>
 	/// <param name="stateName">Name of the state to transition to</param>
-	public void ChangeState(string stateName)
-	{
-		// Find this actor's index in the simulator
-		int actorIndex = simulator.Actors.ToList().IndexOf(actor);
-		if (actorIndex >= 0)
-			simulator.TransitionActorStateByName(actorIndex, stateName);
-	}
+	public void ChangeState(string stateName) =>
+		simulator.TransitionActorStateByName(actorIndex, stateName);
 	/// <summary>
 	/// Set actor's facing direction.
 	/// </summary>
@@ -203,40 +197,10 @@ public class ActorScriptContext(
 	/// Heal the actor.
 	/// </summary>
 	/// <param name="amount">Healing amount</param>
-	public void Heal(int amount) => actor.HitPoints += (short)amount;// TODO: Clamp to max health
-	/// <summary>
-	/// Move actor forward in its current facing direction.
-	/// Based on WL_ACT2.C movement logic.
-	/// </summary>
-	/// <returns>True if movement succeeded, false if blocked</returns>
-	public bool MoveForward()
+	public void Heal(int amount)
 	{
-		// Calculate target position based on facing and speed
-		// Speed is in fixed-point, so we need to apply it correctly
-		int speed = actor.Speed,
-			dx = 0,
-			dy = 0;
-		// Convert facing direction to dx/dy delta
-		switch (actor.Facing)
-		{
-			case Direction.E: dx = speed; break;
-			case Direction.NE: dx = speed; dy = -speed; break;
-			case Direction.N: dy = -speed; break;
-			case Direction.NW: dx = -speed; dy = -speed; break;
-			case Direction.W: dx = -speed; break;
-			case Direction.SW: dx = -speed; dy = speed; break;
-			case Direction.S: dy = speed; break;
-			case Direction.SE: dx = speed; dy = speed; break;
-		}
-		// Apply movement (simplified - no collision detection yet)
-		actor.X += dx;
-		actor.Y += dy;
-		// Update tile coordinates
-		actor.TileX = (ushort)(actor.X >> 16);
-		actor.TileY = (ushort)(actor.Y >> 16);
-		// TODO: Implement proper collision detection
-		// TODO: Emit ActorMovedEvent
-		return true;
+		short max = simulator.GetActorMaxHitPoints(actor.ActorType);
+		actor.HitPoints = (short)System.Math.Min(actor.HitPoints + amount, max);
 	}
 	/// <summary>
 	/// Turn actor to face toward the player.
@@ -273,32 +237,6 @@ public class ActorScriptContext(
 	}
 	#endregion Actor Mutation Methods
 	#region Global Simulator Queries
-	/// <summary>
-	/// Get the player's current tile X coordinate.
-	/// WL_DEF.H:player->tilex
-	/// </summary>
-	public int GetPlayerTileX() => simulator.PlayerTileX;
-	/// <summary>
-	/// Get the player's current tile Y coordinate.
-	/// WL_DEF.H:player->tiley
-	/// </summary>
-	public int GetPlayerTileY() => simulator.PlayerTileY;
-	/// <summary>
-	/// Get the player's current X position (16.16 fixed-point).
-	/// WL_DEF.H:player->x
-	/// </summary>
-	public int GetPlayerX() => simulator.PlayerX;
-	/// <summary>
-	/// Get the player's current Y position (16.16 fixed-point).
-	/// WL_DEF.H:player->y
-	/// </summary>
-	public int GetPlayerY() => simulator.PlayerY;
-	/// <summary>
-	/// Check if a tile is navigable (walkable, no walls, no actors).
-	/// WL_ACT1.C:TryWalk equivalent.
-	/// </summary>
-	public bool IsTileNavigable(int tileX, int tileY) =>
-		simulator.IsTileNavigable((ushort)tileX, (ushort)tileY);
 	/// <summary>
 	/// Check if a door is fully open.
 	/// WL_ACT2.C:4099 - doorobjlist[doornum].action == dr_open
@@ -823,15 +761,9 @@ public class ActorScriptContext(
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
 	public override void PlayLocalDigiSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
-	// Actor API (actors can spawn other actors in some mods)
-	public void SpawnActor(int type, int x, int y)
-	{
-		// TODO: Implement actor spawning from scripts
-	}
-	public void DespawnActor(int actorId)
-	{
-		// TODO: Implement actor despawning
-	}
+	// DespawnActor not yet implemented — SpawnActor is inherited from ActionScriptContext
+	public void DespawnActor(int actorId) =>
+		throw new System.NotImplementedException("DespawnActor from Lua scripts is not yet implemented.");
 	#endregion ActionScriptContext Abstract Method Implementations
 	#region Projectile Spawning
 	/// <summary>

@@ -30,6 +30,11 @@ public partial class SimulatorController : Node3D
 	private Projectiles projectiles;
 	private Func<(int X, int Y, short Angle)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates and angle (0-359)
 
+	/// <summary>
+	/// When true, _ExitTree will not call simulator.Cleanup().
+	/// Set by Root before suspending to menu so the preserved simulator retains its subscriptions.
+	/// </summary>
+	public bool PreserveSimulator { get; set; }
 	// Named event handlers for cleanup in _ExitTree
 	private Action<ElevatorActivatedEvent> _elevatorHandler;
 	private Action<PlayerStateChangedEvent> _playerStateHandler;
@@ -234,6 +239,8 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is not null)
 		{
+			if (!PreserveSimulator)
+				simulator.Cleanup();
 			if (_elevatorHandler is not null)
 				simulator.ElevatorActivated -= _elevatorHandler;
 			if (_playerStateHandler is not null)

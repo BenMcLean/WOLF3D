@@ -89,6 +89,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// When Inventory.ValueChanged fires for a name in this dict, auto-emits StatusBarTextChanged
 	// with the value right-justified to the stored width. Width is fixed at game load from XML.
 	private readonly Dictionary<string, int> _statusBarTextWidths = [];
+	// Named handler for Inventory.ValueChanged — stored so Cleanup() can unsubscribe.
+	private Action<string, int> _inventoryChangedHandler;
 	// Tracks the last-emitted pic name per StatusBar picture Id.
 	// Used by SyncStatusBarState() to replay current pic values to a newly created status bar.
 	private readonly Dictionary<string, string> _currentStatusBarPics = [];
@@ -391,12 +393,25 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Wire Inventory.ValueChanged to PlayerStateChanged and auto-text StatusBar updates.
 		// Auto-text: if the inventory key matches a StatusBar Text Id, emit StatusBarTextChanged
 		// with the value right-justified to the field width defined by the initial XML content length.
-		Inventory.ValueChanged += (name, value) =>
+		_inventoryChangedHandler = (name, value) =>
 		{
 			EmitPlayerStateChanged();
 			if (_statusBarTextWidths.TryGetValue(name, out int width))
 				EmitStatusBarTextChanged(name, value.ToString().PadLeft(width));
 		};
+		Inventory.ValueChanged += _inventoryChangedHandler;
+	}
+	/// <summary>
+	/// Unsubscribes internal event handlers. Call from the presentation layer's cleanup
+	/// (e.g., SimulatorController._ExitTree) before discarding the Simulator instance.
+	/// </summary>
+	public void Cleanup()
+	{
+		if (_inventoryChangedHandler is not null)
+		{
+			Inventory.ValueChanged -= _inventoryChangedHandler;
+			_inventoryChangedHandler = null;
+		}
 	}
 	/// <summary>
 	/// Update the simulation with elapsed real time.
@@ -1478,9 +1493,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		foreach (MapAnalysis.StaticSpawn spawn in staticBonuses)
 		{
 			if (lastStatObj >= StatObj.MAXSTATS)
-				// Too many static objects - this would be a Quit() in original
-				// For now, just stop spawning (should never happen with proper maps)
+			{
+				logger?.LogWarning("Warning: MAXSTATS ({Max}) limit reached; bonus item at ({X},{Y}) will not spawn. Increase MAXSTATS or reduce map bonus density.", StatObj.MAXSTATS, spawn.X, spawn.Y);
 				break;
+			}
 			// Create the bonus object in StatObjList for gameplay tracking
 			// WL_DEF.H:statstruct - note: shapenum is signed, can be -1
 			StatObjList[lastStatObj] = new StatObj(
@@ -1688,67 +1704,102 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 	}
 	/// <summary>
-	/// Spawns BJ Blazkowicz for the shareware victory animation and sets VictoryFlag.
-	/// Walks north from the player's column to find the northernmost navigable tile,
-	/// teleports the player there via VictoryStarted, and spawns BJ heading north for
-	/// exactly enough tiles to stop one tile south of the viewer.
-	/// WL_ACT2.C:SpawnBJVictory (original fixed 6 tiles; here dynamic for any corridor length)
+	/// Dynamically spawns an actor during gameplay.
+	/// Mirrors the WL_ACT2.C:SpawnNewObj pattern used for BJ and mod-driven spawning.
+	/// Looks up the actor's initial state from its ActorDefinition (XML must define InitialState).
+	/// Fires the initial Action function (if any), then fires ActorSpawned.
 	/// </summary>
-	public void SpawnBJVictory()
+	/// <param name="actorType">Actor type key matching an XML Actor element Name attribute</param>
+	/// <param name="tileX">Spawn tile X</param>
+	/// <param name="tileY">Spawn tile Y</param>
+	/// <param name="facing">Initial facing direction</param>
+	/// <returns>Index of the newly spawned actor, or -1 if spawn failed</returns>
+	public int SpawnActorAtTile(string actorType, ushort tileX, ushort tileY, Direction facing = Direction.N)
 	{
-		if (!stateCollection.States.TryGetValue("s_bjrun1", out State initialState))
+		if (!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition actorDef)
+			|| string.IsNullOrEmpty(actorDef.InitialState))
 		{
-			logger?.LogError("ERROR: BJ victory state 's_bjrun1' not found — add BJ actor to game XML");
-			return;
+			logger?.LogError("ERROR: Cannot spawn actor '{ActorType}': no InitialState defined in actor XML definition.", actorType);
+			return -1;
 		}
-		ushort originTileX = PlayerTileX;
-		ushort originTileY = PlayerTileY;
-		// Walk north until hitting a wall to find the viewing tile
-		ushort viewTileY = originTileY;
-		while (viewTileY > 0 && IsTileNavigable(originTileX, (ushort)(viewTileY - 1)))
-			viewTileY--;
-		// BJ spawns one tile south of the player's current position, facing north
-		// WL_ACT2.C:SpawnBJVictory: SpawnNewObj(player->tilex, player->tiley+1, &s_bjrun1)
-		ushort bjSpawnTileX = originTileX;
-		ushort bjSpawnTileY = (ushort)(originTileY + 1);
-		// Tiles to run: from spawn (originTileY+1) to one south of viewer (viewTileY+1)
-		// = (originTileY+1) - (viewTileY+1) = originTileY - viewTileY
-		int runTiles = originTileY - viewTileY;
-		if (runTiles < 1) runTiles = 1;
-		Actor bj = new(
-			actorType: "BJ",
+		if (!stateCollection.States.TryGetValue(actorDef.InitialState, out State initialState))
+		{
+			logger?.LogError("ERROR: Cannot spawn actor '{ActorType}': initial state '{StateName}' not found.", actorType, actorDef.InitialState);
+			return -1;
+		}
+		int difficulty = Inventory.GetValue("Difficulty");
+		short hitPoints = 1;
+		if (actorDef.HitPointsByDifficulty is not null && actorDef.HitPointsByDifficulty.Length > 0)
+			hitPoints = actorDef.GetHitPoints(Math.Clamp(difficulty, 0, actorDef.HitPointsByDifficulty.Length - 1));
+		Actor actor = new(
+			actorType: actorType,
 			initialState: initialState,
-			tileX: bjSpawnTileX,
-			tileY: bjSpawnTileY,
-			facing: Direction.N,
-			hitPoints: 1);
-		// ReactionTimer (ob->temp2) stores remaining tile count
-		// WL_ACT2.C:SpawnBJVictory: new->temp1 = 6 (original fixed; dynamic here)
-		bj.ReactionTimer = (short)runTiles;
-		// Pre-initialise movement: advance TileY to first destination, same pattern as
-		// LoadActorsFromMapAnalysis patrol init (WL_ACT2.C:SpawnPatrol)
-		int spawnTileIdx = GetTileIndex(bjSpawnTileX, bjSpawnTileY);
-		actorAtTile[spawnTileIdx] = -1;
-		bj.TileY--;
-		bj.Distance = 0x10000; // TILEGLOBAL
-		int destTileIdx = GetTileIndex(bj.TileX, bj.TileY);
-		if (destTileIdx >= 0 && destTileIdx < actorAtTile.Length)
-			actorAtTile[destTileIdx] = (short)actors.Count;
-		actors.Add(bj);
-		int bjIndex = actors.Count - 1;
-		VictoryFlag = true;
+			tileX: tileX,
+			tileY: tileY,
+			facing: facing,
+			hitPoints: hitPoints);
+		if (!string.IsNullOrEmpty(actorDef.DeathState))
+			actor.Flags |= ActorFlags.Shootable;
+		int actorIndex = actors.Count;
+		actors.Add(actor);
+		if (!string.IsNullOrEmpty(initialState.CollidableScript))
+			_collidableActors.Add(actorIndex);
+		// Movement init: same pattern as LoadActorsFromMapAnalysis (WL_ACT2.C:SpawnPatrol)
+		if (initialState.Speed > 0)
+		{
+			int spawnTileIdx = GetTileIndex(actor.TileX, actor.TileY);
+			if (spawnTileIdx >= 0) actorAtTile[spawnTileIdx] = -1;
+			switch (facing)
+			{
+				case Direction.E: actor.TileX++; break;
+				case Direction.NE: actor.TileX++; actor.TileY--; break;
+				case Direction.N: actor.TileY--; break;
+				case Direction.NW: actor.TileX--; actor.TileY--; break;
+				case Direction.W: actor.TileX--; break;
+				case Direction.SW: actor.TileX--; actor.TileY++; break;
+				case Direction.S: actor.TileY++; break;
+				case Direction.SE: actor.TileX++; actor.TileY++; break;
+			}
+			actor.Distance = 0x10000; // TILEGLOBAL
+			int destTileIdx = GetTileIndex(actor.TileX, actor.TileY);
+			if (destTileIdx >= 0 && destTileIdx < actorAtTile.Length)
+				actorAtTile[destTileIdx] = (short)actorIndex;
+		}
+		// Execute initial Action function (e.g., A_InitBJRun sets ReactionTimer + TriggerVictory)
+		if (!string.IsNullOrEmpty(initialState.Action))
+		{
+			Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
+			try
+			{
+				luaScriptEngine.ExecuteActionFunction(initialState.Action, context);
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError(ex, "Error executing spawn action for actor {ActorType}: {ErrorMessage}", actorType, ex.Message);
+			}
+		}
 		ActorSpawned?.Invoke(new ActorSpawnedEvent
 		{
-			ActorIndex = bjIndex,
-			TileX = bjSpawnTileX,
-			TileY = bjSpawnTileY,
-			Facing = Direction.N,
-			Shape = (ushort)bj.ShapeNum,
-			IsRotated = false
+			ActorIndex = actorIndex,
+			TileX = tileX,
+			TileY = tileY,
+			Facing = facing,
+			Shape = (ushort)actor.ShapeNum,
+			IsRotated = initialState.Rotate
 		});
+		return actorIndex;
+	}
+	/// <summary>
+	/// Sets VictoryFlag and fires VictoryStarted to teleport the player to the viewing tile.
+	/// Called from A_InitBJRun (BJ's initial action) via ActorScriptContext.TriggerVictory.
+	/// WL_ACT2.C:SpawnBJVictory + WL_AGENT.C:VictoryTile → gamestate.victoryflag
+	/// </summary>
+	public void TriggerVictory(ushort viewTileX, ushort viewTileY)
+	{
+		VictoryFlag = true;
 		VictoryStarted?.Invoke(new VictoryStartedEvent
 		{
-			ViewTileX = originTileX,
+			ViewTileX = viewTileX,
 			ViewTileY = viewTileY
 		});
 	}
@@ -1807,6 +1858,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			TicCount = initialState.Tics,
 			IsExploding = false,
 		};
+		// TODO: Add a configurable MAXPROJECTILES cap (from XML) to prevent unbounded growth.
 		projectiles.Add(proj);
 		ProjectileSpawned?.Invoke(new ProjectileSpawnedEvent
 		{
@@ -3753,6 +3805,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public bool GetActorHasAimBonus(string actorType) =>
 		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
 		&& def.AimBonus;
+
+	/// <summary>
+	/// Returns the maximum hit points for an actor type at the current difficulty.
+	/// Used by ActorScriptContext.Heal() to clamp healing.
+	/// Returns short.MaxValue if the actor type has no defined HP (won't cap healing).
+	/// </summary>
+	public short GetActorMaxHitPoints(string actorType)
+	{
+		if (!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+			|| def.HitPointsByDifficulty is null
+			|| def.HitPointsByDifficulty.Length == 0)
+			return short.MaxValue;
+		int difficulty = Math.Clamp(Inventory.GetValue("Difficulty"), 0, def.HitPointsByDifficulty.Length - 1);
+		return def.GetHitPoints(difficulty);
+	}
 
 	/// <summary>
 	/// Bresenham tile-based line-of-sight check between two tile positions.

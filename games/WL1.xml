@@ -1255,7 +1255,9 @@ return false
 		</DigiSounds>
 		<StatInfo UseWallSound="DONOTHINGSND">
 			<BonusScript Name="VictoryTile">
-				SpawnBJVictory()
+				-- WL_ACT2.C:SpawnBJVictory: spawn BJ one tile south of player, facing north (dir=N=2)
+				-- A_InitBJRun runs at spawn: computes corridor length, sets ReactionTimer, fires VictoryStarted
+				SpawnActor("BJ", GetPlayerTileX(), GetPlayerTileY() + 1, 2)
 				return true
 			</BonusScript>
 			<ObjectType Number="19" ObClass="playerobj" Direction="E" Name="Player Start East" />
@@ -1583,7 +1585,9 @@ SetPicture("WeaponPic", "GUNPIC")
 ]]>
 			</Function>
 		<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->
-		<Actor Name="BJ" HP="1,1,1,1" />
+		<Actor Name="BJ" HP="1,1,1,1" Stand="s_bjstart" />
+		<!-- s_bjstart: one-shot spawn state; A_InitBJRun runs once here (not on loop-back to s_bjrun1) -->
+		<State Name="s_bjstart"  Shape="SPR_BJ_W1"    Tics="1"   Think="T_BJRun"  Speed="2048" Action="A_InitBJRun" Next="s_bjrun1" />
 		<State Name="s_bjrun1"  Shape="SPR_BJ_W1"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun1s" />
 		<State Name="s_bjrun1s" Shape="SPR_BJ_W1"    Tics="3"                    Speed="2048" Next="s_bjrun2" />
 		<State Name="s_bjrun2"  Shape="SPR_BJ_W2"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun3" />
