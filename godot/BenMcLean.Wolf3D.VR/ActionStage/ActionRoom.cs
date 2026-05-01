@@ -1340,6 +1340,7 @@ void sky() {
 			return (Mathf.Clamp(validX, tileMinX, tileMaxX),
 			        Mathf.Clamp(validZ, tileMinZ, tileMaxZ));
 		});
+		_displayMode.LocomotionEnabled = false;
 	}
 
 	/// <summary>
