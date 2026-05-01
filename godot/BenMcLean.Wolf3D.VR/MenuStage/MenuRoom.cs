@@ -309,14 +309,46 @@ public partial class MenuRoom : Node3D, IRoom
 	{
 		MenuDefinition vrModeMenu = new()
 		{
-			// Positioning matches the original ChangeView menu
+			// Layout mirrors the Sound menu style (WL_MENU.C:CP_Sound) with a box and indicator lights.
+			// X=76 and Indent=52 matches Sound menu's spacing: cursor at X, indicator at X+24, text at X+Indent.
 			X = 76,
 			Y = 55,
-			Indent = 24,
+			Indent = 52,
 			Spacing = 13,
 			Font = "BIG",
 			OnCancel = "NavigateToMenu(\"Main\")",
+			// WL_MENU.C:CP_Sound pattern: update indicator lights to reflect the active VR mode.
+			OnSelectionChanged = """
+local vrMode = GetVRMode()
+if vrMode == "Roomscale" then
+	SetPicture('VRRoomscale', 'C_SELECTEDPIC')
+	SetPicture('VRFiveDOF', 'C_NOTSELECTEDPIC')
+else
+	SetPicture('VRRoomscale', 'C_NOTSELECTEDPIC')
+	SetPicture('VRFiveDOF', 'C_SELECTEDPIC')
+end
+""",
 		};
+		// Box around all items: standard -8x, -3y offset matching Sound menu DrawWindow pattern.
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 68, Y = 52, W = 178, H = 45 });
+		// Indicator lights for the two radio-button mode choices (ZIndex=9 renders above the box at ZIndex=7).
+		// Position: X+24=100, Y+i*Spacing+2 (matches Sound menu's SM_X+24, SM_Y+i*13+2 formula).
+		vrModeMenu.Pictures.Add(new PictureDefinition
+		{
+			Id = "VRRoomscale",
+			Name = "C_NOTSELECTEDPIC",
+			X = "100",
+			Y = "57",
+			ZIndex = 9,
+		});
+		vrModeMenu.Pictures.Add(new PictureDefinition
+		{
+			Id = "VRFiveDOF",
+			Name = "C_NOTSELECTEDPIC",
+			X = "100",
+			Y = "70",
+			ZIndex = 9,
+		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Roomscale",

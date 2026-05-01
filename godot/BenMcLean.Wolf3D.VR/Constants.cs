@@ -69,8 +69,8 @@ public static class Constants
 		/// This value is used to determine how big the player's head is for collision detection
 		/// </summary>
 		HeadXZ = PixelWidth * 3f;
-	public static readonly float HeadDiagonal = Mathf.Sqrt(Mathf.Pow(HeadXZ, 2) * 2f), // Pythagorean theorem
-		ShotRange = Mathf.Sqrt(Mathf.Pow(64f * TileWidth, 2) * 2f + Mathf.Pow(TileHeight, 2));
+	public static readonly float HeadDiagonal = Mathf.Sqrt(Mathf.Pow(HeadXZ, 2f) * 2f), // Pythagorean theorem
+		ShotRange = Mathf.Sqrt(Mathf.Pow(64f * TileWidth, 2f) * 2f + Mathf.Pow(TileHeight, 2f));
 	public static readonly QuadMesh WallMesh = new()
 	{
 		Size = new Vector2(TileWidth, TileHeight),
@@ -82,6 +82,6 @@ public static class Constants
 	public static readonly Vector3 Scale = new(1f, 1.2f, 1f),
 		WeaponScale = new(WeaponWidth, WeaponMetersPerPixel, WeaponHeight),
 		VoxelWeaponScale = new(WeaponMetersPerVoxel, WeaponMetersPerVoxel, WeaponMetersPerVoxel),
-		Rotate90 = new(0, HalfPi, 0);
+		Rotate90 = new(0f, HalfPi, 0f);
 	public static readonly Color White = Godot.Color.Color8(255, 255, 255, 255);
 }
