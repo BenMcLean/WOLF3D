@@ -148,7 +148,7 @@ public class VRMenuInput : IMenuInput
 					_thumbstickRight = true;
 					_thumbstickLeftRightCooldown = ThumbstickRepeatDelay;
 				}
-				else if (stickY < -ThumbstickThreshold)
+				else if (stickX < -ThumbstickThreshold)
 				{
 					_thumbstickLeft = true;
 					_thumbstickLeftRightCooldown = ThumbstickRepeatDelay;
