@@ -225,9 +225,6 @@
 				<MenuItem Text="Sound">
 					NavigateToMenu("Sound")
 				</MenuItem>
-				<MenuItem Text="Control">
-					NavigateToMenu("Control")
-				</MenuItem>
 				<MenuItem Text="Load Game">
 					NavigateToMenu("LoadGame")
 				</MenuItem>
@@ -496,13 +493,6 @@ end
 					SetMusicEnabled(true)
 					RefreshMenu()
 				</MenuItem>
-			</Menu>
-
-			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">
-				<OnCancel>NavigateToMenu("Main")</OnCancel>
-				<MenuItem Text="Mouse Enabled">NavigateToMenu("Main")</MenuItem>
-				<MenuItem Text="Joystick Enabled">NavigateToMenu("Main")</MenuItem>
-				<MenuItem Text="Back">NavigateToMenu("Main")</MenuItem>
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
