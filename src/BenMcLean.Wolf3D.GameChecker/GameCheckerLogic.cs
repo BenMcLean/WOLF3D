@@ -1,5 +1,6 @@
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 
 namespace BenMcLean.Wolf3D.GameChecker;
 
@@ -9,23 +10,85 @@ public static class GameCheckerLogic
 
 	public static IEnumerable<Issue> Check(string xmlPath)
 	{
-		XDocument? tryDoc = null;
-		Exception? exception = null;
+		using FileStream stream = File.OpenRead(xmlPath);
+		string fullPath = Path.GetFullPath(xmlPath);
+		string baseDirectory = Path.GetDirectoryName(fullPath) ?? Directory.GetCurrentDirectory();
+		foreach (Issue issue in Check(stream, fullPath, baseDirectory))
+			yield return issue;
+	}
+
+	public static IEnumerable<Issue> Check(Stream xmlStream, string context = "<stream>", string? baseDirectory = null)
+	{
+		#region Schema
+		string? schemaPath = FindSchemaPath(baseDirectory);
+		if (schemaPath is null)
+		{
+			yield return new Issue(0, 0, context, "Unable to locate XSD schema for XML validation.");
+			yield break;
+		}
+		XmlSchemaSet schemaSet = new();
+		Issue? schemaLoadIssue = null;
 		try
 		{
-			tryDoc = XDocument.Load(xmlPath, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+			schemaSet.Add(null, schemaPath);
+		}
+		catch (XmlSchemaException ex)
+		{
+			schemaLoadIssue = new Issue(ex.LineNumber, ex.LinePosition, schemaPath, $"Failed to parse XSD: {ex.Message}");
+		}
+		if (schemaLoadIssue is not null)
+		{
+			yield return schemaLoadIssue;
+			yield break;
+		}
+		List<Issue> schemaIssues = [];
+		XmlReaderSettings settings = new()
+		{
+			Schemas = schemaSet,
+			ValidationType = ValidationType.Schema
+		};
+		settings.ValidationEventHandler += (sender, args) =>
+		{
+			XmlSchemaException? validationException = args.Exception;
+			schemaIssues.Add(new Issue(
+				Line: validationException?.LineNumber ?? 0,
+				Column: validationException?.LinePosition ?? 0,
+				Context: DescribeValidationContext(sender, context),
+				Message: args.Message));
+		};
+		foreach (Issue issue in schemaIssues)
+			yield return issue;
+		#endregion Schema
+		#region XDocument
+		XDocument? tryDoc = null;
+		XmlException? xmlException = null;
+		Exception? loadException = null;
+		try
+		{
+			using XmlReader reader = XmlReader.Create(xmlStream, settings);
+			tryDoc = XDocument.Load(reader, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+		}
+		catch (XmlException ex)
+		{
+			xmlException = ex;
 		}
 		catch (Exception ex)
 		{
-			exception = ex;
+			loadException = ex;
 		}
-		if (exception is not null)
+		if (xmlException is not null)
 		{
-			yield return new Issue(0, 0, xmlPath, $"Failed to parse XML: {exception.Message}");
+			yield return new Issue(xmlException.LineNumber, xmlException.LinePosition, context, $"Failed to parse XML: {xmlException.Message}");
+			yield break;
+		}
+		if (loadException is not null)
+		{
+			yield return new Issue(0, 0, context, $"Failed to load XML: {loadException.Message}");
 			yield break;
 		}
 		XDocument doc = tryDoc ?? throw new NullReferenceException();
-
+		#endregion XDocument
+		#region Assets
 		HashSet<string> sprites = [.. doc.Names("Sprite")],
 			pics = [.. doc.Names("Pic")],
 			fonts = [.. doc.Names("Font")],
@@ -37,7 +100,7 @@ public static class GameCheckerLogic
 			functions = [.. doc.Names("Function")],
 			bonusScripts = [.. doc.Names("BonusScript")];
 
-		if (FindDefaultScriptsDir(xmlPath) is string scriptsDir)
+		if (FindDefaultScriptsDir(baseDirectory) is string scriptsDir)
 			foreach (string f in Directory.GetFiles(scriptsDir, "*.lua", SearchOption.AllDirectories))
 			{
 				string name = Path.GetFileNameWithoutExtension(f);
@@ -51,9 +114,11 @@ public static class GameCheckerLogic
 			if (attr is null || string.IsNullOrEmpty(attr.Value)) return null;
 			if (valid.Contains(attr.Value)) return null;
 			IXmlLineInfo li = attr;
-			return new Issue(li.LineNumber, li.LinePosition,
-				$"<{el.Name.LocalName} {attrName}=\"{attr.Value}\">",
-				$"Unknown {typeDesc}: '{attr.Value}'");
+			return new Issue(
+				Line: li.LineNumber,
+				Column: li.LinePosition,
+				Context: $"<{el.Name.LocalName} {attrName}=\"{attr.Value}\">",
+				Message: $"Unknown {typeDesc}: '{attr.Value}'");
 		}
 
 		foreach (XElement el in doc.Descendants("State"))
@@ -170,16 +235,50 @@ public static class GameCheckerLogic
 			if (CheckAttr(el, "DigiSound", sounds, "sound") is { } i1) yield return i1;
 			if (CheckAttr(el, "BlockedSound", sounds, "sound") is { } i2) yield return i2;
 		}
+		#endregion Assets
 	}
-
+	#region Utilities
 	private static IEnumerable<string> Names(this XDocument doc, string descendants) => doc
 		.Descendants(descendants)
 		.Select(e => (string?)e.Attribute("Name"))
 		.OfType<string>();
-
-	private static string? FindDefaultScriptsDir(string xmlPath)
+	private static string DescribeValidationContext(object? sender, string context) =>
+		sender switch
+		{
+			XElement element => $"<{element.Name.LocalName}>",
+			XAttribute attribute when attribute.Parent is XElement parent => $"<{parent.Name.LocalName} {attribute.Name.LocalName}=\"{attribute.Value}\">",
+			_ => context
+		};
+	#endregion Utilities
+	#region Paths
+	private static string? FindSchemaPath(string? baseDirectory)
 	{
-		string? dir = Path.GetDirectoryName(Path.GetFullPath(xmlPath));
+		string xmlDirectory = baseDirectory is null
+			? Directory.GetCurrentDirectory()
+			: Path.GetFullPath(baseDirectory);
+
+		string? dir = xmlDirectory;
+		while (dir is not null)
+		{
+			string siblingCandidate = Path.Combine(dir, "WOLF3D.xsd");
+			if (File.Exists(siblingCandidate))
+				return siblingCandidate;
+
+			string gamesCandidate = Path.Combine(dir, "games", "WOLF3D.xsd");
+			if (File.Exists(gamesCandidate))
+				return gamesCandidate;
+
+			dir = Path.GetDirectoryName(dir);
+		}
+
+		return null;
+	}
+
+	private static string? FindDefaultScriptsDir(string? baseDirectory)
+	{
+		string? dir = baseDirectory is null
+			? Directory.GetCurrentDirectory()
+			: Path.GetFullPath(baseDirectory);
 		while (dir is not null)
 		{
 			string candidate = Path.Combine(dir, "src", "BenMcLean.Wolf3D.Simulator", "Lua", "DefaultScripts");
@@ -188,4 +287,5 @@ public static class GameCheckerLogic
 		}
 		return null;
 	}
+	#endregion Paths
 }

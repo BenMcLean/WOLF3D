@@ -1,0 +1,5 @@
+-- WL_FPROJ.C:T_Projectile - enemy projectile flight, wall collision, and player hit detection
+-- NOTE: This function is referenced in State Think attributes for projectile states (s_needle1, s_rocket, etc.)
+-- but the actual movement logic is fully implemented in C# by Simulator.UpdateProjectile().
+-- This file exists for GameChecker validation only; it is not called at runtime.
+-- TODO: This really should be here in lua

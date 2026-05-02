@@ -584,6 +584,51 @@ public class ActorScriptContext(
 		actor.Facing = null;
 		return false;
 	}
+	/// <summary>
+	/// Select direction to run away from player using cardinal directions.
+	/// WL_STATE.C:SelectRunDir (lines 641-704) - Flee pathfinding.
+	/// Chooses the two cardinal directions that move away from the player,
+	/// prioritizing the axis with the larger delta. Falls back to a random
+	/// sweep through N, NW, W (the original C enum range north..west = 2..4).
+	/// </summary>
+	/// <param name="canOpenDoors">Whether this actor can open doors</param>
+	/// <returns>True if a valid direction was found and set, false if blocked</returns>
+	public bool SelectRunDir(bool canOpenDoors = true)
+	{
+		// WL_STATE.C:655-656 - delta toward player
+		int dx = simulator.PlayerTileX - actor.TileX,
+			dy = simulator.PlayerTileY - actor.TileY;
+		// WL_STATE.C:658-665 - negate to get flee direction (opposite of chase)
+		// WL_STATE.C:667-672 - swap if |deltay| > |deltax| (prioritize larger axis)
+		(int d1, int d2) = GetCardinalDirections(-dx, -dy, prioritizeLarger: true);
+		// WL_STATE.C:674-680 - try primary then secondary flee direction
+		if (TryDirection(d1, canOpenDoors))
+			return true;
+		if (TryDirection(d2, canOpenDoors))
+			return true;
+		// WL_STATE.C:684-701 - random fallback: sweep N(2), NW(3), W(4) ascending or descending
+		// This matches the original C enum range for (tdir=north; tdir<=west; tdir++)
+		// where north=2, northwest=3, west=4 in dirtype.
+		if (rng.Next(256) > 128)
+		{
+			for (int tdir = 2; tdir <= 4; tdir++)
+			{
+				if (TryDirection(tdir, canOpenDoors))
+					return true;
+			}
+		}
+		else
+		{
+			for (int tdir = 4; tdir >= 2; tdir--)
+			{
+				if (TryDirection(tdir, canOpenDoors))
+					return true;
+			}
+		}
+		// WL_STATE.C:703 - can't move
+		actor.Facing = null;
+		return false;
+	}
 	#endregion Pathfinding & Navigation
 	#region Direction Utilities
 	/// <summary>
