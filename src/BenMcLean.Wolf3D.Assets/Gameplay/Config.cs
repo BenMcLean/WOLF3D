@@ -123,6 +123,10 @@ public sealed class Config
 		Scores = new HighScoreEntry[MaxScores];
 		for (int i = 0; i < MaxScores; i++)
 			Scores[i] = new HighScoreEntry();
+		// Match the classic auto-detected baseline when no CONFIG file exists.
+		SoundMode = SDMode.AdLib;
+		MusicEnabled = true;
+		DigiMode = SDSMode.SoundBlaster;
 		// Initialize ButtonScan with correct size for format
 		ButtonScan = new short[format == ConfigFormat.NoahsArk ? 10 : 8];
 	}
