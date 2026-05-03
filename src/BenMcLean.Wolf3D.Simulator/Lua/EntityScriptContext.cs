@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Simulator.Lua;
@@ -18,17 +19,27 @@ public abstract class EntityScriptContext(
 	protected readonly int entityX = entityX,
 		entityY = entityY;
 	/// <summary>
-	/// Play a digitized sound effect at this entity's position.
-	/// Uses spatial audio - sound will be positioned in 3D space.
-	/// Uses PlayDigiSoundAction if wired (which should emit a positional sound event).
+	/// Action to invoke when PlayLocalSound is called.
+	/// Set by the host to wire up positional playback requests.
 	/// </summary>
-	public virtual void PlayLocalDigiSound(string soundName)
+	public Action<string> PlayLocalSoundAction { get; set; }
+	/// <summary>
+	/// Play a sound effect at this entity's position.
+	/// Only digitized playback can remain positional; the host is expected to fall back
+	/// to global logical playback when digi is unavailable.
+	/// </summary>
+	public virtual void PlayLocalSound(string soundName)
 	{
-		// Use PlayDigiSoundAction - the caller should wire this to emit positional sound
-		if (PlayDigiSoundAction is not null)
+		if (PlayLocalSoundAction is not null)
+			PlayLocalSoundAction(soundName);
+		else if (PlayDigiSoundAction is not null)
 			PlayDigiSoundAction(soundName);
 		else
-			_logger?.LogDebug("EntityScriptContext: PlayLocalDigiSound({soundName}) at ({x}, {y}) - no handler wired",
+			_logger?.LogDebug("EntityScriptContext: PlayLocalSound({soundName}) at ({x}, {y}) - no handler wired",
 				soundName, entityX, entityY);
 	}
+	/// <summary>
+	/// Legacy compatibility wrapper for explicit local DigiSound calls.
+	/// </summary>
+	public virtual void PlayLocalDigiSound(string soundName) => PlayLocalSound(soundName);
 }

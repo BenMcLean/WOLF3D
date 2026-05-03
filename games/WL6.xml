@@ -1006,9 +1006,9 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="50" Name="MUTTISND" />
 		<Sound Number="51" Name="SCHUTZADSND" />
 		<Sound Number="52" Name="AHHHGSND" />
-		<Sound Number="53" Name="DIESND" />
-		<Sound Number="54" Name="EVASND" />
-		<Sound Number="55" Name="GUTENTAGSND" />
+		<Sound Number="53" Name="DIESND" Digi="DIESND" />
+		<Sound Number="54" Name="EVASND" Digi="EVASND" />
+		<Sound Number="55" Name="GUTENTAGSND" Digi="GUTENTAGSND" />
 		<Sound Number="56" Name="LEBENSND" />
 		<Sound Number="57" Name="SCHEISTSND" />
 		<Sound Number="58" Name="NAZIFIRESND" />
@@ -1017,7 +1017,7 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="61" Name="SLURPIESND" />
 		<Sound Number="62" Name="TOT_HUNDSND" />
 		<Sound Number="63" Name="MEINGOTTSND" />
-		<Sound Number="64" Name="SCHABBSHASND" />
+		<Sound Number="64" Name="SCHABBSHASND" Digi="SCHABBSHASND" />
 		<Sound Number="65" Name="HITLERHASND" />
 		<Sound Number="66" Name="SPIONSND" />
 		<Sound Number="67" Name="NEINSOVASSND" />
@@ -1032,12 +1032,12 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="76" Name="DEATHSCREAM7SND" />
 		<Sound Number="77" Name="DEATHSCREAM8SND" />
 		<Sound Number="78" Name="DEATHSCREAM9SND" />
-		<Sound Number="79" Name="DONNERSND" />
-		<Sound Number="80" Name="EINESND" />
-		<Sound Number="81" Name="ERLAUBENSND" />
-		<Sound Number="82" Name="KEINSND" />
-		<Sound Number="83" Name="MEINSND" />
-		<Sound Number="84" Name="ROSESND" />
+		<Sound Number="79" Name="DONNERSND" Digi="DONNERSND" />
+		<Sound Number="80" Name="EINESND" Digi="EINESND" />
+		<Sound Number="81" Name="ERLAUBENSND" Digi="ERLAUBENSND" />
+		<Sound Number="82" Name="KEINSND" Digi="KEINSND" />
+		<Sound Number="83" Name="MEINSND" Digi="MEINSND" />
+		<Sound Number="84" Name="ROSESND" Digi="ROSESND" />
 		<Sound Number="85" Name="MISSILEFIRESND" />
 		<Sound Number="86" Name="MISSILEHITSND" />
 		<Imf Number="0" Name="CORNER_MUS" />
@@ -1571,15 +1571,38 @@ return false
 			<DigiSound Number="12" Name="DEATHSCREAM1SND" />
 			<DigiSound Number="13" Name="DEATHSCREAM2SND" />
 			<DigiSound Number="14" Name="TAKEDAMAGESND" />
-			<DigiSound Number="14" Name="DEATHSCREAM3SND" />
+			<DigiSound Number="13" Name="DEATHSCREAM3SND" />
 			<DigiSound Number="15" Name="PUSHWALLSND" />
+			<DigiSound Number="16" Name="DOGDEATHSND" />
 			<DigiSound Number="17" Name="AHHHGSND" />
+			<DigiSound Number="18" Name="DIESND" />
+			<DigiSound Number="19" Name="EVASND" />
 			<DigiSound Number="20" Name="LEBENSND" />
 			<DigiSound Number="21" Name="NAZIFIRESND" />
 			<DigiSound Number="22" Name="SLURPIESND" />
+			<DigiSound Number="23" Name="TOT_HUNDSND" />
+			<DigiSound Number="24" Name="MEINGOTTSND" />
+			<DigiSound Number="25" Name="SCHABBSHASND" />
+			<DigiSound Number="26" Name="HITLERHASND" />
 			<DigiSound Number="27" Name="SPIONSND" />
 			<DigiSound Number="28" Name="NEINSOVASSND" />
+			<DigiSound Number="29" Name="DOGATTACKSND" />
+			<DigiSound Number="30" Name="LEVELDONESND" />
+			<DigiSound Number="31" Name="MECHSTEPSND" />
 			<DigiSound Number="32" Name="YEAHSND" />
+			<DigiSound Number="33" Name="SCHEISTSND" />
+			<DigiSound Number="34" Name="DEATHSCREAM4SND" />
+			<DigiSound Number="35" Name="DEATHSCREAM5SND" />
+			<DigiSound Number="36" Name="DONNERSND" />
+			<DigiSound Number="37" Name="EINESND" />
+			<DigiSound Number="38" Name="ERLAUBENSND" />
+			<DigiSound Number="39" Name="DEATHSCREAM6SND" />
+			<DigiSound Number="40" Name="DEATHSCREAM7SND" />
+			<DigiSound Number="41" Name="DEATHSCREAM8SND" />
+			<DigiSound Number="42" Name="DEATHSCREAM9SND" />
+			<DigiSound Number="43" Name="KEINSND" />
+			<DigiSound Number="44" Name="MEINSND" />
+			<DigiSound Number="45" Name="ROSESND" />
 		</DigiSounds>
 		<StatInfo UseWallSound="DONOTHINGSND">
 			<BonusScript Name="VictoryTile">
@@ -1793,7 +1816,7 @@ return false
 			<ObjectType Number="215" ObClass="actor" Actor="Giftmacher" Direction="S" State="s_giftstand" />
 		</StatInfo>
 		<Actors>
-			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertDigiSound="HALTSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1" />
+			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertSound="HALTSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1" />
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
 			<State Name="s_grdpath1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="5" Speed="512" Next="s_grdpath2" />
@@ -1816,7 +1839,7 @@ return false
 			<State Name="s_grddie2" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddie3" Alive="false" Mark="false" />
 			<State Name="s_grddie3" Shape="SPR_GRD_DIE_3" Tics="15" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
-			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" AlertDigiSound="SPIONSND" Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1" Pain="s_ofcpain" Pain1="s_ofcpain1" />
+			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" AlertSound="SPIONSND" Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1" Pain="s_ofcpain" Pain1="s_ofcpain1" />
 			<State Name="s_ofcstand" Rotate="true" Shape="SPR_OFC_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_ofcstand" />
 			<State Name="s_ofcpath1" Rotate="true" Shape="SPR_OFC_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_ofcpath1s" />
 			<State Name="s_ofcpath1s" Rotate="true" Shape="SPR_OFC_W1_1" Tics="5" Speed="512" Next="s_ofcpath2" />
@@ -1900,7 +1923,7 @@ return false
 			<State Name="s_dogdie2" Shape="SPR_DOG_DIE_2" Tics="15" Speed="0" Next="s_dogdie3" Alive="false" Mark="false" />
 			<State Name="s_dogdie3" Shape="SPR_DOG_DIE_3" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
-			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertDigiSound="SCHUTZADSND" Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" Pain="s_sspain" Pain1="s_sspain1" />
+			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertSound="SCHUTZADSND" Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" Pain="s_sspain" Pain1="s_sspain1" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_ssstand" />
 			<State Name="s_sspath1" Rotate="true" Shape="SPR_SS_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_sspath1s" />
 			<State Name="s_sspath1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="5" Speed="512" Next="s_sspath2" />
@@ -1929,7 +1952,7 @@ return false
 			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3" Alive="false" Mark="false" />
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="GUTENTAGSND" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
+			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertSound="GUTENTAGSND" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0" Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase1s" />
 			<State Name="s_bosschase1s" Shape="SPR_BOSS_W1" Tics="3" Speed="512" Next="s_bosschase2" />
@@ -1951,7 +1974,7 @@ return false
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
 			<!-- WL_ACT2.C:SpawnSchabbs — Episode 2 boss -->
 			<!-- Corrected HP from starthitpoints[]: Baby=850, DHM=950, BEO=1550, DI=2400 -->
-			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" AlertDigiSound="SCHABBSHASND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
+			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" AlertSound="SCHABBSHASND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
 			<State Name="s_schabbstand"   Shape="SPR_SCHABB_W1"     Tics="0"  Think="T_Stand"      Speed="0"   Next="s_schabbstand" />
 			<State Name="s_schabbchase1"  Shape="SPR_SCHABB_W1"     Tics="10" Think="T_Schabb"     Speed="512" Next="s_schabbchase1s" />
 			<State Name="s_schabbchase1s" Shape="SPR_SCHABB_W1"     Tics="3"                       Speed="512" Next="s_schabbchase2" />
@@ -1977,8 +2000,8 @@ return false
 			<State Name="s_needle4" Shape="SPR_HYPO4" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle1" />
 			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 boss, Phase 1 (Mecha-Hitler) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=800, DHM=950, BEO=1050, DI=1200 -->
-			<!-- Corrected AlertDigiSound: A_Alert case mechahitlerobj → SCHEISTSND (not HITLERHASND) -->
-			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" AlertDigiSound="SCHEISTSND" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" Ambush="true" />
+			<!-- Corrected alert sound from original v1.4 source: A_Alert case mechahitlerobj → DIESND -->
+			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" AlertSound="DIESND" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" Ambush="true" />
 			<State Name="s_mechastand"   Shape="SPR_MECHA_W1"     Tics="0"  Think="T_Stand"  Speed="0"   Next="s_mechastand" />
 			<!-- WL_ACT2.C:A_MechaSound — plays MECHSTEPSND; fires on chase1 and chase3 (Action, not Think) -->
 			<State Name="s_mechachase1"  Shape="SPR_MECHA_W1"     Tics="10" Think="T_Chase"  Action="A_MechaSound" Speed="512" Next="s_mechachase1s" />
@@ -2000,8 +2023,8 @@ return false
 			<State Name="s_mechashoot6"  Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechachase1" />
 			<!-- WL_ACT2.C:SpawnHitler — Episode 3 boss, Phase 2 (Real Hitler, spawned by A_HitlerMorph) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=200, DHM=300, BEO=400, DI=500 -->
-			<!-- Corrected AlertDigiSound: A_Alert case realhitlerobj → EVASND (not HITLERHASND) -->
-			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" AlertDigiSound="EVASND" Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1" Death="s_hitlerdie1" Ambush="true" />
+			<!-- Corrected alert sound from original v1.4 source: A_Alert case realhitlerobj → DIESND -->
+			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" AlertSound="DIESND" Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1" Death="s_hitlerdie1" Ambush="true" />
 			<State Name="s_hitlerstand"    Shape="SPR_HITLER_W1"     Tics="0"  Think="T_Stand"  Speed="0"    Next="s_hitlerstand" />
 			<State Name="s_hitlerchase1"   Shape="SPR_HITLER_W1"     Tics="6"  Think="T_Chase"  Speed="1024" Next="s_hitlerchase1s" />
 			<State Name="s_hitlerchase1s"  Shape="SPR_HITLER_W1"     Tics="4"                   Speed="1024" Next="s_hitlerchase2" />
@@ -2029,8 +2052,8 @@ return false
 			<State Name="s_hitlershoot5"  Shape="SPR_HITLER_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlershoot6" />
 			<State Name="s_hitlershoot6"  Shape="SPR_HITLER_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlerchase1" />
 			<!-- WL_ACT2.C:SpawnGretel — Episode 4 boss (chaingun, same AI as Hans) -->
-			<!-- Corrected AlertDigiSound: A_Alert case gretelobj → MEINSND (not GUTENTAGSND) -->
-			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="MEINSND" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1" Ambush="true" />
+			<!-- Corrected alert sound from original v1.4 source: A_Alert case gretelobj → KEINSND -->
+			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" AlertSound="KEINSND" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1" Ambush="true" />
 			<State Name="s_gretelstand"   Shape="SPR_GRETEL_W1"     Tics="0"  Think="T_Stand"  Speed="0"   Next="s_gretelstand" />
 			<State Name="s_gretelchase1"  Shape="SPR_GRETEL_W1"     Tics="10" Think="T_Chase"  Speed="512" Next="s_gretelchase1s" />
 			<State Name="s_gretelchase1s" Shape="SPR_GRETEL_W1"     Tics="3"                   Speed="512" Next="s_gretelchase2" />
@@ -2053,8 +2076,8 @@ return false
 			<State Name="s_gretelshoot8"  Shape="SPR_GRETEL_SHOOT1" Tics="10"                  Speed="0"   Next="s_gretelchase1" />
 			<!-- WL_ACT2.C:SpawnGift — Episode 5 boss (throws rockets via T_GiftThrow) -->
 			<!-- WL_ACT2.C:T_GiftThrow spawns rocketobj/s_rocket, NOT needles — plan was wrong -->
-			<!-- AlertDigiSound: A_Alert case giftobj → DONNERSND -->
-			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="DONNERSND" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" Ambush="true" />
+			<!-- Corrected alert sound from original v1.4 source: A_Alert case giftobj → EINESND -->
+			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" AlertSound="EINESND" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" Ambush="true" />
 			<State Name="s_giftstand"   Shape="SPR_GIFT_W1"     Tics="0"  Think="T_Stand"     Speed="0"   Next="s_giftstand" />
 			<State Name="s_giftchase1"  Shape="SPR_GIFT_W1"     Tics="10" Think="T_Gift"      Speed="512" Next="s_giftchase1s" />
 			<State Name="s_giftchase1s" Shape="SPR_GIFT_W1"     Tics="3"                      Speed="512" Next="s_giftchase2" />
@@ -2083,8 +2106,8 @@ return false
 			<State Name="s_rocket7" Shape="SPR_ROCKET_7" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket8" />
 			<State Name="s_rocket8" Shape="SPR_ROCKET_8" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket" />
 			<!-- WL_ACT2.C:SpawnFat — Episode 6 boss (mixed attack: rocket then hitscan) -->
-			<!-- AlertDigiSound: A_Alert case fatobj → ROSESND -->
-			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="ROSESND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" Ambush="true" />
+			<!-- Corrected alert sound from original v1.4 source: A_Alert case fatobj → ERLAUBENSND -->
+			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" AlertSound="ERLAUBENSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" Ambush="true" />
 			<State Name="s_fatstand"   Shape="SPR_FAT_W1"     Tics="0"  Think="T_Stand"     Speed="0"   Next="s_fatstand" />
 			<State Name="s_fatchase1"  Shape="SPR_FAT_W1"     Tics="10" Think="T_Fat"       Speed="512" Next="s_fatchase1s" />
 			<State Name="s_fatchase1s" Shape="SPR_FAT_W1"     Tics="3"                      Speed="512" Next="s_fatchase2" />

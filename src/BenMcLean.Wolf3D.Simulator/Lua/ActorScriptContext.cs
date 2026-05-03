@@ -364,10 +364,10 @@ public class ActorScriptContext(
 		simulator.GetActorChaseState(actor.ActorType);
 	/// <summary>
 	/// Get the alert sound name for this actor type. WL_STATE.C:FirstSighting switch(ob->obclass).
-	/// Returns null if not configured (T_Stand/T_Path should skip PlayLocalDigiSound if null).
+	/// Returns null if not configured (T_Stand/T_Path should skip PlayLocalSound if null).
 	/// </summary>
 	public string GetAlertSound() =>
-		simulator.GetActorAlertDigiSound(actor.ActorType);
+		simulator.GetActorAlertSound(actor.ActorType);
 	/// <summary>
 	/// Compute reaction time from this actor's Reaction range (XML) and a random value.
 	/// WL_STATE.C:SightPlayer - ob->temp2 = reaction formula varies by obclass.
@@ -799,13 +799,15 @@ public class ActorScriptContext(
 	#region ActionScriptContext Abstract Method Implementations
 
 	/// <summary>
-	/// Play a positional digi sound at this actor's location.
+	/// Play a positional sound at this actor's location.
 	/// WL_STATE.C:PlaySoundLocActor
-	/// Sound will be attached to this actor and move with it during playback.
-	/// Overrides EntityScriptContext.PlayLocalDigiSound to use actor-specific sound emission.
+	/// Sound will be attached to this actor and move with it during playback when digi is
+	/// available; presentation falls back to global logical playback otherwise.
+	/// Overrides EntityScriptContext.PlayLocalSound to use actor-specific sound emission.
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
-	public override void PlayLocalDigiSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
+	public override void PlayLocalSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
+	public override void PlayLocalDigiSound(string soundName) => PlayLocalSound(soundName);
 	// DespawnActor not yet implemented — SpawnActor is inherited from ActionScriptContext
 	public void DespawnActor(int actorId) =>
 		throw new System.NotImplementedException("DespawnActor from Lua scripts is not yet implemented.");

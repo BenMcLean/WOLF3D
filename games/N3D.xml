@@ -1123,7 +1123,7 @@ SetValue("Silver Key", 0)
 SetPicture("BlueKey", "NOKEYPIC")
 ]]>
 			</Function>
-			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertDigiSound="D_GOATSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1">
+			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertSound="D_GOATSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1">
 				<Script>
 					<![CDATA[
 AddValue("Score", 100)
@@ -1155,7 +1155,7 @@ AddValue("Score", 100)
 			<State Name="s_grddie3" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddead" Alive="false" Mark="false" />
 			<State Name="s_grddead" Shape="SPR_GRD_DEAD" Tics="55" Speed="0" Next="s_grddead2" Alive="false" Mark="false" />
 			<State Name="s_grddead2" Shape="SPR_GRD_DEAD2" Tics="55" Speed="0" Next="s_grddead" Alive="false" Mark="false" />
-			<Actor Name="Goat" HP="1,1,1,1" Reaction="1-32" AlertDigiSound="D_GOATSND" Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1">
+			<Actor Name="Goat" HP="1,1,1,1" Reaction="1-32" AlertSound="D_GOATSND" Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1183,7 +1183,7 @@ AddValue("Score", 200)
 			<State Name="s_dogdie2" Shape="SPR_DOG_DIE_2" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="55" Speed="0" Next="s_dogdead2" Alive="false" Mark="false" />
 			<State Name="s_dogdead2" Shape="SPR_DOG_DEAD2" Tics="55" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
-			<Actor Name="Ostrich" HP="12,12,12,12" Reaction="1-43" AlertDigiSound="D_OSTRCHSND" Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1" Pain="s_ofcpain" Pain1="s_ofcpain1">
+			<Actor Name="Ostrich" HP="12,12,12,12" Reaction="1-43" AlertSound="D_OSTRCHSND" Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1" Pain="s_ofcpain" Pain1="s_ofcpain1">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1215,7 +1215,7 @@ AddValue("Score", 200)
 			<State Name="s_ofcdie3" Shape="SPR_OFC_DIE_2" Tics="11" Next="s_ofcdead" Alive="false" Mark="false" />
 			<State Name="s_ofcdead" Shape="SPR_OFC_DEAD" Tics="55" Next="s_ofcdead2" Alive="false" Mark="false" />
 			<State Name="s_ofcdead2" Shape="SPR_OFC_DEAD2" Tics="55" Next="s_ofcdead" Alive="false" Mark="false" />
-			<Actor Name="Ox" HP="18,18,18,18" Reaction="1-43" AlertDigiSound="D_OXSND" Stand="s_mutstand" Chase="s_mutchase1" Attack="s_mutshoot1" Death="s_mutdie1" Pain="s_mutpain" Pain1="s_mutpain1">
+			<Actor Name="Ox" HP="18,18,18,18" Reaction="1-43" AlertSound="D_OXSND" Stand="s_mutstand" Chase="s_mutchase1" Attack="s_mutshoot1" Death="s_mutdie1" Pain="s_mutpain" Pain1="s_mutpain1">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1247,7 +1247,7 @@ AddValue("Score", 200)
 			<State Name="s_mutdie3" Shape="SPR_MUT_DIE_2" Tics="7" Next="s_mutdead" Alive="false" Mark="false" />
 			<State Name="s_mutdead" Shape="SPR_MUT_DEAD" Tics="55" Next="s_mutdead2" Alive="false" Mark="false" />
 			<State Name="s_mutdead2" Shape="SPR_MUT_DEAD2" Tics="55" Next="s_mutdead" Alive="false" Mark="false" />
-			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" AlertDigiSound="D_ANTLPESND" Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" Pain="s_sspain" Pain1="s_sspain1" ShootSound="SSFIRESND" AimBonus="true">
+			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" AlertSound="D_ANTLPESND" Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" Pain="s_sspain" Pain1="s_sspain1" ShootSound="SSFIRESND" AimBonus="true">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1285,7 +1285,7 @@ AddValue("Score", 200)
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_2" Tics="15" Next="s_ssdead" Alive="false" Mark="false" />
 			<State Name="s_ssdead" Shape="SPR_SS_DEAD" Tics="55" Next="s_ssdead2" Alive="false" Mark="false" />
 			<State Name="s_ssdead2" Shape="SPR_SS_DEAD2" Tics="55" Next="s_ssdead" Alive="false" Mark="false" />
-			<Actor Name="Carl the Camel" HP="850,950,1050,1200" Reaction="1" AlertDigiSound="D_CAMELSND" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true">
+			<Actor Name="Carl the Camel" HP="850,950,1050,1200" Reaction="1" AlertSound="D_CAMELSND" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true">
 				<Script>
 					<![CDATA[
 AddValue("Score", 5000)
@@ -1313,7 +1313,7 @@ AddValue("Score", 5000)
 			<State Name="s_bossshoot6" Shape="SPR_BOSS_SHOOT2" Tics="10" Action="T_Shoot" Next="s_bossshoot7" />
 			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Action="T_Shoot" Next="s_bossshoot8" />
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Next="s_bosschase1" />
-			<Actor Name="Ginny the Giraffe" HP="25,25,25,25" Reaction="1-43" AlertDigiSound="D_GIRAFESND" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1">
+			<Actor Name="Ginny the Giraffe" HP="25,25,25,25" Reaction="1-43" AlertSound="D_GIRAFESND" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1341,7 +1341,7 @@ AddValue("Score", 200)
 			<State Name="s_gretelshoot6" Shape="SPR_GRETEL_SHOOT2" Tics="10" Action="T_Shoot" Next="s_gretelshoot7" />
 			<State Name="s_gretelshoot7" Shape="SPR_GRETEL_SHOOT3" Tics="10" Action="T_Shoot" Next="s_gretelshoot8" />
 			<State Name="s_gretelshoot8" Shape="SPR_GRETEL_SHOOT1" Tics="10" Next="s_gretelchase1" />
-			<Actor Name="Melvin the Monkey" HP="25,25,25,25" Reaction="1-43" AlertDigiSound="D_MONKEYSND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1">
+			<Actor Name="Melvin the Monkey" HP="25,25,25,25" Reaction="1-43" AlertSound="D_MONKEYSND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1364,7 +1364,7 @@ AddValue("Score", 200)
 			<State Name="s_schabbdead2" Shape="SPR_SCHABB_DEAD2" Tics="55" Next="s_schabbdead" Alive="false" Mark="false" />
 			<State Name="s_schabbshoot1" Shape="SPR_SCHABB_SHOOT1" Tics="20" Next="s_schabbshoot2" />
 			<State Name="s_schabbshoot2" Shape="SPR_SCHABB_SHOOT2" Tics="20" Action="T_SchabbThrow" Next="s_schabbchase1" />
-			<Actor Name="Kerry the Kangaroo" HP="25,25,25,25" Reaction="1-43" AlertDigiSound="D_KANGROSND" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="MISSILEFIRESND">
+			<Actor Name="Kerry the Kangaroo" HP="25,25,25,25" Reaction="1-43" AlertSound="D_KANGROSND" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="MISSILEFIRESND">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1390,7 +1390,7 @@ AddValue("Score", 200)
 			<State Name="s_giftshoot2" Shape="SPR_GIFT_SHOOT2" Tics="10" Next="s_giftshoot3" />
 			<State Name="s_giftshoot3" Shape="SPR_GIFT_SHOOT3" Tics="10" Next="s_giftshoot4" />
 			<State Name="s_giftshoot4" Shape="SPR_GIFT_SHOOT4" Tics="10" Action="T_GiftThrow" Next="s_giftchase1" />
-			<Actor Name="Ernie the Elephant" HP="25,25,25,25" Reaction="1-43" AlertDigiSound="D_ELPHNTSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" ShootSound="MISSILEFIRESND">
+			<Actor Name="Ernie the Elephant" HP="25,25,25,25" Reaction="1-43" AlertSound="D_ELPHNTSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" ShootSound="MISSILEFIRESND">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)
@@ -1418,7 +1418,7 @@ AddValue("Score", 200)
 			<State Name="s_fatshoot4" Shape="SPR_FAT_SHOOT4" Tics="10" Action="T_Shoot" Next="s_fatshoot5" />
 			<State Name="s_fatshoot5" Shape="SPR_FAT_SHOOT3" Tics="10" Action="T_Shoot" Next="s_fatshoot6" />
 			<State Name="s_fatshoot6" Shape="SPR_FAT_SHOOT4" Tics="10" Action="T_Shoot" Next="s_fatchase1" />
-			<Actor Name="Burt the Bear" HP="25,25,25,25" Reaction="1-43" AlertDigiSound="D_BEARSND" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" ShootSound="BOSSFIRESND">
+			<Actor Name="Burt the Bear" HP="25,25,25,25" Reaction="1-43" AlertSound="D_BEARSND" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" ShootSound="BOSSFIRESND">
 				<Script>
 					<![CDATA[
 AddValue("Score", 200)

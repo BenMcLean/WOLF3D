@@ -230,7 +230,7 @@ public class ActorDefinition
 	/// <summary>
 	/// Alert sound to play when actor spots player (e.g., "HALTSND").
 	/// </summary>
-	public string AlertDigiSound { get; set; }
+	public string AlertSound { get; set; }
 	/// <summary>
 	/// Hit points by difficulty level, parsed from HP="25,25,25,25" attribute.
 	/// Index is 0-based difficulty (e.g., 0=Can I Play Daddy?, 3=Death Incarnate).
@@ -310,7 +310,7 @@ public class ActorDefinition
 			DeathState = element.Attribute("Death")?.Value,
 			ChaseState = element.Attribute("Chase")?.Value,
 			AttackState = element.Attribute("Attack")?.Value,
-			AlertDigiSound = element.Attribute("AlertDigiSound")?.Value,
+			AlertSound = element.Attribute("AlertSound")?.Value,
 			HitPointsByDifficulty = hitPoints,
 			PainState = element.Attribute("Pain")?.Value,
 			PainState1 = element.Attribute("Pain1")?.Value,

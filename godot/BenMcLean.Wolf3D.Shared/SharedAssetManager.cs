@@ -85,6 +85,16 @@ public static class SharedAssetManager
 	public static IReadOnlyDictionary<string, Godot.AudioStreamWav> DigiSounds => _digiSounds;
 	private static Dictionary<string, Godot.AudioStreamWav> _digiSounds;
 	/// <summary>
+	/// Maps DigiSound names to their logical Wolf3D sound names for non-digi fallback.
+	/// </summary>
+	public static IReadOnlyDictionary<string, string> DigiToLogicalSoundName => _digiToLogicalSoundName;
+	private static Dictionary<string, string> _digiToLogicalSoundName;
+	/// <summary>
+	/// Maps logical Wolf3D sound names to their DigiSound names when a digi variant exists.
+	/// </summary>
+	public static IReadOnlyDictionary<string, string> LogicalToDigiSoundName => _logicalToDigiSoundName;
+	private static Dictionary<string, string> _logicalToDigiSoundName;
+	/// <summary>
 	/// Pre-loaded IMF songs embedded in the Shared DLL (no game/AudioT required).
 	/// Keyed by music name (e.g., "GAMESELECT_MUS").
 	/// </summary>
@@ -473,9 +483,28 @@ public static class SharedAssetManager
 	/// </summary>
 	private static void BuildDigiSounds()
 	{
-		_digiSounds = [];
+		_digiSounds = new(StringComparer.OrdinalIgnoreCase);
+		_digiToLogicalSoundName = new(StringComparer.OrdinalIgnoreCase);
+		_logicalToDigiSoundName = new(StringComparer.OrdinalIgnoreCase);
 		if (CurrentGame?.VSwap?.DigiSoundsByName is null)
 			return;
+		foreach (System.Xml.Linq.XElement soundElement in CurrentGame.XML.Element("Audio")?.Elements("Sound") ?? [])
+		{
+			string logicalName = soundElement.Attribute("Name")?.Value;
+			if (string.IsNullOrWhiteSpace(logicalName))
+				continue;
+
+			string digiName = soundElement.Attribute("Digi")?.Value;
+			if (string.IsNullOrWhiteSpace(digiName))
+				digiName = CurrentGame.VSwap.DigiSoundsByName.ContainsKey(logicalName) ? logicalName : null;
+
+			if (string.IsNullOrWhiteSpace(digiName))
+				continue;
+
+			_digiToLogicalSoundName[digiName] = logicalName;
+			if (!_logicalToDigiSoundName.ContainsKey(logicalName))
+				_logicalToDigiSoundName[logicalName] = digiName;
+		}
 		foreach ((string name, byte[] pcmData) in CurrentGame.VSwap.DigiSoundsByName)
 		{
 			if (pcmData is null || pcmData.Length == 0)
@@ -490,6 +519,48 @@ public static class SharedAssetManager
 			_digiSounds[name] = audioStream;
 		}
 	}
+
+	public static bool IsDigitizedSoundEnabled =>
+		Config?.DigiMode is Assets.Gameplay.Config.SDSMode.SoundBlaster
+			or Assets.Gameplay.Config.SDSMode.SoundSource;
+
+	public static string ResolveLogicalSoundName(string requestedSoundName)
+	{
+		if (string.IsNullOrWhiteSpace(requestedSoundName))
+			return requestedSoundName;
+
+		if (HasLogicalSound(requestedSoundName))
+			return requestedSoundName;
+
+		return _digiToLogicalSoundName is not null &&
+			_digiToLogicalSoundName.TryGetValue(requestedSoundName, out string fallbackName) &&
+			!string.IsNullOrWhiteSpace(fallbackName)
+			? fallbackName
+			: requestedSoundName;
+	}
+
+	public static bool TryGetDigiSound(
+		string requestedSoundName,
+		out Godot.AudioStreamWav stream,
+		out string logicalSoundName)
+	{
+		logicalSoundName = ResolveLogicalSoundName(requestedSoundName);
+		stream = null;
+
+		if (string.IsNullOrWhiteSpace(requestedSoundName) || _digiSounds is null)
+			return false;
+
+		if (_digiSounds.TryGetValue(requestedSoundName, out stream))
+			return true;
+
+		return _logicalToDigiSoundName is not null &&
+			_logicalToDigiSoundName.TryGetValue(logicalSoundName, out string digiSoundName) &&
+			_digiSounds.TryGetValue(digiSoundName, out stream);
+	}
+
+	private static bool HasLogicalSound(string soundName) =>
+		CurrentGame?.AudioT?.Sounds?.ContainsKey(soundName) == true ||
+		CurrentGame?.AudioT?.PcSounds?.ContainsKey(soundName) == true;
 	#endregion DigiSounds
 	#region BonusAutomapTiles
 	/// <summary>
@@ -721,6 +792,8 @@ public static class SharedAssetManager
 			foreach (Godot.AudioStreamWav sound in _digiSounds.Values)
 				sound?.Dispose();
 		_digiSounds?.Clear();
+		_digiToLogicalSoundName?.Clear();
+		_logicalToDigiSoundName?.Clear();
 		if (_themes is not null)
 			foreach (Godot.Theme theme in _themes.Values)
 			{

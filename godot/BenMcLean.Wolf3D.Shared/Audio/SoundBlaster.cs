@@ -183,46 +183,43 @@ public partial class SoundBlaster : Node
 	#endregion Music API
 	#region Sound Effects API
 	/// <summary>
-	/// Plays a sound effect by name. Automatically routes based on SoundMode.
-	/// Priority: DigiSound (Sound Blaster) > PC Speaker > AdLib
+	/// Plays a sound effect by logical name. Automatically resolves digi mappings and
+	/// routes based on the current sound configuration.
 	/// </summary>
 	/// <param name="soundName">Name of the sound effect (e.g., "HITWALLSND", "ATKPISTOLSND")</param>
-	/// <remarks>
-	/// Sound playback priority (authentic Wolf3D behavior):
-	/// 1. DigiSound (digitized Sound Blaster audio) - if available and SoundMode != Off
-	/// 2. PC Speaker - if SoundMode == PC and DigiSound not available
-	/// 3. AdLib (FM synthesis) - fallback if neither DigiSound nor PC Speaker available
-	/// </remarks>
 	public void PlaySound(string soundName)
 	{
-		if (SharedAssetManager.Config?.SoundMode == Assets.Gameplay.Config.SDMode.Off ||
-			string.IsNullOrWhiteSpace(soundName))
+		Assets.Gameplay.Config config = SharedAssetManager.Config;
+		if (config is null || string.IsNullOrWhiteSpace(soundName))
 			return;
 
-		// Try DigiSound first (highest priority - digitized Sound Blaster audio)
-		if (SharedAssetManager.Config.DigiMode is Assets.Gameplay.Config.SDSMode.SoundBlaster or Assets.Gameplay.Config.SDSMode.SoundSource &&
-			SharedAssetManager.DigiSounds.TryGetValue(soundName, out AudioStreamWav stream))
+		// Wolf3D resolves from a single logical sound id, preferring digitized playback
+		// whenever digi is enabled and a digi mapping exists for the requested sound.
+		if (SharedAssetManager.IsDigitizedSoundEnabled &&
+			SharedAssetManager.TryGetDigiSound(soundName, out AudioStreamWav stream, out _))
 		{
 			DirectionlessBusSpeaker.Stream = stream;
 			DirectionlessBusSpeaker.Play();
 			return;
 		}
 
-		// Route to PC Speaker if in PC mode and DigiSound not available
-		if (SharedAssetManager.Config.SoundMode == Assets.Gameplay.Config.SDMode.PC &&
+		string resolvedSoundName = SharedAssetManager.ResolveLogicalSoundName(soundName);
+		if (config.SoundMode == Assets.Gameplay.Config.SDMode.Off)
+			return;
+
+		if (config.SoundMode == Assets.Gameplay.Config.SDMode.PC &&
 			SharedAssetManager.CurrentGame?.AudioT?.PcSounds is not null &&
-			SharedAssetManager.CurrentGame.AudioT.PcSounds.TryGetValue(soundName, out PcSpeaker pcSound))
+			SharedAssetManager.CurrentGame.AudioT.PcSounds.TryGetValue(resolvedSoundName, out PcSpeaker pcSound))
 		{
 			PcSpeakerPlayer.PlaySound(pcSound);
 			return;
 		}
 
-		// Fallback to AdLib (FM synthesis beeps)
 		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds is not null &&
-			SharedAssetManager.CurrentGame.AudioT.Sounds.TryGetValue(soundName, out Adl adlSound))
+			SharedAssetManager.CurrentGame.AudioT.Sounds.TryGetValue(resolvedSoundName, out Adl adlSound))
 			AdlSignaller.IdAdlQueue.Enqueue(adlSound);
 		else
-			GD.PrintErr($"ERROR: Sound '{soundName}' not found");
+			GD.PrintErr($"ERROR: Sound '{soundName}' not found (resolved logical name '{resolvedSoundName}')");
 	}
 	#endregion Sound Effects API
 }

@@ -73,10 +73,10 @@ public static class GameCatalog
 	/// </summary>
 	public static GameDefinition Resolve(string xmlPath, bool preferEmbeddedOfficial = false)
 	{
-		string fullPath = Path.GetFullPath(xmlPath);
-		string fileName = Path.GetFileName(fullPath);
+		string fullPath = Path.GetFullPath(xmlPath),
+			fileName = Path.GetFileName(fullPath);
 		if (preferEmbeddedOfficial &&
-			EmbeddedXmlResources.Value.TryGetValue(fileName, out string? preferredResourceName) &&
+			EmbeddedXmlResources.Value.TryGetValue(fileName, out string preferredResourceName) &&
 			TryLoadEmbeddedGameDefinition(Path.GetDirectoryName(fullPath) ?? Directory.GetCurrentDirectory(), fileName, preferredResourceName, out GameDefinition preferredDefinition))
 			return preferredDefinition;
 
@@ -87,7 +87,7 @@ public static class GameCatalog
 			throw new FileNotFoundException($"Unable to parse game XML: {fullPath}", fullPath);
 		}
 
-		if (EmbeddedXmlResources.Value.TryGetValue(fileName, out string? resourceName) &&
+		if (EmbeddedXmlResources.Value.TryGetValue(fileName, out string resourceName) &&
 			TryLoadEmbeddedGameDefinition(Path.GetDirectoryName(fullPath) ?? Directory.GetCurrentDirectory(), fileName, resourceName, out GameDefinition embeddedDefinition))
 			return embeddedDefinition;
 
@@ -98,10 +98,9 @@ public static class GameCatalog
 	{
 		try
 		{
-			return Directory.EnumerateFiles(gamesDirectory, "*.xml")
+			return [.. Directory.EnumerateFiles(gamesDirectory, "*.xml")
 				.Where(path => !Path.GetFileName(path).Equals("WOLF3D.xsd", StringComparison.OrdinalIgnoreCase))
-				.Select(Path.GetFullPath)
-				.ToArray();
+				.Select(Path.GetFullPath)];
 		}
 		catch
 		{
@@ -129,7 +128,7 @@ public static class GameCatalog
 	{
 		try
 		{
-			using Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+			using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
 			if (stream is null)
 			{
 				definition = default!;
@@ -167,14 +166,14 @@ public static class GameCatalog
 			&& RequiredFilesExist(definition.Xml.Element("VSwap"), definition.GameDataDirectory, "Name");
 	}
 
-	private static bool RequiredFilesExist(XElement? element, string folder, params string[] attributeNames)
+	private static bool RequiredFilesExist(XElement element, string folder, params string[] attributeNames)
 	{
 		if (element is null)
 			return true;
 
 		foreach (string attributeName in attributeNames)
 		{
-			string? fileName = element.Attribute(attributeName)?.Value;
+			string fileName = element.Attribute(attributeName)?.Value;
 			if (string.IsNullOrWhiteSpace(fileName))
 				continue;
 			if (!File.Exists(Path.Combine(folder, fileName)))
@@ -192,14 +191,14 @@ public static class GameCatalog
 		RequiredFilesExist(definition.Xml.Element("VSwap"), string.Empty, EmbeddedSharewareFileExists, "Name");
 
 	private static bool EmbeddedSharewareFileExists(string path) => EmbeddedSharewareFiles.Value.Contains(Path.GetFileName(path));
-	private static bool RequiredFilesExist(XElement? element, string folder, Func<string, bool> fileExists, params string[] attributeNames)
+	private static bool RequiredFilesExist(XElement element, string folder, Func<string, bool> fileExists, params string[] attributeNames)
 	{
 		if (element is null)
 			return true;
 
 		foreach (string attributeName in attributeNames)
 		{
-			string? fileName = element.Attribute(attributeName)?.Value;
+			string fileName = element.Attribute(attributeName)?.Value;
 			if (string.IsNullOrWhiteSpace(fileName))
 				continue;
 			if (!fileExists(Path.Combine(folder, fileName)))
@@ -211,7 +210,7 @@ public static class GameCatalog
 	private static HashSet<string> LoadEmbeddedSharewareFiles()
 	{
 		HashSet<string> files = new(StringComparer.OrdinalIgnoreCase);
-		using Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(SharewareZipResource);
+		using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(SharewareZipResource);
 		if (stream is null)
 			return files;
 		using System.IO.Compression.ZipArchive archive = new(stream, System.IO.Compression.ZipArchiveMode.Read);

@@ -1426,6 +1426,7 @@
 		<xs:complexType>
 			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
+			<xs:attribute name="Digi" type="xs:string" use="optional"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -1961,7 +1962,7 @@
 			<xs:attribute name="HP" type="xs:string"/>
 			<xs:attribute name="Reaction" type="xs:string"/>
 			<xs:attribute name="Speed" type="xs:integer"/>
-			<xs:attribute name="AlertDigiSound" type="xs:string"/>
+			<xs:attribute name="AlertSound" type="xs:string"/>
 			<xs:attribute name="Stand" type="xs:string"/>
 			<xs:attribute name="Chase" type="xs:string"/>
 			<xs:attribute name="Attack" type="xs:string"/>

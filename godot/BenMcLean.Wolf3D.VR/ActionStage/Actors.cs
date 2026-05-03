@@ -319,12 +319,13 @@ public partial class Actors : Node3D
 			GD.PrintErr($"ERROR: Actor {evt.ActorIndex} has no speaker");
 			return;
 		}
-		// Look up sound from digi sounds library
-		// Fall back to global playback (AdLib/PC Speaker) if digi sound not available
-		// Original Wolf3D shareware (UPLOAD) excludes some digi sounds (e.g., DOGATTACKSND)
-		if (!_digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
+		// Positional playback is only valid for digitized sound. If digi is unavailable or
+		// disabled, fall back to the shared global resolver using the logical sound name.
+		string logicalSoundName = SharedAssetManager.ResolveLogicalSoundName(evt.SoundName);
+		if (!SharedAssetManager.IsDigitizedSoundEnabled ||
+			!SharedAssetManager.TryGetDigiSound(evt.SoundName, out AudioStreamWav sound, out _))
 		{
-			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
+			EventBus.Emit(GameEvent.PlaySound, logicalSoundName);
 			return;
 		}
 		// Stop any currently playing sound before starting the new one

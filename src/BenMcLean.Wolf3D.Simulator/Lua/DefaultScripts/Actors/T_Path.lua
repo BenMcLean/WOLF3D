@@ -36,7 +36,7 @@ else
 	end
 
 	-- Timer has expired - call FirstSighting
-	-- Use data-driven ChaseState and AlertDigiSound from XML actor definition.
+	-- Use data-driven ChaseState and AlertSound from XML actor definition.
 	local chaseState = GetChaseState()
 	if chaseState ~= nil and chaseState ~= "" then
 		local alertSound = GetAlertSound()

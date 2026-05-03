@@ -93,6 +93,7 @@ public static class GameCheckerLogic
 			pics = [.. doc.Names("Pic")],
 			fonts = [.. doc.Names("Font")],
 			sounds = [.. doc.Names("Sound")],
+			digis = [.. doc.Names("DigiSound")],
 			imfs = [.. doc.Names("Imf").Concat(doc.Names("Midi"))],
 			textChunks = [.. doc.Names("TextChunk")],
 			states = [.. doc.Names("State")],
@@ -137,7 +138,7 @@ public static class GameCheckerLogic
 			if (CheckAttr(el, "Death", states, "state") is { } i4) yield return i4;
 			if (CheckAttr(el, "Pain", states, "state") is { } i5) yield return i5;
 			if (CheckAttr(el, "Pain1", states, "state") is { } i6) yield return i6;
-			if (CheckAttr(el, "AlertDigiSound", sounds, "sound") is { } i7) yield return i7;
+			if (CheckAttr(el, "AlertSound", sounds, "sound") is { } i7) yield return i7;
 		}
 
 		foreach (XElement el in doc.Descendants("ObjectType"))
@@ -236,6 +237,10 @@ public static class GameCheckerLogic
 			if (CheckAttr(el, "DigiSound", sounds, "sound") is { } i1) yield return i1;
 			if (CheckAttr(el, "BlockedSound", sounds, "sound") is { } i2) yield return i2;
 		}
+
+		foreach (XElement el in doc.Descendants("Sound"))
+			if (CheckAttr(el, "Digi", digis, "digi sound") is { } i)
+				yield return i;
 		#endregion Assets
 	}
 	#region Utilities

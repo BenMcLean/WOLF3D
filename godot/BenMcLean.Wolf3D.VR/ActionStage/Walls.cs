@@ -193,14 +193,15 @@ void fragment() {
 		}
 
 		PushWallData data = pushWalls[evt.PushWallIndex];
-		if (digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav stream))
+		if (SharedAssetManager.IsDigitizedSoundEnabled &&
+			SharedAssetManager.TryGetDigiSound(evt.SoundName, out AudioStreamWav stream, out _))
 		{
 			data.Speaker.Stream = stream;
 			data.Speaker.Play();
 		}
 		else
 			// Fall back to global playback (AdLib/PC Speaker) if digi sound not available
-			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
+			EventBus.Emit(GameEvent.PlaySound, SharedAssetManager.ResolveLogicalSoundName(evt.SoundName));
 	}
 	/// <summary>
 	/// Handles elevator switch texture flip from the simulator.

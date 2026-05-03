@@ -428,11 +428,11 @@ public partial class Doors : Node3D
 			return;
 		}
 
-		// Look up sound from digi sounds library
-		// Fall back to global playback (AdLib/PC Speaker) if digi sound not available
-		if (!digiSounds.TryGetValue(evt.SoundName, out AudioStreamWav sound))
+		string logicalSoundName = SharedAssetManager.ResolveLogicalSoundName(evt.SoundName);
+		if (!SharedAssetManager.IsDigitizedSoundEnabled ||
+			!SharedAssetManager.TryGetDigiSound(evt.SoundName, out AudioStreamWav sound, out _))
 		{
-			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
+			EventBus.Emit(GameEvent.PlaySound, logicalSoundName);
 			return;
 		}
 

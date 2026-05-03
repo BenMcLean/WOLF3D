@@ -59,7 +59,7 @@ public class WeaponScriptContext(
 	/// Sounds like ATKKNIFESND, ATKPISTOLSND play in player's "headphones".
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "ATKKNIFESND", "ATKPISTOLSND")</param>
-	public void PlaySound(string soundName)
+	public override void PlaySound(string soundName)
 	{
 		simulator.EmitGlobalSound(soundName);
 		_logger?.LogDebug("WeaponScriptContext: PlaySound({soundName}) for slot {slotIndex}",

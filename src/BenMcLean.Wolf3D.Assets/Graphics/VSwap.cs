@@ -188,7 +188,7 @@ public sealed class VSwap
 				DigiSounds[job.Index] = buffer;
 			}
 		});
-		DigiSoundsByName = [];
+		DigiSoundsByName = new(StringComparer.OrdinalIgnoreCase);
 		foreach (XElement digiSoundElement in xml.Element("VSwap")?.Element("DigiSounds")?.Elements("DigiSound") ?? [])
 			if (ushort.TryParse(digiSoundElement.Attribute("Number")?.Value, out ushort number)
 				&& number < DigiSounds.Length

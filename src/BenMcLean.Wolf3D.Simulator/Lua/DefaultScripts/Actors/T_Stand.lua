@@ -39,7 +39,7 @@ end
 
 -- Timer has expired - WL_STATE.C:1916 - call FirstSighting
 -- WL_STATE.C:FirstSighting (lines 1560-1784) - Transition based on actor type.
--- Use data-driven ChaseState and AlertDigiSound from XML actor definition.
+-- Use data-driven ChaseState and AlertSound from XML actor definition.
 local chaseState = GetChaseState()
 if chaseState ~= nil and chaseState ~= "" then
 	local alertSound = GetAlertSound()

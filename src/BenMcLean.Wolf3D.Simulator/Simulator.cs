@@ -2095,8 +2095,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				TransitionActorStateByName(actorIndex, actorDef.ChaseState);
 				actor.Flags |= ActorFlags.AttackMode;
-				if (!string.IsNullOrEmpty(actorDef.AlertDigiSound))
-					EmitActorPlaySound(actorIndex, actorDef.AlertDigiSound);
+				if (!string.IsNullOrEmpty(actorDef.AlertSound))
+					EmitActorPlaySound(actorIndex, actorDef.AlertSound);
 			}
 			if (actorDef is not null)
 			{
@@ -2666,8 +2666,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				TransitionActorStateByName(i, actorDef.ChaseState);
 				actor.Flags |= ActorFlags.AttackMode;
 
-				if (!string.IsNullOrEmpty(actorDef.AlertDigiSound))
-					EmitActorPlaySound(i, actorDef.AlertDigiSound);
+				if (!string.IsNullOrEmpty(actorDef.AlertSound))
+					EmitActorPlaySound(i, actorDef.AlertSound);
 			}
 		}
 	}
@@ -2756,8 +2756,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					TransitionActorStateByName(actorIndex, actorDef.ChaseState);
 					actor.Flags |= ActorFlags.AttackMode;
 
-					if (!string.IsNullOrEmpty(actorDef.AlertDigiSound))
-						EmitActorPlaySound(actorIndex, actorDef.AlertDigiSound);
+					if (!string.IsNullOrEmpty(actorDef.AlertSound))
+						EmitActorPlaySound(actorIndex, actorDef.AlertSound);
 				}
 			}
 
@@ -3787,9 +3787,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// WL_STATE.C:FirstSighting plays a sound per obclass when actor spots player.
 	/// Returns null if not configured (caller should skip sound).
 	/// </summary>
-	public string GetActorAlertDigiSound(string actorType) =>
+	public string GetActorAlertSound(string actorType) =>
 		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
-		? def.AlertDigiSound
+		? def.AlertSound
 		: null;
 
 	/// <summary>
