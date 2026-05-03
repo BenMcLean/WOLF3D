@@ -310,27 +310,27 @@
 				<!-- Text has two lines per episode, changes color when selected -->
 				<!-- Spacing=26 positions episodes at Y: 23, 49, 75, 101, 127, 153 (matching pictures) -->
 				<MenuItem Text="Episode 1&#10;Escape from Wolfenstein">
-					SetEpisode(0)
-					NavigateToMenu("NewGame")
-				</MenuItem>
-				<MenuItem Text="Episode 2&#10;Operation: Eisenfaust">
 					SetEpisode(1)
 					NavigateToMenu("NewGame")
 				</MenuItem>
-				<MenuItem Text="Episode 3&#10;Die, Fuhrer, Die!">
+				<MenuItem Text="Episode 2&#10;Operation: Eisenfaust">
 					SetEpisode(2)
 					NavigateToMenu("NewGame")
 				</MenuItem>
-				<MenuItem Text="Episode 4&#10;A Dark Secret">
+				<MenuItem Text="Episode 3&#10;Die, Fuhrer, Die!">
 					SetEpisode(3)
 					NavigateToMenu("NewGame")
 				</MenuItem>
-				<MenuItem Text="Episode 5&#10;Trail of the Madman">
+				<MenuItem Text="Episode 4&#10;A Dark Secret">
 					SetEpisode(4)
 					NavigateToMenu("NewGame")
 				</MenuItem>
-				<MenuItem Text="Episode 6&#10;Confrontation">
+				<MenuItem Text="Episode 5&#10;Trail of the Madman">
 					SetEpisode(5)
+					NavigateToMenu("NewGame")
+				</MenuItem>
+				<MenuItem Text="Episode 6&#10;Confrontation">
+					SetEpisode(6)
 					NavigateToMenu("NewGame")
 				</MenuItem>
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
@@ -908,7 +908,7 @@ StartTicker("AvgTreasureRatio", tr)
 		<Map Number="8" Episode="1" Level="9" Music="WARMARCH_MUS" />
 		<Map Number="9" Episode="1" Level="10" Ceiling="191" Music="CORNER_MUS" ElevatorTo="1" />
 		<!-- Episode 2 (maps 10-19) -->
-		<Map Number="10" Episode="2" Level="1" Par="00:01:30" Music="NAZI_OMI_MUS" />
+		<Map Number="10" Episode="2" Level="1" Par="00:01:30" Music="NAZI_OMI_MUS" AltElevatorTo="19" />
 		<Map Number="11" Episode="2" Level="2" Par="00:03:30" Music="PREGNANT_MUS" />
 		<Map Number="12" Episode="2" Level="3" Par="00:03:00" Music="GOINGAFT_MUS" />
 		<Map Number="13" Episode="2" Level="4" Par="00:02:00" Music="HEADACHE_MUS" />
@@ -917,7 +917,7 @@ StartTicker("AvgTreasureRatio", tr)
 		<Map Number="16" Episode="2" Level="7" Par="00:01:00" Music="HEADACHE_MUS" />
 		<Map Number="17" Episode="2" Level="8" Par="00:03:00" Music="GOINGAFT_MUS" />
 		<Map Number="18" Episode="2" Level="9" Music="WARMARCH_MUS" />
-		<Map Number="19" Episode="2" Level="10" Ceiling="191" Music="DUNGEON_MUS" />
+		<Map Number="19" Episode="2" Level="10" Ceiling="191" Music="DUNGEON_MUS" ElevatorTo="11" />
 		<!-- Episode 3 (maps 20-29) -->
 		<Map Number="20" Episode="3" Level="1" Par="00:01:30" Music="INTROCW3_MUS" />
 		<Map Number="21" Episode="3" Level="2" Par="00:01:30" Music="NAZI_RAP_MUS" />
@@ -925,43 +925,43 @@ StartTicker("AvgTreasureRatio", tr)
 		<Map Number="23" Episode="3" Level="4" Par="00:02:30" Music="ZEROHOUR_MUS" />
 		<Map Number="24" Episode="3" Level="5" Par="00:03:30" Music="INTROCW3_MUS" />
 		<Map Number="25" Episode="3" Level="6" Par="00:02:30" Music="NAZI_RAP_MUS" />
-		<Map Number="26" Episode="3" Level="7" Par="00:02:00" Music="TWELFTH_MUS" />
+		<Map Number="26" Episode="3" Level="7" Par="00:02:00" Music="TWELFTH_MUS" AltElevatorTo="29" />
 		<Map Number="27" Episode="3" Level="8" Par="00:06:00" Music="ZEROHOUR_MUS" />
 		<Map Number="28" Episode="3" Level="9" Music="ULTIMATE_MUS" />
-		<Map Number="29" Episode="3" Level="10" Ceiling="191" Music="PACMAN_MUS" />
+		<Map Number="29" Episode="3" Level="10" Ceiling="191" Music="PACMAN_MUS" ElevatorTo="27" />
 		<!-- Episode 4 (maps 30-39) -->
 		<Map Number="30" Episode="4" Level="1" Par="00:02:00" Music="GETTHEM_MUS" />
 		<Map Number="31" Episode="4" Level="2" Par="00:02:00" Music="SEARCHN_MUS" />
-		<Map Number="32" Episode="4" Level="3" Par="00:01:30" Music="POW_MUS" />
+		<Map Number="32" Episode="4" Level="3" Par="00:01:30" Music="POW_MUS" AltElevatorTo="39" />
 		<Map Number="33" Episode="4" Level="4" Par="00:01:00" Music="SUSPENSE_MUS" />
 		<Map Number="34" Episode="4" Level="5" Par="00:04:30" Music="GETTHEM_MUS" />
 		<Map Number="35" Episode="4" Level="6" Par="00:03:30" Music="SEARCHN_MUS" />
 		<Map Number="36" Episode="4" Level="7" Par="00:02:00" Music="POW_MUS" />
 		<Map Number="37" Episode="4" Level="8" Par="00:04:30" Music="SUSPENSE_MUS" />
 		<Map Number="38" Episode="4" Level="9" Music="WARMARCH_MUS" />
-		<Map Number="39" Episode="4" Level="10" Ceiling="191" Music="CORNER_MUS" />
+		<Map Number="39" Episode="4" Level="10" Ceiling="191" Music="CORNER_MUS" ElevatorTo="33" />
 		<!-- Episode 5 (maps 40-49) -->
 		<Map Number="40" Episode="5" Level="1" Par="00:02:30" Music="NAZI_OMI_MUS" />
 		<Map Number="41" Episode="5" Level="2" Par="00:01:30" Music="PREGNANT_MUS" />
 		<Map Number="42" Episode="5" Level="3" Par="00:02:30" Music="GOINGAFT_MUS" />
 		<Map Number="43" Episode="5" Level="4" Par="00:02:30" Music="HEADACHE_MUS" />
-		<Map Number="44" Episode="5" Level="5" Par="00:04:00" Music="NAZI_OMI_MUS" />
+		<Map Number="44" Episode="5" Level="5" Par="00:04:00" Music="NAZI_OMI_MUS" AltElevatorTo="49" />
 		<Map Number="45" Episode="5" Level="6" Par="00:03:00" Music="PREGNANT_MUS" />
 		<Map Number="46" Episode="5" Level="7" Par="00:04:30" Music="HEADACHE_MUS" />
 		<Map Number="47" Episode="5" Level="8" Par="00:03:30" Music="GOINGAFT_MUS" />
 		<Map Number="48" Episode="5" Level="9" Music="WARMARCH_MUS" />
-		<Map Number="49" Episode="5" Level="10" Ceiling="191" Music="DUNGEON_MUS" />
+		<Map Number="49" Episode="5" Level="10" Ceiling="191" Music="DUNGEON_MUS" ElevatorTo="45" />
 		<!-- Episode 6 (maps 50-59) -->
 		<Map Number="50" Episode="6" Level="1" Par="00:06:30" Music="INTROCW3_MUS" />
 		<Map Number="51" Episode="6" Level="2" Par="00:04:00" Music="NAZI_RAP_MUS" />
-		<Map Number="52" Episode="6" Level="3" Par="00:04:30" Music="TWELFTH_MUS" />
+		<Map Number="52" Episode="6" Level="3" Par="00:04:30" Music="TWELFTH_MUS" AltElevatorTo="59" />
 		<Map Number="53" Episode="6" Level="4" Par="00:06:00" Music="ZEROHOUR_MUS" />
 		<Map Number="54" Episode="6" Level="5" Par="00:05:00" Music="INTROCW3_MUS" />
 		<Map Number="55" Episode="6" Level="6" Par="00:05:30" Music="NAZI_RAP_MUS" />
 		<Map Number="56" Episode="6" Level="7" Par="00:05:30" Music="TWELFTH_MUS" />
 		<Map Number="57" Episode="6" Level="8" Par="00:08:30" Music="ZEROHOUR_MUS" />
 		<Map Number="58" Episode="6" Level="9" Music="ULTIMATE_MUS" />
-		<Map Number="59" Episode="6" Level="10" Ceiling="191" Music="FUNKYOU_MUS" />
+		<Map Number="59" Episode="6" Level="10" Ceiling="191" Music="FUNKYOU_MUS" ElevatorTo="53" />
 		<!-- Special: MAPSWL6.H:MAP4L10PATH_MAP=60 — alternate path for Episode 4 Level 10 -->
 		<Map Number="60" Episode="4" Level="10" Ceiling="191" Music="CORNER_MUS" />
 	</Maps>
@@ -1322,6 +1322,109 @@ return false
 			<Sprite Page="290" Name="SPR_SS_SHOOT1" />
 			<Sprite Page="291" Name="SPR_SS_SHOOT2" />
 			<Sprite Page="292" Name="SPR_SS_SHOOT3" />
+			<!-- Mutants - retail Wolf3D pages immediately after SS -->
+			<Sprite Page="293" Name="SPR_MUT_S_1" />
+			<Sprite Page="294" Name="SPR_MUT_S_2" />
+			<Sprite Page="295" Name="SPR_MUT_S_3" />
+			<Sprite Page="296" Name="SPR_MUT_S_4" />
+			<Sprite Page="297" Name="SPR_MUT_S_5" />
+			<Sprite Page="298" Name="SPR_MUT_S_6" />
+			<Sprite Page="299" Name="SPR_MUT_S_7" />
+			<Sprite Page="300" Name="SPR_MUT_S_8" />
+			<Sprite Page="301" Name="SPR_MUT_W1_1" />
+			<Sprite Page="302" Name="SPR_MUT_W1_2" />
+			<Sprite Page="303" Name="SPR_MUT_W1_3" />
+			<Sprite Page="304" Name="SPR_MUT_W1_4" />
+			<Sprite Page="305" Name="SPR_MUT_W1_5" />
+			<Sprite Page="306" Name="SPR_MUT_W1_6" />
+			<Sprite Page="307" Name="SPR_MUT_W1_7" />
+			<Sprite Page="308" Name="SPR_MUT_W1_8" />
+			<Sprite Page="309" Name="SPR_MUT_W2_1" />
+			<Sprite Page="310" Name="SPR_MUT_W2_2" />
+			<Sprite Page="311" Name="SPR_MUT_W2_3" />
+			<Sprite Page="312" Name="SPR_MUT_W2_4" />
+			<Sprite Page="313" Name="SPR_MUT_W2_5" />
+			<Sprite Page="314" Name="SPR_MUT_W2_6" />
+			<Sprite Page="315" Name="SPR_MUT_W2_7" />
+			<Sprite Page="316" Name="SPR_MUT_W2_8" />
+			<Sprite Page="317" Name="SPR_MUT_W3_1" />
+			<Sprite Page="318" Name="SPR_MUT_W3_2" />
+			<Sprite Page="319" Name="SPR_MUT_W3_3" />
+			<Sprite Page="320" Name="SPR_MUT_W3_4" />
+			<Sprite Page="321" Name="SPR_MUT_W3_5" />
+			<Sprite Page="322" Name="SPR_MUT_W3_6" />
+			<Sprite Page="323" Name="SPR_MUT_W3_7" />
+			<Sprite Page="324" Name="SPR_MUT_W3_8" />
+			<Sprite Page="325" Name="SPR_MUT_W4_1" />
+			<Sprite Page="326" Name="SPR_MUT_W4_2" />
+			<Sprite Page="327" Name="SPR_MUT_W4_3" />
+			<Sprite Page="328" Name="SPR_MUT_W4_4" />
+			<Sprite Page="329" Name="SPR_MUT_W4_5" />
+			<Sprite Page="330" Name="SPR_MUT_W4_6" />
+			<Sprite Page="331" Name="SPR_MUT_W4_7" />
+			<Sprite Page="332" Name="SPR_MUT_W4_8" />
+			<Sprite Page="333" Name="SPR_MUT_PAIN_1" />
+			<Sprite Page="334" Name="SPR_MUT_DIE_1" />
+			<Sprite Page="335" Name="SPR_MUT_DIE_2" />
+			<Sprite Page="336" Name="SPR_MUT_DIE_3" />
+			<Sprite Page="337" Name="SPR_MUT_PAIN_2" />
+			<Sprite Page="338" Name="SPR_MUT_DIE_4" />
+			<Sprite Page="339" Name="SPR_MUT_DEAD" />
+			<Sprite Page="340" Name="SPR_MUT_SHOOT1" />
+			<Sprite Page="341" Name="SPR_MUT_SHOOT2" />
+			<Sprite Page="342" Name="SPR_MUT_SHOOT3" />
+			<Sprite Page="343" Name="SPR_MUT_SHOOT4" />
+			<!-- Officers -->
+			<Sprite Page="344" Name="SPR_OFC_S_1" />
+			<Sprite Page="345" Name="SPR_OFC_S_2" />
+			<Sprite Page="346" Name="SPR_OFC_S_3" />
+			<Sprite Page="347" Name="SPR_OFC_S_4" />
+			<Sprite Page="348" Name="SPR_OFC_S_5" />
+			<Sprite Page="349" Name="SPR_OFC_S_6" />
+			<Sprite Page="350" Name="SPR_OFC_S_7" />
+			<Sprite Page="351" Name="SPR_OFC_S_8" />
+			<Sprite Page="352" Name="SPR_OFC_W1_1" />
+			<Sprite Page="353" Name="SPR_OFC_W1_2" />
+			<Sprite Page="354" Name="SPR_OFC_W1_3" />
+			<Sprite Page="355" Name="SPR_OFC_W1_4" />
+			<Sprite Page="356" Name="SPR_OFC_W1_5" />
+			<Sprite Page="357" Name="SPR_OFC_W1_6" />
+			<Sprite Page="358" Name="SPR_OFC_W1_7" />
+			<Sprite Page="359" Name="SPR_OFC_W1_8" />
+			<Sprite Page="360" Name="SPR_OFC_W2_1" />
+			<Sprite Page="361" Name="SPR_OFC_W2_2" />
+			<Sprite Page="362" Name="SPR_OFC_W2_3" />
+			<Sprite Page="363" Name="SPR_OFC_W2_4" />
+			<Sprite Page="364" Name="SPR_OFC_W2_5" />
+			<Sprite Page="365" Name="SPR_OFC_W2_6" />
+			<Sprite Page="366" Name="SPR_OFC_W2_7" />
+			<Sprite Page="367" Name="SPR_OFC_W2_8" />
+			<Sprite Page="368" Name="SPR_OFC_W3_1" />
+			<Sprite Page="369" Name="SPR_OFC_W3_2" />
+			<Sprite Page="370" Name="SPR_OFC_W3_3" />
+			<Sprite Page="371" Name="SPR_OFC_W3_4" />
+			<Sprite Page="372" Name="SPR_OFC_W3_5" />
+			<Sprite Page="373" Name="SPR_OFC_W3_6" />
+			<Sprite Page="374" Name="SPR_OFC_W3_7" />
+			<Sprite Page="375" Name="SPR_OFC_W3_8" />
+			<Sprite Page="376" Name="SPR_OFC_W4_1" />
+			<Sprite Page="377" Name="SPR_OFC_W4_2" />
+			<Sprite Page="378" Name="SPR_OFC_W4_3" />
+			<Sprite Page="379" Name="SPR_OFC_W4_4" />
+			<Sprite Page="380" Name="SPR_OFC_W4_5" />
+			<Sprite Page="381" Name="SPR_OFC_W4_6" />
+			<Sprite Page="382" Name="SPR_OFC_W4_7" />
+			<Sprite Page="383" Name="SPR_OFC_W4_8" />
+			<Sprite Page="384" Name="SPR_OFC_PAIN_1" />
+			<Sprite Page="385" Name="SPR_OFC_DIE_1" />
+			<Sprite Page="386" Name="SPR_OFC_DIE_2" />
+			<Sprite Page="387" Name="SPR_OFC_DIE_3" />
+			<Sprite Page="388" Name="SPR_OFC_PAIN_2" />
+			<Sprite Page="389" Name="SPR_OFC_DIE_4" />
+			<Sprite Page="390" Name="SPR_OFC_DEAD" />
+			<Sprite Page="391" Name="SPR_OFC_SHOOT1" />
+			<Sprite Page="392" Name="SPR_OFC_SHOOT2" />
+			<Sprite Page="393" Name="SPR_OFC_SHOOT3" />
 			<Sprite Page="402" Name="SPR_BOSS_W1" />
 			<Sprite Page="403" Name="SPR_BOSS_W2" />
 			<Sprite Page="404" Name="SPR_BOSS_W3" />
@@ -1469,9 +1572,12 @@ return false
 			<DigiSound Number="14" Name="TAKEDAMAGESND" />
 			<DigiSound Number="14" Name="DEATHSCREAM3SND" />
 			<DigiSound Number="15" Name="PUSHWALLSND" />
+			<DigiSound Number="17" Name="AHHHGSND" />
 			<DigiSound Number="20" Name="LEBENSND" />
 			<DigiSound Number="21" Name="NAZIFIRESND" />
 			<DigiSound Number="22" Name="SLURPIESND" />
+			<DigiSound Number="27" Name="SPIONSND" />
+			<DigiSound Number="28" Name="NEINSOVASSND" />
 			<DigiSound Number="32" Name="YEAHSND" />
 		</DigiSounds>
 		<StatInfo UseWallSound="DONOTHINGSND">
@@ -1555,6 +1661,14 @@ return false
 			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdpath1" />
 			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0" State="s_grdpath1" />
 			<ObjectType Number="124" ObClass="dressing" Page="201" Name="Dead Guard" />
+			<ObjectType Number="116" ObClass="actor" Actor="Officer" Direction="E" Difficulty="0" State="s_ofcstand" />
+			<ObjectType Number="117" ObClass="actor" Actor="Officer" Direction="N" Difficulty="0" State="s_ofcstand" />
+			<ObjectType Number="118" ObClass="actor" Actor="Officer" Direction="W" Difficulty="0" State="s_ofcstand" />
+			<ObjectType Number="119" ObClass="actor" Actor="Officer" Direction="S" Difficulty="0" State="s_ofcstand" />
+			<ObjectType Number="120" ObClass="actor" Actor="Officer" Direction="E" Difficulty="0" State="s_ofcpath1" />
+			<ObjectType Number="121" ObClass="actor" Actor="Officer" Direction="N" Difficulty="0" State="s_ofcpath1" />
+			<ObjectType Number="122" ObClass="actor" Actor="Officer" Direction="W" Difficulty="0" State="s_ofcpath1" />
+			<ObjectType Number="123" ObClass="actor" Actor="Officer" Direction="S" Difficulty="0" State="s_ofcpath1" />
 			<ObjectType Number="126" ObClass="actor" Actor="SS" Direction="E" Difficulty="0" State="s_ssstand" />
 			<ObjectType Number="127" ObClass="actor" Actor="SS" Direction="N" Difficulty="0" State="s_ssstand" />
 			<ObjectType Number="128" ObClass="actor" Actor="SS" Direction="W" Difficulty="0" State="s_ssstand" />
@@ -1575,6 +1689,14 @@ return false
 			<ObjectType Number="149" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2" State="s_grdpath1" />
 			<ObjectType Number="150" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2" State="s_grdpath1" />
 			<ObjectType Number="151" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2" State="s_grdpath1" />
+			<ObjectType Number="152" ObClass="actor" Actor="Officer" Direction="E" Difficulty="2" State="s_ofcstand" />
+			<ObjectType Number="153" ObClass="actor" Actor="Officer" Direction="N" Difficulty="2" State="s_ofcstand" />
+			<ObjectType Number="154" ObClass="actor" Actor="Officer" Direction="W" Difficulty="2" State="s_ofcstand" />
+			<ObjectType Number="155" ObClass="actor" Actor="Officer" Direction="S" Difficulty="2" State="s_ofcstand" />
+			<ObjectType Number="156" ObClass="actor" Actor="Officer" Direction="E" Difficulty="2" State="s_ofcpath1" />
+			<ObjectType Number="157" ObClass="actor" Actor="Officer" Direction="N" Difficulty="2" State="s_ofcpath1" />
+			<ObjectType Number="158" ObClass="actor" Actor="Officer" Direction="W" Difficulty="2" State="s_ofcpath1" />
+			<ObjectType Number="159" ObClass="actor" Actor="Officer" Direction="S" Difficulty="2" State="s_ofcpath1" />
 			<ObjectType Number="162" ObClass="actor" Actor="SS" Direction="E" Difficulty="2" State="s_ssstand" />
 			<ObjectType Number="163" ObClass="actor" Actor="SS" Direction="N" Difficulty="2" State="s_ssstand" />
 			<ObjectType Number="164" ObClass="actor" Actor="SS" Direction="W" Difficulty="2" State="s_ssstand" />
@@ -1591,6 +1713,14 @@ return false
 			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
 			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
 			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
+			<ObjectType Number="184" ObClass="actor" Actor="Officer" Direction="E" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="185" ObClass="actor" Actor="Officer" Direction="N" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="186" ObClass="actor" Actor="Officer" Direction="W" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="187" ObClass="actor" Actor="Officer" Direction="S" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="188" ObClass="actor" Actor="Officer" Direction="E" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="189" ObClass="actor" Actor="Officer" Direction="N" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="190" ObClass="actor" Actor="Officer" Direction="W" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="191" ObClass="actor" Actor="Officer" Direction="S" Difficulty="3" State="s_ofcpath1" />
 			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
 			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
 			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
@@ -1603,6 +1733,22 @@ return false
 			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="216" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="0" State="s_mutstand" />
+			<ObjectType Number="217" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="0" State="s_mutstand" />
+			<ObjectType Number="218" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="0" State="s_mutstand" />
+			<ObjectType Number="219" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="0" State="s_mutstand" />
+			<ObjectType Number="220" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="0" State="s_mutpath1" />
+			<ObjectType Number="221" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="0" State="s_mutpath1" />
+			<ObjectType Number="222" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="0" State="s_mutpath1" />
+			<ObjectType Number="223" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="0" State="s_mutpath1" />
+			<ObjectType Number="238" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="239" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="240" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="241" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="256" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="257" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="258" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="259" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="3" State="s_mutstand" />
 			<!-- WL_GAME.C:PlaceObjects case 160: SpawnFakeHitler (Mecha-Hitler) -->
 			<ObjectType Number="160" ObClass="actor" Actor="MechaHitler" Direction="S" State="s_mechastand" />
 			<!-- WL_GAME.C:PlaceObjects case 178: SpawnHitler (Real Hitler — rare direct map placement) -->
@@ -1641,6 +1787,55 @@ return false
 			<State Name="s_grddie2" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddie3" Alive="false" Mark="false" />
 			<State Name="s_grddie3" Shape="SPR_GRD_DIE_3" Tics="15" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
+			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" AlertDigiSound="SPIONSND" Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1" Pain="s_ofcpain" Pain1="s_ofcpain1" />
+			<State Name="s_ofcstand" Rotate="true" Shape="SPR_OFC_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_ofcstand" />
+			<State Name="s_ofcpath1" Rotate="true" Shape="SPR_OFC_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_ofcpath1s" />
+			<State Name="s_ofcpath1s" Rotate="true" Shape="SPR_OFC_W1_1" Tics="5" Speed="512" Next="s_ofcpath2" />
+			<State Name="s_ofcpath2" Rotate="true" Shape="SPR_OFC_W2_1" Tics="15" Think="T_Path" Speed="512" Next="s_ofcpath3" />
+			<State Name="s_ofcpath3" Rotate="true" Shape="SPR_OFC_W3_1" Tics="20" Think="T_Path" Speed="512" Next="s_ofcpath3s" />
+			<State Name="s_ofcpath3s" Rotate="true" Shape="SPR_OFC_W3_1" Tics="5" Speed="512" Next="s_ofcpath4" />
+			<State Name="s_ofcpath4" Rotate="true" Shape="SPR_OFC_W4_1" Tics="15" Think="T_Path" Speed="512" Next="s_ofcpath1" />
+			<State Name="s_ofcpain" Shape="SPR_OFC_PAIN_1" Tics="10" Speed="0" Next="s_ofcchase1" />
+			<State Name="s_ofcpain1" Shape="SPR_OFC_PAIN_2" Tics="10" Speed="0" Next="s_ofcchase1" />
+			<State Name="s_ofcshoot1" Shape="SPR_OFC_SHOOT1" Tics="6" Speed="0" Next="s_ofcshoot2" />
+			<State Name="s_ofcshoot2" Shape="SPR_OFC_SHOOT2" Tics="20" Action="T_Shoot" Speed="0" Next="s_ofcshoot3" />
+			<State Name="s_ofcshoot3" Shape="SPR_OFC_SHOOT3" Tics="10" Speed="0" Next="s_ofcchase1" />
+			<State Name="s_ofcchase1" Rotate="true" Shape="SPR_OFC_W1_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_ofcchase1s" />
+			<State Name="s_ofcchase1s" Rotate="true" Shape="SPR_OFC_W1_1" Tics="3" Speed="1536" Next="s_ofcchase2" />
+			<State Name="s_ofcchase2" Rotate="true" Shape="SPR_OFC_W2_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_ofcchase3" />
+			<State Name="s_ofcchase3" Rotate="true" Shape="SPR_OFC_W3_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_ofcchase3s" />
+			<State Name="s_ofcchase3s" Rotate="true" Shape="SPR_OFC_W3_1" Tics="3" Speed="1536" Next="s_ofcchase4" />
+			<State Name="s_ofcchase4" Rotate="true" Shape="SPR_OFC_W4_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_ofcchase1" />
+			<State Name="s_ofcdie1" Shape="SPR_OFC_DIE_1" Tics="11" Speed="0" Next="s_ofcdie2" Action="A_DeathScream" Alive="false" Mark="false" />
+			<State Name="s_ofcdie2" Shape="SPR_OFC_DIE_2" Tics="11" Speed="0" Next="s_ofcdie3" Alive="false" Mark="false" />
+			<State Name="s_ofcdie3" Shape="SPR_OFC_DIE_3" Tics="11" Speed="0" Next="s_ofcdie4" Alive="false" Mark="false" />
+			<State Name="s_ofcdie4" Shape="SPR_OFC_DIE_4" Tics="11" Speed="0" Next="s_ofcdie5" Alive="false" Mark="false" />
+			<State Name="s_ofcdie5" Shape="SPR_OFC_DEAD" Tics="0" Speed="0" Next="s_ofcdie5" Alive="false" Mark="false" />
+			<Actor Name="Mutant" HP="45,55,55,65" Reaction="1-43" Stand="s_mutstand" Chase="s_mutchase1" Attack="s_mutshoot1" Death="s_mutdie1" Pain="s_mutpain" Pain1="s_mutpain1" />
+			<State Name="s_mutstand" Rotate="true" Shape="SPR_MUT_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_mutstand" />
+			<State Name="s_mutpath1" Rotate="true" Shape="SPR_MUT_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_mutpath1s" />
+			<State Name="s_mutpath1s" Rotate="true" Shape="SPR_MUT_W1_1" Tics="5" Speed="512" Next="s_mutpath2" />
+			<State Name="s_mutpath2" Rotate="true" Shape="SPR_MUT_W2_1" Tics="15" Think="T_Path" Speed="512" Next="s_mutpath3" />
+			<State Name="s_mutpath3" Rotate="true" Shape="SPR_MUT_W3_1" Tics="20" Think="T_Path" Speed="512" Next="s_mutpath3s" />
+			<State Name="s_mutpath3s" Rotate="true" Shape="SPR_MUT_W3_1" Tics="5" Speed="512" Next="s_mutpath4" />
+			<State Name="s_mutpath4" Rotate="true" Shape="SPR_MUT_W4_1" Tics="15" Think="T_Path" Speed="512" Next="s_mutpath1" />
+			<State Name="s_mutpain" Shape="SPR_MUT_PAIN_1" Tics="10" Speed="0" Next="s_mutchase1" />
+			<State Name="s_mutpain1" Shape="SPR_MUT_PAIN_2" Tics="10" Speed="0" Next="s_mutchase1" />
+			<State Name="s_mutshoot1" Shape="SPR_MUT_SHOOT1" Tics="6" Action="T_Shoot" Speed="0" Next="s_mutshoot2" />
+			<State Name="s_mutshoot2" Shape="SPR_MUT_SHOOT2" Tics="20" Speed="0" Next="s_mutshoot3" />
+			<State Name="s_mutshoot3" Shape="SPR_MUT_SHOOT3" Tics="10" Action="T_Shoot" Speed="0" Next="s_mutshoot4" />
+			<State Name="s_mutshoot4" Shape="SPR_MUT_SHOOT4" Tics="20" Speed="0" Next="s_mutchase1" />
+			<State Name="s_mutchase1" Rotate="true" Shape="SPR_MUT_W1_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_mutchase1s" />
+			<State Name="s_mutchase1s" Rotate="true" Shape="SPR_MUT_W1_1" Tics="3" Speed="1536" Next="s_mutchase2" />
+			<State Name="s_mutchase2" Rotate="true" Shape="SPR_MUT_W2_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_mutchase3" />
+			<State Name="s_mutchase3" Rotate="true" Shape="SPR_MUT_W3_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_mutchase3s" />
+			<State Name="s_mutchase3s" Rotate="true" Shape="SPR_MUT_W3_1" Tics="3" Speed="1536" Next="s_mutchase4" />
+			<State Name="s_mutchase4" Rotate="true" Shape="SPR_MUT_W4_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_mutchase1" />
+			<State Name="s_mutdie1" Shape="SPR_MUT_DIE_1" Tics="7" Speed="0" Next="s_mutdie2" Action="A_DeathScream" Alive="false" Mark="false" />
+			<State Name="s_mutdie2" Shape="SPR_MUT_DIE_2" Tics="7" Speed="0" Next="s_mutdie3" Alive="false" Mark="false" />
+			<State Name="s_mutdie3" Shape="SPR_MUT_DIE_3" Tics="7" Speed="0" Next="s_mutdie4" Alive="false" Mark="false" />
+			<State Name="s_mutdie4" Shape="SPR_MUT_DIE_4" Tics="7" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
+			<State Name="s_mutdie5" Shape="SPR_MUT_DEAD" Tics="0" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
 			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
 			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500" Next="s_dogpath2" />

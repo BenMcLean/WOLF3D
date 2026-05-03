@@ -250,9 +250,11 @@ public partial class Root : Node3D
 				// Starting a new game discards any suspended game
 				_suspendedGame = null;
 				// Get selected episode and difficulty from menu
-				int episode = menuRoom.SelectedEpisode;
+				int selectedEpisode = menuRoom.SelectedEpisode;
+				ushort episode = (ushort)(selectedEpisode >= 1 ? selectedEpisode : selectedEpisode + 1);
 				int difficulty = menuRoom.SelectedDifficulty;
-				ActionRoom actionStage = new(DisplayMode, levelIndex: CurrentLevelIndex, difficulty: difficulty);
+				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
+				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty);
 				TransitionTo(actionStage);
 			}
 		}

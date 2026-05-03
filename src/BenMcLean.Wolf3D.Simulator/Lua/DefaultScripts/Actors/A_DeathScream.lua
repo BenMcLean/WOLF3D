@@ -10,6 +10,18 @@ if actorType == "Guard" then
 	local sounds = {"DEATHSCREAM1SND", "DEATHSCREAM2SND", "DEATHSCREAM3SND"}
 	PlayLocalDigiSound(sounds[US_RndT() % 3 + 1])
 
+elseif actorType == "Officer" then
+	-- WL_STATE.C:KillActor - officerobj
+	AddValue("Score", 400)
+	PlaceItemType(71, 134)  -- bo_clip2
+	PlayLocalDigiSound("NEINSOVASSND")
+
+elseif actorType == "Mutant" then
+	-- WL_STATE.C:KillActor - mutantobj
+	AddValue("Score", 700)
+	PlaceItemType(71, 134)  -- bo_clip2
+	PlayLocalDigiSound("AHHHGSND")
+
 elseif actorType == "Dog" then
 	-- WL_STATE.C:KillActor - dogobj
 	AddValue("Score", 200)

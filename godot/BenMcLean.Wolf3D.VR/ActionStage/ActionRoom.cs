@@ -423,8 +423,10 @@ void sky() {
 			_simulatorController.Simulator.EmitWeaponState();
 
 			// Store level index in inventory so save/load can determine which level to restore
-			// WL_DEF.H:gamestate.mapon
+			// Keep the status/inventory metadata aligned with the currently loaded map.
 			_simulatorController.Simulator.Inventory.SetValue("MapOn", _initialLevelIndex);
+			_simulatorController.Simulator.Inventory.SetValue("Episode", MapAnalysis.Episode);
+			_simulatorController.Simulator.Inventory.SetValue("Floor", MapAnalysis.Level);
 
 			// Wire up hit detection callback for weapon state machine
 			// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
