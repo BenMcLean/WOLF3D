@@ -511,6 +511,11 @@ void sky() {
 			if (_existingSimulator is null && _loadSnapshot is null && _savedInventory is null)
 				_simulatorController.Simulator.ExecuteOnNewGameScript();
 
+			// Execute OnMapStart for fresh map entry and inter-map transitions only.
+			// Skip it for save restores so save state is preserved exactly.
+			if (_loadSnapshot is null)
+				_simulatorController.Simulator.ExecuteOnMapStartScript();
+
 			// Equip starting weapon based on inventory (new game or level transition).
 			// New game: SelectedWeapon0 set by OnNewGame script above.
 			// Level transition: SelectedWeapon0 restored from savedInventory.

@@ -142,7 +142,7 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="3">
+		<StatusBar Pic="STATUSBARPIC" Font="3" OnMapStart="OnMapStart">
 			<Text Id="Episode" X="24" Y="16">1</Text>
 			<Text Id="Floor" X="40" Y="16">1</Text>
 			<Text Id="Score" X="112" Y="16">     0</Text>
@@ -1115,6 +1115,14 @@ return true
 			<ObjectType Number="136" ObClass="actor" Actor="Burt the Bear" Direction="E" Difficulty="1" State="s_mechastand" />
 		</StatInfo>
 		<Actors>
+			<Function Name="OnMapStart">
+				<![CDATA[
+SetValue("Gold Key", 0)
+SetPicture("YellowKey", "NOKEYPIC")
+SetValue("Silver Key", 0)
+SetPicture("BlueKey", "NOKEYPIC")
+]]>
+			</Function>
 			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertDigiSound="D_GOATSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1">
 				<Script>
 					<![CDATA[

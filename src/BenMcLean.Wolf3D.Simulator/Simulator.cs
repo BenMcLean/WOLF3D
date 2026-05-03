@@ -83,6 +83,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private string onDeathFunctionName;
 	// OnNewGame ActionFunction name from StatusBar definition (WL_GAME.C:NewGame)
 	private string onNewGameFunctionName;
+	// OnMapStart ActionFunction name from StatusBar definition.
+	private string onMapStartFunctionName;
 	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
 	private string onFaceFunctionName;
 	// Maps StatusBar Text Id → display field width (from initial XML content length).
@@ -647,6 +649,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			return true;
 		}
 	}
+
 	/// <summary>
 	/// WL_ACT1.C:OpenDoor (line 546)
 	/// </summary>
@@ -1368,6 +1371,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		onDeathFunctionName = statusBar.OnDeath;
 		onNewGameFunctionName = statusBar.OnNewGame;
+		onMapStartFunctionName = statusBar.OnMapStart;
 		onFaceFunctionName = statusBar.OnFace;
 		// Build auto-text map: StatusBar Text Id → field width from initial XML content length.
 		// When SetValue fires for a matching key, the value is right-justified to this width.
@@ -2972,6 +2976,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			catch (Exception ex)
 			{
 				logger?.LogError(ex, "Error executing OnNewGame function '{FunctionName}'", onNewGameFunctionName);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Execute the OnMapStart action function after gameplay starts on a map.
+	/// Runs for new-game map entry and inter-map transitions, but not save restore.
+	/// </summary>
+	public void ExecuteOnMapStartScript()
+	{
+		if (!string.IsNullOrEmpty(onMapStartFunctionName))
+		{
+			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+			{
+				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+			};
+			try
+			{
+				luaScriptEngine.ExecuteActionFunction(onMapStartFunctionName, context);
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError(ex, "Error executing OnMapStart function '{FunctionName}'", onMapStartFunctionName);
 			}
 		}
 	}

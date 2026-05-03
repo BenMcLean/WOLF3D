@@ -147,7 +147,7 @@
 			<Pic Number="130" Name="PAUSEDPIC" />
 			<Pic Number="131" Name="GETPSYCHEDPIC" />
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame" FizzleFadeColor="4">
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame" OnMapStart="OnMapStart" FizzleFadeColor="4">
 			<Text Id="Floor" X="16" Y="16"> 1</Text>
 			<Text Id="Score" X="48" Y="16">     0</Text>
 			<Text Id="Lives" X="112" Y="16"> 3</Text>
@@ -2218,6 +2218,14 @@ SetValue("SelectedWeapon0", 1)
 SetValue("SelectedWeapon1", 1)
 SetValue("StatusBarWeapon", 1)
 SetPicture("WeaponPic", "GUNPIC")
+]]>
+			</Function>
+			<Function Name="OnMapStart">
+				<![CDATA[
+SetValue("Gold Key", 0)
+SetPicture("GoldKey", "NOKEYPIC")
+SetValue("Silver Key", 0)
+SetPicture("SilverKey", "NOKEYPIC")
 ]]>
 			</Function>
 		<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->

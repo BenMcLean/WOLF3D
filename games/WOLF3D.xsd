@@ -343,6 +343,15 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="OnMapStart" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the ActionFunction to call when gameplay starts on a map.
+						Runs for fresh new-game map entry and inter-map transitions.
+						Not called for save-game restore or when resuming after a pause.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="FizzleFadeColor" type="xs:unsignedByte">
 				<xs:annotation>
 					<xs:documentation>

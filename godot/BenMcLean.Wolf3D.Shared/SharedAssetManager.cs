@@ -650,7 +650,8 @@ public static class SharedAssetManager
 			xmlPath,
 			preferEmbeddedOfficial: preferEmbeddedShareware);
 		XmlPath = System.IO.Path.GetFullPath(gameDefinition.XmlPath);
-		CurrentGame = ShouldUseEmbeddedSharewareData(xmlPath, gameDefinition, preferEmbeddedShareware)
+		bool usingEmbeddedSharewareData = ShouldUseEmbeddedSharewareData(xmlPath, gameDefinition, preferEmbeddedShareware);
+		CurrentGame = usingEmbeddedSharewareData
 			? Assets.AssetManager.Load(
 				gameDefinition.Xml,
 				gameDefinition.GameDataDirectory,
@@ -662,6 +663,15 @@ public static class SharedAssetManager
 		BuildBonusAutomapTiles();
 		BuildDigiSounds();
 		LoadConfig(XmlPath);
+		// On the initial boot flow we use embedded shareware assets to host the game-selection
+		// menu. Force classic audio defaults for that temporary session so menu music/SFX still
+		// work even if an external CONFIG.WL1 exists with sound disabled.
+		if (preferEmbeddedShareware && usingEmbeddedSharewareData && Config is not null)
+		{
+			Config.SoundMode = Assets.Gameplay.Config.SDMode.AdLib;
+			Config.MusicEnabled = true;
+			Config.DigiMode = Assets.Gameplay.Config.SDSMode.SoundBlaster;
+		}
 	}
 	public static bool RequiresExternalStorage(string xmlPath, bool preferEmbeddedShareware = false)
 	{
