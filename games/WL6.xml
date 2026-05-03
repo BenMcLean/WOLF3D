@@ -1121,6 +1121,7 @@ StartTicker("AvgTreasureRatio", tr)
 		</GameplayWeapons>
 		<Projectiles>
 			<!-- Enemy projectile definitions used by boss Lua attack scripts. -->
+			<Projectile Name="fire" InitialState="s_fire1" MinDamage="1" MaxDamage="128" Speed="4608" />
 			<Projectile Name="needle" InitialState="s_needle1" MinDamage="20" MaxDamage="51" Speed="8192" />
 			<Projectile Name="rocket" InitialState="s_rocket" MinDamage="30" MaxDamage="61" Speed="8192" />
 		</Projectiles>
@@ -1481,6 +1482,20 @@ return false
 			<Sprite Page="424" Name="SPR_HYPO2" />
 			<Sprite Page="425" Name="SPR_HYPO3" />
 			<Sprite Page="426" Name="SPR_HYPO4" />
+			<!-- Fake Hitler (episode 3 enemy) - positions 321-333 -->
+			<Sprite Page="427" Name="SPR_FAKE_W1" />
+			<Sprite Page="428" Name="SPR_FAKE_W2" />
+			<Sprite Page="429" Name="SPR_FAKE_W3" />
+			<Sprite Page="430" Name="SPR_FAKE_W4" />
+			<Sprite Page="431" Name="SPR_FAKE_SHOOT" />
+			<Sprite Page="432" Name="SPR_FIRE1" />
+			<Sprite Page="433" Name="SPR_FIRE2" />
+			<Sprite Page="434" Name="SPR_FAKE_DIE1" />
+			<Sprite Page="435" Name="SPR_FAKE_DIE2" />
+			<Sprite Page="436" Name="SPR_FAKE_DIE3" />
+			<Sprite Page="437" Name="SPR_FAKE_DIE4" />
+			<Sprite Page="438" Name="SPR_FAKE_DIE5" />
+			<Sprite Page="439" Name="SPR_FAKE_DEAD" />
 			<!-- MechaHitler (episode 3 boss, phase 1) - positions 334-344 -->
 			<Sprite Page="440" Name="SPR_MECHA_W1" />
 			<Sprite Page="441" Name="SPR_MECHA_W2" />
@@ -1801,16 +1816,16 @@ return false
 			<ObjectType Number="257" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="3" State="s_mutpath1" />
 			<ObjectType Number="258" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="3" State="s_mutpath1" />
 			<ObjectType Number="259" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="3" State="s_mutpath1" />
-			<!-- WL_GAME.C:PlaceObjects case 160: SpawnFakeHitler (Mecha-Hitler) -->
-			<ObjectType Number="160" ObClass="actor" Actor="MechaHitler" Direction="S" State="s_mechastand" />
-			<!-- WL_GAME.C:PlaceObjects case 178: SpawnHitler (Real Hitler — rare direct map placement) -->
-			<ObjectType Number="178" ObClass="actor" Actor="Hitler" Direction="S" State="s_hitlerstand" />
+			<!-- WL_GAME.C:PlaceObjects case 160: SpawnFakeHitler -->
+			<ObjectType Number="160" ObClass="actor" Actor="FakeHitler" Direction="N" State="s_fakestand" />
+			<!-- WL_GAME.C:PlaceObjects case 178: SpawnHitler (Mecha-Hitler phase 1) -->
+			<ObjectType Number="178" ObClass="actor" Actor="MechaHitler" Direction="S" State="s_mechastand" />
 			<!-- WL_GAME.C:PlaceObjects case 179: SpawnFat (General Fettgesicht) -->
 			<ObjectType Number="179" ObClass="actor" Actor="FatFace" Direction="S" State="s_fatstand" />
 			<!-- WL_GAME.C:PlaceObjects case 196: SpawnSchabbs -->
 			<ObjectType Number="196" ObClass="actor" Actor="Schabbs" Direction="S" State="s_schabbstand" />
 			<!-- WL_GAME.C:PlaceObjects case 197: SpawnGretel -->
-			<ObjectType Number="197" ObClass="actor" Actor="Gretel" Direction="S" State="s_gretelstand" />
+			<ObjectType Number="197" ObClass="actor" Actor="Gretel" Direction="N" State="s_gretelstand" />
 			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
 			<!-- WL_GAME.C:PlaceObjects case 215: SpawnGift (Otto Giftmacher) -->
 			<ObjectType Number="215" ObClass="actor" Actor="Giftmacher" Direction="S" State="s_giftstand" />
@@ -1998,7 +2013,34 @@ return false
 			<State Name="s_needle2" Shape="SPR_HYPO2" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle3" />
 			<State Name="s_needle3" Shape="SPR_HYPO3" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle4" />
 			<State Name="s_needle4" Shape="SPR_HYPO4" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle1" />
-			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 boss, Phase 1 (Mecha-Hitler) -->
+			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 enemy -->
+			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" AlertSound="TOT_HUNDSND" Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1" Ambush="true" />
+			<State Name="s_fakestand"   Shape="SPR_FAKE_W1"     Tics="0" Think="T_Stand" Speed="0" Next="s_fakestand" />
+			<State Name="s_fakechase1"  Shape="SPR_FAKE_W1"     Tics="10" Think="T_Fake" Speed="512" Next="s_fakechase1s" />
+			<State Name="s_fakechase1s" Shape="SPR_FAKE_W1"     Tics="3" Speed="512" Next="s_fakechase2" />
+			<State Name="s_fakechase2"  Shape="SPR_FAKE_W2"     Tics="8" Think="T_Fake" Speed="512" Next="s_fakechase3" />
+			<State Name="s_fakechase3"  Shape="SPR_FAKE_W3"     Tics="10" Think="T_Fake" Speed="512" Next="s_fakechase3s" />
+			<State Name="s_fakechase3s" Shape="SPR_FAKE_W3"     Tics="3" Speed="512" Next="s_fakechase4" />
+			<State Name="s_fakechase4"  Shape="SPR_FAKE_W4"     Tics="8" Think="T_Fake" Speed="512" Next="s_fakechase1" />
+			<State Name="s_fakedie1"    Shape="SPR_FAKE_DIE1"   Tics="10" Action="A_DeathScream" Speed="0" Alive="false" Next="s_fakedie2" />
+			<State Name="s_fakedie2"    Shape="SPR_FAKE_DIE2"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie3" />
+			<State Name="s_fakedie3"    Shape="SPR_FAKE_DIE3"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie4" />
+			<State Name="s_fakedie4"    Shape="SPR_FAKE_DIE4"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie5" />
+			<State Name="s_fakedie5"    Shape="SPR_FAKE_DIE5"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie6" />
+			<State Name="s_fakedie6"    Shape="SPR_FAKE_DEAD"   Tics="0" Speed="0" Alive="false" Mark="false" Next="s_fakedie6" />
+			<State Name="s_fakeshoot1"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot2" />
+			<State Name="s_fakeshoot2"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot3" />
+			<State Name="s_fakeshoot3"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot4" />
+			<State Name="s_fakeshoot4"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot5" />
+			<State Name="s_fakeshoot5"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot6" />
+			<State Name="s_fakeshoot6"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot7" />
+			<State Name="s_fakeshoot7"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot8" />
+			<State Name="s_fakeshoot8"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot9" />
+			<State Name="s_fakeshoot9"  Shape="SPR_FAKE_SHOOT"  Tics="8" Speed="0" Next="s_fakechase1" />
+			<!-- Fireball projectile states — WL_ACT2.C:T_FakeFire spawns fireobj at s_fire1, speed=0x1200 (4608) -->
+			<State Name="s_fire1" Shape="SPR_FIRE1" Tics="6" Think="T_Projectile" Speed="4608" Next="s_fire2" />
+			<State Name="s_fire2" Shape="SPR_FIRE2" Tics="6" Think="T_Projectile" Speed="4608" Next="s_fire1" />
+			<!-- WL_ACT2.C:SpawnHitler — Episode 3 boss, Phase 1 (Mecha-Hitler) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=800, DHM=950, BEO=1050, DI=1200 -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case mechahitlerobj → DIESND -->
 			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" AlertSound="DIESND" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" Ambush="true" />
@@ -2021,7 +2063,7 @@ return false
 			<State Name="s_mechashoot4"  Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechashoot5" />
 			<State Name="s_mechashoot5"  Shape="SPR_MECHA_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechashoot6" />
 			<State Name="s_mechashoot6"  Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechachase1" />
-			<!-- WL_ACT2.C:SpawnHitler — Episode 3 boss, Phase 2 (Real Hitler, spawned by A_HitlerMorph) -->
+			<!-- WL_ACT2.C:A_HitlerMorph — Episode 3 boss, Phase 2 (Real Hitler, spawned by A_HitlerMorph) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=200, DHM=300, BEO=400, DI=500 -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case realhitlerobj → DIESND -->
 			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" AlertSound="DIESND" Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1" Death="s_hitlerdie1" Ambush="true" />
