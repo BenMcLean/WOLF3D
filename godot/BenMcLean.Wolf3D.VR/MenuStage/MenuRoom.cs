@@ -327,16 +327,18 @@ public partial class MenuRoom : Node3D, IRoom
 	/// </summary>
 	private void RegisterVRModeMenu()
 	{
+		bool hasTogglePictures = (SharedAssetManager.VgaGraph?.ContainsKey("C_NOTSELECTEDPIC") ?? false)
+			&& SharedAssetManager.VgaGraph.ContainsKey("C_SELECTEDPIC");
 		MenuDefinition vrModeMenu = new()
 		{
 			// Layout mirrors the Sound menu style with wide section boxes and inherited game styling.
 			X = 48,
 			Y = 20,
-			Indent = 52,
+			Indent = hasTogglePictures ? 52 : 24,
 			Spacing = 13,
 			OnCancel = "NavigateToMenu(\"Main\")",
 			// WL_MENU.C:CP_Sound pattern: update indicator lights to reflect the active settings.
-			OnSelectionChanged = """
+			OnSelectionChanged = hasTogglePictures ? """
 local vrMode = GetVRMode()
 if vrMode == "Roomscale" then
 	SetPicture('VRRoomscale', 'C_SELECTEDPIC')
@@ -354,7 +356,7 @@ else
 	SetPicture('VRDebugMarkersOn', 'C_NOTSELECTEDPIC')
 	SetPicture('VRDebugMarkersOff', 'C_SELECTEDPIC')
 end
-""",
+""" : null,
 		};
 		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 17, W = 250, H = 32 });
 		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 82, W = 250, H = 32 });
@@ -370,39 +372,42 @@ end
 			X = "Center",
 			Y = "65",
 		});
-		// Indicator lights align to the same positions the Sound menu uses: (X+24, Y+i*13+2).
-		vrModeMenu.Pictures.Add(new PictureDefinition
+		if (hasTogglePictures)
 		{
-			Id = "VRRoomscale",
-			Name = "C_NOTSELECTEDPIC",
-			X = "72",
-			Y = "22",
-			ZIndex = 9,
-		});
-		vrModeMenu.Pictures.Add(new PictureDefinition
-		{
-			Id = "VRFiveDOF",
-			Name = "C_NOTSELECTEDPIC",
-			X = "72",
-			Y = "35",
-			ZIndex = 9,
-		});
-		vrModeMenu.Pictures.Add(new PictureDefinition
-		{
-			Id = "VRDebugMarkersOn",
-			Name = "C_NOTSELECTEDPIC",
-			X = "72",
-			Y = "87",
-			ZIndex = 9,
-		});
-		vrModeMenu.Pictures.Add(new PictureDefinition
-		{
-			Id = "VRDebugMarkersOff",
-			Name = "C_NOTSELECTEDPIC",
-			X = "72",
-			Y = "100",
-			ZIndex = 9,
-		});
+			// Indicator lights align to the same positions the Sound menu uses: (X+24, Y+i*13+2).
+			vrModeMenu.Pictures.Add(new PictureDefinition
+			{
+				Id = "VRRoomscale",
+				Name = "C_NOTSELECTEDPIC",
+				X = "72",
+				Y = "22",
+				ZIndex = 9,
+			});
+			vrModeMenu.Pictures.Add(new PictureDefinition
+			{
+				Id = "VRFiveDOF",
+				Name = "C_NOTSELECTEDPIC",
+				X = "72",
+				Y = "35",
+				ZIndex = 9,
+			});
+			vrModeMenu.Pictures.Add(new PictureDefinition
+			{
+				Id = "VRDebugMarkersOn",
+				Name = "C_NOTSELECTEDPIC",
+				X = "72",
+				Y = "87",
+				ZIndex = 9,
+			});
+			vrModeMenu.Pictures.Add(new PictureDefinition
+			{
+				Id = "VRDebugMarkersOff",
+				Name = "C_NOTSELECTEDPIC",
+				X = "72",
+				Y = "100",
+				ZIndex = 9,
+			});
+		}
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Roomscale",
