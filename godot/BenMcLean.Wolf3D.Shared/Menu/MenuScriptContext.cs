@@ -267,6 +267,15 @@ public class MenuScriptContext(
 		else
 			_logger?.LogWarning("Menu Lua: Unknown VR mode '{mode}'", mode);
 	}
+	/// <summary>
+	/// Get whether VR debug markers are enabled.
+	/// </summary>
+	public bool GetDebugMarkersEnabled() => sessionState.DebugMarkersEnabled;
+	/// <summary>
+	/// Enable or disable VR debug markers.
+	/// </summary>
+	/// <param name="enabled">True to show debug markers</param>
+	public void SetDebugMarkersEnabled(bool enabled) => sessionState.DebugMarkersEnabled = enabled;
 	#endregion VR Settings
 	#region Menu Item Selection and Dynamic Content
 	/// <summary>

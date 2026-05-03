@@ -148,6 +148,7 @@ void sky() {
 
 	private readonly IDisplayMode _displayMode;
 	private readonly int _difficulty;
+	private readonly bool _debugMarkersEnabled;
 	private readonly InventorySnapshot _savedInventory;
 	private readonly IReadOnlyList<LevelCompletionStats> _savedLevelStats;
 	private readonly Simulator.Simulator _existingSimulator;
@@ -181,13 +182,14 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
 		_difficulty = savedInventory?.Values is not null && savedInventory.Values.TryGetValue("Difficulty", out int savedDifficulty)
 			? savedDifficulty
 			: difficulty;
+		_debugMarkersEnabled = debugMarkersEnabled;
 		_savedInventory = savedInventory;
 		_savedLevelStats = savedLevelStats;
 	}
@@ -199,11 +201,12 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator)
+	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
 		_initialLevelIndex = existingSimulator.Inventory.GetValue("MapOn");
+		_debugMarkersEnabled = debugMarkersEnabled;
 	}
 
 	/// <summary>
@@ -213,10 +216,11 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="snapshot">The saved simulator state to restore.</param>
-	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot)
+	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+		_debugMarkersEnabled = debugMarkersEnabled;
 		// Level index and difficulty are stored in the snapshot's inventory
 		_initialLevelIndex = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
@@ -252,9 +256,12 @@ void sky() {
 				Shared.SharedAssetManager.DigiSounds);  // Sound library for pushwall sounds
 			AddChild(_walls);
 
-			// Create debug markers for patrol points and ambush actors
-			_debugMarkers = new DebugMarkers(MapAnalysis);
-			AddChild(_debugMarkers);
+			// Create debug markers for patrol points and ambush actors when enabled.
+			if (_debugMarkersEnabled)
+			{
+				_debugMarkers = new DebugMarkers(MapAnalysis);
+				AddChild(_debugMarkers);
+			}
 
 			// Create fixtures (billboarded sprites) for the current level and add to scene
 			_fixtures = new Fixtures(

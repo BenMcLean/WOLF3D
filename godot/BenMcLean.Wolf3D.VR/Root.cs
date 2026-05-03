@@ -65,6 +65,7 @@ public partial class Root : Node3D
 	/// Initialized first before any other systems.
 	/// </summary>
 	public IDisplayMode DisplayMode { get; private set; }
+	private bool _debugMarkersEnabled = false;
 
 	public override void _Ready()
 	{
@@ -187,6 +188,8 @@ public partial class Root : Node3D
 						MenuCollectionOverride = gameSelectMenu,
 						StartMenuOverride = "_GameSelect0",
 						MenuWeaponSprite = "SPR_PISTOLREADY",
+						InitialVRMode = CurrentVRMode(),
+						InitialDebugMarkersEnabled = _debugMarkersEnabled,
 					};
 					TransitionTo(selectionRoom);
 				}
@@ -214,6 +217,8 @@ public partial class Root : Node3D
 		// Poll MenuRoom for game start, resume, or intermission completion
 		if (_currentScene is MenuRoom menuRoom)
 		{
+			_debugMarkersEnabled = menuRoom.DebugMarkersEnabled;
+
 			// Game selected from the procedural game selection menu
 			if (menuRoom.SelectedGameXmlPath is not null)
 			{
@@ -242,7 +247,8 @@ public partial class Root : Node3D
 				ActionRoom newStage = new(DisplayMode,
 					levelIndex: intermissionRequest.LevelIndex,
 					savedInventory: intermissionRequest.SavedInventory,
-					savedLevelStats: intermissionRequest.AllLevelStats);
+					savedLevelStats: intermissionRequest.AllLevelStats,
+					debugMarkersEnabled: _debugMarkersEnabled);
 				TransitionTo(newStage);
 			}
 			else if (menuRoom.ShouldStartGame)
@@ -254,7 +260,7 @@ public partial class Root : Node3D
 				ushort episode = (ushort)(selectedEpisode >= 1 ? selectedEpisode : selectedEpisode + 1);
 				int difficulty = menuRoom.SelectedDifficulty;
 				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
-				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty);
+				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled);
 				TransitionTo(actionStage);
 			}
 		}
@@ -286,7 +292,8 @@ public partial class Root : Node3D
 						ActionRoom newStage = new(DisplayMode,
 							levelIndex: currentLevel,
 							difficulty: difficulty,
-							savedInventory: savedInventory);
+							savedInventory: savedInventory,
+							debugMarkersEnabled: _debugMarkersEnabled);
 						_currentScene = newStage;
 						_pendingScene = null;
 						AddChild(newStage);
@@ -335,6 +342,8 @@ public partial class Root : Node3D
 					StartMenuOverride = request.MenuName ?? "LevelComplete",
 					LevelTransition = request,
 					MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
+					InitialVRMode = CurrentVRMode(),
+					InitialDebugMarkersEnabled = _debugMarkersEnabled,
 				};
 				// For Victory (episode complete), pass final score for high score check
 				if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
@@ -409,7 +418,7 @@ public partial class Root : Node3D
 				if (Shared.SharedAssetManager.CurrentGame.MenuCollection?.GetMenu(menuName) is null)
 					throw new InvalidOperationException(
 						$"LoadMenu(\"{menuName}\"): menu \"{menuName}\" not found.");
-				TransitionTo(new MenuRoom(DisplayMode) { StartMenuOverride = menuName, MenuWeaponSprite = CurrentGameMenuWeaponSprite() });
+				TransitionTo(CreateMenuRoom(menuName));
 			},
 			StartLevelAction = mapIndex =>
 			{
@@ -421,7 +430,7 @@ public partial class Root : Node3D
 					throw new InvalidOperationException(
 						$"StartLevel({mapIndex}): index out of range (0\u2013{analyses.Length - 1}).");
 				_suspendedGame = null;
-				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex));
+				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled));
 			},
 		};
 		LuaScriptEngine startupEngine = new([typeof(Shared.Menu.MenuScriptContext)]);
@@ -449,6 +458,8 @@ public partial class Root : Node3D
 			EquippedWeaponShapes = equippedWeaponShapes,
 			PendingCompletionStats = completionStats,
 			PendingAllLevelStats = allLevelStats,
+			InitialVRMode = CurrentVRMode(),
+			InitialDebugMarkersEnabled = _debugMarkersEnabled,
 		};
 		_pendingScene = menuRoom;
 		StartFade(() =>
@@ -481,7 +492,8 @@ public partial class Root : Node3D
 		SuspendedGameState state = _suspendedGame;
 		ActionRoom actionStage = new(
 			DisplayMode,
-			state.Simulator);
+			state.Simulator,
+			debugMarkersEnabled: _debugMarkersEnabled);
 
 		_suspendedGame = null;
 		TransitionTo(actionStage);
@@ -506,9 +518,25 @@ public partial class Root : Node3D
 
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
-		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot);
+		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled);
 		TransitionTo(actionStage);
 	}
+
+	private MenuRoom CreateMenuRoom(string startMenuOverride)
+	{
+		return new MenuRoom(DisplayMode)
+		{
+			StartMenuOverride = startMenuOverride,
+			MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
+			InitialVRMode = CurrentVRMode(),
+			InitialDebugMarkersEnabled = _debugMarkersEnabled,
+		};
+	}
+
+	private VRMode CurrentVRMode() =>
+		DisplayMode is VRDisplayMode vrDisplayMode && vrDisplayMode.PlayMode == VRPlayMode.FiveDOF
+			? VRMode.FiveDOF
+			: VRMode.Roomscale;
 
 	/// <summary>
 	/// Transitions to a new scene with fade-to-black and fade-from-black.

@@ -54,6 +54,11 @@ public class MenuState
 	/// </summary>
 	public VRMode VRMode { get; set; } = VRMode.Roomscale;
 	/// <summary>
+	/// Whether VR debug markers should be shown.
+	/// Stored alongside other presentation/runtime-only menu settings.
+	/// </summary>
+	public bool DebugMarkersEnabled { get; set; } = false;
+	/// <summary>
 	/// Accumulated bonus points from the intermission screen.
 	/// Set by Lua GivePoints(), consumed by Root.cs when transitioning to next level.
 	/// </summary>

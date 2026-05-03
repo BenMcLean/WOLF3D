@@ -142,6 +142,18 @@ public partial class MenuRoom : Node3D, IRoom
 	public string SelectedGameXmlPath { get; private set; }
 
 	/// <summary>
+	/// Initial VR mode to seed the menu session with.
+	/// Passed in by Root so the presentation menu reflects the current runtime state.
+	/// </summary>
+	public VRMode InitialVRMode { get; set; } = VRMode.Roomscale;
+
+	/// <summary>
+	/// Initial debug marker visibility to seed the menu session with.
+	/// Passed in by Root so the presentation menu reflects the current runtime state.
+	/// </summary>
+	public bool InitialDebugMarkersEnabled { get; set; }
+
+	/// <summary>
 	/// Equipped weapon shapes from the ActionRoom to display on VR controllers.
 	/// When set (KeepWeapons=true menus), overrides the LevelTransition weapon shapes.
 	/// </summary>
@@ -158,6 +170,12 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Used by Victory screen for total/average calculations.
 	/// </summary>
 	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { private get; init; }
+
+	/// <summary>
+	/// Current debug marker visibility from the menu session state.
+	/// Polled by Root and applied to newly created gameplay rooms.
+	/// </summary>
+	public bool DebugMarkersEnabled => _menuManager?.SessionState?.DebugMarkersEnabled ?? InitialDebugMarkersEnabled;
 
 	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
@@ -217,6 +235,8 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuManager = new MenuManager(
 			menuCollection,
 			SharedAssetManager.Config);
+		_menuManager.SessionState.VRMode = InitialVRMode;
+		_menuManager.SessionState.DebugMarkersEnabled = InitialDebugMarkersEnabled;
 		// Wire up game selection (used when MenuCollectionOverride is the procedural game list)
 		_menuManager.ScriptContext.SelectGameAction = path => SelectedGameXmlPath = path;
 		// Wire up in-game state so menu items with InGame conditions show/hide correctly
@@ -252,7 +272,7 @@ public partial class MenuRoom : Node3D, IRoom
 			return $"Level {levelIndex + 1}";
 		};
 
-		// Register VR-specific presentation menu (Roomscale vs 5DOF mode selection)
+		// Register the VR-specific presentation menu.
 		if (_displayMode.IsVRActive)
 			RegisterVRModeMenu();
 
@@ -301,23 +321,21 @@ public partial class MenuRoom : Node3D, IRoom
 	}
 
 	/// <summary>
-	/// Registers the VR mode selection sub-menu with the menu manager.
-	/// The &lt;PresentationMenuItem&gt; slot in the game XML will show as "Change View"
-	/// and open this sub-menu. Items let the player switch between Roomscale and 5DOF.
+	/// Registers the VR presentation sub-menu with the menu manager.
+	/// The &lt;PresentationMenuItem&gt; slot in the game XML will show as "Presentation"
+	/// and open this sub-menu. Items let the player change VR mode and debug marker visibility.
 	/// </summary>
 	private void RegisterVRModeMenu()
 	{
 		MenuDefinition vrModeMenu = new()
 		{
-			// Layout mirrors the Sound menu style (WL_MENU.C:CP_Sound) with a box and indicator lights.
-			// X=76 and Indent=52 matches Sound menu's spacing: cursor at X, indicator at X+24, text at X+Indent.
-			X = 76,
-			Y = 55,
+			// Layout mirrors the Sound menu style with wide section boxes and inherited game styling.
+			X = 48,
+			Y = 20,
 			Indent = 52,
 			Spacing = 13,
-			Font = "BIG",
 			OnCancel = "NavigateToMenu(\"Main\")",
-			// WL_MENU.C:CP_Sound pattern: update indicator lights to reflect the active VR mode.
+			// WL_MENU.C:CP_Sound pattern: update indicator lights to reflect the active settings.
 			OnSelectionChanged = """
 local vrMode = GetVRMode()
 if vrMode == "Roomscale" then
@@ -327,44 +345,92 @@ else
 	SetPicture('VRRoomscale', 'C_NOTSELECTEDPIC')
 	SetPicture('VRFiveDOF', 'C_SELECTEDPIC')
 end
+
+local debugMarkersEnabled = GetDebugMarkersEnabled()
+if debugMarkersEnabled then
+	SetPicture('VRDebugMarkersOn', 'C_SELECTEDPIC')
+	SetPicture('VRDebugMarkersOff', 'C_NOTSELECTEDPIC')
+else
+	SetPicture('VRDebugMarkersOn', 'C_NOTSELECTEDPIC')
+	SetPicture('VRDebugMarkersOff', 'C_SELECTEDPIC')
+end
 """,
 		};
-		// Box around all items: standard -8x, -3y offset matching Sound menu DrawWindow pattern.
-		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 68, Y = 52, W = 178, H = 45 });
-		// Indicator lights for the two radio-button mode choices (ZIndex=9 renders above the box at ZIndex=7).
-		// Position: X+24=100, Y+i*Spacing+2 (matches Sound menu's SM_X+24, SM_Y+i*13+2 formula).
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 17, W = 250, H = 32 });
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 82, W = 250, H = 32 });
+		vrModeMenu.Texts.Add(new TextDefinition
+		{
+			Content = "View Mode",
+			X = "Center",
+			Y = "0",
+		});
+		vrModeMenu.Texts.Add(new TextDefinition
+		{
+			Content = "Debug Markers",
+			X = "Center",
+			Y = "65",
+		});
+		// Indicator lights align to the same positions the Sound menu uses: (X+24, Y+i*13+2).
 		vrModeMenu.Pictures.Add(new PictureDefinition
 		{
 			Id = "VRRoomscale",
 			Name = "C_NOTSELECTEDPIC",
-			X = "100",
-			Y = "57",
+			X = "72",
+			Y = "22",
 			ZIndex = 9,
 		});
 		vrModeMenu.Pictures.Add(new PictureDefinition
 		{
 			Id = "VRFiveDOF",
 			Name = "C_NOTSELECTEDPIC",
-			X = "100",
-			Y = "70",
+			X = "72",
+			Y = "35",
+			ZIndex = 9,
+		});
+		vrModeMenu.Pictures.Add(new PictureDefinition
+		{
+			Id = "VRDebugMarkersOn",
+			Name = "C_NOTSELECTEDPIC",
+			X = "72",
+			Y = "87",
+			ZIndex = 9,
+		});
+		vrModeMenu.Pictures.Add(new PictureDefinition
+		{
+			Id = "VRDebugMarkersOff",
+			Name = "C_NOTSELECTEDPIC",
+			X = "72",
+			Y = "100",
 			ZIndex = 9,
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Roomscale",
-			Script = "SetVRMode(\"Roomscale\") NavigateToMenu(\"Main\")",
+			Script = "SetVRMode(\"Roomscale\") RefreshMenu()",
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "5DOF",
-			Script = "SetVRMode(\"FiveDOF\") NavigateToMenu(\"Main\")",
+			Script = "SetVRMode(\"FiveDOF\") RefreshMenu()",
+		});
+		vrModeMenu.Items.Add(new MenuItemDefinition
+		{
+			Text = "Debug Markers On",
+			Script = "SetDebugMarkersEnabled(true) RefreshMenu()",
+			CustomProperties = { ["ExtraSpacing"] = "39" },
+		});
+		vrModeMenu.Items.Add(new MenuItemDefinition
+		{
+			Text = "Debug Markers Off",
+			Script = "SetDebugMarkersEnabled(false) RefreshMenu()",
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Back",
 			Script = "NavigateToMenu(\"Main\")",
+			CustomProperties = { ["ExtraSpacing"] = "39" },
 		});
-		_menuManager.RegisterPresentationMenu("Change View", vrModeMenu);
+		_menuManager.RegisterPresentationMenu("Presentation", vrModeMenu);
 	}
 	/// <summary>
 	/// Sets up the menu as a floating 3D panel for VR.
