@@ -829,19 +829,6 @@ StartTicker("AvgTreasureRatio", tr)
 ]]>
 				</OnShow>
 			</Menu>
-			<!-- WL_ACT2.C:A_StartDeathCam - "Let's see that again!" screen (FOREIGN.H:STR_SEEAGAIN) -->
-			<Menu Name="DeathCam_Hans_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_Hans_Cam")</Pause>
-			</Menu>
-			<!-- WL_ACT2.C:A_StartDeathCam - Hans death animation replay -->
-			<Menu Name="DeathCam_Hans_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<!-- WL_ACT2.C:A_StartDeathCam - SPR_DEATHCAM title at top of screen, centered -->
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_bossdie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("MUTTISND")</OnShow>
-				<Pause>ResumeGame()</Pause>
-			</Menu>
 			<Menu Name="DeathCam_Schabbs_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
 				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
 				<Pause>NavigateToMenu("DeathCam_Schabbs_Cam")</Pause>
@@ -850,7 +837,7 @@ StartTicker("AvgTreasureRatio", tr)
 				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
 				<ActorAnimation StartState="s_schabbdie1" X="160" Y="130"/>
 				<OnShow>PlayDigiSound("MEINGOTTSND")</OnShow>
-				<Pause>ResumeGame()</Pause>
+				<Pause>NavigateToArticle("EndArt" .. GetEpisode())</Pause>
 			</Menu>
 			<Menu Name="DeathCam_Hitler_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
 				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
@@ -861,7 +848,7 @@ StartTicker("AvgTreasureRatio", tr)
 				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
 				<ActorAnimation StartState="s_hitlerdie1" X="160" Y="130"/>
 				<OnShow>PlayDigiSound("EVASND")</OnShow>
-				<Pause>ResumeGame()</Pause>
+				<Pause>NavigateToArticle("EndArt" .. GetEpisode())</Pause>
 			</Menu>
 			<Menu Name="DeathCam_Gretel_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
 				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
@@ -871,7 +858,7 @@ StartTicker("AvgTreasureRatio", tr)
 				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
 				<ActorAnimation StartState="s_greteldie1" X="160" Y="130"/>
 				<OnShow>PlayDigiSound("MEINSND")</OnShow>
-				<Pause>ResumeGame()</Pause>
+				<Pause>NavigateToArticle("EndArt" .. GetEpisode())</Pause>
 			</Menu>
 			<Menu Name="DeathCam_Giftmacher_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
 				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
@@ -881,7 +868,7 @@ StartTicker("AvgTreasureRatio", tr)
 				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
 				<ActorAnimation StartState="s_giftdie1" X="160" Y="130"/>
 				<OnShow>PlayDigiSound("DONNERSND")</OnShow>
-				<Pause>ResumeGame()</Pause>
+				<Pause>NavigateToArticle("EndArt" .. GetEpisode())</Pause>
 			</Menu>
 			<Menu Name="DeathCam_FatFace_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
 				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
@@ -891,7 +878,7 @@ StartTicker("AvgTreasureRatio", tr)
 				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
 				<ActorAnimation StartState="s_fatdie1" X="160" Y="130"/>
 				<OnShow>PlayDigiSound("ROSESND")</OnShow>
-				<Pause>ResumeGame()</Pause>
+				<Pause>NavigateToArticle("EndArt" .. GetEpisode())</Pause>
 			</Menu>
 		</Menus>
 	</VgaGraph>
@@ -1132,6 +1119,11 @@ StartTicker("AvgTreasureRatio", tr)
 				RapidFire="true"
 				StatusBarPic="GATLINGGUNPIC"/>
 		</GameplayWeapons>
+		<Projectiles>
+			<!-- Enemy projectile definitions used by boss Lua attack scripts. -->
+			<Projectile Name="needle" InitialState="s_needle1" MinDamage="20" MaxDamage="51" Speed="8192" />
+			<Projectile Name="rocket" InitialState="s_rocket" MinDamage="30" MaxDamage="61" Speed="8192" />
+		</Projectiles>
 		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
@@ -1959,7 +1951,7 @@ return false
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
 			<!-- WL_ACT2.C:SpawnSchabbs — Episode 2 boss -->
 			<!-- Corrected HP from starthitpoints[]: Baby=850, DHM=950, BEO=1550, DI=2400 -->
-			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" AlertDigiSound="MEINGOTTSND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
+			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" AlertDigiSound="SCHABBSHASND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
 			<State Name="s_schabbstand"   Shape="SPR_SCHABB_W1"     Tics="0"  Think="T_Stand"      Speed="0"   Next="s_schabbstand" />
 			<State Name="s_schabbchase1"  Shape="SPR_SCHABB_W1"     Tics="10" Think="T_Schabb"     Speed="512" Next="s_schabbchase1s" />
 			<State Name="s_schabbchase1s" Shape="SPR_SCHABB_W1"     Tics="3"                       Speed="512" Next="s_schabbchase2" />

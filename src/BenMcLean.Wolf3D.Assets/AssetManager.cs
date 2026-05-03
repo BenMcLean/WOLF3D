@@ -186,6 +186,10 @@ public class AssetManager
 		IEnumerable<XElement> actorElements = actorsElement.Elements("Actor");
 		if (actorElements is not null)
 			stateCollection.LoadActorDefinitionsFromXml(actorElements);
+		// Load projectile definitions used by actor/weapon Lua SpawnProjectile() calls.
+		IEnumerable<XElement> projectileElements = vswapElement?.Element("Projectiles")?.Elements("Projectile");
+		if (projectileElements is not null)
+			stateCollection.LoadProjectileDefinitionsFromXml(projectileElements);
 		// Phase 2: Link state references
 		stateCollection.LinkStates();
 		// Note: ValidateFunctionReferences is NOT called here.

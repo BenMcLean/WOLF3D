@@ -796,19 +796,6 @@ StartTicker("AvgTreasureRatio", tr)
 ]]>
 				</OnShow>
 			</Menu>
-			<!-- WL_ACT2.C:A_StartDeathCam - "Let's see that again!" screen (FOREIGN.H:STR_SEEAGAIN) -->
-			<Menu Name="DeathCam_Hans_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_Hans_Cam")</Pause>
-			</Menu>
-			<!-- WL_ACT2.C:A_StartDeathCam - Hans death animation replay -->
-			<Menu Name="DeathCam_Hans_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<!-- WL_ACT2.C:A_StartDeathCam - SPR_DEATHCAM title at top of screen, centered -->
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_bossdie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("MUTTISND")</OnShow>
-				<Pause>ResumeGame()</Pause>
-			</Menu>
 		</Menus>
 	</VgaGraph>
 	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29" >
@@ -1460,7 +1447,7 @@ return false
 			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Action="A_DeathScream" Alive="false" />
 			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3" Alive="false" Mark="false" />
 			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
-			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Action="A_StartDeathCam" Next="s_bossdie4" Alive="false" Mark="false" />
+			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
 			<State Name="s_bossshoot1" Shape="SPR_BOSS_SHOOT1" Tics="30" Speed="0" Next="s_bossshoot2" />
 			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot3" />
 			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot4" />

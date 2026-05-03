@@ -1,9 +1,10 @@
 -- WL_ACT2.C:A_StartDeathCam - triggered when boss enters terminal dead state
--- Called once via TransitionActorState when s_bossdie4 (or equivalent) is entered
+-- Hans does not use the DeathCam flow in Wolf3D; he only plays his death
+-- sound and drops the gold key from A_DeathScream/KillActor behavior.
+-- Called once via TransitionActorState when the supported boss terminal dead
+-- state is entered.
 local actorType = GetActorType()
-if actorType == "Hans" then
-	NavigateToMenu("DeathCam_Hans_See")
-elseif actorType == "Schabbs" then
+if actorType == "Schabbs" then
 	NavigateToMenu("DeathCam_Schabbs_See")
 elseif actorType == "Hitler" then
 	NavigateToMenu("DeathCam_Hitler_See")
