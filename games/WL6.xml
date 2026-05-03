@@ -1915,7 +1915,7 @@ return false
 			<Actor Name="Inky" HP="25,25,25,25" Stand="s_inkychase1" Chase="s_inkychase1" Ambush="true" />
 			<State Name="s_inkychase1" Shape="SPR_INKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase2" />
 			<State Name="s_inkychase2" Shape="SPR_INKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase1" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertSound="DOGBARKSND" Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogstand" Rotate="true" Shape="SPR_DOG_W1_1" Tics="0" Think="T_Stand" Speed="0" Next="s_dogstand" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
 			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500" Next="s_dogpath2" />
