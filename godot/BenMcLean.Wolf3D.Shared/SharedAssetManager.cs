@@ -19,6 +19,8 @@ namespace BenMcLean.Wolf3D.Shared;
 /// </summary>
 public static class SharedAssetManager
 {
+	private const string EmbeddedSharewareZipResource = "BenMcLean.Wolf3D.Shared.Resources.Wolfenstein3dV14sw.ZIP";
+	private const string SharewareXmlFileName = "WL1.xml";
 	#region Data
 	/// <summary>
 	/// The currently loaded game data (VSwap, Maps, etc.).
@@ -117,6 +119,7 @@ public static class SharedAssetManager
 	/// Logger factory configured to route logs to Godot.
 	/// </summary>
 	private static ILoggerFactory _loggerFactory;
+	private static readonly Lazy<IReadOnlyDictionary<string, byte[]>> _embeddedSharewareFiles = new(LoadEmbeddedSharewareFiles);
 	#endregion Data
 	#region Textures
 	/// <summary>
@@ -578,6 +581,7 @@ public static class SharedAssetManager
 		string gameFolder = System.IO.Path.Combine(
 			System.IO.Path.GetDirectoryName(xmlPath),
 			CurrentGame.XML.Attribute("Path")?.Value ?? "");
+		Directory.CreateDirectory(gameFolder);
 		_configPath = System.IO.Path.Combine(gameFolder, configFileName);
 		// Load or create config
 		if (System.IO.File.Exists(_configPath))
@@ -610,51 +614,30 @@ public static class SharedAssetManager
 		}
 	}
 	#endregion Config
-	/// <summary>
-	/// Extracts the embedded shareware ZIP to the WL1 subfolder of <paramref name="gamesFolder"/>,
-	/// creating the folder if needed and skipping any files that already exist.
-	/// </summary>
-	/// <param name="gamesFolder">Absolute path to the games directory.</param>
-	public static void ExtractSharewareIfNeeded(string gamesFolder)
+	private static IReadOnlyDictionary<string, byte[]> LoadEmbeddedSharewareFiles()
 	{
-		string targetFolder = Path.Combine(gamesFolder, "WL1");
-		Directory.CreateDirectory(targetFolder);
 		using Stream stream = Assembly.GetExecutingAssembly()
-			.GetManifestResourceStream("BenMcLean.Wolf3D.Shared.Resources.Wolfenstein3dV14sw.ZIP");
+			.GetManifestResourceStream(EmbeddedSharewareZipResource);
+		Dictionary<string, byte[]> files = new(StringComparer.OrdinalIgnoreCase);
 		if (stream is null)
-			return;
+			return files;
 		using ZipArchive archive = new(stream, ZipArchiveMode.Read);
 		foreach (ZipArchiveEntry entry in archive.Entries)
 		{
 			if (string.IsNullOrEmpty(entry.Name))
 				continue;
-			string destPath = Path.Combine(targetFolder, entry.Name);
-			if (File.Exists(destPath))
-				continue;
-			entry.ExtractToFile(destPath);
+			using Stream entryStream = entry.Open();
+			using MemoryStream memoryStream = new();
+			entryStream.CopyTo(memoryStream);
+			files[entry.Name] = memoryStream.ToArray();
 		}
-		string wl1 = Path.Combine(gamesFolder, "WL1.xml"),
-			assemblyLocation = Assembly.GetExecutingAssembly().Location;
-		bool copyWl1 = !File.Exists(wl1);
-#if !DEBUG
-		if (!copyWl1 &&
-			!string.IsNullOrEmpty(assemblyLocation) &&
-			File.GetLastWriteTime(wl1) < File.GetLastWriteTime(assemblyLocation))
-			copyWl1 = true;
-#endif
-		if (copyWl1)
-		{
-			using Stream wl1Stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("BenMcLean.Wolf3D.Shared.Resources.WL1.xml");
-			using FileStream dest = File.Create(wl1);
-			wl1Stream.CopyTo(dest);
-		}
+		return files;
 	}
 	/// <summary>
 	/// Loads a game from the user's games folder.
 	/// </summary>
 	/// <param name="xmlPath">Path to the game's XML definition file (e.g., "WL6.xml")</param>
-	public static void LoadGame(string xmlPath)
+	public static void LoadGame(string xmlPath, bool preferEmbeddedShareware = false)
 	{
 		Cleanup();
 		// Configure logging to route to Godot
@@ -663,12 +646,48 @@ public static class SharedAssetManager
 			builder.AddProvider(new GodotLoggerProvider());
 			builder.SetMinimumLevel(LogLevel.Warning);  // Only show warnings and errors
 		});
-		XmlPath = System.IO.Path.GetFullPath(xmlPath);
-		CurrentGame = Assets.AssetManager.Load(xmlPath, _loggerFactory);
+		GameCatalog.GameDefinition gameDefinition = GameCatalog.Resolve(
+			xmlPath,
+			preferEmbeddedOfficial: preferEmbeddedShareware);
+		XmlPath = System.IO.Path.GetFullPath(gameDefinition.XmlPath);
+		CurrentGame = ShouldUseEmbeddedSharewareData(xmlPath, gameDefinition, preferEmbeddedShareware)
+			? Assets.AssetManager.Load(
+				gameDefinition.Xml,
+				gameDefinition.GameDataDirectory,
+				OpenEmbeddedSharewareFile,
+				EmbeddedSharewareFileExists,
+				_loggerFactory)
+			: new Assets.AssetManager(gameDefinition.Xml, gameDefinition.GameDataDirectory, _loggerFactory);
 		BuildAtlas();
 		BuildBonusAutomapTiles();
 		BuildDigiSounds();
-		LoadConfig(xmlPath);
+		LoadConfig(XmlPath);
+	}
+	public static bool RequiresExternalStorage(string xmlPath, bool preferEmbeddedShareware = false)
+	{
+		GameCatalog.GameDefinition gameDefinition = GameCatalog.Resolve(
+			xmlPath,
+			preferEmbeddedOfficial: preferEmbeddedShareware);
+		return !ShouldUseEmbeddedSharewareData(xmlPath, gameDefinition, preferEmbeddedShareware);
+	}
+	private static bool ShouldUseEmbeddedSharewareData(string xmlPath, GameCatalog.GameDefinition gameDefinition, bool preferEmbeddedShareware)
+	{
+		if (!GameCatalog.CanUseEmbeddedSharewareData(gameDefinition))
+			return false;
+		if (preferEmbeddedShareware)
+			return true;
+		if (Path.GetFileName(xmlPath).Equals(SharewareXmlFileName, StringComparison.OrdinalIgnoreCase) &&
+			!GameCatalog.HasExternalGameData(gameDefinition))
+			return true;
+		return !GameCatalog.HasExternalGameData(gameDefinition);
+	}
+	private static bool EmbeddedSharewareFileExists(string path) =>
+		_embeddedSharewareFiles.Value.ContainsKey(Path.GetFileName(path));
+	private static Stream OpenEmbeddedSharewareFile(string path)
+	{
+		if (!_embeddedSharewareFiles.Value.TryGetValue(Path.GetFileName(path), out byte[] bytes))
+			throw new FileNotFoundException($"Embedded shareware file not found: {Path.GetFileName(path)}", path);
+		return new MemoryStream(bytes, writable: false);
 	}
 	/// <summary>
 	/// Get a Godot Color from a VGA palette index.

@@ -1,16 +1,14 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Menu;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
 /// <summary>
 /// Builds a procedural MenuCollection for the game selection screen.
-/// Scans the games/ directory for XML game definition files and creates
-/// a selectable paged list using the shareware (WL1) visual assets already loaded
-/// via SharedAssetManager.
+/// Merges embedded official XML with optional user XML overrides/additions from the games/
+/// directory, then creates a selectable paged list using the shareware (WL1) visual assets
+/// already loaded via SharedAssetManager.
 /// "Have it list games." --Matthew Broderick as David Lightman in WarGames. (1983)
 /// </summary>
 public static class GameSelectionMenuFactory
@@ -19,7 +17,7 @@ public static class GameSelectionMenuFactory
 
 	/// <summary>
 	/// Builds a MenuCollection containing paginated "_GameSelectN" menus that list
-	/// all XML game definition files found in the specified directory.
+	/// all playable game definition files available for the specified directory.
 	/// Each menu item calls SelectGame(path) when activated.
 	/// WL1 is sorted first, then alphabetically by filename.
 	/// </summary>
@@ -27,20 +25,7 @@ public static class GameSelectionMenuFactory
 	/// <returns>A MenuCollection ready to pass to MenuRoom as MenuCollectionOverride</returns>
 	public static MenuCollection Build(string gamesDirectory)
 	{
-		string[] xmlFiles;
-		try
-		{
-			xmlFiles = Directory.GetFiles(gamesDirectory, "*.xml");
-		}
-		catch
-		{
-			xmlFiles = [];
-		}
-
-		// WL1 sorts first, then alphabetically by filename (matching original game ordering)
-		string[] games = [.. xmlFiles
-			.OrderBy(f => !Path.GetFileNameWithoutExtension(f).Equals("WL1", StringComparison.OrdinalIgnoreCase))
-			.ThenBy(f => Path.GetFileNameWithoutExtension(f))];
+		GameCatalog.GameDefinition[] games = [.. GameCatalog.GetAvailableGames(gamesDirectory)];
 
 		int pages = games.Length == 0 ? 1 : (games.Length - 1) / PerPage + 1;
 
@@ -134,8 +119,8 @@ public static class GameSelectionMenuFactory
 				int endIdx = Math.Min(startIdx + PerPage, games.Length);
 				for (int i = startIdx; i < endIdx; i++)
 				{
-					string name = ReadGameName(games[i]);
-					string normalizedPath = games[i].Replace('\\', '/');
+					string name = games[i].DisplayName;
+					string normalizedPath = games[i].XmlPath.Replace('\\', '/');
 					menu.Items.Add(new MenuItemDefinition
 					{
 						Text = name,
@@ -157,23 +142,5 @@ public static class GameSelectionMenuFactory
 		}
 
 		return collection;
-	}
-
-	/// <summary>
-	/// Reads the Name attribute from the root Game element of an XML game definition file.
-	/// Falls back to the filename (without extension) if the attribute is absent or the
-	/// file cannot be read.
-	/// </summary>
-	private static string ReadGameName(string xmlPath)
-	{
-		try
-		{
-			return XDocument.Load(xmlPath).Root?.Attribute("Name")?.Value
-				?? Path.GetFileNameWithoutExtension(xmlPath);
-		}
-		catch
-		{
-			return Path.GetFileNameWithoutExtension(xmlPath);
-		}
 	}
 }

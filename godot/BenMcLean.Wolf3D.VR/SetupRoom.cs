@@ -239,9 +239,11 @@ public partial class SetupRoom : Node3D, IRoom
 				_phase = Phase.Loading;
 				try
 				{
-					// On Android, MANAGE_EXTERNAL_STORAGE must be granted before file access.
-					// Checked here (after DosScreen is visible) so the error displays to the user.
-					if (!AndroidPermissions.HasAllFilesAccess())
+					// On Android, only request All Files Access for loads that truly need
+					// external storage. Embedded WL1 boot/load can run entirely from
+					// bundled resources.
+					if (SharedAssetManager.RequiresExternalStorage(_xmlPath, preferEmbeddedShareware: IsInitialLoad) &&
+						!AndroidPermissions.HasAllFilesAccess())
 					{
 						AndroidPermissions.OpenAllFilesAccessSettings();
 						throw new UnauthorizedAccessException(
@@ -254,11 +256,8 @@ public partial class SetupRoom : Node3D, IRoom
 					// before SharedAssetManager.LoadGame() disposes the atlas textures
 					if (!IsInitialLoad)
 						VRAssetManager.Cleanup();
-					else
-						SharedAssetManager.ExtractSharewareIfNeeded(
-							System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(_xmlPath)));
 
-					SharedAssetManager.LoadGame(_xmlPath);
+					SharedAssetManager.LoadGame(_xmlPath, preferEmbeddedShareware: IsInitialLoad);
 
 					_dosScreen.WriteLine("Done.");
 					_phase = Phase.Done;

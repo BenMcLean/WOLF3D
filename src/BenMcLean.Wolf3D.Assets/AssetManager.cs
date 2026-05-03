@@ -36,9 +36,24 @@ public class AssetManager
 		XElement xml = XDocument.Load(xmlPath).Root;
 		return new(xml, Path.Combine(Path.GetDirectoryName(xmlPath), xml.Attribute("Path")?.Value), loggerFactory);
 	}
-	public AssetManager(XElement xml, string folder = "", ILoggerFactory loggerFactory = null)
+	public static AssetManager Load(
+		XElement xml,
+		string folder,
+		Func<string, Stream> openRead,
+		Func<string, bool> fileExists,
+		ILoggerFactory loggerFactory = null) =>
+		new(xml, folder, openRead, fileExists, loggerFactory);
+	public AssetManager(XElement xml, string folder = "", ILoggerFactory loggerFactory = null) :
+		this(xml, folder, openRead: null, fileExists: null, loggerFactory)
+	{ }
+	private AssetManager(
+		XElement xml,
+		string folder,
+		Func<string, Stream> openRead,
+		Func<string, bool> fileExists,
+		ILoggerFactory loggerFactory = null)
 	{
-		if (!Directory.Exists(folder))
+		if (openRead is null && !Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
 		AudioT audioT = null;
@@ -47,10 +62,10 @@ public class AssetManager
 		GameMap[] maps = null;
 		Parallel.ForEach(
 			source: new Action[] {
-					() => audioT = AudioT.Load(xml, folder),
-					() => vgaGraph = VgaGraph.Load(xml, folder),
-					() => vSwap = VSwap.Load(xml, folder),
-					() => maps = GameMap.Load(xml, folder),
+					() => audioT = LoadAudioT(xml, folder, openRead),
+					() => vgaGraph = LoadVgaGraph(xml, folder, openRead),
+					() => vSwap = LoadVSwap(xml, folder, openRead),
+					() => maps = LoadMaps(xml, folder, openRead),
 				},
 			body: action => action());
 		AudioT = audioT;
@@ -68,8 +83,9 @@ public class AssetManager
 		if (!string.IsNullOrEmpty(MapAnalyzer.WallSpawnsFile))
 		{
 			string wallSpawnsPath = Path.Combine(folder, MapAnalyzer.WallSpawnsFile);
-			if (File.Exists(wallSpawnsPath))
-				wallSpawnsByLevel = Gameplay.WallSpawns.LoadAll(wallSpawnsPath);
+			if (FileExists(wallSpawnsPath, fileExists))
+				using (Stream wallSpawnsStream = OpenRead(wallSpawnsPath, openRead))
+					wallSpawnsByLevel = Gameplay.WallSpawns.LoadAll(wallSpawnsStream);
 		}
 		MapAnalyses = wallSpawnsByLevel is not null
 			? [.. maps.Select(map =>
@@ -84,7 +100,64 @@ public class AssetManager
 		// Load MenuCollection from XML
 		MenuCollection = LoadMenuCollection(xml);
 		// Load text chunks (external files + embedded VGAGRAPH chunks)
-		TextChunks = LoadTextChunks(xml, folder);
+		TextChunks = LoadTextChunks(xml, folder, openRead, fileExists);
+	}
+	private static AudioT LoadAudioT(XElement xml, string folder, Func<string, Stream> openRead)
+	{
+		if (openRead is null)
+			return AudioT.Load(xml, folder);
+		XElement el = xml.Element("Audio");
+		string head = el?.Attribute("AudioHead")?.Value;
+		string audioT = el?.Attribute("AudioT")?.Value;
+		if (head is null || audioT is null)
+			return null;
+		using Stream audioHeadStream = OpenRead(Path.Combine(folder, head), openRead);
+		using Stream audioTStream = OpenRead(Path.Combine(folder, audioT), openRead);
+		return new AudioT(audioHeadStream, audioTStream, el);
+	}
+	private static VgaGraph LoadVgaGraph(XElement xml, string folder, Func<string, Stream> openRead)
+	{
+		if (openRead is null)
+			return VgaGraph.Load(xml, folder);
+		XElement el = xml.Element("VgaGraph");
+		string head = el?.Attribute("VgaHead")?.Value;
+		string graph = el?.Attribute("VgaGraph")?.Value;
+		string dict = el?.Attribute("VgaDict")?.Value;
+		if (head is null || graph is null || dict is null)
+			return null;
+		using Stream vgaHeadStream = OpenRead(Path.Combine(folder, head), openRead);
+		using Stream vgaGraphStream = OpenRead(Path.Combine(folder, graph), openRead);
+		using Stream vgaDictStream = OpenRead(Path.Combine(folder, dict), openRead);
+		return new VgaGraph(vgaHeadStream, vgaGraphStream, vgaDictStream, xml);
+	}
+	private static VSwap LoadVSwap(XElement xml, string folder, Func<string, Stream> openRead)
+	{
+		if (openRead is null)
+			return VSwap.Load(xml, folder);
+		string name = xml.Element("VSwap")?.Attribute("Name")?.Value;
+		if (name is null)
+			return null;
+		using Stream vSwapStream = OpenRead(Path.Combine(folder, name), openRead);
+		return new VSwap(
+			xml: xml,
+			palette: VSwap.LoadPalette(xml),
+			stream: vSwapStream,
+			tileSqrt: ushort.TryParse(xml?.Element("VSwap")?.Attribute("Sqrt")?.Value, out ushort sqrt) ? sqrt : (ushort)64,
+			fourBytePageLengths: bool.TryParse(xml?.Element("VSwap")?.Attribute("FourBytePageLengths")?.Value, out bool fourBytePageLengths) && fourBytePageLengths,
+			rleSprites: !bool.TryParse(xml?.Element("VSwap")?.Attribute("RleSprites")?.Value, out bool rleSprites) || rleSprites);
+	}
+	private static GameMap[] LoadMaps(XElement xml, string folder, Func<string, Stream> openRead)
+	{
+		if (openRead is null)
+			return GameMap.Load(xml, folder);
+		XElement el = xml.Element("Maps");
+		string head = el?.Attribute("MapHead")?.Value;
+		string gameMaps = el?.Attribute("GameMaps")?.Value;
+		if (head is null || gameMaps is null)
+			return [];
+		using Stream mapHeadStream = OpenRead(Path.Combine(folder, head), openRead);
+		using Stream gameMapsStream = OpenRead(Path.Combine(folder, gameMaps), openRead);
+		return GameMap.Load(mapHeadStream, gameMapsStream);
 	}
 	private StateCollection LoadStateCollection(XElement xml)
 	{
@@ -134,7 +207,7 @@ public class AssetManager
 			weaponCollection.LoadFromXml(weaponElements);
 		return weaponCollection;
 	}
-	private Dictionary<string, string> LoadTextChunks(XElement xml, string folder)
+	private Dictionary<string, string> LoadTextChunks(XElement xml, string folder, Func<string, Stream> openRead, Func<string, bool> fileExists)
 	{
 		// Start with any embedded chunks already extracted by VgaGraph
 		Dictionary<string, string> chunks = VgaGraph?.TextChunks is not null
@@ -149,15 +222,19 @@ public class AssetManager
 			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(fileName))
 				continue;
 			string filePath = Path.Combine(folder, fileName);
-			if (!File.Exists(filePath))
+			if (!FileExists(filePath, fileExists))
 			{
 				Console.Error.WriteLine($"Warning: TextChunk '{name}' file not found: {filePath}");
 				continue;
 			}
-			chunks[name] = File.ReadAllText(filePath, System.Text.Encoding.ASCII);
+			using Stream stream = OpenRead(filePath, openRead);
+			using StreamReader reader = new(stream, System.Text.Encoding.ASCII);
+			chunks[name] = reader.ReadToEnd();
 		}
 		return chunks;
 	}
+	private static bool FileExists(string path, Func<string, bool> fileExists) => fileExists?.Invoke(path) ?? File.Exists(path);
+	private static Stream OpenRead(string path, Func<string, Stream> openRead) => openRead?.Invoke(path) ?? File.OpenRead(path);
 	private static MenuCollection LoadMenuCollection(XElement xml) =>
 		xml?.Element("VgaGraph")?.Element("Menus") is XElement menusElement
 			? MenuCollection.Load(menusElement)

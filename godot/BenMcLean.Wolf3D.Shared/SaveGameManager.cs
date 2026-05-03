@@ -91,6 +91,7 @@ public static class SaveGameManager
 
 		try
 		{
+			Directory.CreateDirectory(Path.GetDirectoryName(path));
 			string json = SaveGameFile.Serialize(saveFile);
 			File.WriteAllText(path, json);
 		}
