@@ -1425,6 +1425,15 @@ return false
 			<Sprite Page="391" Name="SPR_OFC_SHOOT1" />
 			<Sprite Page="392" Name="SPR_OFC_SHOOT2" />
 			<Sprite Page="393" Name="SPR_OFC_SHOOT3" />
+			<!-- Pac-Man ghosts -->
+			<Sprite Page="394" Name="SPR_BLINKY_W1" />
+			<Sprite Page="395" Name="SPR_BLINKY_W2" />
+			<Sprite Page="396" Name="SPR_PINKY_W1" />
+			<Sprite Page="397" Name="SPR_PINKY_W2" />
+			<Sprite Page="398" Name="SPR_CLYDE_W1" />
+			<Sprite Page="399" Name="SPR_CLYDE_W2" />
+			<Sprite Page="400" Name="SPR_INKY_W1" />
+			<Sprite Page="401" Name="SPR_INKY_W2" />
 			<Sprite Page="402" Name="SPR_BOSS_W1" />
 			<Sprite Page="403" Name="SPR_BOSS_W2" />
 			<Sprite Page="404" Name="SPR_BOSS_W3" />
@@ -1677,6 +1686,10 @@ return false
 			<ObjectType Number="131" ObClass="actor" Actor="SS" Direction="N" Difficulty="0" State="s_sspath1" />
 			<ObjectType Number="132" ObClass="actor" Actor="SS" Direction="W" Difficulty="0" State="s_sspath1" />
 			<ObjectType Number="133" ObClass="actor" Actor="SS" Direction="S" Difficulty="0" State="s_sspath1" />
+			<ObjectType Number="134" ObClass="actor" Actor="Dog" Direction="E" Difficulty="0" State="s_dogstand" />
+			<ObjectType Number="135" ObClass="actor" Actor="Dog" Direction="N" Difficulty="0" State="s_dogstand" />
+			<ObjectType Number="136" ObClass="actor" Actor="Dog" Direction="W" Difficulty="0" State="s_dogstand" />
+			<ObjectType Number="137" ObClass="actor" Actor="Dog" Direction="S" Difficulty="0" State="s_dogstand" />
 			<ObjectType Number="138" ObClass="actor" Actor="Dog" Direction="E" Difficulty="0" State="s_dogpath1" />
 			<ObjectType Number="139" ObClass="actor" Actor="Dog" Direction="N" Difficulty="0" State="s_dogpath1" />
 			<ObjectType Number="140" ObClass="actor" Actor="Dog" Direction="W" Difficulty="0" State="s_dogpath1" />
@@ -1705,6 +1718,10 @@ return false
 			<ObjectType Number="167" ObClass="actor" Actor="SS" Direction="N" Difficulty="2" State="s_sspath1" />
 			<ObjectType Number="168" ObClass="actor" Actor="SS" Direction="W" Difficulty="2" State="s_sspath1" />
 			<ObjectType Number="169" ObClass="actor" Actor="SS" Direction="S" Difficulty="2" State="s_sspath1" />
+			<ObjectType Number="170" ObClass="actor" Actor="Dog" Direction="E" Difficulty="2" State="s_dogstand" />
+			<ObjectType Number="171" ObClass="actor" Actor="Dog" Direction="N" Difficulty="2" State="s_dogstand" />
+			<ObjectType Number="172" ObClass="actor" Actor="Dog" Direction="W" Difficulty="2" State="s_dogstand" />
+			<ObjectType Number="173" ObClass="actor" Actor="Dog" Direction="S" Difficulty="2" State="s_dogstand" />
 			<ObjectType Number="174" ObClass="actor" Actor="Dog" Direction="E" Difficulty="2" State="s_dogpath1" />
 			<ObjectType Number="175" ObClass="actor" Actor="Dog" Direction="N" Difficulty="2" State="s_dogpath1" />
 			<ObjectType Number="176" ObClass="actor" Actor="Dog" Direction="W" Difficulty="2" State="s_dogpath1" />
@@ -1713,14 +1730,18 @@ return false
 			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
 			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
 			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="184" ObClass="actor" Actor="Officer" Direction="E" Difficulty="3" State="s_ofcstand" />
-			<ObjectType Number="185" ObClass="actor" Actor="Officer" Direction="N" Difficulty="3" State="s_ofcstand" />
-			<ObjectType Number="186" ObClass="actor" Actor="Officer" Direction="W" Difficulty="3" State="s_ofcstand" />
-			<ObjectType Number="187" ObClass="actor" Actor="Officer" Direction="S" Difficulty="3" State="s_ofcstand" />
-			<ObjectType Number="188" ObClass="actor" Actor="Officer" Direction="E" Difficulty="3" State="s_ofcpath1" />
-			<ObjectType Number="189" ObClass="actor" Actor="Officer" Direction="N" Difficulty="3" State="s_ofcpath1" />
-			<ObjectType Number="190" ObClass="actor" Actor="Officer" Direction="W" Difficulty="3" State="s_ofcpath1" />
-			<ObjectType Number="191" ObClass="actor" Actor="Officer" Direction="S" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="184" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="185" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="186" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="187" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdpath1" />
+			<ObjectType Number="188" ObClass="actor" Actor="Officer" Direction="E" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="189" ObClass="actor" Actor="Officer" Direction="N" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="190" ObClass="actor" Actor="Officer" Direction="W" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="191" ObClass="actor" Actor="Officer" Direction="S" Difficulty="3" State="s_ofcstand" />
+			<ObjectType Number="192" ObClass="actor" Actor="Officer" Direction="E" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="193" ObClass="actor" Actor="Officer" Direction="N" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="194" ObClass="actor" Actor="Officer" Direction="W" Difficulty="3" State="s_ofcpath1" />
+			<ObjectType Number="195" ObClass="actor" Actor="Officer" Direction="S" Difficulty="3" State="s_ofcpath1" />
 			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
 			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
 			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
@@ -1729,6 +1750,10 @@ return false
 			<ObjectType Number="203" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_sspath1" />
 			<ObjectType Number="204" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_sspath1" />
 			<ObjectType Number="205" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_sspath1" />
+			<ObjectType Number="206" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3" State="s_dogstand" />
+			<ObjectType Number="207" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogstand" />
+			<ObjectType Number="208" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogstand" />
+			<ObjectType Number="209" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogstand" />
 			<ObjectType Number="210" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
 			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
@@ -1741,14 +1766,26 @@ return false
 			<ObjectType Number="221" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="0" State="s_mutpath1" />
 			<ObjectType Number="222" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="0" State="s_mutpath1" />
 			<ObjectType Number="223" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="0" State="s_mutpath1" />
-			<ObjectType Number="238" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="2" State="s_mutstand" />
-			<ObjectType Number="239" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="2" State="s_mutstand" />
-			<ObjectType Number="240" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="2" State="s_mutstand" />
-			<ObjectType Number="241" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="2" State="s_mutstand" />
-			<ObjectType Number="256" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="3" State="s_mutstand" />
-			<ObjectType Number="257" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="3" State="s_mutstand" />
-			<ObjectType Number="258" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="3" State="s_mutstand" />
-			<ObjectType Number="259" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="224" ObClass="actor" Actor="Blinky" Direction="E" Difficulty="0" State="s_blinkychase1" />
+			<ObjectType Number="225" ObClass="actor" Actor="Clyde" Direction="E" Difficulty="0" State="s_clydechase1" />
+			<ObjectType Number="226" ObClass="actor" Actor="Pinky" Direction="E" Difficulty="0" State="s_pinkychase1" />
+			<ObjectType Number="227" ObClass="actor" Actor="Inky" Direction="E" Difficulty="0" State="s_inkychase1" />
+			<ObjectType Number="234" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="235" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="236" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="237" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="2" State="s_mutstand" />
+			<ObjectType Number="238" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="2" State="s_mutpath1" />
+			<ObjectType Number="239" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="2" State="s_mutpath1" />
+			<ObjectType Number="240" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="2" State="s_mutpath1" />
+			<ObjectType Number="241" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="2" State="s_mutpath1" />
+			<ObjectType Number="252" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="253" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="254" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="255" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="3" State="s_mutstand" />
+			<ObjectType Number="256" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="3" State="s_mutpath1" />
+			<ObjectType Number="257" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="3" State="s_mutpath1" />
+			<ObjectType Number="258" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="3" State="s_mutpath1" />
+			<ObjectType Number="259" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="3" State="s_mutpath1" />
 			<!-- WL_GAME.C:PlaceObjects case 160: SpawnFakeHitler (Mecha-Hitler) -->
 			<ObjectType Number="160" ObClass="actor" Actor="MechaHitler" Direction="S" State="s_mechastand" />
 			<!-- WL_GAME.C:PlaceObjects case 178: SpawnHitler (Real Hitler — rare direct map placement) -->
@@ -1836,7 +1873,20 @@ return false
 			<State Name="s_mutdie3" Shape="SPR_MUT_DIE_3" Tics="7" Speed="0" Next="s_mutdie4" Alive="false" Mark="false" />
 			<State Name="s_mutdie4" Shape="SPR_MUT_DIE_4" Tics="7" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
 			<State Name="s_mutdie5" Shape="SPR_MUT_DEAD" Tics="0" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
+			<Actor Name="Blinky" HP="25,25,25,25" Stand="s_blinkychase1" Chase="s_blinkychase1" Ambush="true" />
+			<State Name="s_blinkychase1" Rotate="true" Shape="SPR_BLINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase2" />
+			<State Name="s_blinkychase2" Rotate="true" Shape="SPR_BLINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase1" />
+			<Actor Name="Clyde" HP="25,25,25,25" Stand="s_clydechase1" Chase="s_clydechase1" Ambush="true" />
+			<State Name="s_clydechase1" Rotate="true" Shape="SPR_CLYDE_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase2" />
+			<State Name="s_clydechase2" Rotate="true" Shape="SPR_CLYDE_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase1" />
+			<Actor Name="Pinky" HP="25,25,25,25" Stand="s_pinkychase1" Chase="s_pinkychase1" Ambush="true" />
+			<State Name="s_pinkychase1" Rotate="true" Shape="SPR_PINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase2" />
+			<State Name="s_pinkychase2" Rotate="true" Shape="SPR_PINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase1" />
+			<Actor Name="Inky" HP="25,25,25,25" Stand="s_inkychase1" Chase="s_inkychase1" Ambush="true" />
+			<State Name="s_inkychase1" Rotate="true" Shape="SPR_INKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase2" />
+			<State Name="s_inkychase2" Rotate="true" Shape="SPR_INKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase1" />
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
+			<State Name="s_dogstand" Rotate="true" Shape="SPR_DOG_W1_1" Tics="0" Think="T_Stand" Speed="0" Next="s_dogstand" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
 			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500" Next="s_dogpath2" />
 			<State Name="s_dogpath2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="15" Think="T_Path" Speed="1500" Next="s_dogpath3" />
