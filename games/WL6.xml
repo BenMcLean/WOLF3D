@@ -1874,17 +1874,17 @@ return false
 			<State Name="s_mutdie4" Shape="SPR_MUT_DIE_4" Tics="7" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
 			<State Name="s_mutdie5" Shape="SPR_MUT_DEAD" Tics="0" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
 			<Actor Name="Blinky" HP="25,25,25,25" Stand="s_blinkychase1" Chase="s_blinkychase1" Ambush="true" />
-			<State Name="s_blinkychase1" Rotate="true" Shape="SPR_BLINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase2" />
-			<State Name="s_blinkychase2" Rotate="true" Shape="SPR_BLINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase1" />
+			<State Name="s_blinkychase1" Shape="SPR_BLINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase2" />
+			<State Name="s_blinkychase2" Shape="SPR_BLINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase1" />
 			<Actor Name="Clyde" HP="25,25,25,25" Stand="s_clydechase1" Chase="s_clydechase1" Ambush="true" />
-			<State Name="s_clydechase1" Rotate="true" Shape="SPR_CLYDE_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase2" />
-			<State Name="s_clydechase2" Rotate="true" Shape="SPR_CLYDE_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase1" />
+			<State Name="s_clydechase1" Shape="SPR_CLYDE_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase2" />
+			<State Name="s_clydechase2" Shape="SPR_CLYDE_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase1" />
 			<Actor Name="Pinky" HP="25,25,25,25" Stand="s_pinkychase1" Chase="s_pinkychase1" Ambush="true" />
-			<State Name="s_pinkychase1" Rotate="true" Shape="SPR_PINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase2" />
-			<State Name="s_pinkychase2" Rotate="true" Shape="SPR_PINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase1" />
+			<State Name="s_pinkychase1" Shape="SPR_PINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase2" />
+			<State Name="s_pinkychase2" Shape="SPR_PINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase1" />
 			<Actor Name="Inky" HP="25,25,25,25" Stand="s_inkychase1" Chase="s_inkychase1" Ambush="true" />
-			<State Name="s_inkychase1" Rotate="true" Shape="SPR_INKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase2" />
-			<State Name="s_inkychase2" Rotate="true" Shape="SPR_INKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase1" />
+			<State Name="s_inkychase1" Shape="SPR_INKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase2" />
+			<State Name="s_inkychase2" Shape="SPR_INKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase1" />
 			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogstand" Rotate="true" Shape="SPR_DOG_W1_1" Tics="0" Think="T_Stand" Speed="0" Next="s_dogstand" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
