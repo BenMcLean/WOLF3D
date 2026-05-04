@@ -917,14 +917,12 @@ void sky() {
 			0f,
 			forwardZ * Constants.TileWidth);
 
-		// Convert world position to tile coordinates
+		// Convert world positions to tile coordinates
+		int playerTileXInt = cameraPos.X.ToTile(), playerTileYInt = cameraPos.Z.ToTile();
 		ushort tileX = (ushort)forwardPoint.X.ToTile(),
 			tileY = (ushort)forwardPoint.Z.ToTile();
 
-		// Determine facing direction from camera rotation
-		Direction dir = rotationY.ToCardinalDirection();
-
-		// Try door first
+		// Try door first (no adjacency restriction — doors open on any forward hit)
 		ushort? doorIndex = FindDoorAtTile(tileX, tileY);
 		if (doorIndex.HasValue)
 		{
@@ -932,17 +930,29 @@ void sky() {
 			return;
 		}
 
+		// Pushwalls and elevators require the player to be cardinally adjacent to the target tile.
+		// This prevents diagonal peeking from triggering switches that should be blocked by walls.
+		// WL_AGENT.C:Cmd_Use — only the tile directly in front is valid.
+		if (playerTileXInt < 0 || playerTileYInt < 0)
+			return;
+		ushort playerTileX = (ushort)playerTileXInt, playerTileY = (ushort)playerTileYInt;
+		if (GetCardinalDirection(playerTileX, playerTileY, tileX, tileY) is not Direction cardinalDir)
+		{
+			_simulatorController.UseNormalWall();
+			return;
+		}
+
 		// Try pushwall second
 		ushort? pushWallIndex = FindPushWallAtTile(tileX, tileY);
 		if (pushWallIndex.HasValue)
 		{
-			_simulatorController.ActivatePushWall(tileX, tileY, dir);
+			_simulatorController.ActivatePushWall(tileX, tileY, cardinalDir);
 			return;
 		}
 
 		// Try elevator third
 		if (IsElevatorAtTile(tileX, tileY))
-			_simulatorController.ActivateElevator(tileX, tileY, dir);
+			_simulatorController.ActivateElevator(tileX, tileY, cardinalDir);
 		else
 			_simulatorController.UseNormalWall();
 	}
