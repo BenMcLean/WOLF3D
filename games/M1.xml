@@ -92,8 +92,8 @@
 			<Pic Number="74" Name="L_GUY2PIC" />
 			<Pic Number="75" Name="L_BJWINSPIC" />
 			<!-- GFXV_SOD.H title and ending screens -->
-			<Pic Number="76" Name="TITLE1PIC" />
-			<Pic Number="77" Name="TITLE2PIC" />
+			<Pic Number="76" Name="TITLE1PIC" PaletteChunk="153" />
+			<Pic Number="77" Name="TITLE2PIC" PaletteChunk="153" />
 			<Pic Number="78" Name="ENDSCREEN11PIC" />
 			<Pic Number="79" Name="ENDSCREEN12PIC" />
 			<Pic Number="80" Name="ENDSCREEN3PIC" />
