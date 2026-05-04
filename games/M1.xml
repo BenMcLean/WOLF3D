@@ -94,21 +94,21 @@
 			<!-- GFXV_SOD.H title and ending screens -->
 			<Pic Number="76" Name="TITLE1PIC" PaletteChunk="153" />
 			<Pic Number="77" Name="TITLE2PIC" PaletteChunk="153" />
-			<Pic Number="78" Name="ENDSCREEN11PIC" />
-			<Pic Number="79" Name="ENDSCREEN12PIC" />
-			<Pic Number="80" Name="ENDSCREEN3PIC" />
-			<Pic Number="81" Name="ENDSCREEN4PIC" />
-			<Pic Number="82" Name="ENDSCREEN5PIC" />
-			<Pic Number="83" Name="ENDSCREEN6PIC" />
-			<Pic Number="84" Name="ENDSCREEN7PIC" />
-			<Pic Number="85" Name="ENDSCREEN8PIC" />
-			<Pic Number="86" Name="ENDSCREEN9PIC" />
+			<Pic Number="78" Name="ENDSCREEN11PIC" PaletteChunk="154" />
+			<Pic Number="79" Name="ENDSCREEN12PIC" PaletteChunk="155" />
+			<Pic Number="80" Name="ENDSCREEN3PIC" PaletteChunk="156" />
+			<Pic Number="81" Name="ENDSCREEN4PIC" PaletteChunk="157" />
+			<Pic Number="82" Name="ENDSCREEN5PIC" PaletteChunk="158" />
+			<Pic Number="83" Name="ENDSCREEN6PIC" PaletteChunk="159" />
+			<Pic Number="84" Name="ENDSCREEN7PIC" PaletteChunk="160" />
+			<Pic Number="85" Name="ENDSCREEN8PIC" PaletteChunk="161" />
+			<Pic Number="86" Name="ENDSCREEN9PIC" PaletteChunk="162" />
 			<Pic Number="87" Name="STATUSBARPIC" />
 			<Pic Number="88" Name="PG13PIC" />
 			<Pic Number="89" Name="CREDITSPIC" />
 			<!-- GFXV_SOD.H easter egg / copy protection -->
-			<Pic Number="90" Name="IDGUYS1PIC" />
-			<Pic Number="91" Name="IDGUYS2PIC" />
+			<Pic Number="90" Name="IDGUYS1PIC" PaletteChunk="163" />
+			<Pic Number="91" Name="IDGUYS2PIC" PaletteChunk="163" />
 			<Pic Number="92" Name="COPYPROTTOPPIC" />
 			<Pic Number="93" Name="COPYPROTBOXPIC" />
 			<Pic Number="94" Name="BOSSPIC1PIC" />
