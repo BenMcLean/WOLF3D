@@ -16,6 +16,7 @@ public class ActorScriptContext(
 	int actorIndex,
 	RNG rng,
 	GameClock gameClock,
+	MapAnalyzer mapAnalyzer,
 	MapAnalysis mapAnalysis,
 	ILogger logger = null) : EntityScriptContext(simulator, rng, gameClock, actor.TileX, actor.TileY, logger)
 {
@@ -788,10 +789,22 @@ public class ActorScriptContext(
 	/// Called from Lua death scripts to drop items (ammo, weapons, keys).
 	/// </summary>
 	/// <param name="objectCode">Item number (ObjectType Number from XML)</param>
-	/// <param name="page">VSwap sprite page number</param>
+	/// <param name="spriteName">Sprite name from VSwap.Sprites (for example SPR_STAT_26)</param>
 	/// <returns>True if item was placed, false if no free slots</returns>
-	public bool PlaceItemType(int objectCode, int page) =>
-		simulator.PlaceItemType((ushort)objectCode, (ushort)page, actor.TileX, actor.TileY);
+	public bool PlaceItemType(int objectCode, string spriteName)
+	{
+		if (string.IsNullOrWhiteSpace(spriteName))
+		{
+			_logger?.LogWarning("PlaceItemType: empty sprite name for ObjectType {ObjectCode}", objectCode);
+			return false;
+		}
+		if (mapAnalyzer?.Sprites is null || !mapAnalyzer.Sprites.TryGetValue(spriteName, out ushort page))
+		{
+			_logger?.LogWarning("PlaceItemType: unknown sprite '{SpriteName}' for ObjectType {ObjectCode}", spriteName, objectCode);
+			return false;
+		}
+		return simulator.PlaceItemType((ushort)objectCode, page, actor.TileX, actor.TileY);
+	}
 	/// <summary>
 	/// Damage the player. God mode check happens inside Simulator.DamagePlayer.
 	/// WL_AGENT.C:TakeDamage

@@ -2,6 +2,7 @@ using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using Godot;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace BenMcLean.Wolf3D.VR.ActionStage;
@@ -603,9 +604,17 @@ public class PixelPerfectAiming
 		ushort pageSqrt = vSwap.GetPageSqrt(pageNumber);
 		int pixelX = Mathf.Clamp((int)(u * pageSqrt), 0, pageSqrt - 1),
 			pixelY = Mathf.Clamp((int)(v * pageSqrt), 0, pageSqrt - 1);
-		// Use pre-computed sprite mask: true = opaque pixel
-		if (!vSwap.Masks[pageNumber - vSwap.SpritePage][pixelY * pageSqrt + pixelX])
-			return new RayHit { IsHit = false };
+		// Pages before SpritePage are raw tile art billboards in Spear and should be treated as opaque.
+		if (pageNumber >= vSwap.SpritePage)
+		{
+			int maskIndex = pageNumber - vSwap.SpritePage,
+				pixelIndex = pixelY * pageSqrt + pixelX;
+			if (maskIndex < 0 || maskIndex >= vSwap.Masks.Length)
+				return new RayHit { IsHit = false };
+			BitArray mask = vSwap.Masks[maskIndex];
+			if (mask is null || pixelIndex < 0 || pixelIndex >= mask.Length || !mask[pixelIndex])
+				return new RayHit { IsHit = false };
+		}
 		// Opaque pixel — we have a hit
 		return new RayHit
 		{

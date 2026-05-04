@@ -1736,7 +1736,14 @@
 					<xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
 					<xs:attribute name="Name" type="xs:string" use="required"/>
 					<xs:attribute name="Key" type="xs:string"/>
-					<xs:attribute name="Page" type="xs:nonNegativeInteger" use="required"/>
+					<xs:attribute name="Page" type="xs:nonNegativeInteger" use="required">
+						<xs:annotation>
+							<xs:documentation>
+								Door texture offset from DoorWall, not an absolute VSWAP page number.
+								The runtime resolves the visible page as DoorWall + Page.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 					<xs:attribute name="OpenSound" type="xs:string"/>
 					<xs:attribute name="CloseSound" type="xs:string"/>
 					<xs:attribute name="LockedSound" type="xs:string">
@@ -1792,6 +1799,8 @@
 
 				Script receives BonusScriptContext with player state methods.
 				Return true to consume the bonus, false to leave it.
+				When calling APIs that refer to VSWAP sprites from Lua, pass the sprite Name
+				(e.g. "SPR_STAT_26"), not an absolute VSWAP page number.
 
 				Example:
 				&lt;BonusScript Name="health_small"&gt;
@@ -1836,7 +1845,17 @@
 
 			<!-- Visual properties -->
 			<xs:attribute name="Sprite" type="xs:nonNegativeInteger"/>
-			<xs:attribute name="Page" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="Page" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Absolute VSWAP page number for the object's visible art.
+						Unlike Door/@Page, this is not relative to DoorWall.
+						For statics and pickups it may point either to a page before PMSpriteStart
+						or to a later sprite page. If absent, loaders may resolve the page from
+						State -&gt; Shape -&gt; Sprite/@Page or treat the object as an invisible trigger.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Palette" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="AutomapTile" type="xs:nonNegativeInteger">
 				<xs:annotation>
@@ -2063,6 +2082,8 @@
 				Named Lua function for actor AI behavior (Think/Action callbacks).
 				The element content contains the Lua script code.
 				Equivalent to C functions like T_Stand, T_Path, T_Shoot in WL_ACT2.C.
+				Actor Lua helpers that spawn dropped items, such as PlaceItemType(objectCode, spriteName),
+				expect a sprite Name from the VSwap/Sprites table rather than a numeric VSWAP page.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -2305,6 +2326,10 @@
 			<xs:documentation>
 				Sprite definitions. Page is absolute VSWAP page number.
 				Sprites begin at PMSpriteStart (read from VSWAP header).
+				Lua APIs that refer to sprites should use the Sprite Name and let the runtime
+				resolve the absolute page through this table.
+				Multiple names may legally point at the same page when a game wants to expose
+				stable aliases such as original SPR_STAT_* names for shared Lua scripts.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -2316,7 +2341,17 @@
 
 	<xs:element name="Sprite">
 		<xs:complexType>
-			<xs:attribute name="Page" type="xs:nonNegativeInteger" use="required"/>
+			<xs:attribute name="Page" type="xs:nonNegativeInteger" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						Absolute VSWAP page number for this sprite name.
+						In the original code this matches PM_GetSpritePage(enumValue), i.e.
+						PMSpriteStart plus the sprite enum ordinal for the active game.
+						Do not reuse numbers from another game definition just because the
+						sprite name matches; Spear and Wolf3D do not share the same absolute pages.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Palette" type="xs:nonNegativeInteger"/>
 		</xs:complexType>
@@ -2328,14 +2363,25 @@
 		<xs:annotation>
 			<xs:documentation>
 				Digital sound data stored in VSWAP after sprites.
-				Page numbers are relative to PMSoundStart (read from VSWAP header).
+				The XML does not author absolute VSWAP page numbers here.
+				Each DigiSound/@Number is the digitized sound slot index from the game's
+				DigiList/sound table. That table, stored inside VSWAP, maps the slot index
+				to one or more pages relative to PMSoundStart.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element name="DigiSound" minOccurs="0" maxOccurs="unbounded">
 					<xs:complexType>
-						<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
+						<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required">
+							<xs:annotation>
+								<xs:documentation>
+									Digitized sound slot index, not an absolute VSWAP page number.
+									The original engine looks up this slot in the DigiList table, then
+									loads the referenced pages as PMSoundStart + pageOffset.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
 						<xs:attribute name="Name" type="xs:string" use="required"/>
 					</xs:complexType>
 				</xs:element>

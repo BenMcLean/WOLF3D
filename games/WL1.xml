@@ -861,22 +861,22 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="47" Name="NOBONUSSND" />
 		<Sound Number="48" Name="PERCENT100SND" />
 		<Sound Number="49" Name="BOSSACTIVESND" />
-		<Sound Number="50" Name="MUTTISND" />
+		<Sound Number="50" Name="BOSSDIESSND" />
 		<Sound Number="51" Name="SCHUTZADSND" />
 		<Sound Number="52" Name="AHHHGSND" />
-		<Sound Number="53" Name="DIESND" Digi="DIESND" />
-		<Sound Number="54" Name="EVASND" Digi="EVASND" />
+		<Sound Number="53" Name="DIESND" />
+		<Sound Number="54" Name="EVASND" />
 		<Sound Number="55" Name="GUTENTAGSND" Digi="GUTENTAGSND" />
 		<Sound Number="56" Name="LEBENSND" />
-		<Sound Number="57" Name="SCHEISTSND" />
+		<Sound Number="57" Name="MUTTISND" />
 		<Sound Number="58" Name="NAZIFIRESND" />
 		<Sound Number="59" Name="BOSSFIRESND" />
 		<Sound Number="60" Name="SSFIRESND" />
 		<Sound Number="61" Name="SLURPIESND" />
 		<Sound Number="62" Name="TOT_HUNDSND" />
 		<Sound Number="63" Name="MEINGOTTSND" />
-		<Sound Number="64" Name="SCHABBSHASND" Digi="SCHABBSHASND" />
-		<Sound Number="65" Name="HITLERHASND" />
+		<Sound Number="64" Name="SCHABBSHASND" />
+		<Sound Number="65" Name="HILTERHASND" />
 		<Sound Number="66" Name="SPIONSND" />
 		<Sound Number="67" Name="NEINSOVASSND" />
 		<Sound Number="68" Name="DOGATTACKSND" />
@@ -1028,6 +1028,54 @@ return false
 			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 		</WallPlane>
 		<Sprites>
+			<Sprite Page="108" Name="SPR_STAT_0" />
+			<Sprite Page="109" Name="SPR_STAT_1" />
+			<Sprite Page="110" Name="SPR_STAT_2" />
+			<Sprite Page="111" Name="SPR_STAT_3" />
+			<Sprite Page="112" Name="SPR_STAT_4" />
+			<Sprite Page="113" Name="SPR_STAT_5" />
+			<Sprite Page="114" Name="SPR_STAT_6" />
+			<Sprite Page="115" Name="SPR_STAT_7" />
+			<Sprite Page="116" Name="SPR_STAT_8" />
+			<Sprite Page="117" Name="SPR_STAT_9" />
+			<Sprite Page="118" Name="SPR_STAT_10" />
+			<Sprite Page="119" Name="SPR_STAT_11" />
+			<Sprite Page="120" Name="SPR_STAT_12" />
+			<Sprite Page="121" Name="SPR_STAT_13" />
+			<Sprite Page="122" Name="SPR_STAT_14" />
+			<Sprite Page="123" Name="SPR_STAT_15" />
+			<Sprite Page="124" Name="SPR_STAT_16" />
+			<Sprite Page="125" Name="SPR_STAT_17" />
+			<Sprite Page="126" Name="SPR_STAT_18" />
+			<Sprite Page="127" Name="SPR_STAT_19" />
+			<Sprite Page="128" Name="SPR_STAT_20" />
+			<Sprite Page="129" Name="SPR_STAT_21" />
+			<Sprite Page="130" Name="SPR_STAT_22" />
+			<Sprite Page="131" Name="SPR_STAT_23" />
+			<Sprite Page="132" Name="SPR_STAT_24" />
+			<Sprite Page="133" Name="SPR_STAT_25" />
+			<Sprite Page="134" Name="SPR_STAT_26" />
+			<Sprite Page="135" Name="SPR_STAT_27" />
+			<Sprite Page="136" Name="SPR_STAT_28" />
+			<Sprite Page="137" Name="SPR_STAT_29" />
+			<Sprite Page="138" Name="SPR_STAT_30" />
+			<Sprite Page="139" Name="SPR_STAT_31" />
+			<Sprite Page="140" Name="SPR_STAT_32" />
+			<Sprite Page="141" Name="SPR_STAT_33" />
+			<Sprite Page="142" Name="SPR_STAT_34" />
+			<Sprite Page="143" Name="SPR_STAT_35" />
+			<Sprite Page="144" Name="SPR_STAT_36" />
+			<Sprite Page="145" Name="SPR_STAT_37" />
+			<Sprite Page="146" Name="SPR_STAT_38" />
+			<Sprite Page="147" Name="SPR_STAT_39" />
+			<Sprite Page="148" Name="SPR_STAT_40" />
+			<Sprite Page="149" Name="SPR_STAT_41" />
+			<Sprite Page="150" Name="SPR_STAT_42" />
+			<Sprite Page="151" Name="SPR_STAT_43" />
+			<Sprite Page="152" Name="SPR_STAT_44" />
+			<Sprite Page="153" Name="SPR_STAT_45" />
+			<Sprite Page="154" Name="SPR_STAT_46" />
+			<Sprite Page="155" Name="SPR_STAT_47" />
 			<Sprite Page="106" Name="SPR_DEMO" />
 			<Sprite Page="107" Name="SPR_DEATHCAM" />
 			<Sprite Page="156" Name="SPR_GRD_S_1" />

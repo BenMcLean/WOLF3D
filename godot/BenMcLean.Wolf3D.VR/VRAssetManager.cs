@@ -117,12 +117,14 @@ void fragment() {
 			.Where(pageNumber => _vswap.Pages[pageNumber] is not null)
 			.Parallelize(pageNumber => new KeyValuePair<ushort, StandardMaterial3D>((ushort)pageNumber, CreateOpaqueMaterial((ushort)pageNumber)))
 			.ToDictionary();
-		// Eagerly convert all sprite textures using parallelization
-		// Only process sprite pages that actually exist in the VSwap (skip null entries)
-		int spriteCount = _vswap.Pages.Length - _vswap.SpritePage;
-		SpriteTextures = Enumerable.Range(_vswap.SpritePage, spriteCount)
+		// Eagerly convert all billboard textures using parallelization.
+		// Spear of Destiny stores some static object art on pages before SpritePage. Those
+		// pages are raw 64x64 tiles, not masked RLE sprites, so billboard rendering must
+		// reuse the already-correct opaque textures for them instead of reprocessing them as
+		// sprite pages.
+		SpriteTextures = Enumerable.Range(0, _vswap.Pages.Length)
 			.Where(pageNumber => _vswap.Pages[pageNumber] is not null)
-			.Parallelize(pageNumber => new KeyValuePair<ushort, Texture2D>((ushort)pageNumber, CreateSpriteTexture((ushort)pageNumber)))
+			.Parallelize(pageNumber => new KeyValuePair<ushort, Texture2D>((ushort)pageNumber, CreateBillboardTexture((ushort)pageNumber)))
 			.Where(kvp => kvp.Value is not null)
 			.ToDictionary();
 		// Eagerly convert all sprite materials from the pre-created textures
@@ -130,10 +132,12 @@ void fragment() {
 			.Parallelize(kvp => new KeyValuePair<ushort, StandardMaterial3D>(kvp.Key, new()
 			{
 				AlbedoTexture = kvp.Value,
-				// Use alpha scissor (cutout) for binary transparency like original Wolf3D
-				// This allows proper depth testing/writing unlike alpha blending
-				Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor,
-				AlphaScissorThreshold = 0.5f,
+				// Pages before SpritePage are raw tile art used as opaque billboards in Spear.
+				// Real sprite pages use alpha scissor for binary transparency like original Wolf3D.
+				Transparency = kvp.Key < _vswap.SpritePage
+					? BaseMaterial3D.TransparencyEnum.Disabled
+					: BaseMaterial3D.TransparencyEnum.AlphaScissor,
+				AlphaScissorThreshold = kvp.Key < _vswap.SpritePage ? 0f : 0.5f,
 				// Nearest filtering for sharp, retro pixel aesthetic
 				TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest,
 				// Disable shading for flat, Wolfenstein 3D-style sprites
@@ -145,6 +149,17 @@ void fragment() {
 				DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Always,
 			})).ToDictionary();
 	}
+	/// <summary>
+	/// Creates a billboard texture for a VSwap page.
+	/// Pages before SpritePage are raw wall/tile art and reuse the opaque texture; pages at or
+	/// after SpritePage are true sprite pages and need their own texture creation path.
+	/// </summary>
+	private static Texture2D CreateBillboardTexture(ushort pageNumber) =>
+		pageNumber < _vswap.SpritePage
+			? OpaqueMaterials.TryGetValue(pageNumber, out StandardMaterial3D material)
+				? material.AlbedoTexture
+				: null
+			: CreateSpriteTexture(pageNumber);
 	/// <summary>
 	/// Eagerly creates flipped materials for the specified door texture indices.
 	/// Returns a dictionary of the created materials indexed by texture page number.

@@ -506,9 +506,9 @@ end
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="ViewScores" Font="SMALL" Music="XAWARD_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
 				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
-				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
-				<Picture Name="C_LEVELPIC" X="160" Y="68" />
-				<Picture Name="C_SCOREPIC" X="224" Y="68" />
+				<Text X="32" Y="68">NAME</Text>
+				<Text X="160" Y="68">LEVEL</Text>
+				<Text X="224" Y="68">SCORE</Text>
 				<Text Id="Name0"  X="32"  Y="76"> </Text>
 				<Text Id="Level0" X="160" Y="76"> </Text>
 				<Text Id="Score0" X="224" Y="76"> </Text>
@@ -658,11 +658,11 @@ GivePoints(15000)
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
 				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
-				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
+				<Text X="32" Y="68">NAME</Text>
 				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
-				<Picture Name="C_LEVELPIC" X="160" Y="68" />
+				<Text X="160" Y="68">LEVEL</Text>
 				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
-				<Picture Name="C_SCOREPIC" X="224" Y="68" />
+				<Text X="224" Y="68">SCORE</Text>
 				<!-- 7 rows at PrintY = 76 + 16*i -->
 				<Text Id="Name0"  X="32"  Y="76"> </Text>
 				<Text Id="Level0" X="160" Y="76"> </Text>
@@ -1059,7 +1059,7 @@ StartTicker("AvgTreasureRatio", tr)
 			<Projectile Name="hrocket" InitialState="s_hrocket" MinDamage="30" MaxDamage="61" Speed="8192" />
 			<Projectile Name="spark" InitialState="s_spark1" MinDamage="20" MaxDamage="51" Speed="8192" />
 		</Projectiles>
-		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
+		<WallPlane MaxWallTiles="64" DoorWall="126" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
 			<!-- Special floor tiles -->
@@ -1110,248 +1110,300 @@ return false
 			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
 		</WallPlane>
 		<Sprites>
-			<Sprite Page="106" Name="SPR_DEMO" />
-			<Sprite Page="107" Name="SPR_DEATHCAM" />
-			<Sprite Page="156" Name="SPR_GRD_S_1" />
-			<Sprite Page="157" Name="SPR_GRD_S_2" />
-			<Sprite Page="158" Name="SPR_GRD_S_3" />
-			<Sprite Page="159" Name="SPR_GRD_S_4" />
-			<Sprite Page="160" Name="SPR_GRD_S_5" />
-			<Sprite Page="161" Name="SPR_GRD_S_6" />
-			<Sprite Page="162" Name="SPR_GRD_S_7" />
-			<Sprite Page="163" Name="SPR_GRD_S_8" />
-			<Sprite Page="164" Name="SPR_GRD_W1_1" />
-			<Sprite Page="165" Name="SPR_GRD_W1_2" />
-			<Sprite Page="166" Name="SPR_GRD_W1_3" />
-			<Sprite Page="167" Name="SPR_GRD_W1_4" />
-			<Sprite Page="168" Name="SPR_GRD_W1_5" />
-			<Sprite Page="169" Name="SPR_GRD_W1_6" />
-			<Sprite Page="170" Name="SPR_GRD_W1_7" />
-			<Sprite Page="171" Name="SPR_GRD_W1_8" />
-			<Sprite Page="172" Name="SPR_GRD_W2_1" />
-			<Sprite Page="173" Name="SPR_GRD_W2_2" />
-			<Sprite Page="174" Name="SPR_GRD_W2_3" />
-			<Sprite Page="175" Name="SPR_GRD_W2_4" />
-			<Sprite Page="176" Name="SPR_GRD_W2_5" />
-			<Sprite Page="177" Name="SPR_GRD_W2_6" />
-			<Sprite Page="178" Name="SPR_GRD_W2_7" />
-			<Sprite Page="179" Name="SPR_GRD_W2_8" />
-			<Sprite Page="180" Name="SPR_GRD_W3_1" />
-			<Sprite Page="181" Name="SPR_GRD_W3_2" />
-			<Sprite Page="182" Name="SPR_GRD_W3_3" />
-			<Sprite Page="183" Name="SPR_GRD_W3_4" />
-			<Sprite Page="184" Name="SPR_GRD_W3_5" />
-			<Sprite Page="185" Name="SPR_GRD_W3_6" />
-			<Sprite Page="186" Name="SPR_GRD_W3_7" />
-			<Sprite Page="187" Name="SPR_GRD_W3_8" />
-			<Sprite Page="188" Name="SPR_GRD_W4_1" />
-			<Sprite Page="189" Name="SPR_GRD_W4_2" />
-			<Sprite Page="190" Name="SPR_GRD_W4_3" />
-			<Sprite Page="191" Name="SPR_GRD_W4_4" />
-			<Sprite Page="192" Name="SPR_GRD_W4_5" />
-			<Sprite Page="193" Name="SPR_GRD_W4_6" />
-			<Sprite Page="194" Name="SPR_GRD_W4_7" />
-			<Sprite Page="195" Name="SPR_GRD_W4_8" />
-			<Sprite Page="196" Name="SPR_GRD_PAIN_1" />
-			<Sprite Page="197" Name="SPR_GRD_DIE_1" />
-			<Sprite Page="198" Name="SPR_GRD_DIE_2" />
-			<Sprite Page="199" Name="SPR_GRD_DIE_3" />
-			<Sprite Page="200" Name="SPR_GRD_PAIN_2" />
-			<Sprite Page="201" Name="SPR_GRD_DEAD" />
-			<Sprite Page="202" Name="SPR_GRD_SHOOT1" />
-			<Sprite Page="203" Name="SPR_GRD_SHOOT2" />
-			<Sprite Page="204" Name="SPR_GRD_SHOOT3" />
-			<Sprite Page="205" Name="SPR_DOG_W1_1" />
-			<Sprite Page="206" Name="SPR_DOG_W1_2" />
-			<Sprite Page="207" Name="SPR_DOG_W1_3" />
-			<Sprite Page="208" Name="SPR_DOG_W1_4" />
-			<Sprite Page="209" Name="SPR_DOG_W1_5" />
-			<Sprite Page="210" Name="SPR_DOG_W1_6" />
-			<Sprite Page="211" Name="SPR_DOG_W1_7" />
-			<Sprite Page="212" Name="SPR_DOG_W1_8" />
-			<Sprite Page="213" Name="SPR_DOG_W2_1" />
-			<Sprite Page="214" Name="SPR_DOG_W2_2" />
-			<Sprite Page="215" Name="SPR_DOG_W2_3" />
-			<Sprite Page="216" Name="SPR_DOG_W2_4" />
-			<Sprite Page="217" Name="SPR_DOG_W2_5" />
-			<Sprite Page="218" Name="SPR_DOG_W2_6" />
-			<Sprite Page="219" Name="SPR_DOG_W2_7" />
-			<Sprite Page="220" Name="SPR_DOG_W2_8" />
-			<Sprite Page="221" Name="SPR_DOG_W3_1" />
-			<Sprite Page="222" Name="SPR_DOG_W3_2" />
-			<Sprite Page="223" Name="SPR_DOG_W3_3" />
-			<Sprite Page="224" Name="SPR_DOG_W3_4" />
-			<Sprite Page="225" Name="SPR_DOG_W3_5" />
-			<Sprite Page="226" Name="SPR_DOG_W3_6" />
-			<Sprite Page="227" Name="SPR_DOG_W3_7" />
-			<Sprite Page="228" Name="SPR_DOG_W3_8" />
-			<Sprite Page="229" Name="SPR_DOG_W4_1" />
-			<Sprite Page="230" Name="SPR_DOG_W4_2" />
-			<Sprite Page="231" Name="SPR_DOG_W4_3" />
-			<Sprite Page="232" Name="SPR_DOG_W4_4" />
-			<Sprite Page="233" Name="SPR_DOG_W4_5" />
-			<Sprite Page="234" Name="SPR_DOG_W4_6" />
-			<Sprite Page="235" Name="SPR_DOG_W4_7" />
-			<Sprite Page="236" Name="SPR_DOG_W4_8" />
-			<Sprite Page="237" Name="SPR_DOG_DIE_1" />
-			<Sprite Page="238" Name="SPR_DOG_DIE_2" />
-			<Sprite Page="239" Name="SPR_DOG_DIE_3" />
-			<Sprite Page="240" Name="SPR_DOG_DEAD" />
-			<Sprite Page="241" Name="SPR_DOG_JUMP1" />
-			<Sprite Page="242" Name="SPR_DOG_JUMP2" />
-			<Sprite Page="243" Name="SPR_DOG_JUMP3" />
-			<Sprite Page="244" Name="SPR_SS_S_1" />
-			<Sprite Page="245" Name="SPR_SS_S_2" />
-			<Sprite Page="246" Name="SPR_SS_S_3" />
-			<Sprite Page="247" Name="SPR_SS_S_4" />
-			<Sprite Page="248" Name="SPR_SS_S_5" />
-			<Sprite Page="249" Name="SPR_SS_S_6" />
-			<Sprite Page="250" Name="SPR_SS_S_7" />
-			<Sprite Page="251" Name="SPR_SS_S_8" />
-			<Sprite Page="252" Name="SPR_SS_W1_1" />
-			<Sprite Page="253" Name="SPR_SS_W1_2" />
-			<Sprite Page="254" Name="SPR_SS_W1_3" />
-			<Sprite Page="255" Name="SPR_SS_W1_4" />
-			<Sprite Page="256" Name="SPR_SS_W1_5" />
-			<Sprite Page="257" Name="SPR_SS_W1_6" />
-			<Sprite Page="258" Name="SPR_SS_W1_7" />
-			<Sprite Page="259" Name="SPR_SS_W1_8" />
-			<Sprite Page="260" Name="SPR_SS_W2_1" />
-			<Sprite Page="261" Name="SPR_SS_W2_2" />
-			<Sprite Page="262" Name="SPR_SS_W2_3" />
-			<Sprite Page="263" Name="SPR_SS_W2_4" />
-			<Sprite Page="264" Name="SPR_SS_W2_5" />
-			<Sprite Page="265" Name="SPR_SS_W2_6" />
-			<Sprite Page="266" Name="SPR_SS_W2_7" />
-			<Sprite Page="267" Name="SPR_SS_W2_8" />
-			<Sprite Page="268" Name="SPR_SS_W3_1" />
-			<Sprite Page="269" Name="SPR_SS_W3_2" />
-			<Sprite Page="270" Name="SPR_SS_W3_3" />
-			<Sprite Page="271" Name="SPR_SS_W3_4" />
-			<Sprite Page="272" Name="SPR_SS_W3_5" />
-			<Sprite Page="273" Name="SPR_SS_W3_6" />
-			<Sprite Page="274" Name="SPR_SS_W3_7" />
-			<Sprite Page="275" Name="SPR_SS_W3_8" />
-			<Sprite Page="276" Name="SPR_SS_W4_1" />
-			<Sprite Page="277" Name="SPR_SS_W4_2" />
-			<Sprite Page="278" Name="SPR_SS_W4_3" />
-			<Sprite Page="279" Name="SPR_SS_W4_4" />
-			<Sprite Page="280" Name="SPR_SS_W4_5" />
-			<Sprite Page="281" Name="SPR_SS_W4_6" />
-			<Sprite Page="282" Name="SPR_SS_W4_7" />
-			<Sprite Page="283" Name="SPR_SS_W4_8" />
-			<Sprite Page="284" Name="SPR_SS_PAIN_1" />
-			<Sprite Page="285" Name="SPR_SS_DIE_1" />
-			<Sprite Page="286" Name="SPR_SS_DIE_2" />
-			<Sprite Page="287" Name="SPR_SS_DIE_3" />
-			<Sprite Page="288" Name="SPR_SS_PAIN_2" />
-			<Sprite Page="289" Name="SPR_SS_DEAD" />
-			<Sprite Page="290" Name="SPR_SS_SHOOT1" />
-			<Sprite Page="291" Name="SPR_SS_SHOOT2" />
-			<Sprite Page="292" Name="SPR_SS_SHOOT3" />
+			<Sprite Page="136" Name="SPR_STAT_0" />
+			<Sprite Page="137" Name="SPR_STAT_1" />
+			<Sprite Page="138" Name="SPR_STAT_2" />
+			<Sprite Page="139" Name="SPR_STAT_3" />
+			<Sprite Page="140" Name="SPR_STAT_4" />
+			<Sprite Page="141" Name="SPR_STAT_5" />
+			<Sprite Page="142" Name="SPR_STAT_6" />
+			<Sprite Page="143" Name="SPR_STAT_7" />
+			<Sprite Page="144" Name="SPR_STAT_8" />
+			<Sprite Page="145" Name="SPR_STAT_9" />
+			<Sprite Page="146" Name="SPR_STAT_10" />
+			<Sprite Page="147" Name="SPR_STAT_11" />
+			<Sprite Page="148" Name="SPR_STAT_12" />
+			<Sprite Page="149" Name="SPR_STAT_13" />
+			<Sprite Page="150" Name="SPR_STAT_14" />
+			<Sprite Page="151" Name="SPR_STAT_15" />
+			<Sprite Page="152" Name="SPR_STAT_16" />
+			<Sprite Page="153" Name="SPR_STAT_17" />
+			<Sprite Page="154" Name="SPR_STAT_18" />
+			<Sprite Page="155" Name="SPR_STAT_19" />
+			<Sprite Page="156" Name="SPR_STAT_20" />
+			<Sprite Page="157" Name="SPR_STAT_21" />
+			<Sprite Page="158" Name="SPR_STAT_22" />
+			<Sprite Page="159" Name="SPR_STAT_23" />
+			<Sprite Page="160" Name="SPR_STAT_24" />
+			<Sprite Page="161" Name="SPR_STAT_25" />
+			<Sprite Page="162" Name="SPR_STAT_26" />
+			<Sprite Page="163" Name="SPR_STAT_27" />
+			<Sprite Page="164" Name="SPR_STAT_28" />
+			<Sprite Page="165" Name="SPR_STAT_29" />
+			<Sprite Page="166" Name="SPR_STAT_30" />
+			<Sprite Page="167" Name="SPR_STAT_31" />
+			<Sprite Page="168" Name="SPR_STAT_32" />
+			<Sprite Page="169" Name="SPR_STAT_33" />
+			<Sprite Page="170" Name="SPR_STAT_34" />
+			<Sprite Page="171" Name="SPR_STAT_35" />
+			<Sprite Page="172" Name="SPR_STAT_36" />
+			<Sprite Page="173" Name="SPR_STAT_37" />
+			<Sprite Page="174" Name="SPR_STAT_38" />
+			<Sprite Page="175" Name="SPR_STAT_39" />
+			<Sprite Page="176" Name="SPR_STAT_40" />
+			<Sprite Page="177" Name="SPR_STAT_41" />
+			<Sprite Page="178" Name="SPR_STAT_42" />
+			<Sprite Page="179" Name="SPR_STAT_43" />
+			<Sprite Page="180" Name="SPR_STAT_44" />
+			<Sprite Page="181" Name="SPR_STAT_45" />
+			<Sprite Page="182" Name="SPR_STAT_46" />
+			<Sprite Page="183" Name="SPR_STAT_47" />
+			<Sprite Page="184" Name="SPR_STAT_48" />
+			<Sprite Page="185" Name="SPR_STAT_49" />
+			<Sprite Page="186" Name="SPR_STAT_50" />
+			<Sprite Page="187" Name="SPR_STAT_51" />
+			<Sprite Page="134" Name="SPR_DEMO" />
+			<Sprite Page="135" Name="SPR_DEATHCAM" />
+			<Sprite Page="188" Name="SPR_GRD_S_1" />
+			<Sprite Page="189" Name="SPR_GRD_S_2" />
+			<Sprite Page="190" Name="SPR_GRD_S_3" />
+			<Sprite Page="191" Name="SPR_GRD_S_4" />
+			<Sprite Page="192" Name="SPR_GRD_S_5" />
+			<Sprite Page="193" Name="SPR_GRD_S_6" />
+			<Sprite Page="194" Name="SPR_GRD_S_7" />
+			<Sprite Page="195" Name="SPR_GRD_S_8" />
+			<Sprite Page="196" Name="SPR_GRD_W1_1" />
+			<Sprite Page="197" Name="SPR_GRD_W1_2" />
+			<Sprite Page="198" Name="SPR_GRD_W1_3" />
+			<Sprite Page="199" Name="SPR_GRD_W1_4" />
+			<Sprite Page="200" Name="SPR_GRD_W1_5" />
+			<Sprite Page="201" Name="SPR_GRD_W1_6" />
+			<Sprite Page="202" Name="SPR_GRD_W1_7" />
+			<Sprite Page="203" Name="SPR_GRD_W1_8" />
+			<Sprite Page="204" Name="SPR_GRD_W2_1" />
+			<Sprite Page="205" Name="SPR_GRD_W2_2" />
+			<Sprite Page="206" Name="SPR_GRD_W2_3" />
+			<Sprite Page="207" Name="SPR_GRD_W2_4" />
+			<Sprite Page="208" Name="SPR_GRD_W2_5" />
+			<Sprite Page="209" Name="SPR_GRD_W2_6" />
+			<Sprite Page="210" Name="SPR_GRD_W2_7" />
+			<Sprite Page="211" Name="SPR_GRD_W2_8" />
+			<Sprite Page="212" Name="SPR_GRD_W3_1" />
+			<Sprite Page="213" Name="SPR_GRD_W3_2" />
+			<Sprite Page="214" Name="SPR_GRD_W3_3" />
+			<Sprite Page="215" Name="SPR_GRD_W3_4" />
+			<Sprite Page="216" Name="SPR_GRD_W3_5" />
+			<Sprite Page="217" Name="SPR_GRD_W3_6" />
+			<Sprite Page="218" Name="SPR_GRD_W3_7" />
+			<Sprite Page="219" Name="SPR_GRD_W3_8" />
+			<Sprite Page="220" Name="SPR_GRD_W4_1" />
+			<Sprite Page="221" Name="SPR_GRD_W4_2" />
+			<Sprite Page="222" Name="SPR_GRD_W4_3" />
+			<Sprite Page="223" Name="SPR_GRD_W4_4" />
+			<Sprite Page="224" Name="SPR_GRD_W4_5" />
+			<Sprite Page="225" Name="SPR_GRD_W4_6" />
+			<Sprite Page="226" Name="SPR_GRD_W4_7" />
+			<Sprite Page="227" Name="SPR_GRD_W4_8" />
+			<Sprite Page="228" Name="SPR_GRD_PAIN_1" />
+			<Sprite Page="229" Name="SPR_GRD_DIE_1" />
+			<Sprite Page="230" Name="SPR_GRD_DIE_2" />
+			<Sprite Page="231" Name="SPR_GRD_DIE_3" />
+			<Sprite Page="232" Name="SPR_GRD_PAIN_2" />
+			<Sprite Page="233" Name="SPR_GRD_DEAD" />
+			<Sprite Page="234" Name="SPR_GRD_SHOOT1" />
+			<Sprite Page="235" Name="SPR_GRD_SHOOT2" />
+			<Sprite Page="236" Name="SPR_GRD_SHOOT3" />
+			<Sprite Page="237" Name="SPR_DOG_W1_1" />
+			<Sprite Page="238" Name="SPR_DOG_W1_2" />
+			<Sprite Page="239" Name="SPR_DOG_W1_3" />
+			<Sprite Page="240" Name="SPR_DOG_W1_4" />
+			<Sprite Page="241" Name="SPR_DOG_W1_5" />
+			<Sprite Page="242" Name="SPR_DOG_W1_6" />
+			<Sprite Page="243" Name="SPR_DOG_W1_7" />
+			<Sprite Page="244" Name="SPR_DOG_W1_8" />
+			<Sprite Page="245" Name="SPR_DOG_W2_1" />
+			<Sprite Page="246" Name="SPR_DOG_W2_2" />
+			<Sprite Page="247" Name="SPR_DOG_W2_3" />
+			<Sprite Page="248" Name="SPR_DOG_W2_4" />
+			<Sprite Page="249" Name="SPR_DOG_W2_5" />
+			<Sprite Page="250" Name="SPR_DOG_W2_6" />
+			<Sprite Page="251" Name="SPR_DOG_W2_7" />
+			<Sprite Page="252" Name="SPR_DOG_W2_8" />
+			<Sprite Page="253" Name="SPR_DOG_W3_1" />
+			<Sprite Page="254" Name="SPR_DOG_W3_2" />
+			<Sprite Page="255" Name="SPR_DOG_W3_3" />
+			<Sprite Page="256" Name="SPR_DOG_W3_4" />
+			<Sprite Page="257" Name="SPR_DOG_W3_5" />
+			<Sprite Page="258" Name="SPR_DOG_W3_6" />
+			<Sprite Page="259" Name="SPR_DOG_W3_7" />
+			<Sprite Page="260" Name="SPR_DOG_W3_8" />
+			<Sprite Page="261" Name="SPR_DOG_W4_1" />
+			<Sprite Page="262" Name="SPR_DOG_W4_2" />
+			<Sprite Page="263" Name="SPR_DOG_W4_3" />
+			<Sprite Page="264" Name="SPR_DOG_W4_4" />
+			<Sprite Page="265" Name="SPR_DOG_W4_5" />
+			<Sprite Page="266" Name="SPR_DOG_W4_6" />
+			<Sprite Page="267" Name="SPR_DOG_W4_7" />
+			<Sprite Page="268" Name="SPR_DOG_W4_8" />
+			<Sprite Page="269" Name="SPR_DOG_DIE_1" />
+			<Sprite Page="270" Name="SPR_DOG_DIE_2" />
+			<Sprite Page="271" Name="SPR_DOG_DIE_3" />
+			<Sprite Page="272" Name="SPR_DOG_DEAD" />
+			<Sprite Page="273" Name="SPR_DOG_JUMP1" />
+			<Sprite Page="274" Name="SPR_DOG_JUMP2" />
+			<Sprite Page="275" Name="SPR_DOG_JUMP3" />
+			<Sprite Page="276" Name="SPR_SS_S_1" />
+			<Sprite Page="277" Name="SPR_SS_S_2" />
+			<Sprite Page="278" Name="SPR_SS_S_3" />
+			<Sprite Page="279" Name="SPR_SS_S_4" />
+			<Sprite Page="280" Name="SPR_SS_S_5" />
+			<Sprite Page="281" Name="SPR_SS_S_6" />
+			<Sprite Page="282" Name="SPR_SS_S_7" />
+			<Sprite Page="283" Name="SPR_SS_S_8" />
+			<Sprite Page="284" Name="SPR_SS_W1_1" />
+			<Sprite Page="285" Name="SPR_SS_W1_2" />
+			<Sprite Page="286" Name="SPR_SS_W1_3" />
+			<Sprite Page="287" Name="SPR_SS_W1_4" />
+			<Sprite Page="288" Name="SPR_SS_W1_5" />
+			<Sprite Page="289" Name="SPR_SS_W1_6" />
+			<Sprite Page="290" Name="SPR_SS_W1_7" />
+			<Sprite Page="291" Name="SPR_SS_W1_8" />
+			<Sprite Page="292" Name="SPR_SS_W2_1" />
+			<Sprite Page="293" Name="SPR_SS_W2_2" />
+			<Sprite Page="294" Name="SPR_SS_W2_3" />
+			<Sprite Page="295" Name="SPR_SS_W2_4" />
+			<Sprite Page="296" Name="SPR_SS_W2_5" />
+			<Sprite Page="297" Name="SPR_SS_W2_6" />
+			<Sprite Page="298" Name="SPR_SS_W2_7" />
+			<Sprite Page="299" Name="SPR_SS_W2_8" />
+			<Sprite Page="300" Name="SPR_SS_W3_1" />
+			<Sprite Page="301" Name="SPR_SS_W3_2" />
+			<Sprite Page="302" Name="SPR_SS_W3_3" />
+			<Sprite Page="303" Name="SPR_SS_W3_4" />
+			<Sprite Page="304" Name="SPR_SS_W3_5" />
+			<Sprite Page="305" Name="SPR_SS_W3_6" />
+			<Sprite Page="306" Name="SPR_SS_W3_7" />
+			<Sprite Page="307" Name="SPR_SS_W3_8" />
+			<Sprite Page="308" Name="SPR_SS_W4_1" />
+			<Sprite Page="309" Name="SPR_SS_W4_2" />
+			<Sprite Page="310" Name="SPR_SS_W4_3" />
+			<Sprite Page="311" Name="SPR_SS_W4_4" />
+			<Sprite Page="312" Name="SPR_SS_W4_5" />
+			<Sprite Page="313" Name="SPR_SS_W4_6" />
+			<Sprite Page="314" Name="SPR_SS_W4_7" />
+			<Sprite Page="315" Name="SPR_SS_W4_8" />
+			<Sprite Page="316" Name="SPR_SS_PAIN_1" />
+			<Sprite Page="317" Name="SPR_SS_DIE_1" />
+			<Sprite Page="318" Name="SPR_SS_DIE_2" />
+			<Sprite Page="319" Name="SPR_SS_DIE_3" />
+			<Sprite Page="320" Name="SPR_SS_PAIN_2" />
+			<Sprite Page="321" Name="SPR_SS_DEAD" />
+			<Sprite Page="322" Name="SPR_SS_SHOOT1" />
+			<Sprite Page="323" Name="SPR_SS_SHOOT2" />
+			<Sprite Page="324" Name="SPR_SS_SHOOT3" />
 			<!-- Mutants - retail Wolf3D pages immediately after SS -->
-			<Sprite Page="293" Name="SPR_MUT_S_1" />
-			<Sprite Page="294" Name="SPR_MUT_S_2" />
-			<Sprite Page="295" Name="SPR_MUT_S_3" />
-			<Sprite Page="296" Name="SPR_MUT_S_4" />
-			<Sprite Page="297" Name="SPR_MUT_S_5" />
-			<Sprite Page="298" Name="SPR_MUT_S_6" />
-			<Sprite Page="299" Name="SPR_MUT_S_7" />
-			<Sprite Page="300" Name="SPR_MUT_S_8" />
-			<Sprite Page="301" Name="SPR_MUT_W1_1" />
-			<Sprite Page="302" Name="SPR_MUT_W1_2" />
-			<Sprite Page="303" Name="SPR_MUT_W1_3" />
-			<Sprite Page="304" Name="SPR_MUT_W1_4" />
-			<Sprite Page="305" Name="SPR_MUT_W1_5" />
-			<Sprite Page="306" Name="SPR_MUT_W1_6" />
-			<Sprite Page="307" Name="SPR_MUT_W1_7" />
-			<Sprite Page="308" Name="SPR_MUT_W1_8" />
-			<Sprite Page="309" Name="SPR_MUT_W2_1" />
-			<Sprite Page="310" Name="SPR_MUT_W2_2" />
-			<Sprite Page="311" Name="SPR_MUT_W2_3" />
-			<Sprite Page="312" Name="SPR_MUT_W2_4" />
-			<Sprite Page="313" Name="SPR_MUT_W2_5" />
-			<Sprite Page="314" Name="SPR_MUT_W2_6" />
-			<Sprite Page="315" Name="SPR_MUT_W2_7" />
-			<Sprite Page="316" Name="SPR_MUT_W2_8" />
-			<Sprite Page="317" Name="SPR_MUT_W3_1" />
-			<Sprite Page="318" Name="SPR_MUT_W3_2" />
-			<Sprite Page="319" Name="SPR_MUT_W3_3" />
-			<Sprite Page="320" Name="SPR_MUT_W3_4" />
-			<Sprite Page="321" Name="SPR_MUT_W3_5" />
-			<Sprite Page="322" Name="SPR_MUT_W3_6" />
-			<Sprite Page="323" Name="SPR_MUT_W3_7" />
-			<Sprite Page="324" Name="SPR_MUT_W3_8" />
-			<Sprite Page="325" Name="SPR_MUT_W4_1" />
-			<Sprite Page="326" Name="SPR_MUT_W4_2" />
-			<Sprite Page="327" Name="SPR_MUT_W4_3" />
-			<Sprite Page="328" Name="SPR_MUT_W4_4" />
-			<Sprite Page="329" Name="SPR_MUT_W4_5" />
-			<Sprite Page="330" Name="SPR_MUT_W4_6" />
-			<Sprite Page="331" Name="SPR_MUT_W4_7" />
-			<Sprite Page="332" Name="SPR_MUT_W4_8" />
-			<Sprite Page="333" Name="SPR_MUT_PAIN_1" />
-			<Sprite Page="334" Name="SPR_MUT_DIE_1" />
-			<Sprite Page="335" Name="SPR_MUT_DIE_2" />
-			<Sprite Page="336" Name="SPR_MUT_DIE_3" />
-			<Sprite Page="337" Name="SPR_MUT_PAIN_2" />
-			<Sprite Page="338" Name="SPR_MUT_DIE_4" />
-			<Sprite Page="339" Name="SPR_MUT_DEAD" />
-			<Sprite Page="340" Name="SPR_MUT_SHOOT1" />
-			<Sprite Page="341" Name="SPR_MUT_SHOOT2" />
-			<Sprite Page="342" Name="SPR_MUT_SHOOT3" />
-			<Sprite Page="343" Name="SPR_MUT_SHOOT4" />
+			<Sprite Page="325" Name="SPR_MUT_S_1" />
+			<Sprite Page="326" Name="SPR_MUT_S_2" />
+			<Sprite Page="327" Name="SPR_MUT_S_3" />
+			<Sprite Page="328" Name="SPR_MUT_S_4" />
+			<Sprite Page="329" Name="SPR_MUT_S_5" />
+			<Sprite Page="330" Name="SPR_MUT_S_6" />
+			<Sprite Page="331" Name="SPR_MUT_S_7" />
+			<Sprite Page="332" Name="SPR_MUT_S_8" />
+			<Sprite Page="333" Name="SPR_MUT_W1_1" />
+			<Sprite Page="334" Name="SPR_MUT_W1_2" />
+			<Sprite Page="335" Name="SPR_MUT_W1_3" />
+			<Sprite Page="336" Name="SPR_MUT_W1_4" />
+			<Sprite Page="337" Name="SPR_MUT_W1_5" />
+			<Sprite Page="338" Name="SPR_MUT_W1_6" />
+			<Sprite Page="339" Name="SPR_MUT_W1_7" />
+			<Sprite Page="340" Name="SPR_MUT_W1_8" />
+			<Sprite Page="341" Name="SPR_MUT_W2_1" />
+			<Sprite Page="342" Name="SPR_MUT_W2_2" />
+			<Sprite Page="343" Name="SPR_MUT_W2_3" />
+			<Sprite Page="344" Name="SPR_MUT_W2_4" />
+			<Sprite Page="345" Name="SPR_MUT_W2_5" />
+			<Sprite Page="346" Name="SPR_MUT_W2_6" />
+			<Sprite Page="347" Name="SPR_MUT_W2_7" />
+			<Sprite Page="348" Name="SPR_MUT_W2_8" />
+			<Sprite Page="349" Name="SPR_MUT_W3_1" />
+			<Sprite Page="350" Name="SPR_MUT_W3_2" />
+			<Sprite Page="351" Name="SPR_MUT_W3_3" />
+			<Sprite Page="352" Name="SPR_MUT_W3_4" />
+			<Sprite Page="353" Name="SPR_MUT_W3_5" />
+			<Sprite Page="354" Name="SPR_MUT_W3_6" />
+			<Sprite Page="355" Name="SPR_MUT_W3_7" />
+			<Sprite Page="356" Name="SPR_MUT_W3_8" />
+			<Sprite Page="357" Name="SPR_MUT_W4_1" />
+			<Sprite Page="358" Name="SPR_MUT_W4_2" />
+			<Sprite Page="359" Name="SPR_MUT_W4_3" />
+			<Sprite Page="360" Name="SPR_MUT_W4_4" />
+			<Sprite Page="361" Name="SPR_MUT_W4_5" />
+			<Sprite Page="362" Name="SPR_MUT_W4_6" />
+			<Sprite Page="363" Name="SPR_MUT_W4_7" />
+			<Sprite Page="364" Name="SPR_MUT_W4_8" />
+			<Sprite Page="365" Name="SPR_MUT_PAIN_1" />
+			<Sprite Page="366" Name="SPR_MUT_DIE_1" />
+			<Sprite Page="367" Name="SPR_MUT_DIE_2" />
+			<Sprite Page="368" Name="SPR_MUT_DIE_3" />
+			<Sprite Page="369" Name="SPR_MUT_PAIN_2" />
+			<Sprite Page="370" Name="SPR_MUT_DIE_4" />
+			<Sprite Page="371" Name="SPR_MUT_DEAD" />
+			<Sprite Page="372" Name="SPR_MUT_SHOOT1" />
+			<Sprite Page="373" Name="SPR_MUT_SHOOT2" />
+			<Sprite Page="374" Name="SPR_MUT_SHOOT3" />
+			<Sprite Page="375" Name="SPR_MUT_SHOOT4" />
 			<!-- Officers -->
-			<Sprite Page="344" Name="SPR_OFC_S_1" />
-			<Sprite Page="345" Name="SPR_OFC_S_2" />
-			<Sprite Page="346" Name="SPR_OFC_S_3" />
-			<Sprite Page="347" Name="SPR_OFC_S_4" />
-			<Sprite Page="348" Name="SPR_OFC_S_5" />
-			<Sprite Page="349" Name="SPR_OFC_S_6" />
-			<Sprite Page="350" Name="SPR_OFC_S_7" />
-			<Sprite Page="351" Name="SPR_OFC_S_8" />
-			<Sprite Page="352" Name="SPR_OFC_W1_1" />
-			<Sprite Page="353" Name="SPR_OFC_W1_2" />
-			<Sprite Page="354" Name="SPR_OFC_W1_3" />
-			<Sprite Page="355" Name="SPR_OFC_W1_4" />
-			<Sprite Page="356" Name="SPR_OFC_W1_5" />
-			<Sprite Page="357" Name="SPR_OFC_W1_6" />
-			<Sprite Page="358" Name="SPR_OFC_W1_7" />
-			<Sprite Page="359" Name="SPR_OFC_W1_8" />
-			<Sprite Page="360" Name="SPR_OFC_W2_1" />
-			<Sprite Page="361" Name="SPR_OFC_W2_2" />
-			<Sprite Page="362" Name="SPR_OFC_W2_3" />
-			<Sprite Page="363" Name="SPR_OFC_W2_4" />
-			<Sprite Page="364" Name="SPR_OFC_W2_5" />
-			<Sprite Page="365" Name="SPR_OFC_W2_6" />
-			<Sprite Page="366" Name="SPR_OFC_W2_7" />
-			<Sprite Page="367" Name="SPR_OFC_W2_8" />
-			<Sprite Page="368" Name="SPR_OFC_W3_1" />
-			<Sprite Page="369" Name="SPR_OFC_W3_2" />
-			<Sprite Page="370" Name="SPR_OFC_W3_3" />
-			<Sprite Page="371" Name="SPR_OFC_W3_4" />
-			<Sprite Page="372" Name="SPR_OFC_W3_5" />
-			<Sprite Page="373" Name="SPR_OFC_W3_6" />
-			<Sprite Page="374" Name="SPR_OFC_W3_7" />
-			<Sprite Page="375" Name="SPR_OFC_W3_8" />
-			<Sprite Page="376" Name="SPR_OFC_W4_1" />
-			<Sprite Page="377" Name="SPR_OFC_W4_2" />
-			<Sprite Page="378" Name="SPR_OFC_W4_3" />
-			<Sprite Page="379" Name="SPR_OFC_W4_4" />
-			<Sprite Page="380" Name="SPR_OFC_W4_5" />
-			<Sprite Page="381" Name="SPR_OFC_W4_6" />
-			<Sprite Page="382" Name="SPR_OFC_W4_7" />
-			<Sprite Page="383" Name="SPR_OFC_W4_8" />
-			<Sprite Page="384" Name="SPR_OFC_PAIN_1" />
-			<Sprite Page="385" Name="SPR_OFC_DIE_1" />
-			<Sprite Page="386" Name="SPR_OFC_DIE_2" />
-			<Sprite Page="387" Name="SPR_OFC_DIE_3" />
-			<Sprite Page="388" Name="SPR_OFC_PAIN_2" />
-			<Sprite Page="389" Name="SPR_OFC_DIE_4" />
-			<Sprite Page="390" Name="SPR_OFC_DEAD" />
-			<Sprite Page="391" Name="SPR_OFC_SHOOT1" />
-			<Sprite Page="392" Name="SPR_OFC_SHOOT2" />
-			<Sprite Page="393" Name="SPR_OFC_SHOOT3" />
+			<Sprite Page="376" Name="SPR_OFC_S_1" />
+			<Sprite Page="377" Name="SPR_OFC_S_2" />
+			<Sprite Page="378" Name="SPR_OFC_S_3" />
+			<Sprite Page="379" Name="SPR_OFC_S_4" />
+			<Sprite Page="380" Name="SPR_OFC_S_5" />
+			<Sprite Page="381" Name="SPR_OFC_S_6" />
+			<Sprite Page="382" Name="SPR_OFC_S_7" />
+			<Sprite Page="383" Name="SPR_OFC_S_8" />
+			<Sprite Page="384" Name="SPR_OFC_W1_1" />
+			<Sprite Page="385" Name="SPR_OFC_W1_2" />
+			<Sprite Page="386" Name="SPR_OFC_W1_3" />
+			<Sprite Page="387" Name="SPR_OFC_W1_4" />
+			<Sprite Page="388" Name="SPR_OFC_W1_5" />
+			<Sprite Page="389" Name="SPR_OFC_W1_6" />
+			<Sprite Page="390" Name="SPR_OFC_W1_7" />
+			<Sprite Page="391" Name="SPR_OFC_W1_8" />
+			<Sprite Page="392" Name="SPR_OFC_W2_1" />
+			<Sprite Page="393" Name="SPR_OFC_W2_2" />
+			<Sprite Page="394" Name="SPR_OFC_W2_3" />
+			<Sprite Page="395" Name="SPR_OFC_W2_4" />
+			<Sprite Page="396" Name="SPR_OFC_W2_5" />
+			<Sprite Page="397" Name="SPR_OFC_W2_6" />
+			<Sprite Page="398" Name="SPR_OFC_W2_7" />
+			<Sprite Page="399" Name="SPR_OFC_W2_8" />
+			<Sprite Page="400" Name="SPR_OFC_W3_1" />
+			<Sprite Page="401" Name="SPR_OFC_W3_2" />
+			<Sprite Page="402" Name="SPR_OFC_W3_3" />
+			<Sprite Page="403" Name="SPR_OFC_W3_4" />
+			<Sprite Page="404" Name="SPR_OFC_W3_5" />
+			<Sprite Page="405" Name="SPR_OFC_W3_6" />
+			<Sprite Page="406" Name="SPR_OFC_W3_7" />
+			<Sprite Page="407" Name="SPR_OFC_W3_8" />
+			<Sprite Page="408" Name="SPR_OFC_W4_1" />
+			<Sprite Page="409" Name="SPR_OFC_W4_2" />
+			<Sprite Page="410" Name="SPR_OFC_W4_3" />
+			<Sprite Page="411" Name="SPR_OFC_W4_4" />
+			<Sprite Page="412" Name="SPR_OFC_W4_5" />
+			<Sprite Page="413" Name="SPR_OFC_W4_6" />
+			<Sprite Page="414" Name="SPR_OFC_W4_7" />
+			<Sprite Page="415" Name="SPR_OFC_W4_8" />
+			<Sprite Page="416" Name="SPR_OFC_PAIN_1" />
+			<Sprite Page="417" Name="SPR_OFC_DIE_1" />
+			<Sprite Page="418" Name="SPR_OFC_DIE_2" />
+			<Sprite Page="419" Name="SPR_OFC_DIE_3" />
+			<Sprite Page="420" Name="SPR_OFC_PAIN_2" />
+			<Sprite Page="421" Name="SPR_OFC_DIE_4" />
+			<Sprite Page="422" Name="SPR_OFC_DEAD" />
+			<Sprite Page="423" Name="SPR_OFC_SHOOT1" />
+			<Sprite Page="424" Name="SPR_OFC_SHOOT2" />
+			<Sprite Page="425" Name="SPR_OFC_SHOOT3" />
 			<!-- Pac-Man ghosts -->
 			<Sprite Page="394" Name="SPR_BLINKY_W1" />
 			<Sprite Page="395" Name="SPR_BLINKY_W2" />
@@ -1380,26 +1432,26 @@ return false
 			<Sprite Page="519" Name="SPR_BJ_JUMP2" />
 			<Sprite Page="520" Name="SPR_BJ_JUMP3" />
 			<Sprite Page="521" Name="SPR_BJ_JUMP4" />
-			<Sprite Page="522" Name="SPR_KNIFEREADY" />
-			<Sprite Page="523" Name="SPR_KNIFEATK1" />
-			<Sprite Page="524" Name="SPR_KNIFEATK2" />
-			<Sprite Page="525" Name="SPR_KNIFEATK3" />
-			<Sprite Page="526" Name="SPR_KNIFEATK4" />
-			<Sprite Page="527" Name="SPR_PISTOLREADY" />
-			<Sprite Page="528" Name="SPR_PISTOLATK1" />
-			<Sprite Page="529" Name="SPR_PISTOLATK2" />
-			<Sprite Page="530" Name="SPR_PISTOLATK3" />
-			<Sprite Page="531" Name="SPR_PISTOLATK4" />
-			<Sprite Page="532" Name="SPR_MACHINEGUNREADY" />
-			<Sprite Page="533" Name="SPR_MACHINEGUNATK1" />
-			<Sprite Page="534" Name="SPR_MACHINEGUNATK2" />
-			<Sprite Page="535" Name="SPR_MACHINEGUNATK3" />
-			<Sprite Page="536" Name="SPR_MACHINEGUNATK4" />
-			<Sprite Page="537" Name="SPR_CHAINREADY" />
-			<Sprite Page="538" Name="SPR_CHAINATK1" />
-			<Sprite Page="539" Name="SPR_CHAINATK2" />
-			<Sprite Page="540" Name="SPR_CHAINATK3" />
-			<Sprite Page="541" Name="SPR_CHAINATK4" />
+			<Sprite Page="535" Name="SPR_KNIFEREADY" />
+			<Sprite Page="536" Name="SPR_KNIFEATK1" />
+			<Sprite Page="537" Name="SPR_KNIFEATK2" />
+			<Sprite Page="538" Name="SPR_KNIFEATK3" />
+			<Sprite Page="539" Name="SPR_KNIFEATK4" />
+			<Sprite Page="540" Name="SPR_PISTOLREADY" />
+			<Sprite Page="541" Name="SPR_PISTOLATK1" />
+			<Sprite Page="542" Name="SPR_PISTOLATK2" />
+			<Sprite Page="543" Name="SPR_PISTOLATK3" />
+			<Sprite Page="544" Name="SPR_PISTOLATK4" />
+			<Sprite Page="545" Name="SPR_MACHINEGUNREADY" />
+			<Sprite Page="546" Name="SPR_MACHINEGUNATK1" />
+			<Sprite Page="547" Name="SPR_MACHINEGUNATK2" />
+			<Sprite Page="548" Name="SPR_MACHINEGUNATK3" />
+			<Sprite Page="549" Name="SPR_MACHINEGUNATK4" />
+			<Sprite Page="550" Name="SPR_CHAINREADY" />
+			<Sprite Page="551" Name="SPR_CHAINATK1" />
+			<Sprite Page="552" Name="SPR_CHAINATK2" />
+			<Sprite Page="553" Name="SPR_CHAINATK3" />
+			<Sprite Page="554" Name="SPR_CHAINATK4" />
 			<!-- Schabbs (episode 2 boss) - WL_DEF.H spritenum enum positions 307-316 -->
 			<Sprite Page="413" Name="SPR_SCHABB_W1" />
 			<Sprite Page="414" Name="SPR_SCHABB_W2" />
@@ -1470,14 +1522,14 @@ return false
 			<Sprite Page="474" Name="SPR_GIFT_DIE3" />
 			<Sprite Page="475" Name="SPR_GIFT_DEAD" />
 			<!-- Rocket projectile (Giftmacher, FatFace) - positions 370-377 -->
-			<Sprite Page="476" Name="SPR_ROCKET_1" />
-			<Sprite Page="477" Name="SPR_ROCKET_2" />
-			<Sprite Page="478" Name="SPR_ROCKET_3" />
-			<Sprite Page="479" Name="SPR_ROCKET_4" />
-			<Sprite Page="480" Name="SPR_ROCKET_5" />
-			<Sprite Page="481" Name="SPR_ROCKET_6" />
-			<Sprite Page="482" Name="SPR_ROCKET_7" />
-			<Sprite Page="483" Name="SPR_ROCKET_8" />
+			<Sprite Page="426" Name="SPR_ROCKET_1" />
+			<Sprite Page="427" Name="SPR_ROCKET_2" />
+			<Sprite Page="428" Name="SPR_ROCKET_3" />
+			<Sprite Page="429" Name="SPR_ROCKET_4" />
+			<Sprite Page="430" Name="SPR_ROCKET_5" />
+			<Sprite Page="431" Name="SPR_ROCKET_6" />
+			<Sprite Page="432" Name="SPR_ROCKET_7" />
+			<Sprite Page="433" Name="SPR_ROCKET_8" />
 			<!-- Gretel (episode 4 boss) - positions 385-395 -->
 			<Sprite Page="491" Name="SPR_GRETEL_W1" />
 			<Sprite Page="492" Name="SPR_GRETEL_W2" />
@@ -1505,93 +1557,93 @@ return false
 			<Sprite Page="513" Name="SPR_FAT_DEAD" />
 			<!-- Spear-only sprite aliases. These currently map onto the M1 VSWAP pages
 			     that correspond to the campaign-specific boss/effect region in this content set. -->
-			<Sprite Page="394" Name="SPR_SPECTRE_W1" />
-			<Sprite Page="395" Name="SPR_SPECTRE_W2" />
-			<Sprite Page="396" Name="SPR_SPECTRE_W3" />
-			<Sprite Page="397" Name="SPR_SPECTRE_W4" />
-			<Sprite Page="398" Name="SPR_SPECTRE_F1" />
-			<Sprite Page="399" Name="SPR_SPECTRE_F2" />
-			<Sprite Page="400" Name="SPR_SPECTRE_F3" />
-			<Sprite Page="401" Name="SPR_SPECTRE_F4" />
-			<Sprite Page="402" Name="SPR_TRANS_W1" />
-			<Sprite Page="403" Name="SPR_TRANS_W2" />
-			<Sprite Page="404" Name="SPR_TRANS_W3" />
-			<Sprite Page="405" Name="SPR_TRANS_W4" />
-			<Sprite Page="406" Name="SPR_TRANS_SHOOT1" />
-			<Sprite Page="407" Name="SPR_TRANS_SHOOT2" />
-			<Sprite Page="408" Name="SPR_TRANS_SHOOT3" />
-			<Sprite Page="409" Name="SPR_TRANS_DEAD" />
-			<Sprite Page="410" Name="SPR_TRANS_DIE1" />
-			<Sprite Page="411" Name="SPR_TRANS_DIE2" />
-			<Sprite Page="412" Name="SPR_TRANS_DIE3" />
-			<Sprite Page="502" Name="SPR_WILL_W1" />
-			<Sprite Page="503" Name="SPR_WILL_W2" />
-			<Sprite Page="504" Name="SPR_WILL_W3" />
-			<Sprite Page="505" Name="SPR_WILL_W4" />
-			<Sprite Page="506" Name="SPR_WILL_SHOOT1" />
-			<Sprite Page="507" Name="SPR_WILL_SHOOT2" />
-			<Sprite Page="508" Name="SPR_WILL_SHOOT3" />
-			<Sprite Page="509" Name="SPR_WILL_SHOOT4" />
-			<Sprite Page="510" Name="SPR_WILL_DIE1" />
-			<Sprite Page="511" Name="SPR_WILL_DIE2" />
-			<Sprite Page="512" Name="SPR_WILL_DIE3" />
-			<Sprite Page="513" Name="SPR_WILL_DEAD" />
-			<Sprite Page="427" Name="SPR_UBER_W1" />
-			<Sprite Page="428" Name="SPR_UBER_W2" />
-			<Sprite Page="429" Name="SPR_UBER_W3" />
-			<Sprite Page="430" Name="SPR_UBER_W4" />
-			<Sprite Page="431" Name="SPR_UBER_SHOOT1" />
-			<Sprite Page="432" Name="SPR_UBER_SHOOT2" />
-			<Sprite Page="433" Name="SPR_UBER_SHOOT3" />
-			<Sprite Page="434" Name="SPR_UBER_SHOOT4" />
-			<Sprite Page="435" Name="SPR_UBER_DIE1" />
-			<Sprite Page="436" Name="SPR_UBER_DIE2" />
-			<Sprite Page="437" Name="SPR_UBER_DIE3" />
-			<Sprite Page="438" Name="SPR_UBER_DIE4" />
-			<Sprite Page="439" Name="SPR_UBER_DEAD" />
-			<Sprite Page="451" Name="SPR_DEATH_W1" />
-			<Sprite Page="452" Name="SPR_DEATH_W2" />
-			<Sprite Page="453" Name="SPR_DEATH_W3" />
-			<Sprite Page="454" Name="SPR_DEATH_W4" />
-			<Sprite Page="455" Name="SPR_DEATH_SHOOT1" />
-			<Sprite Page="456" Name="SPR_DEATH_SHOOT2" />
-			<Sprite Page="457" Name="SPR_DEATH_SHOOT3" />
-			<Sprite Page="458" Name="SPR_DEATH_SHOOT4" />
-			<Sprite Page="459" Name="SPR_DEATH_DIE1" />
-			<Sprite Page="460" Name="SPR_DEATH_DIE2" />
-			<Sprite Page="461" Name="SPR_DEATH_DIE3" />
-			<Sprite Page="462" Name="SPR_DEATH_DIE4" />
-			<Sprite Page="463" Name="SPR_DEATH_DIE5" />
-			<Sprite Page="464" Name="SPR_DEATH_DIE6" />
-			<Sprite Page="465" Name="SPR_DEATH_DEAD" />
-			<Sprite Page="466" Name="SPR_ANGEL_W1" />
-			<Sprite Page="467" Name="SPR_ANGEL_W2" />
-			<Sprite Page="468" Name="SPR_ANGEL_W3" />
-			<Sprite Page="469" Name="SPR_ANGEL_W4" />
-			<Sprite Page="470" Name="SPR_ANGEL_SHOOT1" />
-			<Sprite Page="471" Name="SPR_ANGEL_SHOOT2" />
-			<Sprite Page="472" Name="SPR_ANGEL_TIRED1" />
-			<Sprite Page="473" Name="SPR_ANGEL_TIRED2" />
-			<Sprite Page="474" Name="SPR_ANGEL_DIE1" />
-			<Sprite Page="475" Name="SPR_ANGEL_DIE2" />
-			<Sprite Page="476" Name="SPR_ANGEL_DIE3" />
-			<Sprite Page="477" Name="SPR_ANGEL_DIE4" />
-			<Sprite Page="478" Name="SPR_ANGEL_DIE5" />
-			<Sprite Page="479" Name="SPR_ANGEL_DIE6" />
-			<Sprite Page="480" Name="SPR_ANGEL_DIE7" />
-			<Sprite Page="481" Name="SPR_ANGEL_DEAD" />
-			<Sprite Page="476" Name="SPR_HROCKET_1" />
-			<Sprite Page="477" Name="SPR_HROCKET_2" />
-			<Sprite Page="478" Name="SPR_HROCKET_3" />
-			<Sprite Page="479" Name="SPR_HROCKET_4" />
-			<Sprite Page="480" Name="SPR_HROCKET_5" />
-			<Sprite Page="481" Name="SPR_HROCKET_6" />
-			<Sprite Page="482" Name="SPR_HROCKET_7" />
-			<Sprite Page="483" Name="SPR_HROCKET_8" />
-			<Sprite Page="432" Name="SPR_SPARK1" />
-			<Sprite Page="433" Name="SPR_SPARK2" />
-			<Sprite Page="423" Name="SPR_SPARK3" />
-			<Sprite Page="424" Name="SPR_SPARK4" />
+			<Sprite Page="511" Name="SPR_SPECTRE_W1" />
+			<Sprite Page="512" Name="SPR_SPECTRE_W2" />
+			<Sprite Page="513" Name="SPR_SPECTRE_W3" />
+			<Sprite Page="514" Name="SPR_SPECTRE_W4" />
+			<Sprite Page="515" Name="SPR_SPECTRE_F1" />
+			<Sprite Page="516" Name="SPR_SPECTRE_F2" />
+			<Sprite Page="517" Name="SPR_SPECTRE_F3" />
+			<Sprite Page="518" Name="SPR_SPECTRE_F4" />
+			<Sprite Page="460" Name="SPR_TRANS_W1" />
+			<Sprite Page="461" Name="SPR_TRANS_W2" />
+			<Sprite Page="462" Name="SPR_TRANS_W3" />
+			<Sprite Page="463" Name="SPR_TRANS_W4" />
+			<Sprite Page="464" Name="SPR_TRANS_SHOOT1" />
+			<Sprite Page="465" Name="SPR_TRANS_SHOOT2" />
+			<Sprite Page="466" Name="SPR_TRANS_SHOOT3" />
+			<Sprite Page="467" Name="SPR_TRANS_DEAD" />
+			<Sprite Page="468" Name="SPR_TRANS_DIE1" />
+			<Sprite Page="469" Name="SPR_TRANS_DIE2" />
+			<Sprite Page="470" Name="SPR_TRANS_DIE3" />
+			<Sprite Page="471" Name="SPR_WILL_W1" />
+			<Sprite Page="472" Name="SPR_WILL_W2" />
+			<Sprite Page="473" Name="SPR_WILL_W3" />
+			<Sprite Page="474" Name="SPR_WILL_W4" />
+			<Sprite Page="475" Name="SPR_WILL_SHOOT1" />
+			<Sprite Page="476" Name="SPR_WILL_SHOOT2" />
+			<Sprite Page="477" Name="SPR_WILL_SHOOT3" />
+			<Sprite Page="478" Name="SPR_WILL_SHOOT4" />
+			<Sprite Page="479" Name="SPR_WILL_DIE1" />
+			<Sprite Page="480" Name="SPR_WILL_DIE2" />
+			<Sprite Page="481" Name="SPR_WILL_DIE3" />
+			<Sprite Page="482" Name="SPR_WILL_DEAD" />
+			<Sprite Page="483" Name="SPR_UBER_W1" />
+			<Sprite Page="484" Name="SPR_UBER_W2" />
+			<Sprite Page="485" Name="SPR_UBER_W3" />
+			<Sprite Page="486" Name="SPR_UBER_W4" />
+			<Sprite Page="487" Name="SPR_UBER_SHOOT1" />
+			<Sprite Page="488" Name="SPR_UBER_SHOOT2" />
+			<Sprite Page="489" Name="SPR_UBER_SHOOT3" />
+			<Sprite Page="490" Name="SPR_UBER_SHOOT4" />
+			<Sprite Page="491" Name="SPR_UBER_DIE1" />
+			<Sprite Page="492" Name="SPR_UBER_DIE2" />
+			<Sprite Page="493" Name="SPR_UBER_DIE3" />
+			<Sprite Page="494" Name="SPR_UBER_DIE4" />
+			<Sprite Page="495" Name="SPR_UBER_DEAD" />
+			<Sprite Page="496" Name="SPR_DEATH_W1" />
+			<Sprite Page="497" Name="SPR_DEATH_W2" />
+			<Sprite Page="498" Name="SPR_DEATH_W3" />
+			<Sprite Page="499" Name="SPR_DEATH_W4" />
+			<Sprite Page="500" Name="SPR_DEATH_SHOOT1" />
+			<Sprite Page="501" Name="SPR_DEATH_SHOOT2" />
+			<Sprite Page="502" Name="SPR_DEATH_SHOOT3" />
+			<Sprite Page="503" Name="SPR_DEATH_SHOOT4" />
+			<Sprite Page="504" Name="SPR_DEATH_DIE1" />
+			<Sprite Page="505" Name="SPR_DEATH_DIE2" />
+			<Sprite Page="506" Name="SPR_DEATH_DIE3" />
+			<Sprite Page="507" Name="SPR_DEATH_DIE4" />
+			<Sprite Page="508" Name="SPR_DEATH_DIE5" />
+			<Sprite Page="509" Name="SPR_DEATH_DIE6" />
+			<Sprite Page="510" Name="SPR_DEATH_DEAD" />
+			<Sprite Page="519" Name="SPR_ANGEL_W1" />
+			<Sprite Page="520" Name="SPR_ANGEL_W2" />
+			<Sprite Page="521" Name="SPR_ANGEL_W3" />
+			<Sprite Page="522" Name="SPR_ANGEL_W4" />
+			<Sprite Page="523" Name="SPR_ANGEL_SHOOT1" />
+			<Sprite Page="524" Name="SPR_ANGEL_SHOOT2" />
+			<Sprite Page="525" Name="SPR_ANGEL_TIRED1" />
+			<Sprite Page="526" Name="SPR_ANGEL_TIRED2" />
+			<Sprite Page="527" Name="SPR_ANGEL_DIE1" />
+			<Sprite Page="528" Name="SPR_ANGEL_DIE2" />
+			<Sprite Page="529" Name="SPR_ANGEL_DIE3" />
+			<Sprite Page="530" Name="SPR_ANGEL_DIE4" />
+			<Sprite Page="531" Name="SPR_ANGEL_DIE5" />
+			<Sprite Page="532" Name="SPR_ANGEL_DIE6" />
+			<Sprite Page="533" Name="SPR_ANGEL_DIE7" />
+			<Sprite Page="534" Name="SPR_ANGEL_DEAD" />
+			<Sprite Page="441" Name="SPR_HROCKET_1" />
+			<Sprite Page="442" Name="SPR_HROCKET_2" />
+			<Sprite Page="443" Name="SPR_HROCKET_3" />
+			<Sprite Page="444" Name="SPR_HROCKET_4" />
+			<Sprite Page="445" Name="SPR_HROCKET_5" />
+			<Sprite Page="446" Name="SPR_HROCKET_6" />
+			<Sprite Page="447" Name="SPR_HROCKET_7" />
+			<Sprite Page="448" Name="SPR_HROCKET_8" />
+			<Sprite Page="456" Name="SPR_SPARK1" />
+			<Sprite Page="457" Name="SPR_SPARK2" />
+			<Sprite Page="458" Name="SPR_SPARK3" />
+			<Sprite Page="459" Name="SPR_SPARK4" />
 		</Sprites>
 		<DigiSounds>
 			<DigiSound Number="0" Name="HALTSND" />
@@ -1653,62 +1705,62 @@ return false
 			<ObjectType Number="20" ObClass="playerobj" Direction="N" Name="Player Start North" />
 			<ObjectType Number="21" ObClass="playerobj" Direction="W" Name="Player Start West" />
 			<ObjectType Number="22" ObClass="playerobj" Direction="S" Name="Player Start South" />
-			<ObjectType Number="23" ObClass="dressing" Page="108" Name="Pool of Water" />
-			<ObjectType Number="24" ObClass="block" Page="109" Name="Oil Drum" />
-			<ObjectType Number="25" ObClass="block" Page="110" Name="Table with Chairs" />
-			<ObjectType Number="26" ObClass="block" Page="111" Name="Floor Lamp" />
-			<ObjectType Number="27" ObClass="dressing" Page="112" Name="Chandalier" />
-			<ObjectType Number="28" ObClass="block" Page="113" Name="Hanging Skeleton" />
-			<ObjectType Number="29" ObClass="bonus" Page="114" Walk="true" Script="health_small" Name="Dog Food" />
-			<ObjectType Number="30" ObClass="block" Page="115" Name="Red Column" />
-			<ObjectType Number="31" ObClass="block" Page="116" Name="Tree" />
-			<ObjectType Number="32" ObClass="dressing" Page="117" Name="Skeleton" />
-			<ObjectType Number="33" ObClass="block" Page="118" Name="Sink" />
-			<ObjectType Number="34" ObClass="block" Page="119" Name="Brown Plant" />
-			<ObjectType Number="35" ObClass="block" Page="120" Name="Vase" />
-			<ObjectType Number="36" ObClass="block" Page="121" Name="Table" />
-			<ObjectType Number="37" ObClass="dressing" Page="122" Name="Ceiling Light" />
-			<ObjectType Number="38" ObClass="block" Page="123" Name="Gibs" />
-			<ObjectType Number="39" ObClass="block" Page="124" Name="Armor" />
-			<ObjectType Number="40" ObClass="block" Page="125" Name="Hanging Cage" />
-			<ObjectType Number="41" ObClass="block" Page="126" Name="Cage with Skeleton" />
-			<ObjectType Number="42" ObClass="dressing" Page="127" Name="Skeleton at Rest" />
-			<ObjectType Number="43" ObClass="bonus" Page="128" Script="key_gold" Name="Gold Key" />
-			<ObjectType Number="44" ObClass="bonus" Page="129" Script="key_silver" Name="Silver Key" />
-			<ObjectType Number="45" ObClass="block" Page="130" Name="Storage Crates" />
-			<ObjectType Number="46" ObClass="dressing" Page="131" Name="Debris" />
-			<ObjectType Number="47" ObClass="bonus" Page="132" Script="health_medium" Name="Food" />
-			<ObjectType Number="48" ObClass="bonus" Page="133" Script="health_large" Name="First Aid Kit" />
-			<ObjectType Number="49" ObClass="bonus" Page="134" Script="ammo_clip" Name="Ammo" />
-			<ObjectType Number="50" ObClass="bonus" Page="135" Script="weapon_machinegun" Name="Machine Gun" />
-			<ObjectType Number="51" ObClass="bonus" Page="136" Script="weapon_chaingun" Name="Gatling Gun" />
-			<ObjectType Number="52" ObClass="bonus" Page="137" Treasure="true" Script="treasure_cross" Name="Cross" />
-			<ObjectType Number="53" ObClass="bonus" Page="138" Treasure="true" Script="treasure_chalice" Name="Chalice" />
-			<ObjectType Number="54" ObClass="bonus" Page="139" Treasure="true" Script="treasure_bible" Name="Bible" />
-			<ObjectType Number="55" ObClass="bonus" Page="140" Treasure="true" Script="treasure_crown" Name="Crown" />
-			<ObjectType Number="56" ObClass="bonus" Page="141" Treasure="true" Script="extra_life" Name="Extra Life" />
-			<ObjectType Number="57" ObClass="bonus" Page="142" Script="health_desperate" Name="Bones with Blood" />
-			<ObjectType Number="58" ObClass="block" Page="143" Name="Barrel" />
-			<ObjectType Number="59" ObClass="block" Page="144" Name="Well with Water" />
-			<ObjectType Number="60" ObClass="block" Page="145" Name="Empty Well" />
-			<ObjectType Number="61" ObClass="bonus" Page="146" Script="health_desperate" Name="Pool of Blood" />
-			<ObjectType Number="62" ObClass="block" Page="147" Name="Flag" />
-			<ObjectType Number="63" ObClass="dressing" Page="148" Name="Red Light" />
-			<ObjectType Number="64" ObClass="dressing" Page="149" Name="Junk Pile 1" />
-			<ObjectType Number="65" ObClass="dressing" Page="150" Name="Junk Pile 2" />
-			<ObjectType Number="66" ObClass="dressing" Page="151" Name="Junk Pile 3" />
-			<ObjectType Number="67" ObClass="block" Page="152" Name="More Gibs" />
-			<ObjectType Number="68" ObClass="block" Page="153" Name="Stove" />
-			<ObjectType Number="69" ObClass="block" Page="154" Name="Spear Rack" />
-			<ObjectType Number="70" ObClass="dressing" Page="155" Name="Vines" />
+			<ObjectType Number="23" ObClass="dressing" Page="136" Name="Pool of Water" />
+			<ObjectType Number="24" ObClass="block" Page="137" Name="Oil Drum" />
+			<ObjectType Number="25" ObClass="block" Page="138" Name="Table with Chairs" />
+			<ObjectType Number="26" ObClass="block" Page="139" Name="Floor Lamp" />
+			<ObjectType Number="27" ObClass="dressing" Page="140" Name="Chandalier" />
+			<ObjectType Number="28" ObClass="block" Page="141" Name="Hanging Skeleton" />
+			<ObjectType Number="29" ObClass="bonus" Page="142" Walk="true" Script="health_small" Name="Dog Food" />
+			<ObjectType Number="30" ObClass="block" Page="143" Name="Red Column" />
+			<ObjectType Number="31" ObClass="block" Page="144" Name="Tree" />
+			<ObjectType Number="32" ObClass="dressing" Page="145" Name="Skeleton" />
+			<ObjectType Number="33" ObClass="block" Page="146" Name="Sink" />
+			<ObjectType Number="34" ObClass="block" Page="147" Name="Brown Plant" />
+			<ObjectType Number="35" ObClass="block" Page="148" Name="Vase" />
+			<ObjectType Number="36" ObClass="block" Page="149" Name="Table" />
+			<ObjectType Number="37" ObClass="dressing" Page="150" Name="Ceiling Light" />
+			<ObjectType Number="38" ObClass="block" Page="151" Name="Gibs" />
+			<ObjectType Number="39" ObClass="block" Page="152" Name="Armor" />
+			<ObjectType Number="40" ObClass="block" Page="153" Name="Hanging Cage" />
+			<ObjectType Number="41" ObClass="block" Page="154" Name="Cage with Skeleton" />
+			<ObjectType Number="42" ObClass="dressing" Page="155" Name="Skeleton at Rest" />
+			<ObjectType Number="43" ObClass="bonus" Page="156" Script="key_gold" Name="Gold Key" />
+			<ObjectType Number="44" ObClass="bonus" Page="157" Script="key_silver" Name="Silver Key" />
+			<ObjectType Number="45" ObClass="block" Page="158" Name="Storage Crates" />
+			<ObjectType Number="46" ObClass="dressing" Page="159" Name="Debris" />
+			<ObjectType Number="47" ObClass="bonus" Page="160" Script="health_medium" Name="Food" />
+			<ObjectType Number="48" ObClass="bonus" Page="161" Script="health_large" Name="First Aid Kit" />
+			<ObjectType Number="49" ObClass="bonus" Page="162" Script="ammo_clip" Name="Ammo" />
+			<ObjectType Number="50" ObClass="bonus" Page="163" Script="weapon_machinegun" Name="Machine Gun" />
+			<ObjectType Number="51" ObClass="bonus" Page="164" Script="weapon_chaingun" Name="Gatling Gun" />
+			<ObjectType Number="52" ObClass="bonus" Page="165" Treasure="true" Script="treasure_cross" Name="Cross" />
+			<ObjectType Number="53" ObClass="bonus" Page="166" Treasure="true" Script="treasure_chalice" Name="Chalice" />
+			<ObjectType Number="54" ObClass="bonus" Page="167" Treasure="true" Script="treasure_bible" Name="Bible" />
+			<ObjectType Number="55" ObClass="bonus" Page="168" Treasure="true" Script="treasure_crown" Name="Crown" />
+			<ObjectType Number="56" ObClass="bonus" Page="169" Treasure="true" Script="extra_life" Name="Extra Life" />
+			<ObjectType Number="57" ObClass="bonus" Page="170" Script="health_desperate" Name="Bones with Blood" />
+			<ObjectType Number="58" ObClass="block" Page="171" Name="Barrel" />
+			<ObjectType Number="59" ObClass="block" Page="172" Name="Well with Water" />
+			<ObjectType Number="60" ObClass="block" Page="173" Name="Empty Well" />
+			<ObjectType Number="61" ObClass="bonus" Page="174" Script="health_desperate" Name="Pool of Blood" />
+			<ObjectType Number="62" ObClass="block" Page="175" Name="Flag" />
+			<ObjectType Number="63" ObClass="dressing" Page="176" Name="Red Light" />
+			<ObjectType Number="64" ObClass="dressing" Page="177" Name="Junk Pile 1" />
+			<ObjectType Number="65" ObClass="dressing" Page="178" Name="Junk Pile 2" />
+			<ObjectType Number="66" ObClass="dressing" Page="179" Name="Junk Pile 3" />
+			<ObjectType Number="67" ObClass="block" Page="180" Name="More Gibs" />
+			<ObjectType Number="68" ObClass="block" Page="181" Name="Stove" />
+			<ObjectType Number="69" ObClass="block" Page="182" Name="Spear Rack" />
+			<ObjectType Number="70" ObClass="dressing" Page="183" Name="Vines" />
 			<!-- Spear statics 71-74 come from the SPEAR-only WL_ACT1.C:statinfo[] tail. -->
-			<ObjectType Number="71" ObClass="block" Page="156" Name="Marble Pillar" />
-			<ObjectType Number="72" ObClass="bonus" Page="157" Script="ammo_25" Name="Ammo Box" />
-			<ObjectType Number="73" ObClass="block" Page="158" Name="Truck" />
-			<ObjectType Number="74" ObClass="bonus" Page="159" Script="SpearPickup" Name="Spear of Destiny" />
+			<ObjectType Number="71" ObClass="block" Page="184" Name="Marble Pillar" />
+			<ObjectType Number="72" ObClass="bonus" Page="185" Script="ammo_25" Name="Ammo Box" />
+			<ObjectType Number="73" ObClass="block" Page="186" Name="Truck" />
+			<ObjectType Number="74" ObClass="bonus" Page="187" Script="SpearPickup" Name="Spear of Destiny" />
 			<!-- Drop-only items: never placed on maps, only spawned by PlaceItemType (enemy death drops). -->
 			<!-- WL_ACT1.C:statinfo[] final helper entry: {SPR_STAT_26,bo_clip2}. -->
-			<ObjectType Number="100" ObClass="bonus" Page="134" Script="ammo_clip_small" Name="bo_clip2" />
+			<ObjectType Number="100" ObClass="bonus" Page="162" Script="ammo_clip_small" Name="bo_clip2" />
 			<Turn Number="90" Direction="E" Name="Turn E" />
 			<Turn Number="91" Direction="NE" Name="Turn NE" />
 			<Turn Number="92" Direction="N" Name="Turn N" />
@@ -1727,7 +1779,7 @@ return false
 			<ObjectType Number="113" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdpath1" />
 			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdpath1" />
 			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0" State="s_grdpath1" />
-			<ObjectType Number="124" ObClass="dressing" Page="201" Name="Dead Guard" />
+			<ObjectType Number="124" ObClass="dressing" Page="233" Name="Dead Guard" />
 			<ObjectType Number="116" ObClass="actor" Actor="Officer" Direction="E" Difficulty="0" State="s_ofcstand" />
 			<ObjectType Number="117" ObClass="actor" Actor="Officer" Direction="N" Difficulty="0" State="s_ofcstand" />
 			<ObjectType Number="118" ObClass="actor" Actor="Officer" Direction="W" Difficulty="0" State="s_ofcstand" />
@@ -2002,7 +2054,7 @@ return false
 			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3" Alive="false" Mark="false" />
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertSound="GUTENTAGSND" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
+			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0" Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase1s" />
 			<State Name="s_bosschase1s" Shape="SPR_BOSS_W1" Tics="3" Speed="512" Next="s_bosschase2" />
@@ -2024,7 +2076,7 @@ return false
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
 			<!-- WL_ACT2.C:SpawnSchabbs — Episode 2 boss -->
 			<!-- Corrected HP from starthitpoints[]: Baby=850, DHM=950, BEO=1550, DI=2400 -->
-			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" AlertSound="SCHABBSHASND" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
+			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
 			<State Name="s_schabbstand"   Shape="SPR_SCHABB_W1"     Tics="0"  Think="T_Stand"      Speed="0"   Next="s_schabbstand" />
 			<State Name="s_schabbchase1"  Shape="SPR_SCHABB_W1"     Tics="10" Think="T_Schabb"     Speed="512" Next="s_schabbchase1s" />
 			<State Name="s_schabbchase1s" Shape="SPR_SCHABB_W1"     Tics="3"                       Speed="512" Next="s_schabbchase2" />
@@ -2049,7 +2101,7 @@ return false
 			<State Name="s_needle3" Shape="SPR_HYPO3" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle4" />
 			<State Name="s_needle4" Shape="SPR_HYPO4" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle1" />
 			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 enemy -->
-			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" AlertSound="TOT_HUNDSND" Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1" Ambush="true" />
+			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1" Ambush="true" />
 			<State Name="s_fakestand"   Shape="SPR_FAKE_W1"     Tics="0" Think="T_Stand" Speed="0" Next="s_fakestand" />
 			<State Name="s_fakechase1"  Shape="SPR_FAKE_W1"     Tics="10" Think="T_Fake" Speed="512" Next="s_fakechase1s" />
 			<State Name="s_fakechase1s" Shape="SPR_FAKE_W1"     Tics="3" Speed="512" Next="s_fakechase2" />
@@ -2078,7 +2130,7 @@ return false
 			<!-- WL_ACT2.C:SpawnHitler — Episode 3 boss, Phase 1 (Mecha-Hitler) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=800, DHM=950, BEO=1050, DI=1200 -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case mechahitlerobj → DIESND -->
-			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" AlertSound="DIESND" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" Ambush="true" />
+			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" Ambush="true" />
 			<State Name="s_mechastand"   Shape="SPR_MECHA_W1"     Tics="0"  Think="T_Stand"  Speed="0"   Next="s_mechastand" />
 			<!-- WL_ACT2.C:A_MechaSound — plays MECHSTEPSND; fires on chase1 and chase3 (Action, not Think) -->
 			<State Name="s_mechachase1"  Shape="SPR_MECHA_W1"     Tics="10" Think="T_Chase"  Action="A_MechaSound" Speed="512" Next="s_mechachase1s" />
@@ -2101,7 +2153,7 @@ return false
 			<!-- WL_ACT2.C:A_HitlerMorph — Episode 3 boss, Phase 2 (Real Hitler, spawned by A_HitlerMorph) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=200, DHM=300, BEO=400, DI=500 -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case realhitlerobj → DIESND -->
-			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" AlertSound="DIESND" Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1" Death="s_hitlerdie1" Ambush="true" />
+			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1" Death="s_hitlerdie1" Ambush="true" />
 			<State Name="s_hitlerstand"    Shape="SPR_HITLER_W1"     Tics="0"  Think="T_Stand"  Speed="0"    Next="s_hitlerstand" />
 			<State Name="s_hitlerchase1"   Shape="SPR_HITLER_W1"     Tics="6"  Think="T_Chase"  Speed="1024" Next="s_hitlerchase1s" />
 			<State Name="s_hitlerchase1s"  Shape="SPR_HITLER_W1"     Tics="4"                   Speed="1024" Next="s_hitlerchase2" />
@@ -2130,7 +2182,7 @@ return false
 			<State Name="s_hitlershoot6"  Shape="SPR_HITLER_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlerchase1" />
 			<!-- WL_ACT2.C:SpawnGretel — Episode 4 boss (chaingun, same AI as Hans) -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case gretelobj → KEINSND -->
-			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" AlertSound="KEINSND" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1" Ambush="true" />
+			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1" Ambush="true" />
 			<State Name="s_gretelstand"   Shape="SPR_GRETEL_W1"     Tics="0"  Think="T_Stand"  Speed="0"   Next="s_gretelstand" />
 			<State Name="s_gretelchase1"  Shape="SPR_GRETEL_W1"     Tics="10" Think="T_Chase"  Speed="512" Next="s_gretelchase1s" />
 			<State Name="s_gretelchase1s" Shape="SPR_GRETEL_W1"     Tics="3"                   Speed="512" Next="s_gretelchase2" />
@@ -2154,7 +2206,7 @@ return false
 			<!-- WL_ACT2.C:SpawnGift — Episode 5 boss (throws rockets via T_GiftThrow) -->
 			<!-- WL_ACT2.C:T_GiftThrow spawns rocketobj/s_rocket, NOT needles — plan was wrong -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case giftobj → EINESND -->
-			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" AlertSound="EINESND" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" Ambush="true" />
+			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" Ambush="true" />
 			<State Name="s_giftstand"   Shape="SPR_GIFT_W1"     Tics="0"  Think="T_Stand"     Speed="0"   Next="s_giftstand" />
 			<State Name="s_giftchase1"  Shape="SPR_GIFT_W1"     Tics="10" Think="T_Gift"      Speed="512" Next="s_giftchase1s" />
 			<State Name="s_giftchase1s" Shape="SPR_GIFT_W1"     Tics="3"                      Speed="512" Next="s_giftchase2" />
@@ -2184,7 +2236,7 @@ return false
 			<State Name="s_rocket8" Shape="SPR_ROCKET_8" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket" />
 			<!-- WL_ACT2.C:SpawnFat — Episode 6 boss (mixed attack: rocket then hitscan) -->
 			<!-- Corrected alert sound from original v1.4 source: A_Alert case fatobj → ERLAUBENSND -->
-			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" AlertSound="ERLAUBENSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" Ambush="true" />
+			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" Ambush="true" />
 			<State Name="s_fatstand"   Shape="SPR_FAT_W1"     Tics="0"  Think="T_Stand"     Speed="0"   Next="s_fatstand" />
 			<State Name="s_fatchase1"  Shape="SPR_FAT_W1"     Tics="10" Think="T_Fat"       Speed="512" Next="s_fatchase1s" />
 			<State Name="s_fatchase1s" Shape="SPR_FAT_W1"     Tics="3"                      Speed="512" Next="s_fatchase2" />
@@ -2406,18 +2458,18 @@ local actorType = GetActorType()
 
 if actorType == "Guard" then
 	AddValue("Score", 100)
-	PlaceItemType(100, 134)
+	PlaceItemType(100, "SPR_STAT_26")
 	local sounds = {"DEATHSCREAM1SND", "DEATHSCREAM2SND", "DEATHSCREAM3SND"}
 	PlayLocalDigiSound(sounds[US_RndT() % 3 + 1])
 
 elseif actorType == "Officer" then
 	AddValue("Score", 400)
-	PlaceItemType(100, 134)
+	PlaceItemType(100, "SPR_STAT_26")
 	PlayLocalDigiSound("NEINSOVASSND")
 
 elseif actorType == "Mutant" then
 	AddValue("Score", 700)
-	PlaceItemType(100, 134)
+	PlaceItemType(100, "SPR_STAT_26")
 	PlayLocalDigiSound("AHHHGSND")
 
 elseif actorType == "Dog" then
@@ -2427,15 +2479,15 @@ elseif actorType == "Dog" then
 elseif actorType == "SS" then
 	AddValue("Score", 500)
 	if GetValue("Weapon2") < 1 then
-		PlaceItemType(50, 135)
+		PlaceItemType(50, "SPR_STAT_27")
 	else
-		PlaceItemType(100, 134)
+		PlaceItemType(100, "SPR_STAT_26")
 	end
 	PlayLocalDigiSound("LEBENSND")
 
 elseif actorType == "Hans" then
 	AddValue("Score", 5000)
-	PlaceItemType(43, 128)
+	PlaceItemType(43, "SPR_STAT_20")
 	PlayLocalDigiSound("MUTTISND")
 elseif actorType == "Spectre" then
 	AddValue("Score", 200)
@@ -2446,22 +2498,22 @@ elseif actorType == "Angel" then
 
 elseif actorType == "Trans" then
 	AddValue("Score", 5000)
-	PlaceItemType(43, 128)
+	PlaceItemType(43, "SPR_STAT_20")
 	PlayLocalDigiSound("TRANSDEATHSND")
 
 elseif actorType == "Uber" then
 	AddValue("Score", 5000)
-	PlaceItemType(43, 128)
+	PlaceItemType(43, "SPR_STAT_20")
 	PlayLocalDigiSound("UBERDEATHSND")
 
 elseif actorType == "Wilhelm" then
 	AddValue("Score", 5000)
-	PlaceItemType(43, 128)
+	PlaceItemType(43, "SPR_STAT_20")
 	PlayLocalDigiSound("WILHELMDEATHSND")
 
 elseif actorType == "Death" then
 	AddValue("Score", 5000)
-	PlaceItemType(43, 128)
+	PlaceItemType(43, "SPR_STAT_20")
 	PlayLocalDigiSound("KNIGHTDEATHSND")
 end
 ]]>

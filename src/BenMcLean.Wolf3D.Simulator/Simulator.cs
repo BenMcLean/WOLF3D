@@ -1220,7 +1220,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 	#endregion
 	#region Actor Update Logic
-	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalysis, logger)
+	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalyzer, mapAnalysis, logger)
 	{
 		NavigateToMenuAction = menuName =>
 		{
