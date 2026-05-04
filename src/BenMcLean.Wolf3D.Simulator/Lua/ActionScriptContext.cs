@@ -86,6 +86,7 @@ public class ActionScriptContext(
 	/// Generic mechanism — any BonusScript can trigger any menu.
 	/// </summary>
 	public Action<string> NavigateToMenuAction { get; set; }
+	public Action<int, bool> RequestGameplayMapTransitionAction { get; set; }
 	/// <summary>
 	/// Navigate to a named menu screen.
 	/// Exposed to Lua. Used by VictoryTile, Bible quiz triggers, etc.
@@ -93,6 +94,13 @@ public class ActionScriptContext(
 	/// </summary>
 	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
+	public void RequestGameplayMapTransition(int destinationLevel, bool preservePlayerTransform = false)
+	{
+		if (RequestGameplayMapTransitionAction is not null)
+			RequestGameplayMapTransitionAction(destinationLevel, preservePlayerTransform);
+		else
+			simulator.RequestGameplayMapTransition((byte)destinationLevel, preservePlayerTransform);
+	}
 	#endregion
 	#region Player Query & Actor API (exposed to Lua)
 	/// <summary>
@@ -115,6 +123,7 @@ public class ActionScriptContext(
 	/// WL_DEF.H:player->y
 	/// </summary>
 	public int GetPlayerY() => simulator.PlayerY;
+	public int GetPlayerAngle() => simulator.PlayerAngle;
 	/// <summary>
 	/// Check whether a tile is navigable (not a wall, closed door, or occupied tile).
 	/// WL_ACT2.C:TryWalk uses actorat[] and tilemap[]; this wraps the same logic.

@@ -435,6 +435,20 @@ public struct NavigateToMenuEvent
 }
 
 /// <summary>
+/// A script requested an in-game transition to another map without routing through a menu.
+/// Used for special gameplay flows like Spear of Destiny's pickup jump to map 20.
+/// </summary>
+public struct GameplayMapTransitionRequestedEvent
+{
+	/// <summary>Destination map number (flat map index).</summary>
+	public required byte DestinationLevel { get; init; }
+	/// <summary>
+	/// True if the new map should restore the current player position and angle after loading.
+	/// </summary>
+	public required bool PreservePlayerTransform { get; init; }
+}
+
+/// <summary>
 /// A named status bar picture changed (e.g., face frame update).
 /// Fired when an action script calls SetPicture().
 /// Presentation layer uses this to swap the displayed VgaGraph picture.

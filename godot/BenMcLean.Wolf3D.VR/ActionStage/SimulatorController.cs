@@ -40,6 +40,7 @@ public partial class SimulatorController : Node3D
 	private Action<PlayerStateChangedEvent> _playerStateHandler;
 	private Action<ScreenFlashEvent> _screenFlashHandler;
 	private Action<NavigateToMenuEvent> _navigateToMenuHandler;
+	private Action<GameplayMapTransitionRequestedEvent> _gameplayMapTransitionHandler;
 	private Action<PlayerDiedEvent> _playerDiedHandler;
 	private Action<PlayGlobalSoundEvent> _playGlobalSoundHandler;
 	private Action<VictoryStartedEvent> _victoryStartedHandler;
@@ -125,6 +126,10 @@ public partial class SimulatorController : Node3D
 		// Forward menu navigation events (VictoryTile, quiz triggers, etc.)
 		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
 		simulator.NavigateToMenu += _navigateToMenuHandler;
+
+		// Forward direct gameplay map transition events (e.g., Spear pickup jump to map 20)
+		_gameplayMapTransitionHandler = e => GameplayMapTransitionRequested?.Invoke(e);
+		simulator.GameplayMapTransitionRequested += _gameplayMapTransitionHandler;
 
 		// Forward player death events
 		_playerDiedHandler = e => PlayerDied?.Invoke(e);
@@ -224,6 +229,8 @@ public partial class SimulatorController : Node3D
 		simulator.ScreenFlash += _screenFlashHandler;
 		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
 		simulator.NavigateToMenu += _navigateToMenuHandler;
+		_gameplayMapTransitionHandler = e => GameplayMapTransitionRequested?.Invoke(e);
+		simulator.GameplayMapTransitionRequested += _gameplayMapTransitionHandler;
 		_playerDiedHandler = e => PlayerDied?.Invoke(e);
 		simulator.PlayerDied += _playerDiedHandler;
 		_playGlobalSoundHandler = e => EventBus.Emit(GameEvent.PlaySound, e.SoundName);
@@ -249,6 +256,8 @@ public partial class SimulatorController : Node3D
 				simulator.ScreenFlash -= _screenFlashHandler;
 			if (_navigateToMenuHandler is not null)
 				simulator.NavigateToMenu -= _navigateToMenuHandler;
+			if (_gameplayMapTransitionHandler is not null)
+				simulator.GameplayMapTransitionRequested -= _gameplayMapTransitionHandler;
 			if (_playerDiedHandler is not null)
 				simulator.PlayerDied -= _playerDiedHandler;
 			if (_playGlobalSoundHandler is not null)
@@ -527,6 +536,12 @@ public partial class SimulatorController : Node3D
 	/// Generic mechanism for VictoryTile, Bible quiz, or any menu-triggering item.
 	/// </summary>
 	public event Action<NavigateToMenuEvent> NavigateToMenu;
+
+	/// <summary>
+	/// Event fired when gameplay should continue directly into another map.
+	/// Used for special campaign flows that skip the intermission/menu pipeline.
+	/// </summary>
+	public event Action<GameplayMapTransitionRequestedEvent> GameplayMapTransitionRequested;
 
 	/// <summary>
 	/// Event fired when the player dies (health reaches zero).

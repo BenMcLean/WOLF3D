@@ -334,30 +334,45 @@ public partial class Root : Node3D
 			}
 			else if (actionStage.PendingTransition is ActionRoom.LevelTransitionRequest request)
 			{
-				// Level transitions discard the suspended game (new level = new state)
 				_suspendedGame = null;
-				// Route through intermission/victory screen
-				MenuRoom intermissionRoom = new(DisplayMode)
+				if (!request.ShowIntermission)
 				{
-					StartMenuOverride = request.MenuName ?? "LevelComplete",
-					LevelTransition = request,
-					MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
-					InitialVRMode = CurrentVRMode(),
-					InitialDebugMarkersEnabled = _debugMarkersEnabled,
-				};
-				// For Victory (episode complete), pass final score for high score check
-				if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
-				{
-					Simulator.LevelCompletionStats lastStats =
-						request.AllLevelStats[request.AllLevelStats.Count - 1];
-					ushort ep = (ushort)Math.Max(0,
-						(request.SavedInventory?.Values?.TryGetValue("Episode", out int episodeVal) ?? false
-							? episodeVal : 1) - 1);
-					intermissionRoom.PendingHighScoreScore = lastStats.Score;
-					intermissionRoom.PendingHighScoreCompleted = (ushort)lastStats.FloorNumber;
-					intermissionRoom.PendingHighScoreEpisode = ep;
+					ActionRoom newStage = new(
+						DisplayMode,
+						levelIndex: request.LevelIndex,
+						savedInventory: request.SavedInventory,
+						savedLevelStats: request.AllLevelStats,
+						debugMarkersEnabled: _debugMarkersEnabled,
+						playerXOverride: request.PlayerXOverride,
+						playerYOverride: request.PlayerYOverride,
+						playerAngleOverride: request.PlayerAngleOverride);
+					TransitionTo(newStage);
 				}
-				TransitionTo(intermissionRoom);
+				else
+				{
+					// Route through intermission/victory screen
+					MenuRoom intermissionRoom = new(DisplayMode)
+					{
+						StartMenuOverride = request.MenuName ?? "LevelComplete",
+						LevelTransition = request,
+						MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
+						InitialVRMode = CurrentVRMode(),
+						InitialDebugMarkersEnabled = _debugMarkersEnabled,
+					};
+					// For Victory (episode complete), pass final score for high score check
+					if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
+					{
+						Simulator.LevelCompletionStats lastStats =
+							request.AllLevelStats[request.AllLevelStats.Count - 1];
+						ushort ep = (ushort)Math.Max(0,
+							(request.SavedInventory?.Values?.TryGetValue("Episode", out int episodeVal) ?? false
+								? episodeVal : 1) - 1);
+						intermissionRoom.PendingHighScoreScore = lastStats.Score;
+						intermissionRoom.PendingHighScoreCompleted = (ushort)lastStats.FloorNumber;
+						intermissionRoom.PendingHighScoreEpisode = ep;
+					}
+					TransitionTo(intermissionRoom);
+				}
 			}
 		}
 	}

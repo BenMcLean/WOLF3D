@@ -38,7 +38,11 @@ public partial class ActionRoom : Node3D, IRoom
 		byte? ceilingColor = null,
 		ushort? floorTilePage = null,
 		ushort? ceilingTilePage = null,
-		IReadOnlyList<ushort?> equippedWeaponShapes = null)
+		IReadOnlyList<ushort?> equippedWeaponShapes = null,
+		bool showIntermission = true,
+		int? playerXOverride = null,
+		int? playerYOverride = null,
+		short? playerAngleOverride = null)
 	{
 		public int LevelIndex { get; } = levelIndex;
 		public InventorySnapshot SavedInventory { get; } = savedInventory;
@@ -52,6 +56,10 @@ public partial class ActionRoom : Node3D, IRoom
 		// VSwap page numbers for each weapon slot at transition time.
 		// Used by MenuRoom elevator environment to show the same weapons the player had equipped.
 		public IReadOnlyList<ushort?> EquippedWeaponShapes { get; } = equippedWeaponShapes;
+		public bool ShowIntermission { get; } = showIntermission;
+		public int? PlayerXOverride { get; } = playerXOverride;
+		public int? PlayerYOverride { get; } = playerYOverride;
+		public short? PlayerAngleOverride { get; } = playerAngleOverride;
 
 		/// <summary>
 		/// Menu to show for this transition. Defaults to "LevelComplete" for elevator transitions.
@@ -159,6 +167,9 @@ void sky() {
 	private readonly bool _debugMarkersEnabled;
 	private readonly InventorySnapshot _savedInventory;
 	private readonly IReadOnlyList<LevelCompletionStats> _savedLevelStats;
+	private readonly int? _playerXOverride;
+	private readonly int? _playerYOverride;
+	private readonly short? _playerAngleOverride;
 	private readonly Simulator.Simulator _existingSimulator;
 	private readonly SimulatorSnapshot _loadSnapshot;
 	private Walls _walls;
@@ -190,7 +201,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
@@ -200,6 +211,9 @@ void sky() {
 		_debugMarkersEnabled = debugMarkersEnabled;
 		_savedInventory = savedInventory;
 		_savedLevelStats = savedLevelStats;
+		_playerXOverride = playerXOverride;
+		_playerYOverride = playerYOverride;
+		_playerAngleOverride = playerAngleOverride;
 	}
 
 	/// <summary>
@@ -369,6 +383,18 @@ void sky() {
 					_simulatorController.Simulator.PlayerY.ToMeters());
 				cameraRotationY = _simulatorController.Simulator.PlayerAngle.ToGodotYRotation();
 			}
+			else if (_playerXOverride.HasValue && _playerYOverride.HasValue && _playerAngleOverride.HasValue)
+			{
+				cameraPosition = new Vector3(
+					_playerXOverride.Value.ToMeters(),
+					Constants.HalfTileHeight,
+					_playerYOverride.Value.ToMeters());
+				cameraRotationY = _playerAngleOverride.Value.ToGodotYRotation();
+				_simulatorController.Simulator.PlacePlayer(
+					_playerXOverride.Value,
+					_playerYOverride.Value,
+					_playerAngleOverride.Value);
+			}
 			else if (MapAnalysis.PlayerStart.HasValue)
 			{
 				MapAnalyzer.MapAnalysis.PlayerSpawn playerStart = MapAnalysis.PlayerStart.Value;
@@ -470,6 +496,9 @@ void sky() {
 
 			// Subscribe to menu navigation events (VictoryTile, quiz triggers, etc.)
 			_simulatorController.NavigateToMenu += OnNavigateToMenu;
+
+			// Subscribe to direct gameplay map transition events (e.g., Spear pickup jump)
+			_simulatorController.GameplayMapTransitionRequested += OnGameplayMapTransitionRequested;
 
 			// Subscribe to player death events
 			_simulatorController.PlayerDied += OnPlayerDied;
@@ -1177,6 +1206,7 @@ void sky() {
 		{
 			_simulatorController.ElevatorActivated -= OnElevatorActivated;
 			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
+			_simulatorController.GameplayMapTransitionRequested -= OnGameplayMapTransitionRequested;
 			_simulatorController.PlayerDied -= OnPlayerDied;
 			_simulatorController.VictoryStarted -= OnVictoryStarted;
 		}
@@ -1394,5 +1424,19 @@ void sky() {
 			PendingAllLevelStats = sim.LevelRatios;
 		}
 		PendingReturnToMenu = true;
+	}
+
+	private void OnGameplayMapTransitionRequested(GameplayMapTransitionRequestedEvent e)
+	{
+		Simulator.Simulator sim = _simulatorController?.Simulator;
+		InventorySnapshot savedInventory = sim?.Inventory?.Save();
+		PendingTransition = new LevelTransitionRequest(
+			e.DestinationLevel,
+			savedInventory,
+			allLevelStats: sim?.LevelRatios,
+			showIntermission: false,
+			playerXOverride: e.PreservePlayerTransform ? sim?.PlayerX : null,
+			playerYOverride: e.PreservePlayerTransform ? sim?.PlayerY : null,
+			playerAngleOverride: e.PreservePlayerTransform ? sim?.PlayerAngle : null);
 	}
 }

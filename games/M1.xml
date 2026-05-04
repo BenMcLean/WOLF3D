@@ -1644,9 +1644,9 @@ return false
 				return true
 			</BonusScript>
 			<BonusScript Name="SpearPickup">
-				PlayAdLibSound("GETSPEARSND")
+				PlaySound("GETSPEARSND")
 				FlashScreen(0xFFF800)
-				NavigateToMenu("Victory")
+				RequestGameplayMapTransition(20, true)
 				return true
 			</BonusScript>
 			<ObjectType Number="19" ObClass="playerobj" Direction="E" Name="Player Start East" />
@@ -2525,6 +2525,10 @@ SetValue("Gold Key", 0)
 SetPicture("GoldKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
 SetPicture("SilverKey", "NOKEYPIC")
+if GetValue("MapOn") == 20 then
+	SetValue("Gold Key", 1)
+	SetPicture("GoldKey", "GOLDKEYPIC")
+end
 ]]>
 			</Function>
 		<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->

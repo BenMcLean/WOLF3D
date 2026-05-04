@@ -350,6 +350,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// WL_AGENT.C:VictoryTile
 	/// </summary>
 	public event Action<NavigateToMenuEvent> NavigateToMenu;
+	public event Action<GameplayMapTransitionRequestedEvent> GameplayMapTransitionRequested;
 	/// <summary>
 	/// Fired when the BJ victory animation starts (player stepped on VictoryTile).
 	/// VR presentation: teleport player to northernmost navigable tile and confine to it.
@@ -1228,6 +1229,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName });
 		}
 	};
+
+	public void RequestGameplayMapTransition(byte destinationLevel, bool preservePlayerTransform = false) =>
+		GameplayMapTransitionRequested?.Invoke(new GameplayMapTransitionRequestedEvent
+		{
+			DestinationLevel = destinationLevel,
+			PreservePlayerTransform = preservePlayerTransform
+		});
 	/// <summary>
 	/// WL_PLAY.C actor update loop (lines 1690-1774)
 	/// Handles both transitional (tictime > 0) and non-transitional (tictime == 0) states
@@ -3114,7 +3122,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private bool TryPickupBonus(int itemIndex, StatObj item, out bool navigationTriggered)
 	{
 		// Use a local variable; out params can't be captured in lambdas (CS1628)
-		bool navLocal = false;
+		bool navLocal = false,
+			transitionLocal = false;
 
 		// Look up script name by ItemNumber
 		if (!bonusNumberToScript.TryGetValue(item.ItemNumber, out string scriptName))
@@ -3163,6 +3172,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				navLocal = true;
 				NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName });
+			},
+			RequestGameplayMapTransitionAction = (destinationLevel, preservePlayerTransform) =>
+			{
+				transitionLocal = true;
+				RequestGameplayMapTransition((byte)destinationLevel, preservePlayerTransform);
 			}
 		};
 
@@ -3170,7 +3184,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			// Execute the item script
 			MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(script, context);
-			navigationTriggered = navLocal;
+			navigationTriggered = navLocal || transitionLocal;
 
 			// Script returns true to consume, false to leave
 			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
