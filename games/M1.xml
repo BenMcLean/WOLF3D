@@ -181,9 +181,9 @@
 		<TextChunks>
 			<TextChunk Name="T_ENDART1" Number="168" />
 		</TextChunks>
-		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
+		<!-- WL_MENU.H SPEAR default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=153, BKGDCOLOR=157, DEACTIVE=155, BORD2COLOR=147 -->
 		<!-- WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND) — played universally on any menu cancel -->
-		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" EscPressedSnd="ESCPRESSEDSND" SelectSound="SHOOTSND" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
+		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="153" BkgdColor="157" Deactive="155" Bord2Color="147" Font="BIG" CursorPic="C_CURSOR1PIC" EscPressedSnd="ESCPRESSEDSND" SelectSound="SHOOTSND" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
@@ -504,7 +504,7 @@ end
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="ViewScores" Font="SMALL" Music="XAWARD_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
+			<Menu Name="ViewScores" Font="SMALL" Music="XAWARD_MUS" BordColor="153" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
 				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
 				<Text X="32" Y="68">NAME</Text>
 				<Text X="160" Y="68">LEVEL</Text>
@@ -654,7 +654,7 @@ GivePoints(15000)
 			<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
 			<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="HighScores" Font="SMALL" Music="XAWARD_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
+			<Menu Name="HighScores" Font="SMALL" Music="XAWARD_MUS" BordColor="153" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
 				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
