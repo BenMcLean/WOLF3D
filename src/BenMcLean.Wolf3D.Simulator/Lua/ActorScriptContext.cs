@@ -47,6 +47,8 @@ public class ActorScriptContext(
 	public int GetFacing() => (int)actor.Facing;
 	/// <summary>Get actor's current speed</summary>
 	public int GetSpeed() => actor.Speed;
+	/// <summary>Get the current state name for state-specific Lua branching.</summary>
+	public string GetCurrentStateName() => actor.CurrentState?.Name;
 	/// <summary>
 	/// Calculate Chebyshev distance to player using tile coordinates.
 	/// Original Wolf3D calculates this on-demand in AI functions, not stored.

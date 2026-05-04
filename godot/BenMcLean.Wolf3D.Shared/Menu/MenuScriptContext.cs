@@ -428,6 +428,11 @@ public class MenuScriptContext(
 	/// <returns>Floor number</returns>
 	public int GetFloor() => CompletionStats?.FloorNumber ?? 0;
 	/// <summary>
+	/// Returns true when the current loaded game is one of the Spear campaign XMLs.
+	/// Exposed to Lua for game-specific menu presentation differences.
+	/// </summary>
+	public bool IsSpearGame() => IsSpearCampaign();
+	/// <summary>
 	/// Get the number of enemies killed.
 	/// </summary>
 	/// <returns>Kill count</returns>
@@ -528,43 +533,62 @@ public class MenuScriptContext(
 	/// Null when not in victory mode.
 	/// </summary>
 	public System.Collections.Generic.IReadOnlyList<LevelCompletionStats> AllLevelStats { get; set; }
+	private static bool IsSpearCampaign() =>
+		SharedAssetManager.CurrentGame?.XML?.Attribute("Path")?.Value is "M1" or "M2" or "M3";
+	private static bool CountsTowardSpearVictoryTotals(LevelCompletionStats stats) =>
+		stats is not null
+		&& !stats.IsSecretLevel
+		&& stats.FloorNumber <= 17
+		&& stats.FloorNumber is not 5 and not 10 and not 16;
+	private System.Collections.Generic.IEnumerable<LevelCompletionStats> GetVictoryStats() =>
+		(AllLevelStats ?? [])
+			.Where(stats => !IsSpearCampaign() || CountsTowardSpearVictoryTotals(stats));
 	/// <summary>
 	/// Get the average kill ratio across all completed levels.
 	/// WL_INTER.C:Victory averaged stats display.
 	/// </summary>
 	/// <returns>Average kill percentage (0-100)</returns>
-	public int GetAverageKillRatio() =>
-		AllLevelStats is null || !AllLevelStats.Any()
+	public int GetAverageKillRatio()
+	{
+		LevelCompletionStats[] stats = [.. GetVictoryStats()];
+		return stats.Length == 0
 			? 0
-			: (int)AllLevelStats.Average(s => s.KillTotal > 0
-				? (s.KillCount * 100L / s.KillTotal)
-				: 0);
+			: stats.Sum(s => s.KillTotal > 0
+				? (int)(s.KillCount * 100L / s.KillTotal)
+				: 0) / stats.Length;
+	}
 	/// <summary>
 	/// Get the average secret ratio across all completed levels.
 	/// </summary>
 	/// <returns>Average secret percentage (0-100)</returns>
-	public int GetAverageSecretRatio() =>
-		AllLevelStats is null || !AllLevelStats.Any()
+	public int GetAverageSecretRatio()
+	{
+		LevelCompletionStats[] stats = [.. GetVictoryStats()];
+		return stats.Length == 0
 			? 0
-			: (int)AllLevelStats.Average(s => s.SecretTotal > 0
-				? s.SecretCount * 100L / s.SecretTotal
-				: 0);
+			: stats.Sum(s => s.SecretTotal > 0
+				? (int)(s.SecretCount * 100L / s.SecretTotal)
+				: 0) / stats.Length;
+	}
 	/// <summary>
 	/// Get the average treasure ratio across all completed levels.
 	/// </summary>
 	/// <returns>Average treasure percentage (0-100)</returns>
-	public int GetAverageTreasureRatio() =>
-		AllLevelStats is null || !AllLevelStats.Any()
+	public int GetAverageTreasureRatio()
+	{
+		LevelCompletionStats[] stats = [.. GetVictoryStats()];
+		return stats.Length == 0
 			? 0
-			: (int)AllLevelStats.Average(s => s.TreasureTotal > 0
-				? s.TreasureCount * 100L / s.TreasureTotal
-				: 0);
+			: stats.Sum(s => s.TreasureTotal > 0
+				? (int)(s.TreasureCount * 100L / s.TreasureTotal)
+				: 0) / stats.Length;
+	}
 	/// <summary>
 	/// Get the total time across all completed levels in seconds.
 	/// WL_INTER.C:Victory total time display.
 	/// </summary>
 	/// <returns>Total time in seconds</returns>
-	public double GetTotalTime() => AllLevelStats?.Sum(s => s.ElapsedTics) / Constants.TicsPerSecond ?? 0;
+	public double GetTotalTime() => GetVictoryStats().Sum(s => s.ElapsedTics) / (double)Constants.TicsPerSecond;
 	#endregion Accumulated Stats
 	#region High Scores
 	/// <summary>
