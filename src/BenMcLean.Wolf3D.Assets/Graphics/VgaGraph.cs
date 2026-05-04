@@ -163,7 +163,7 @@ public sealed class VgaGraph
 			{
 				// Pic font: build from Pics using prefix matching
 				string prefix = fontElement.Attribute("Prefix").Value;
-				Dictionary<char, int> characters = [];
+				Dictionary<char, int> glyphs = [];
 				foreach (XElement picElement in vgaGraph.Element("Pics")?.Elements("Pic") ?? [])
 				{
 					string picName = picElement.Attribute("Name")?.Value;
@@ -174,12 +174,12 @@ public sealed class VgaGraph
 						continue;
 					if (ushort.TryParse(picElement.Attribute("Number")?.Value, out ushort picNumber))
 						if (picNumber < Pics.Length)
-							characters[charAttr[0]] = picNumber;
+							glyphs[charAttr[0]] = picNumber;
 				}
 				// Parse space character metadata
 				ushort spaceWidth = ushort.TryParse(fontElement.Attribute("SpaceWidth")?.Value, out ushort sw) ? sw : (ushort)0;
 				byte spaceColor = byte.TryParse(fontElement.Attribute("SpaceColor")?.Value, out byte sc) ? sc : (byte)0;
-				PicFonts[name] = new PicFont(characters, spaceWidth, spaceColor);
+				PicFonts[name] = new PicFont(glyphs, spaceWidth, spaceColor);
 			}
 			else
 			{

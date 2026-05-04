@@ -184,15 +184,15 @@
 		<!-- WL_MENU.H SPEAR default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=153, BKGDCOLOR=157, DEACTIVE=155, BORD2COLOR=147 -->
 		<!-- WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND) — played universally on any menu cancel -->
 		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="153" BkgdColor="157" Deactive="155" Bord2Color="147" Font="BIG" CursorPic="C_CURSOR1PIC" EscPressedSnd="ESCPRESSEDSND" SelectSound="SHOOTSND" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
-			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
-			<EndString>Chickening out...&#10;already?</EndString>
-			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
-			<EndString>So, you think you can&#10;quit this easily, huh?</EndString>
-			<EndString>Press N to save the world.&#10;Press Y to abandon it in&#10;its hour of need.</EndString>
-			<EndString>Press N if you are brave.&#10;Press Y to cower in shame.</EndString>
-			<EndString>Heroes, press N.&#10;Wimps, press Y.</EndString>
-			<EndString>You are at an intersection.&#10;A sign says, 'Press Y to quit.'&#10;&gt;</EndString>
-			<EndString>For guns and glory, press N.&#10;For work and worry, press Y.</EndString>
+			<EndString>Heroes don't quit, but&#10;go ahead and press Y&#10;if you aren't one.</EndString>
+			<EndString>Press Y to quit,&#10;or press N to enjoy&#10;more violent diversion.</EndString>
+			<EndString>Depressing the Y key means&#10;you must return to the&#10;humdrum workday world.</EndString>
+			<EndString>Hey, quit or play,&#10;Y or N:&#10;it's your choice.</EndString>
+			<EndString>Sure you don't want to&#10;waste a few more&#10;productive hours?</EndString>
+			<EndString>I think you had better&#10;play some more. Please&#10;press N...please?</EndString>
+			<EndString>If you are tough, press N.&#10;If not, press Y daintily.</EndString>
+			<EndString>I'm thinkin' that&#10;you might wanna press N&#10;to play more. You do it.</EndString>
+			<EndString>Sure. Fine. Quit.&#10;See if we care.&#10;Get it over with.&#10;Press Y.</EndString>
 			<!-- Spear does not use WL6-style Read This / EndArt article screens.
 			     The real ending flow is handled later by the dedicated EndSpear sequence. -->
 			<Menu Name="Credits" Music="XTOWER2_MUS">
