@@ -565,8 +565,6 @@ end
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
 				  X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
-				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
-				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC" FrameInterval="0.5" />
 				<!-- WL_INTER.C:Write(14,2,"floor\ncompleted") = pixel (112,16) -->
@@ -633,8 +631,6 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			</Menu>
 			<Menu Name="LevelCompleteSpecial" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
 				  X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
-				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
-				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC" FrameInterval="0.5" />
 				<!-- WL_INTER.C SPEAR special intermission branch (mapon 4, 9, 15, 17, 18, 19) -->
@@ -731,8 +727,6 @@ end
 			<!-- Victory screen: WL_INTER.C:Victory statistics screen after the Spear collapse prelude -->
 			<Menu Name="VictoryStats" Font="L" BordColor="127" Music="URAHERO_MUS"
 				  X="0" Y="0" Indent="0" Spacing="13" KeepWeapons="true">
-				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
-				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
 				<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
 				<Picture Name="L_BJWINSPIC" X="8" Y="4" />
 				<!-- WL_INTER.C:Write(18,2,STR_YOUWIN) = pixel (144,16) -->
@@ -956,7 +950,6 @@ StartTicker("AvgTreasureRatio", tr)
 		<Imf Number="23" Name="XTOWER2_MUS" />
 	</Audio>
 	<VSwap Name="VSWAP.SOD" Sqrt="64" Scale="8" MipMaps="true" VoxelWeapons="true">
-
 		<!-- GameplayWeapons Section (for simulation) -->
 		<!-- All weapon behavior defined here via Lua scripts - no hardcoding in C# -->
 		<!-- Based on WL_AGENT.C attackinfo structure (line 75) -->
@@ -1357,34 +1350,6 @@ return false
 			<Sprite Page="423" Name="SPR_OFC_SHOOT1" />
 			<Sprite Page="424" Name="SPR_OFC_SHOOT2" />
 			<Sprite Page="425" Name="SPR_OFC_SHOOT3" />
-			<!-- Pac-Man ghosts -->
-			<Sprite Page="394" Name="SPR_BLINKY_W1" />
-			<Sprite Page="395" Name="SPR_BLINKY_W2" />
-			<Sprite Page="396" Name="SPR_PINKY_W1" />
-			<Sprite Page="397" Name="SPR_PINKY_W2" />
-			<Sprite Page="398" Name="SPR_CLYDE_W1" />
-			<Sprite Page="399" Name="SPR_CLYDE_W2" />
-			<Sprite Page="400" Name="SPR_INKY_W1" />
-			<Sprite Page="401" Name="SPR_INKY_W2" />
-			<Sprite Page="402" Name="SPR_BOSS_W1" />
-			<Sprite Page="403" Name="SPR_BOSS_W2" />
-			<Sprite Page="404" Name="SPR_BOSS_W3" />
-			<Sprite Page="405" Name="SPR_BOSS_W4" />
-			<Sprite Page="406" Name="SPR_BOSS_SHOOT1" />
-			<Sprite Page="407" Name="SPR_BOSS_SHOOT2" />
-			<Sprite Page="408" Name="SPR_BOSS_SHOOT3" />
-			<Sprite Page="409" Name="SPR_BOSS_DEAD" />
-			<Sprite Page="410" Name="SPR_BOSS_DIE1" />
-			<Sprite Page="411" Name="SPR_BOSS_DIE2" />
-			<Sprite Page="412" Name="SPR_BOSS_DIE3" />
-			<Sprite Page="514" Name="SPR_BJ_W1" />
-			<Sprite Page="515" Name="SPR_BJ_W2" />
-			<Sprite Page="516" Name="SPR_BJ_W3" />
-			<Sprite Page="517" Name="SPR_BJ_W4" />
-			<Sprite Page="518" Name="SPR_BJ_JUMP1" />
-			<Sprite Page="519" Name="SPR_BJ_JUMP2" />
-			<Sprite Page="520" Name="SPR_BJ_JUMP3" />
-			<Sprite Page="521" Name="SPR_BJ_JUMP4" />
 			<Sprite Page="535" Name="SPR_KNIFEREADY" />
 			<Sprite Page="536" Name="SPR_KNIFEATK1" />
 			<Sprite Page="537" Name="SPR_KNIFEATK2" />
@@ -1405,76 +1370,7 @@ return false
 			<Sprite Page="552" Name="SPR_CHAINATK2" />
 			<Sprite Page="553" Name="SPR_CHAINATK3" />
 			<Sprite Page="554" Name="SPR_CHAINATK4" />
-			<!-- Schabbs (episode 2 boss) - WL_DEF.H spritenum enum positions 307-316 -->
-			<Sprite Page="413" Name="SPR_SCHABB_W1" />
-			<Sprite Page="414" Name="SPR_SCHABB_W2" />
-			<Sprite Page="415" Name="SPR_SCHABB_W3" />
-			<Sprite Page="416" Name="SPR_SCHABB_W4" />
-			<Sprite Page="417" Name="SPR_SCHABB_SHOOT1" />
-			<Sprite Page="418" Name="SPR_SCHABB_SHOOT2" />
-			<Sprite Page="419" Name="SPR_SCHABB_DIE1" />
-			<Sprite Page="420" Name="SPR_SCHABB_DIE2" />
-			<Sprite Page="421" Name="SPR_SCHABB_DIE3" />
-			<Sprite Page="422" Name="SPR_SCHABB_DEAD" />
-			<!-- Hypodermic needle projectile (Schabbs) - positions 317-320 -->
-			<Sprite Page="423" Name="SPR_HYPO1" />
-			<Sprite Page="424" Name="SPR_HYPO2" />
-			<Sprite Page="425" Name="SPR_HYPO3" />
-			<Sprite Page="426" Name="SPR_HYPO4" />
-			<!-- Fake Hitler (episode 3 enemy) - positions 321-333 -->
-			<Sprite Page="427" Name="SPR_FAKE_W1" />
-			<Sprite Page="428" Name="SPR_FAKE_W2" />
-			<Sprite Page="429" Name="SPR_FAKE_W3" />
-			<Sprite Page="430" Name="SPR_FAKE_W4" />
-			<Sprite Page="431" Name="SPR_FAKE_SHOOT" />
-			<Sprite Page="432" Name="SPR_FIRE1" />
-			<Sprite Page="433" Name="SPR_FIRE2" />
-			<Sprite Page="434" Name="SPR_FAKE_DIE1" />
-			<Sprite Page="435" Name="SPR_FAKE_DIE2" />
-			<Sprite Page="436" Name="SPR_FAKE_DIE3" />
-			<Sprite Page="437" Name="SPR_FAKE_DIE4" />
-			<Sprite Page="438" Name="SPR_FAKE_DIE5" />
-			<Sprite Page="439" Name="SPR_FAKE_DEAD" />
-			<!-- MechaHitler (episode 3 boss, phase 1) - positions 334-344 -->
-			<Sprite Page="440" Name="SPR_MECHA_W1" />
-			<Sprite Page="441" Name="SPR_MECHA_W2" />
-			<Sprite Page="442" Name="SPR_MECHA_W3" />
-			<Sprite Page="443" Name="SPR_MECHA_W4" />
-			<Sprite Page="444" Name="SPR_MECHA_SHOOT1" />
-			<Sprite Page="445" Name="SPR_MECHA_SHOOT2" />
-			<Sprite Page="446" Name="SPR_MECHA_SHOOT3" />
-			<Sprite Page="447" Name="SPR_MECHA_DEAD" />
-			<Sprite Page="448" Name="SPR_MECHA_DIE1" />
-			<Sprite Page="449" Name="SPR_MECHA_DIE2" />
-			<Sprite Page="450" Name="SPR_MECHA_DIE3" />
-			<!-- Real Hitler (episode 3 boss, phase 2) - positions 345-359 -->
-			<Sprite Page="451" Name="SPR_HITLER_W1" />
-			<Sprite Page="452" Name="SPR_HITLER_W2" />
-			<Sprite Page="453" Name="SPR_HITLER_W3" />
-			<Sprite Page="454" Name="SPR_HITLER_W4" />
-			<Sprite Page="455" Name="SPR_HITLER_SHOOT1" />
-			<Sprite Page="456" Name="SPR_HITLER_SHOOT2" />
-			<Sprite Page="457" Name="SPR_HITLER_SHOOT3" />
-			<Sprite Page="458" Name="SPR_HITLER_DEAD" />
-			<Sprite Page="459" Name="SPR_HITLER_DIE1" />
-			<Sprite Page="460" Name="SPR_HITLER_DIE2" />
-			<Sprite Page="461" Name="SPR_HITLER_DIE3" />
-			<Sprite Page="462" Name="SPR_HITLER_DIE4" />
-			<Sprite Page="463" Name="SPR_HITLER_DIE5" />
-			<Sprite Page="464" Name="SPR_HITLER_DIE6" />
-			<Sprite Page="465" Name="SPR_HITLER_DIE7" />
-			<!-- Giftmacher (episode 5 boss) - positions 360-369 -->
-			<Sprite Page="466" Name="SPR_GIFT_W1" />
-			<Sprite Page="467" Name="SPR_GIFT_W2" />
-			<Sprite Page="468" Name="SPR_GIFT_W3" />
-			<Sprite Page="469" Name="SPR_GIFT_W4" />
-			<Sprite Page="470" Name="SPR_GIFT_SHOOT1" />
-			<Sprite Page="471" Name="SPR_GIFT_SHOOT2" />
-			<Sprite Page="472" Name="SPR_GIFT_DIE1" />
-			<Sprite Page="473" Name="SPR_GIFT_DIE2" />
-			<Sprite Page="474" Name="SPR_GIFT_DIE3" />
-			<Sprite Page="475" Name="SPR_GIFT_DEAD" />
-			<!-- Rocket projectile (Wilhelm) - positions 370-377 -->
+			<!-- Rocket projectile (Wilhelm) — WL_DEF.H SPR_ROCKET_1..8, SPEAR enum positions 292-299 -->
 			<Sprite Page="426" Name="SPR_ROCKET_1" />
 			<Sprite Page="427" Name="SPR_ROCKET_2" />
 			<Sprite Page="428" Name="SPR_ROCKET_3" />
@@ -1483,33 +1379,15 @@ return false
 			<Sprite Page="431" Name="SPR_ROCKET_6" />
 			<Sprite Page="432" Name="SPR_ROCKET_7" />
 			<Sprite Page="433" Name="SPR_ROCKET_8" />
-			<!-- Gretel (episode 4 boss) - positions 385-395 -->
-			<Sprite Page="491" Name="SPR_GRETEL_W1" />
-			<Sprite Page="492" Name="SPR_GRETEL_W2" />
-			<Sprite Page="493" Name="SPR_GRETEL_W3" />
-			<Sprite Page="494" Name="SPR_GRETEL_W4" />
-			<Sprite Page="495" Name="SPR_GRETEL_SHOOT1" />
-			<Sprite Page="496" Name="SPR_GRETEL_SHOOT2" />
-			<Sprite Page="497" Name="SPR_GRETEL_SHOOT3" />
-			<Sprite Page="498" Name="SPR_GRETEL_DEAD" />
-			<Sprite Page="499" Name="SPR_GRETEL_DIE1" />
-			<Sprite Page="500" Name="SPR_GRETEL_DIE2" />
-			<Sprite Page="501" Name="SPR_GRETEL_DIE3" />
-			<!-- FatFace (episode 6 boss) - positions 396-407 -->
-			<Sprite Page="502" Name="SPR_FAT_W1" />
-			<Sprite Page="503" Name="SPR_FAT_W2" />
-			<Sprite Page="504" Name="SPR_FAT_W3" />
-			<Sprite Page="505" Name="SPR_FAT_W4" />
-			<Sprite Page="506" Name="SPR_FAT_SHOOT1" />
-			<Sprite Page="507" Name="SPR_FAT_SHOOT2" />
-			<Sprite Page="508" Name="SPR_FAT_SHOOT3" />
-			<Sprite Page="509" Name="SPR_FAT_SHOOT4" />
-			<Sprite Page="510" Name="SPR_FAT_DIE1" />
-			<Sprite Page="511" Name="SPR_FAT_DIE2" />
-			<Sprite Page="512" Name="SPR_FAT_DIE3" />
-			<Sprite Page="513" Name="SPR_FAT_DEAD" />
-			<!-- Spear-only sprite aliases. These currently map onto the M1 VSWAP pages
-			     that correspond to the campaign-specific boss/effect region in this content set. -->
+			<!-- Rocket smoke and explosion — WL_DEF.H SPR_SMOKE_1..4, SPR_BOOM_1..3, SPEAR enum positions 300-306 -->
+			<Sprite Page="434" Name="SPR_SMOKE_1" />
+			<Sprite Page="435" Name="SPR_SMOKE_2" />
+			<Sprite Page="436" Name="SPR_SMOKE_3" />
+			<Sprite Page="437" Name="SPR_SMOKE_4" />
+			<Sprite Page="438" Name="SPR_BOOM_1" />
+			<Sprite Page="439" Name="SPR_BOOM_2" />
+			<Sprite Page="440" Name="SPR_BOOM_3" />
+			<!-- Spectre (ghost enemy) — WL_DEF.H SPR_SPECTRE_W1..4, SPR_SPECTRE_F1..4, SPEAR-only positions 377-384 -->
 			<Sprite Page="511" Name="SPR_SPECTRE_W1" />
 			<Sprite Page="512" Name="SPR_SPECTRE_W2" />
 			<Sprite Page="513" Name="SPR_SPECTRE_W3" />
@@ -1585,6 +1463,7 @@ return false
 			<Sprite Page="532" Name="SPR_ANGEL_DIE6" />
 			<Sprite Page="533" Name="SPR_ANGEL_DIE7" />
 			<Sprite Page="534" Name="SPR_ANGEL_DEAD" />
+			<!-- Angel of Death hrocket — WL_DEF.H SPR_HROCKET_1..8, SPEAR-only positions 307-314 -->
 			<Sprite Page="441" Name="SPR_HROCKET_1" />
 			<Sprite Page="442" Name="SPR_HROCKET_2" />
 			<Sprite Page="443" Name="SPR_HROCKET_3" />
@@ -1593,6 +1472,15 @@ return false
 			<Sprite Page="446" Name="SPR_HROCKET_6" />
 			<Sprite Page="447" Name="SPR_HROCKET_7" />
 			<Sprite Page="448" Name="SPR_HROCKET_8" />
+			<!-- HRocket smoke and explosion — WL_DEF.H SPR_HSMOKE_1..4, SPR_HBOOM_1..3, SPEAR-only positions 315-321 -->
+			<Sprite Page="449" Name="SPR_HSMOKE_1" />
+			<Sprite Page="450" Name="SPR_HSMOKE_2" />
+			<Sprite Page="451" Name="SPR_HSMOKE_3" />
+			<Sprite Page="452" Name="SPR_HSMOKE_4" />
+			<Sprite Page="453" Name="SPR_HBOOM_1" />
+			<Sprite Page="454" Name="SPR_HBOOM_2" />
+			<Sprite Page="455" Name="SPR_HBOOM_3" />
+			<!-- Angel of Death death sparks — WL_DEF.H SPR_SPARK1..4, SPEAR-only positions 322-325 -->
 			<Sprite Page="456" Name="SPR_SPARK1" />
 			<Sprite Page="457" Name="SPR_SPARK2" />
 			<Sprite Page="458" Name="SPR_SPARK3" />
@@ -1642,12 +1530,6 @@ return false
 			<DigiSound Number="39" Name="GETSPEARSND" />
 		</DigiSounds>
 		<StatInfo UseWallSound="DONOTHINGSND">
-			<BonusScript Name="VictoryTile">
-				-- WL_ACT2.C:SpawnBJVictory: spawn BJ one tile south of player, facing north (dir=N=2)
-				-- A_InitBJRun runs at spawn: computes corridor length, sets ReactionTimer, fires VictoryStarted
-				SpawnActor("BJ", GetPlayerTileX(), GetPlayerTileY() + 1, 2)
-				return true
-			</BonusScript>
 			<BonusScript Name="SpearPickup">
 				PlaySound("GETSPEARSND")
 				FlashScreen(0xFFF800)
@@ -1723,7 +1605,6 @@ return false
 			<Turn Number="96" Direction="S" Name="Turn S" />
 			<Turn Number="97" Direction="SE" Name="Turn SE" />
 			<Pushwall Number="98" DigiSound="PUSHWALLSND" BlockedSound="NOWAYSND" Name="Secret Door" />
-			<ObjectType Number="99" ObClass="bonus" Script="VictoryTile" Name="End Game Trigger" />
 			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdstand" />
 			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdstand" />
 			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdstand" />
@@ -1845,7 +1726,7 @@ return false
 			<ObjectType Number="257" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="3" State="s_mutpath1" />
 			<ObjectType Number="258" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="3" State="s_mutpath1" />
 			<ObjectType Number="259" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="3" State="s_mutpath1" />
-			<!-- Spear boss/enemy placements; actor families land in section 10. -->
+			<!-- Spear boss/enemy placements -->
 			<ObjectType Number="106" ObClass="actor" Actor="Spectre" Direction="S" />
 			<ObjectType Number="107" ObClass="actor" Actor="Angel" Direction="S" />
 			<ObjectType Number="125" ObClass="actor" Actor="Trans" Direction="S" />
@@ -2307,20 +2188,6 @@ if GetValue("MapOn") == 20 then
 end
 ]]>
 			</Function>
-		<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->
-		<Actor Name="BJ" HP="1,1,1,1" Stand="s_bjstart" />
-		<!-- s_bjstart: one-shot spawn state; A_InitBJRun runs once here (not on loop-back to s_bjrun1) -->
-		<State Name="s_bjstart"  Shape="SPR_BJ_W1"    Tics="1"   Think="T_BJRun"  Speed="2048" Action="A_InitBJRun" Next="s_bjrun1" />
-		<State Name="s_bjrun1"  Shape="SPR_BJ_W1"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun1s" />
-		<State Name="s_bjrun1s" Shape="SPR_BJ_W1"    Tics="3"                    Speed="2048" Next="s_bjrun2" />
-		<State Name="s_bjrun2"  Shape="SPR_BJ_W2"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun3" />
-		<State Name="s_bjrun3"  Shape="SPR_BJ_W3"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun3s" />
-		<State Name="s_bjrun3s" Shape="SPR_BJ_W3"    Tics="3"                    Speed="2048" Next="s_bjrun4" />
-		<State Name="s_bjrun4"  Shape="SPR_BJ_W4"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun1" />
-		<State Name="s_bjjump1" Shape="SPR_BJ_JUMP1" Tics="14"  Think="T_BJJump" Speed="680"  Next="s_bjjump2" />
-		<State Name="s_bjjump2" Shape="SPR_BJ_JUMP2" Tics="14"  Think="T_BJJump" Speed="680"  Action="A_BJYell" Next="s_bjjump3" />
-		<State Name="s_bjjump3" Shape="SPR_BJ_JUMP3" Tics="14"  Think="T_BJJump" Speed="680"  Next="s_bjjump4" />
-		<State Name="s_bjjump4" Shape="SPR_BJ_JUMP4" Tics="300"                  Speed="0"    Action="A_BJDone" Next="s_bjjump4" />
 		</Actors>
 	</VSwap>
 	<Palettes>
