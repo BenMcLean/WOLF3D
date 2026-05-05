@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
@@ -126,14 +127,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// Fog-of-war state (WL_MAP.C:AutoMap visibility concept)
 	// _everSeen: persistent; once true, stays true (suitable for save/load)
 	// _currentlyVisible: recomputed each time RecomputeVisibilityIfNeeded() runs
-	private bool[] _everSeen;
-	private bool[] _currentlyVisible;
+	private BitArray _everSeen;
+	private BitArray _currentlyVisible;
 	private ushort _lastFogTileX = ushort.MaxValue;
 	private ushort _lastFogTileY = ushort.MaxValue;
 	private bool _fogDirty;        // set when doors/pushwalls change; cleared after recompute
 	private int _fogVersion;       // incremented each recompute; AutomapController polls this
-	public IReadOnlyList<bool> EverSeen => Array.AsReadOnly(_everSeen ?? []);
-	public IReadOnlyList<bool> CurrentlyVisible => Array.AsReadOnly(_currentlyVisible ?? []);
+	public BitArray EverSeen => _everSeen;
+	public BitArray CurrentlyVisible => _currentlyVisible;
 	public int FogVersion => _fogVersion;
 									 // WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
 									 // Current simulation time in tics
@@ -1436,8 +1437,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		actorAtTile = new short[tileCount];
 		doorAtTile = new short[tileCount];
 		pushWallAtTile = new short[tileCount];
-		_everSeen = new bool[tileCount];
-		_currentlyVisible = new bool[tileCount];
+		_everSeen = new BitArray(tileCount);
+		_currentlyVisible = new BitArray(tileCount);
 		_lastFogTileX = ushort.MaxValue;
 		_lastFogTileY = ushort.MaxValue;
 		_fogDirty = true;
@@ -3640,8 +3641,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public void RevealEntireMap()
 	{
 		if (_everSeen is null) return;
-		for (int i = 0; i < _everSeen.Length; i++)
-			_everSeen[i] = true;
+		_everSeen.SetAll(true);
 		_fogVersion++;
 	}
 
@@ -3654,7 +3654,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 	private void RecomputeVisibility()
 	{
-		Array.Clear(_currentlyVisible, 0, _currentlyVisible.Length);
+		_currentlyVisible.SetAll(false);
 
 		ushort startX = PlayerTileX, startY = PlayerTileY;
 		if (startX >= mapWidth || startY >= mapHeight) return;
@@ -4268,7 +4268,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			CompletedLevelStats = [.. LevelRatios],
 			RngStateA = rng.StateA,
 			RngStateB = rng.StateB,
-			GameClock = gameClock.Save()
+			GameClock = gameClock.Save(),
+			EverSeen = PackEverSeen()
 		};
 	}
 
@@ -4434,6 +4435,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Clear pending actions (transient per-frame queue)
 		pendingActions.Clear();
 
+		// Restore fog-of-war seen tiles; force recompute on next UpdatePlayer call
+		if (snapshot.EverSeen is not null && _everSeen is not null)
+		{
+			int currentLength = _everSeen.Length;
+			_everSeen = new BitArray(snapshot.EverSeen) { Length = currentLength };
+		}
+		_lastFogTileX = ushort.MaxValue;
+		_lastFogTileY = ushort.MaxValue;
+		_fogDirty = true;
+
 		// Rebuild spatial indices from entity positions
 		RebuildSpatialIndices();
 
@@ -4516,4 +4527,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 	}
 	#endregion
+
+	private byte[] PackEverSeen()
+	{
+		if (_everSeen is null) return null;
+		byte[] bytes = new byte[(_everSeen.Length + 7) / 8];
+		_everSeen.CopyTo(bytes, 0);
+		return bytes;
+	}
 }

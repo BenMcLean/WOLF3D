@@ -169,4 +169,11 @@ public record SimulatorSnapshot
 	/// GameClock state (epoch + elapsed tics).
 	/// </summary>
 	public GameClockSnapshot GameClock { get; init; }
+
+	/// <summary>
+	/// Fog-of-war: which tiles the player has ever seen, packed as bits (LSB first).
+	/// Length is ceil(tileCount / 8) bytes. Null for pre-feature saves (fog resets on load).
+	/// WL_MAP.C:AutoMap visibility concept — _everSeen in Simulator.
+	/// </summary>
+	public byte[] EverSeen { get; init; }
 }

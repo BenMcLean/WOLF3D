@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Entities;
@@ -44,8 +45,8 @@ public partial class AutomapRenderer : Control
 	private MapAnalyzer.MapAnalysis _mapAnalysis; // kept for AutomapTileHasDimVariant
 
 	// Fog-of-war snapshots — updated by UpdateFog(), consumed when composite is rebuilt
-	private IReadOnlyList<bool> _fogEverSeen = [];
-	private IReadOnlyList<bool> _fogCurrentlyVisible = [];
+	private BitArray _fogEverSeen = new(0);
+	private BitArray _fogCurrentlyVisible = new(0);
 
 	// Pushwall tiles — painted into composite on moves; Value is VgaGraph tile index when
 	// UsesVgaGraphWallTiles, otherwise VSwap page number (same as AutomapData convention).
@@ -101,8 +102,8 @@ public partial class AutomapRenderer : Control
 
 		_mapPixelWidth = mapAnalysis.Width * TilePixels;
 		_mapPixelHeight = mapAnalysis.Depth * TilePixels;
-		_fogEverSeen = [];
-		_fogCurrentlyVisible = [];
+		_fogEverSeen = new BitArray(0);
+		_fogCurrentlyVisible = new BitArray(0);
 
 		CustomMinimumSize = new Vector2(ViewWidth, ViewHeight);
 
@@ -223,8 +224,8 @@ public partial class AutomapRenderer : Control
 			Rect2I tileRect = new(x * TilePixels, y * TilePixels, TilePixels, TilePixels);
 			Vector2I tileDst = new(x * TilePixels, y * TilePixels);
 
-			bool visible = i < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[i];
-			bool seen = i < _fogEverSeen.Count && _fogEverSeen[i];
+			bool visible = i < _fogCurrentlyVisible.Length && _fogCurrentlyVisible[i];
+			bool seen = i < _fogEverSeen.Length && _fogEverSeen[i];
 
 			if (visible)
 				_compositeImage.BlitRect(_litImage, tileRect, tileDst);
@@ -244,7 +245,7 @@ public partial class AutomapRenderer : Control
 				if (stat is null || stat.IsFree || stat.ShapeNum < 0)
 					continue;
 				int tileIdx = stat.TileY * _mapWidth + stat.TileX;
-				bool seen = tileIdx < _fogEverSeen.Count && _fogEverSeen[tileIdx];
+				bool seen = tileIdx < _fogEverSeen.Length && _fogEverSeen[tileIdx];
 				if (!seen)
 					continue;
 				// Prefer VgaGraph 8x8 tile (WL_MAP.C:VWB_DrawTile8);
@@ -269,8 +270,8 @@ public partial class AutomapRenderer : Control
 			foreach (((ushort pwX, ushort pwY), ushort tileOrPage) in _pushWallTextures)
 			{
 				int idx = pwY * _mapWidth + pwX;
-				bool visible = idx < _fogCurrentlyVisible.Count && _fogCurrentlyVisible[idx];
-				bool seen = idx < _fogEverSeen.Count && _fogEverSeen[idx];
+				bool visible = idx < _fogCurrentlyVisible.Length && _fogCurrentlyVisible[idx];
+				bool seen = idx < _fogEverSeen.Length && _fogEverSeen[idx];
 				if (!seen) continue;
 				Rect2I rect = new(pwX * TilePixels, pwY * TilePixels, TilePixels, TilePixels);
 				if (_mapAnalysis.UsesVgaGraphWallTiles && vgaGraphTiles is not null)
@@ -360,7 +361,7 @@ public partial class AutomapRenderer : Control
 	/// Snapshots the current fog state from the simulator and marks the composite dirty.
 	/// The composite is rebuilt lazily at the start of the next _Draw() call.
 	/// </summary>
-	public void UpdateFog(IReadOnlyList<bool> everSeen, IReadOnlyList<bool> currentlyVisible)
+	public void UpdateFog(BitArray everSeen, BitArray currentlyVisible)
 	{
 		_fogEverSeen = everSeen;
 		_fogCurrentlyVisible = currentlyVisible;
