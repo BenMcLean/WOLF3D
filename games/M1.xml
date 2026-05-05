@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <!-- Base Spear of Destiny game definition. Future Mission 2 / Mission 3 variants should derive from this file. -->
 <Game Name="Spear of Destiny" Path="M1" Extension="SOD" Exe="Spear.exe" HighScores="CONFIG.SOD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
-	<OnStartup>LoadMenu("Credits")</OnStartup>
+	<OnStartup>LoadMenu("PC13Rating")</OnStartup>
 	<VgaGraph VgaDict="VGADICT.SOD" VgaGraph="VGAGRAPH.SOD" VgaHead="VGAHEAD.SOD" LoadingPic="GETPSYCHEDPIC" Sizes="0">
 		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
@@ -193,8 +193,12 @@
 			<EndString>If you are tough, press N.&#10;If not, press Y daintily.</EndString>
 			<EndString>I'm thinkin' that&#10;you might wanna press N&#10;to play more. You do it.</EndString>
 			<EndString>Sure. Fine. Quit.&#10;See if we care.&#10;Get it over with.&#10;Press Y.</EndString>
-			<!-- Spear does not use WL6-style Read This / EndArt article screens.
-			     The real ending flow is handled later by the dedicated EndSpear sequence. -->
+			<!-- WL_INTER.C:PG13 — one-time startup rating screen shown before the title loop.
+				VWB_Bar(0,0,320,200,0x82) + VWB_DrawPic(216,110,PG13PIC) + IN_UserInput(TickBase*7) -->
+			<Menu Name="PC13Rating" BordColor="130" Music="XTOWER2_MUS">
+				<Picture Name="PG13PIC" X="216" Y="110" />
+				<Pause Duration="00:00:07">NavigateToMenu("Credits")</Pause>
+			</Menu>
 			<Menu Name="Credits" Music="XTOWER2_MUS">
 				<Picture Name="CREDITSPIC" X="0" Y="0" />
 				<Pause Duration="00:00:10">NavigateToMenu("Title")</Pause>
