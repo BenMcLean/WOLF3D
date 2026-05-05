@@ -1,7 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE" HighScores="CONFIG.WL1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Game Name="Wolfenstein 3-D Shareware" Version="1.4" Path="WL1" Extension="WL1" Exe="WOLF3D.EXE"
+	HighScores="CONFIG.WL1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
 	<OnStartup>LoadMenu("Credits")</OnStartup>
-	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1" LoadingPic="GETPSYCHEDPIC" Sizes="0">
+	<VgaGraph VgaDict="VGADICT.WL1" VgaGraph="VGAGRAPH.WL1" VgaHead="VGAHEAD.WL1"
+		LoadingPic="GETPSYCHEDPIC" Sizes="0">
 		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
 			<Font Number="1" Name="BIG" />
@@ -154,7 +157,8 @@
 			<Pic Number="142" Name="PAUSEDPIC" />
 			<Pic Number="143" Name="GETPSYCHEDPIC" />
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame" OnMapStart="OnMapStart" FizzleFadeColor="4">
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath"
+			OnNewGame="OnNewGame" OnMapStart="OnMapStart" FizzleFadeColor="4">
 			<Text Id="Floor" X="16" Y="16"> 1</Text>
 			<Text Id="Score" X="48" Y="16">     0</Text>
 			<Text Id="Lives" X="112" Y="16"> 3</Text>
@@ -171,9 +175,15 @@
 			<TextChunk Name="T_HELPART" Number="150" />
 			<TextChunk Name="T_ENDART1" Number="155" />
 		</TextChunks>
-		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45, DEACTIVE=43, BORD2COLOR=35 -->
-		<!-- WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND) — played universally on any menu cancel -->
-		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45" Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC" EscPressedSnd="ESCPRESSEDSND" SelectSound="SHOOTSND" CursorMoveSound="MOVEGUN2SND" Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19" ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
+		<!-- WL_MENU.H default colors: TEXTCOLOR=23, HIGHLIGHT=19, BORDCOLOR=41, BKGDCOLOR=45,
+		DEACTIVE=43, BORD2COLOR=35 -->
+		<!-- WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND) — played universally on any
+		menu cancel -->
+		<Menus Pause="Main" TextColor="23" Highlight="19" BordColor="41" BkgdColor="45"
+			Deactive="43" Bord2Color="35" Font="BIG" CursorPic="C_CURSOR1PIC"
+			EscPressedSnd="ESCPRESSEDSND" SelectSound="SHOOTSND" CursorMoveSound="MOVEGUN2SND"
+			Music="WONDERIN_MUS" ModalColor="23" ModalTextColor="0" ModalHighlight="19"
+			ModalBord2Color="0" WeaponSprite="SPR_PISTOLREADY">
 			<EndString>Dost thou wish to&#10;leave with such hasty&#10;abandon?</EndString>
 			<EndString>Chickening out...&#10;already?</EndString>
 			<EndString>Press N for more carnage.&#10;Press Y to be a weenie.</EndString>
@@ -190,7 +200,8 @@
 				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Article>
-			<!-- WL_TEXT.C:EndText() — shown after Victory sequence (WL_INTER.C), same window border as ReadThis -->
+			<!-- WL_TEXT.C:EndText() — shown after Victory sequence (WL_INTER.C), same window border
+			as ReadThis -->
 			<Article Name="EndArt1" ChunkName="T_ENDART1" Music="URAHERO_MUS">
 				<Picture Name="H_TOPWINDOWPIC" X="0" Y="0" />
 				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
@@ -212,7 +223,7 @@
 			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,184,C_MOUSELBACKPIC)
 			     WL_MENU.C:DrawWindow(MENU_X-8,MENU_Y-3,MENU_W,MENU_H,BKGDCOLOR) = DrawWindow(68,52,178,136,45) -->
 			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13">
-				<Picture Name="C_OPTIONSPIC" X="Center" Y="0" Stripes="true" >
+				<Picture Name="C_OPTIONSPIC" X="Center" Y="0" Stripes="true">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
@@ -262,7 +273,8 @@
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
 				<!-- WL_MENU.C:1597: DrawWindow(6,19,308,162) -->
 				<Box X="6" Y="19" W="308" H="162" />
-				<!-- WL_MENU.C:1599-1604: PrintY=2 (2 pixels from screen top), WindowX=0, US_CPrint centers horizontally -->
+				<!-- WL_MENU.C:1599-1604: PrintY=2 (2 pixels from screen top), WindowX=0, US_CPrint
+				centers horizontally -->
 				<Text X="Center" Y="2" Color="71">Which episode to play?</Text>
 
 				<!-- WL_MENU.C:1612: Episode pictures drawn at (NE_X+32,NE_Y+i*26) = (42, 23+i*26) -->
@@ -277,7 +289,8 @@
 				<!-- WL_MENU.C:225-327: NewEmenu[] array with text AND pictures -->
 				<!-- Pictures at X=42 (NE_X+32), menu text at X=98 (NE_X+indent = 10+88) -->
 				<!-- Text has two lines per episode, changes color when selected -->
-				<!-- Spacing=26 positions episodes at Y: 23, 49, 75, 101, 127, 153 (matching pictures) -->
+				<!-- Spacing=26 positions episodes at Y: 23, 49, 75, 101, 127, 153 (matching
+				pictures) -->
 				<!-- WL_MENU.C:295-296: Episode 1 active=1 for shareware -->
 				<MenuItem Text="Episode 1&#10;Escape from Wolfenstein">
 					SetEpisode(0)
@@ -304,22 +317,30 @@
 			</Menu>
 
 			<!-- New Game / Difficulty Menu (WL_MENU.H: NM_X=50, NM_Y=100) -->
-			<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H,BKGDCOLOR) where NM_W=225, NM_H=13*4+15=67 -->
+			<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H,BKGDCOLOR) where NM_W=225,
+			NM_H=13*4+15=67 -->
 			<!-- WL_MENU.C:1518: which=HandleMenu(&NewItems,&NewMenu[0],DrawNewGameDiff) -->
-			<!-- WL_MENU.C:1669: void DrawNewGameDiff(int w) { VWB_DrawPic(NM_X+185,NM_Y+7,w+C_BABYMODEPIC); } -->
-			<!-- WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 defaults to "Bring 'em on!" (Normal) -->
-			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CurPos="2" CursorPic="" SelectSound="SHOOTDOORSND">
+			<!-- WL_MENU.C:1669: void DrawNewGameDiff(int w) {
+			VWB_DrawPic(NM_X+185,NM_Y+7,w+C_BABYMODEPIC); } -->
+			<!-- WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 defaults to "Bring 'em on!"
+			(Normal) -->
+			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CurPos="2" CursorPic=""
+				SelectSound="SHOOTDOORSND">
 				<!-- WL_MENU.C:1654: DrawWindow(NM_X-5,NM_Y-10,NM_W,NM_H) = (45,90,225,67) -->
 				<Box X="45" Y="90" W="225" H="67" />
-				<!-- WL_MENU.C:1639-1649: US_Print("How tough are you?") at (NM_X+20, NM_Y-32) = (70,68) with READHCOLOR = 0x47 = 71 -->
+				<!-- WL_MENU.C:1639-1649: US_Print("How tough are you?") at (NM_X+20, NM_Y-32) =
+				(70,68) with READHCOLOR = 0x47 = 71 -->
 				<Text X="70" Y="68" Color="71">How tough are you?</Text>
-				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged (WL_MENU.C:1675) -->
-				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff called AFTER DrawWindow -->
+				<!-- Difficulty face picture - updated dynamically by OnSelectionChanged
+				(WL_MENU.C:1675) -->
+				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff
+				called AFTER DrawWindow -->
 				<Picture Id="DifficultyFace" Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
 					NavigateToMenu("Main")
 				</Picture>
-				<!-- OnSelectionChanged script: Updates difficulty picture based on selection (WL_MENU.C:1669) -->
+				<!-- OnSelectionChanged script: Updates difficulty picture based on selection
+				(WL_MENU.C:1669) -->
 				<OnSelectionChanged>
 					<![CDATA[
 -- Update the difficulty face picture based on current selection
@@ -356,7 +377,8 @@ end
 			<!-- Sound Menu (WL_MENU.H: SM_X=48, SM_Y1=20) -->
 			<!-- WL_MENU.C:1820-1822: Three DrawWindow boxes for Sound FX, Digitized, Music sections -->
 			<!-- WL_MENU.C:1852-1854: Title pictures at (100, SM_Yn-20) -->
-			<!-- WL_MENU.C:1857-1898: Toggle switches drawn at (SM_X+24, SM_Y1+i*13+2) based on current settings -->
+			<!-- WL_MENU.C:1857-1898: Toggle switches drawn at (SM_X+24, SM_Y1+i*13+2) based on
+			current settings -->
 			<Menu Name="Sound" X="48" Y="20" Indent="52" Spacing="13">
 				<!-- Three boxes for the three sections (WL_MENU.C:1820-1822) -->
 				<!-- Box 1: Sound Effects at (SM_X-8, SM_Y1-3, SM_W, SM_H1) = (40, 17, 250, 45) -->
@@ -413,7 +435,8 @@ end
 					RefreshMenu()
 				</Picture>
 
-				<!-- OnSelectionChanged: Update all toggle graphics based on current settings (WL_MENU.C:1868-1892) -->
+				<!-- OnSelectionChanged: Update all toggle graphics based on current settings
+				(WL_MENU.C:1868-1892) -->
 				<OnSelectionChanged>
 					<![CDATA[
 -- Update all toggle switches to reflect current sound settings
@@ -484,7 +507,8 @@ end
 				</MenuItem>
 
 				<!-- Music section (items 5-6) -->
-				<!-- ExtraSpacing=39 creates gap of 3 items (original items 3-4 spacers + Disney item) -->
+				<!-- ExtraSpacing=39 creates gap of 3 items (original items 3-4 spacers + Disney
+				item) -->
 				<MenuItem Text="None" ExtraSpacing="39">
 					SetMusicEnabled(false)
 					RefreshMenu()
@@ -591,32 +615,34 @@ end
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Menu>
 
-			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
+			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score
+			add -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
+			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15"
+				X="0" Y="0" Indent="0" Spacing="0">
 				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
-				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
+				<Picture Name="C_NAMEPIC" X="32" Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
-				<Text Id="Name0"  X="32"  Y="76"> </Text>
+				<Text Id="Name0" X="32" Y="76"> </Text>
 				<Text Id="Level0" X="160" Y="76"> </Text>
 				<Text Id="Score0" X="224" Y="76"> </Text>
-				<Text Id="Name1"  X="32"  Y="92"> </Text>
+				<Text Id="Name1" X="32" Y="92"> </Text>
 				<Text Id="Level1" X="160" Y="92"> </Text>
 				<Text Id="Score1" X="224" Y="92"> </Text>
-				<Text Id="Name2"  X="32"  Y="108"> </Text>
+				<Text Id="Name2" X="32" Y="108"> </Text>
 				<Text Id="Level2" X="160" Y="108"> </Text>
 				<Text Id="Score2" X="224" Y="108"> </Text>
-				<Text Id="Name3"  X="32"  Y="124"> </Text>
+				<Text Id="Name3" X="32" Y="124"> </Text>
 				<Text Id="Level3" X="160" Y="124"> </Text>
 				<Text Id="Score3" X="224" Y="124"> </Text>
-				<Text Id="Name4"  X="32"  Y="140"> </Text>
+				<Text Id="Name4" X="32" Y="140"> </Text>
 				<Text Id="Level4" X="160" Y="140"> </Text>
 				<Text Id="Score4" X="224" Y="140"> </Text>
-				<Text Id="Name5"  X="32"  Y="156"> </Text>
+				<Text Id="Name5" X="32" Y="156"> </Text>
 				<Text Id="Level5" X="160" Y="156"> </Text>
 				<Text Id="Score5" X="224" Y="156"> </Text>
-				<Text Id="Name6"  X="32"  Y="172"> </Text>
+				<Text Id="Name6" X="32" Y="172"> </Text>
 				<Text Id="Level6" X="160" Y="172"> </Text>
 				<Text Id="Score6" X="224" Y="172"> </Text>
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
@@ -634,11 +660,13 @@ end
 				</OnShow>
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
-				  X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
+				X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
 				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
-				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
+				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40"
+					DoorframePage="100" />
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
-				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC" FrameInterval="0.5" />
+				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC"
+					FrameInterval="0.5" />
 				<!-- WL_INTER.C:Write(14,2,"floor\ncompleted") = pixel (112,16) -->
 				<Text X="112" Y="16" Font="L">FLOOR&#10;COMPLETED</Text>
 				<!-- Floor number displayed by Lua SetText -->
@@ -659,9 +687,15 @@ end
 				<!-- WL_INTER.C:Write(1,18,"treasure ratio    %") = pixel (8,144) -->
 				<Text X="8" Y="144" Font="L">TREASURE RATIO    %</Text>
 				<!-- Ticker values: RATIOXX=37 → pixel 296, right-aligned -->
-				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Pause>ContinueToNextLevel()</Pause>
 				<OnShow>
 					<![CDATA[
@@ -705,35 +739,36 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
 			<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
+			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15"
+				X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
 				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
-				<Picture Name="C_NAMEPIC"  X="32"  Y="68" />
+				<Picture Name="C_NAMEPIC" X="32" Y="68" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
 				<!-- 7 rows at PrintY = 76 + 16*i -->
-				<Text Id="Name0"  X="32"  Y="76"> </Text>
+				<Text Id="Name0" X="32" Y="76"> </Text>
 				<Text Id="Level0" X="160" Y="76"> </Text>
 				<Text Id="Score0" X="224" Y="76"> </Text>
-				<Text Id="Name1"  X="32"  Y="92"> </Text>
+				<Text Id="Name1" X="32" Y="92"> </Text>
 				<Text Id="Level1" X="160" Y="92"> </Text>
 				<Text Id="Score1" X="224" Y="92"> </Text>
-				<Text Id="Name2"  X="32"  Y="108"> </Text>
+				<Text Id="Name2" X="32" Y="108"> </Text>
 				<Text Id="Level2" X="160" Y="108"> </Text>
 				<Text Id="Score2" X="224" Y="108"> </Text>
-				<Text Id="Name3"  X="32"  Y="124"> </Text>
+				<Text Id="Name3" X="32" Y="124"> </Text>
 				<Text Id="Level3" X="160" Y="124"> </Text>
 				<Text Id="Score3" X="224" Y="124"> </Text>
-				<Text Id="Name4"  X="32"  Y="140"> </Text>
+				<Text Id="Name4" X="32" Y="140"> </Text>
 				<Text Id="Level4" X="160" Y="140"> </Text>
 				<Text Id="Score4" X="224" Y="140"> </Text>
-				<Text Id="Name5"  X="32"  Y="156"> </Text>
+				<Text Id="Name5" X="32" Y="156"> </Text>
 				<Text Id="Level5" X="160" Y="156"> </Text>
 				<Text Id="Score5" X="224" Y="156"> </Text>
-				<Text Id="Name6"  X="32"  Y="172"> </Text>
+				<Text Id="Name6" X="32" Y="172"> </Text>
 				<Text Id="Level6" X="160" Y="172"> </Text>
 				<Text Id="Score6" X="224" Y="172"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
@@ -755,9 +790,10 @@ end
 			<!-- Victory screen: WL_INTER.C:Victory -->
 			<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
 			<Menu Name="Victory" Font="L" BordColor="127" Music="URAHERO_MUS"
-				  X="0" Y="0" Indent="0" Spacing="13" KeepWeapons="true">
+				X="0" Y="0" Indent="0" Spacing="13" KeepWeapons="true">
 				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
-				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40" DoorframePage="100"/>
+				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40"
+					DoorframePage="100" />
 				<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
 				<Picture Name="L_BJWINSPIC" X="8" Y="4" />
 				<!-- WL_INTER.C:Write(18,2,STR_YOUWIN) = pixel (144,16) -->
@@ -775,9 +811,15 @@ end
 				<!-- WL_INTER.C:Write(RATIOX,RATIOY+4,"treasure    %") → pixel (48,144) -->
 				<Text X="48" Y="144" Font="L">TREASURE    %</Text>
 				<!-- Ticker values for averaged ratios -->
-				<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right" TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND" NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgKillRatio" X="296" Y="112" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgSecretRatio" X="296" Y="128" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgTreasureRatio" X="296" Y="144" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
 				<Pause>NavigateToArticle("EndArt1")</Pause>
 				<OnShow>
 					<![CDATA[
@@ -798,7 +840,7 @@ StartTicker("AvgTreasureRatio", tr)
 			</Menu>
 		</Menus>
 	</VgaGraph>
-	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29" >
+	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29">
 		<Map Number="0" Episode="1" Level="1" Par="00:01:30" Music="GETTHEM_MUS" AltElevatorTo="9" />
 		<Map Number="1" Episode="1" Level="2" Par="00:02:00" Music="SEARCHN_MUS" />
 		<Map Number="2" Episode="1" Level="3" Par="00:02:00" Music="POW_MUS" />
@@ -810,7 +852,8 @@ StartTicker("AvgTreasureRatio", tr)
 		<Map Number="8" Episode="1" Level="9" Music="WARMARCH_MUS" />
 		<Map Number="9" Episode="1" Level="10" Ceiling="191" Music="CORNER_MUS" ElevatorTo="1" />
 	</Maps>
-	<Audio AudioHead="AUDIOHED.WL1" AudioT="AUDIOT.WL1" StartPCSounds="0" StartAdlibSounds="87" StartMusic="261" >
+	<Audio AudioHead="AUDIOHED.WL1" AudioT="AUDIOT.WL1" StartPCSounds="0" StartAdlibSounds="87"
+		StartMusic="261">
 		<Sound Number="0" Name="HITWALLSND" />
 		<Sound Number="1" Name="SELECTWPNSND" />
 		<Sound Number="2" Name="SELECTITEMSND" />
@@ -822,25 +865,25 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="8" Name="FIRESND" />
 		<Sound Number="9" Name="PLAYERDEATHSND" />
 		<Sound Number="10" Name="DOGDEATHSND" />
-		<Sound Number="11" Name="ATKGATLINGSND" />
+		<Sound Number="11" Name="ATKGATLINGSND" DigiSound="ATKGATLINGSND" />
 		<Sound Number="12" Name="GETKEYSND" />
 		<Sound Number="13" Name="NOITEMSND" />
 		<Sound Number="14" Name="WALK1SND" />
 		<Sound Number="15" Name="WALK2SND" />
-		<Sound Number="16" Name="TAKEDAMAGESND" />
+		<Sound Number="16" Name="TAKEDAMAGESND" DigiSound="TAKEDAMAGESND" />
 		<Sound Number="17" Name="GAMEOVERSND" />
-		<Sound Number="18" Name="OPENDOORSND" />
-		<Sound Number="19" Name="CLOSEDOORSND" />
+		<Sound Number="18" Name="OPENDOORSND" DigiSound="OPENDOORSND" />
+		<Sound Number="19" Name="CLOSEDOORSND" DigiSound="CLOSEDOORSND" />
 		<Sound Number="20" Name="DONOTHINGSND" />
-		<Sound Number="21" Name="HALTSND" />
-		<Sound Number="22" Name="DEATHSCREAM2SND" />
+		<Sound Number="21" Name="HALTSND" DigiSound="HALTSND" />
+		<Sound Number="22" Name="DEATHSCREAM2SND" DigiSound="DEATHSCREAM2SND" />
 		<Sound Number="23" Name="ATKKNIFESND" />
-		<Sound Number="24" Name="ATKPISTOLSND" />
-		<Sound Number="25" Name="DEATHSCREAM3SND" />
-		<Sound Number="26" Name="ATKMACHINEGUNSND" />
+		<Sound Number="24" Name="ATKPISTOLSND" DigiSound="ATKPISTOLSND" />
+		<Sound Number="25" Name="DEATHSCREAM3SND" DigiSound="DEATHSCREAM3SND" />
+		<Sound Number="26" Name="ATKMACHINEGUNSND" DigiSound="ATKMACHINEGUNSND" />
 		<Sound Number="27" Name="HITENEMYSND" />
 		<Sound Number="28" Name="SHOOTDOORSND" />
-		<Sound Number="29" Name="DEATHSCREAM1SND" />
+		<Sound Number="29" Name="DEATHSCREAM1SND" DigiSound="DEATHSCREAM1SND" />
 		<Sound Number="30" Name="GETMACHINESND" />
 		<Sound Number="31" Name="GETAMMOSND" />
 		<Sound Number="32" Name="SHOOTSND" />
@@ -852,27 +895,27 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="38" Name="GETGATLINGSND" />
 		<Sound Number="39" Name="ESCPRESSEDSND" />
 		<Sound Number="40" Name="LEVELDONESND" />
-		<Sound Number="41" Name="DOGBARKSND" />
+		<Sound Number="41" Name="DOGBARKSND" DigiSound="DOGBARKSND" />
 		<Sound Number="42" Name="ENDBONUS1SND" />
 		<Sound Number="43" Name="ENDBONUS2SND" />
 		<Sound Number="44" Name="BONUS1UPSND" />
 		<Sound Number="45" Name="BONUS4SND" />
-		<Sound Number="46" Name="PUSHWALLSND" />
+		<Sound Number="46" Name="PUSHWALLSND" DigiSound="PUSHWALLSND" />
 		<Sound Number="47" Name="NOBONUSSND" />
 		<Sound Number="48" Name="PERCENT100SND" />
 		<Sound Number="49" Name="BOSSACTIVESND" />
 		<Sound Number="50" Name="BOSSDIESSND" />
-		<Sound Number="51" Name="SCHUTZADSND" />
+		<Sound Number="51" Name="SCHUTZADSND" DigiSound="SCHUTZADSND" />
 		<Sound Number="52" Name="AHHHGSND" />
 		<Sound Number="53" Name="DIESND" />
 		<Sound Number="54" Name="EVASND" />
-		<Sound Number="55" Name="GUTENTAGSND" Digi="GUTENTAGSND" />
-		<Sound Number="56" Name="LEBENSND" />
-		<Sound Number="57" Name="MUTTISND" />
-		<Sound Number="58" Name="NAZIFIRESND" />
-		<Sound Number="59" Name="BOSSFIRESND" />
-		<Sound Number="60" Name="SSFIRESND" />
-		<Sound Number="61" Name="SLURPIESND" />
+		<Sound Number="55" Name="GUTENTAGSND" DigiSound="GUTENTAGSND" />
+		<Sound Number="56" Name="LEBENSND" DigiSound="LEBENSND" />
+		<Sound Number="57" Name="MUTTISND" DigiSound="MUTTISND" />
+		<Sound Number="58" Name="NAZIFIRESND" DigiSound="NAZIFIRESND" />
+		<Sound Number="59" Name="BOSSFIRESND" DigiSound="BOSSFIRESND" />
+		<Sound Number="60" Name="SSFIRESND" DigiSound="SSFIRESND" />
+		<Sound Number="61" Name="SLURPIESND" DigiSound="SLURPIESND" />
 		<Sound Number="62" Name="TOT_HUNDSND" />
 		<Sound Number="63" Name="MEINGOTTSND" />
 		<Sound Number="64" Name="SCHABBSHASND" />
@@ -883,7 +926,7 @@ StartTicker("AvgTreasureRatio", tr)
 		<Sound Number="69" Name="FLAMETHROWERSND" />
 		<Sound Number="70" Name="MECHSTEPSND" />
 		<Sound Number="71" Name="GOOBSSND" />
-		<Sound Number="72" Name="YEAHSND" />
+		<Sound Number="72" Name="YEAHSND" DigiSound="YEAHSND" />
 		<Sound Number="73" Name="DEATHSCREAM4SND" />
 		<Sound Number="74" Name="DEATHSCREAM5SND" />
 		<Sound Number="75" Name="DEATHSCREAM6SND" />
@@ -940,7 +983,7 @@ StartTicker("AvgTreasureRatio", tr)
 				FireState="s_knife_1"
 				AmmoPerShot="0"
 				FireSound="ATKKNIFESND"
-				StatusBarPic="KNIFEPIC"/>
+				StatusBarPic="KNIFEPIC" />
 			<!-- Pistol (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] -->
 			<GameplayWeapon
 				Name="pistol"
@@ -951,7 +994,7 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoPerShot="1"
 				FireSound="ATKPISTOLSND"
 				BaseDamage="5"
-				StatusBarPic="GUNPIC"/>
+				StatusBarPic="GUNPIC" />
 			<!-- Machine Gun (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] -->
 			<GameplayWeapon
 				Name="machinegun"
@@ -963,7 +1006,7 @@ StartTicker("AvgTreasureRatio", tr)
 				FireSound="ATKMACHINEGUNSND"
 				BaseDamage="5"
 				RapidFire="true"
-				StatusBarPic="MACHINEGUNPIC"/>
+				StatusBarPic="MACHINEGUNPIC" />
 			<!-- Chain Gun (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] -->
 			<GameplayWeapon
 				Name="chaingun"
@@ -975,7 +1018,7 @@ StartTicker("AvgTreasureRatio", tr)
 				FireSound="ATKGATLINGSND"
 				BaseDamage="5"
 				RapidFire="true"
-				StatusBarPic="GATLINGGUNPIC"/>
+				StatusBarPic="GATLINGGUNPIC" />
 		</GameplayWeapons>
 		<WallPlane MaxWallTiles="64" DoorWall="98" FloorCodeFirst="107" FloorCodeLast="143">
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
@@ -987,45 +1030,51 @@ StartTicker("AvgTreasureRatio", tr)
 			<AltElevator Tile="107" />
 
 			<!-- Door types: Tile is base (even), Tile+1 (odd) implied -->
-			<!-- Doors with no script open freely. Doors with scripts return true to open, false to stay locked. -->
+			<!-- Doors with no script open freely. Doors with scripts return true to open, false to
+			stay locked. -->
 			<Door Tile="90" Name="normal" Page="0" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND"
+				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Gold Key") then
 	return true
 end
-PlayLocalDigiSound("NOWAYSND")
+PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND"
+				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Silver Key") then
 	return true
 end
-PlayLocalDigiSound("NOWAYSND")
+PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND"
+				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Gold Key") then
 	return true
 end
-PlayLocalDigiSound("NOWAYSND")
+PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
+			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND"
+				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Silver Key") then
 	return true
 end
-PlayLocalDigiSound("NOWAYSND")
+PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
+			<Door Tile="100" Name="elevator" Page="4" OpenSound="OPENDOORSND"
+				CloseSound="CLOSEDOORSND" />
 		</WallPlane>
 		<Sprites>
 			<Sprite Page="108" Name="SPR_STAT_0" />
@@ -1295,7 +1344,8 @@ return false
 			<ObjectType Number="26" ObClass="block" Page="111" Name="Floor Lamp" />
 			<ObjectType Number="27" ObClass="dressing" Page="112" Name="Chandalier" />
 			<ObjectType Number="28" ObClass="block" Page="113" Name="Hanging Skeleton" />
-			<ObjectType Number="29" ObClass="bonus" Page="114" Walk="true" Script="health_small" Name="Dog Food" />
+			<ObjectType Number="29" ObClass="bonus" Page="114" Walk="true" Script="health_small"
+				Name="Dog Food" />
 			<ObjectType Number="30" ObClass="block" Page="115" Name="White Column" />
 			<ObjectType Number="31" ObClass="block" Page="116" Name="Green Plant" />
 			<ObjectType Number="32" ObClass="dressing" Page="117" Name="Skeleton" />
@@ -1314,20 +1364,30 @@ return false
 			<ObjectType Number="45" ObClass="block" Page="130" Name="Bed" />
 			<ObjectType Number="46" ObClass="dressing" Page="131" Name="Basket" />
 			<ObjectType Number="47" ObClass="bonus" Page="132" Script="health_medium" Name="Food" />
-			<ObjectType Number="48" ObClass="bonus" Page="133" Script="health_large" Name="First Aid Kit" />
+			<ObjectType Number="48" ObClass="bonus" Page="133" Script="health_large"
+				Name="First Aid Kit" />
 			<ObjectType Number="49" ObClass="bonus" Page="134" Script="ammo_clip" Name="Ammo" />
-			<ObjectType Number="50" ObClass="bonus" Page="135" Script="weapon_machinegun" Name="Machine Gun" />
-			<ObjectType Number="51" ObClass="bonus" Page="136" Script="weapon_chaingun" Name="Gatling Gun" />
-			<ObjectType Number="52" ObClass="bonus" Page="137" Treasure="true" Script="treasure_cross" Name="Cross" />
-			<ObjectType Number="53" ObClass="bonus" Page="138" Treasure="true" Script="treasure_chalice" Name="Chalice" />
-			<ObjectType Number="54" ObClass="bonus" Page="139" Treasure="true" Script="treasure_chest" Name="Chest of Jewels" />
-			<ObjectType Number="55" ObClass="bonus" Page="140" Treasure="true" Script="treasure_crown" Name="Crown" />
-			<ObjectType Number="56" ObClass="bonus" Page="141" Treasure="true" Script="extra_life" Name="Extra Life" />
-			<ObjectType Number="57" ObClass="bonus" Page="142" Script="health_desperate" Name="Bones with Blood" />
+			<ObjectType Number="50" ObClass="bonus" Page="135" Script="weapon_machinegun"
+				Name="Machine Gun" />
+			<ObjectType Number="51" ObClass="bonus" Page="136" Script="weapon_chaingun"
+				Name="Gatling Gun" />
+			<ObjectType Number="52" ObClass="bonus" Page="137" Treasure="true"
+				Script="treasure_cross" Name="Cross" />
+			<ObjectType Number="53" ObClass="bonus" Page="138" Treasure="true"
+				Script="treasure_chalice" Name="Chalice" />
+			<ObjectType Number="54" ObClass="bonus" Page="139" Treasure="true"
+				Script="treasure_chest" Name="Chest of Jewels" />
+			<ObjectType Number="55" ObClass="bonus" Page="140" Treasure="true"
+				Script="treasure_crown" Name="Crown" />
+			<ObjectType Number="56" ObClass="bonus" Page="141" Treasure="true" Script="extra_life"
+				Name="Extra Life" />
+			<ObjectType Number="57" ObClass="bonus" Page="142" Script="health_desperate"
+				Name="Bones with Blood" />
 			<ObjectType Number="58" ObClass="block" Page="143" Name="Barrel" />
 			<ObjectType Number="59" ObClass="block" Page="144" Name="Well with Water" />
 			<ObjectType Number="60" ObClass="block" Page="145" Name="Well" />
-			<ObjectType Number="61" ObClass="bonus" Page="146" Script="health_desperate" Name="Pool of Blood" />
+			<ObjectType Number="61" ObClass="bonus" Page="146" Script="health_desperate"
+				Name="Pool of Blood" />
 			<ObjectType Number="62" ObClass="block" Page="147" Name="Flag" />
 			<ObjectType Number="63" ObClass="block" Page="148" Name="Aardwolf" />
 			<ObjectType Number="64" ObClass="dressing" Page="149" Name="Bones 2" />
@@ -1337,9 +1397,12 @@ return false
 			<ObjectType Number="68" ObClass="block" Page="153" Name="Stove" />
 			<ObjectType Number="69" ObClass="block" Page="154" Name="Rack" />
 			<ObjectType Number="70" ObClass="block" Page="155" Name="Vines" />
-			<!-- Drop-only items: never placed on maps, only spawned by PlaceItemType (enemy death drops) -->
-			<!-- WL_ACT1.C:statinfo[] last entry: {SPR_STAT_26,bo_clip2} - same sprite as bo_clip but gives 4 ammo instead of 8 -->
-			<ObjectType Number="71" ObClass="bonus" Page="134" Script="ammo_clip_small" Name="bo_clip2" />
+			<!-- Drop-only items: never placed on maps, only spawned by PlaceItemType (enemy death
+			drops) -->
+			<!-- WL_ACT1.C:statinfo[] last entry: {SPR_STAT_26,bo_clip2} - same sprite as bo_clip
+			but gives 4 ammo instead of 8 -->
+			<ObjectType Number="71" ObClass="bonus" Page="134" Script="ammo_clip_small"
+				Name="bo_clip2" />
 			<Turn Number="90" Direction="E" Name="Turn E" />
 			<Turn Number="91" Direction="NE" Name="Turn NE" />
 			<Turn Number="92" Direction="N" Name="Turn N" />
@@ -1350,193 +1413,347 @@ return false
 			<Turn Number="97" Direction="SE" Name="Turn SE" />
 			<Pushwall Number="98" DigiSound="PUSHWALLSND" BlockedSound="NOWAYSND" Name="Secret Door" />
 			<ObjectType Number="99" ObClass="bonus" Script="VictoryTile" Name="End Game Trigger" />
-			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdstand" />
-			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdstand" />
-			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdstand" />
-			<ObjectType Number="111" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0" State="s_grdstand" />
-			<ObjectType Number="112" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0" State="s_grdpath1" />
-			<ObjectType Number="113" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0" State="s_grdpath1" />
-			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0" State="s_grdpath1" />
-			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0" State="s_grdpath1" />
+			<ObjectType Number="108" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0"
+				State="s_grdstand" />
+			<ObjectType Number="109" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0"
+				State="s_grdstand" />
+			<ObjectType Number="110" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0"
+				State="s_grdstand" />
+			<ObjectType Number="111" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0"
+				State="s_grdstand" />
+			<ObjectType Number="112" ObClass="actor" Actor="Guard" Direction="E" Difficulty="0"
+				State="s_grdpath1" />
+			<ObjectType Number="113" ObClass="actor" Actor="Guard" Direction="N" Difficulty="0"
+				State="s_grdpath1" />
+			<ObjectType Number="114" ObClass="actor" Actor="Guard" Direction="W" Difficulty="0"
+				State="s_grdpath1" />
+			<ObjectType Number="115" ObClass="actor" Actor="Guard" Direction="S" Difficulty="0"
+				State="s_grdpath1" />
 			<ObjectType Number="124" ObClass="dressing" Page="201" Name="Dead Guard" />
-			<ObjectType Number="126" ObClass="actor" Actor="SS" Direction="E" Difficulty="0" State="s_ssstand" />
-			<ObjectType Number="127" ObClass="actor" Actor="SS" Direction="N" Difficulty="0" State="s_ssstand" />
-			<ObjectType Number="128" ObClass="actor" Actor="SS" Direction="W" Difficulty="0" State="s_ssstand" />
-			<ObjectType Number="129" ObClass="actor" Actor="SS" Direction="S" Difficulty="0" State="s_ssstand" />
-			<ObjectType Number="130" ObClass="actor" Actor="SS" Direction="E" Difficulty="0" State="s_sspath1" />
-			<ObjectType Number="131" ObClass="actor" Actor="SS" Direction="N" Difficulty="0" State="s_sspath1" />
-			<ObjectType Number="132" ObClass="actor" Actor="SS" Direction="W" Difficulty="0" State="s_sspath1" />
-			<ObjectType Number="133" ObClass="actor" Actor="SS" Direction="S" Difficulty="0" State="s_sspath1" />
-			<ObjectType Number="138" ObClass="actor" Actor="Dog" Direction="E" Difficulty="0" State="s_dogpath1" />
-			<ObjectType Number="139" ObClass="actor" Actor="Dog" Direction="N" Difficulty="0" State="s_dogpath1" />
-			<ObjectType Number="140" ObClass="actor" Actor="Dog" Direction="W" Difficulty="0" State="s_dogpath1" />
-			<ObjectType Number="141" ObClass="actor" Actor="Dog" Direction="S" Difficulty="0" State="s_dogpath1" />
-			<ObjectType Number="144" ObClass="actor" Actor="Guard" Direction="E" Difficulty="2" State="s_grdstand" />
-			<ObjectType Number="145" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2" State="s_grdstand" />
-			<ObjectType Number="146" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2" State="s_grdstand" />
-			<ObjectType Number="147" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2" State="s_grdstand" />
-			<ObjectType Number="148" ObClass="actor" Actor="Guard" Direction="E" Difficulty="2" State="s_grdpath1" />
-			<ObjectType Number="149" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2" State="s_grdpath1" />
-			<ObjectType Number="150" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2" State="s_grdpath1" />
-			<ObjectType Number="151" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2" State="s_grdpath1" />
-			<ObjectType Number="162" ObClass="actor" Actor="SS" Direction="E" Difficulty="2" State="s_ssstand" />
-			<ObjectType Number="163" ObClass="actor" Actor="SS" Direction="N" Difficulty="2" State="s_ssstand" />
-			<ObjectType Number="164" ObClass="actor" Actor="SS" Direction="W" Difficulty="2" State="s_ssstand" />
-			<ObjectType Number="165" ObClass="actor" Actor="SS" Direction="S" Difficulty="2" State="s_ssstand" />
-			<ObjectType Number="166" ObClass="actor" Actor="SS" Direction="E" Difficulty="2" State="s_sspath1" />
-			<ObjectType Number="167" ObClass="actor" Actor="SS" Direction="N" Difficulty="2" State="s_sspath1" />
-			<ObjectType Number="168" ObClass="actor" Actor="SS" Direction="W" Difficulty="2" State="s_sspath1" />
-			<ObjectType Number="169" ObClass="actor" Actor="SS" Direction="S" Difficulty="2" State="s_sspath1" />
-			<ObjectType Number="174" ObClass="actor" Actor="Dog" Direction="E" Difficulty="2" State="s_dogpath1" />
-			<ObjectType Number="175" ObClass="actor" Actor="Dog" Direction="N" Difficulty="2" State="s_dogpath1" />
-			<ObjectType Number="176" ObClass="actor" Actor="Dog" Direction="W" Difficulty="2" State="s_dogpath1" />
-			<ObjectType Number="177" ObClass="actor" Actor="Dog" Direction="S" Difficulty="2" State="s_dogpath1" />
-			<ObjectType Number="180" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3" State="s_grdstand" />
-			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="201" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_ssstand" />
-			<ObjectType Number="202" ObClass="actor" Actor="SS" Direction="E" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="203" ObClass="actor" Actor="SS" Direction="N" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="204" ObClass="actor" Actor="SS" Direction="W" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="205" ObClass="actor" Actor="SS" Direction="S" Difficulty="3" State="s_sspath1" />
-			<ObjectType Number="210" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3" State="s_dogpath1" />
-			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3" State="s_dogpath1" />
+			<ObjectType Number="126" ObClass="actor" Actor="SS" Direction="E" Difficulty="0"
+				State="s_ssstand" />
+			<ObjectType Number="127" ObClass="actor" Actor="SS" Direction="N" Difficulty="0"
+				State="s_ssstand" />
+			<ObjectType Number="128" ObClass="actor" Actor="SS" Direction="W" Difficulty="0"
+				State="s_ssstand" />
+			<ObjectType Number="129" ObClass="actor" Actor="SS" Direction="S" Difficulty="0"
+				State="s_ssstand" />
+			<ObjectType Number="130" ObClass="actor" Actor="SS" Direction="E" Difficulty="0"
+				State="s_sspath1" />
+			<ObjectType Number="131" ObClass="actor" Actor="SS" Direction="N" Difficulty="0"
+				State="s_sspath1" />
+			<ObjectType Number="132" ObClass="actor" Actor="SS" Direction="W" Difficulty="0"
+				State="s_sspath1" />
+			<ObjectType Number="133" ObClass="actor" Actor="SS" Direction="S" Difficulty="0"
+				State="s_sspath1" />
+			<ObjectType Number="138" ObClass="actor" Actor="Dog" Direction="E" Difficulty="0"
+				State="s_dogpath1" />
+			<ObjectType Number="139" ObClass="actor" Actor="Dog" Direction="N" Difficulty="0"
+				State="s_dogpath1" />
+			<ObjectType Number="140" ObClass="actor" Actor="Dog" Direction="W" Difficulty="0"
+				State="s_dogpath1" />
+			<ObjectType Number="141" ObClass="actor" Actor="Dog" Direction="S" Difficulty="0"
+				State="s_dogpath1" />
+			<ObjectType Number="144" ObClass="actor" Actor="Guard" Direction="E" Difficulty="2"
+				State="s_grdstand" />
+			<ObjectType Number="145" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2"
+				State="s_grdstand" />
+			<ObjectType Number="146" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2"
+				State="s_grdstand" />
+			<ObjectType Number="147" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2"
+				State="s_grdstand" />
+			<ObjectType Number="148" ObClass="actor" Actor="Guard" Direction="E" Difficulty="2"
+				State="s_grdpath1" />
+			<ObjectType Number="149" ObClass="actor" Actor="Guard" Direction="N" Difficulty="2"
+				State="s_grdpath1" />
+			<ObjectType Number="150" ObClass="actor" Actor="Guard" Direction="W" Difficulty="2"
+				State="s_grdpath1" />
+			<ObjectType Number="151" ObClass="actor" Actor="Guard" Direction="S" Difficulty="2"
+				State="s_grdpath1" />
+			<ObjectType Number="162" ObClass="actor" Actor="SS" Direction="E" Difficulty="2"
+				State="s_ssstand" />
+			<ObjectType Number="163" ObClass="actor" Actor="SS" Direction="N" Difficulty="2"
+				State="s_ssstand" />
+			<ObjectType Number="164" ObClass="actor" Actor="SS" Direction="W" Difficulty="2"
+				State="s_ssstand" />
+			<ObjectType Number="165" ObClass="actor" Actor="SS" Direction="S" Difficulty="2"
+				State="s_ssstand" />
+			<ObjectType Number="166" ObClass="actor" Actor="SS" Direction="E" Difficulty="2"
+				State="s_sspath1" />
+			<ObjectType Number="167" ObClass="actor" Actor="SS" Direction="N" Difficulty="2"
+				State="s_sspath1" />
+			<ObjectType Number="168" ObClass="actor" Actor="SS" Direction="W" Difficulty="2"
+				State="s_sspath1" />
+			<ObjectType Number="169" ObClass="actor" Actor="SS" Direction="S" Difficulty="2"
+				State="s_sspath1" />
+			<ObjectType Number="174" ObClass="actor" Actor="Dog" Direction="E" Difficulty="2"
+				State="s_dogpath1" />
+			<ObjectType Number="175" ObClass="actor" Actor="Dog" Direction="N" Difficulty="2"
+				State="s_dogpath1" />
+			<ObjectType Number="176" ObClass="actor" Actor="Dog" Direction="W" Difficulty="2"
+				State="s_dogpath1" />
+			<ObjectType Number="177" ObClass="actor" Actor="Dog" Direction="S" Difficulty="2"
+				State="s_dogpath1" />
+			<ObjectType Number="180" ObClass="actor" Actor="Guard" Direction="E" Difficulty="3"
+				State="s_grdstand" />
+			<ObjectType Number="181" ObClass="actor" Actor="Guard" Direction="N" Difficulty="3"
+				State="s_grdstand" />
+			<ObjectType Number="182" ObClass="actor" Actor="Guard" Direction="W" Difficulty="3"
+				State="s_grdstand" />
+			<ObjectType Number="183" ObClass="actor" Actor="Guard" Direction="S" Difficulty="3"
+				State="s_grdstand" />
+			<ObjectType Number="198" ObClass="actor" Actor="SS" Direction="E" Difficulty="3"
+				State="s_ssstand" />
+			<ObjectType Number="199" ObClass="actor" Actor="SS" Direction="N" Difficulty="3"
+				State="s_ssstand" />
+			<ObjectType Number="200" ObClass="actor" Actor="SS" Direction="W" Difficulty="3"
+				State="s_ssstand" />
+			<ObjectType Number="201" ObClass="actor" Actor="SS" Direction="S" Difficulty="3"
+				State="s_ssstand" />
+			<ObjectType Number="202" ObClass="actor" Actor="SS" Direction="E" Difficulty="3"
+				State="s_sspath1" />
+			<ObjectType Number="203" ObClass="actor" Actor="SS" Direction="N" Difficulty="3"
+				State="s_sspath1" />
+			<ObjectType Number="204" ObClass="actor" Actor="SS" Direction="W" Difficulty="3"
+				State="s_sspath1" />
+			<ObjectType Number="205" ObClass="actor" Actor="SS" Direction="S" Difficulty="3"
+				State="s_sspath1" />
+			<ObjectType Number="210" ObClass="actor" Actor="Dog" Direction="E" Difficulty="3"
+				State="s_dogpath1" />
+			<ObjectType Number="211" ObClass="actor" Actor="Dog" Direction="N" Difficulty="3"
+				State="s_dogpath1" />
+			<ObjectType Number="212" ObClass="actor" Actor="Dog" Direction="W" Difficulty="3"
+				State="s_dogpath1" />
+			<ObjectType Number="213" ObClass="actor" Actor="Dog" Direction="S" Difficulty="3"
+				State="s_dogpath1" />
 			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
 		</StatInfo>
 		<Actors>
-			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertSound="HALTSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1" />
-			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_grdstand" />
-			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath1s" />
-			<State Name="s_grdpath1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="5" Speed="512" Next="s_grdpath2" />
-			<State Name="s_grdpath2" Rotate="true" Shape="SPR_GRD_W2_1" Tics="15" Think="T_Path" Speed="512" Next="s_grdpath3" />
-			<State Name="s_grdpath3" Rotate="true" Shape="SPR_GRD_W3_1" Tics="20" Think="T_Path" Speed="512" Next="s_grdpath3s" />
-			<State Name="s_grdpath3s" Rotate="true" Shape="SPR_GRD_W3_1" Tics="5" Speed="512" Next="s_grdpath4" />
-			<State Name="s_grdpath4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="15" Think="T_Path" Speed="512" Next="s_grdpath1" />
+			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertSound="HALTSND"
+				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
+				Pain="s_grdpain" Pain1="s_grdpain1" />
+			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand"
+				Speed="0" Next="s_grdstand" />
+			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path"
+				Speed="512" Next="s_grdpath1s" />
+			<State Name="s_grdpath1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="5" Speed="512"
+				Next="s_grdpath2" />
+			<State Name="s_grdpath2" Rotate="true" Shape="SPR_GRD_W2_1" Tics="15" Think="T_Path"
+				Speed="512" Next="s_grdpath3" />
+			<State Name="s_grdpath3" Rotate="true" Shape="SPR_GRD_W3_1" Tics="20" Think="T_Path"
+				Speed="512" Next="s_grdpath3s" />
+			<State Name="s_grdpath3s" Rotate="true" Shape="SPR_GRD_W3_1" Tics="5" Speed="512"
+				Next="s_grdpath4" />
+			<State Name="s_grdpath4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="15" Think="T_Path"
+				Speed="512" Next="s_grdpath1" />
 			<State Name="s_grdpain" Shape="SPR_GRD_PAIN_1" Tics="10" Speed="0" Next="s_grdchase1" />
 			<State Name="s_grdpain1" Shape="SPR_GRD_PAIN_2" Tics="10" Speed="0" Next="s_grdchase1" />
 			<State Name="s_grdshoot1" Shape="SPR_GRD_SHOOT1" Tics="20" Speed="0" Next="s_grdshoot2" />
-			<State Name="s_grdshoot2" Shape="SPR_GRD_SHOOT2" Tics="20" Action="T_Shoot" Speed="0" Next="s_grdshoot3" />
+			<State Name="s_grdshoot2" Shape="SPR_GRD_SHOOT2" Tics="20" Action="T_Shoot" Speed="0"
+				Next="s_grdshoot3" />
 			<State Name="s_grdshoot3" Shape="SPR_GRD_SHOOT3" Tics="20" Speed="0" Next="s_grdchase1" />
-			<State Name="s_grdchase1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_grdchase1s" />
-			<State Name="s_grdchase1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="3" Speed="1536" Next="s_grdchase2" />
-			<State Name="s_grdchase2" Rotate="true" Shape="SPR_GRD_W2_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_grdchase3" />
-			<State Name="s_grdchase3" Rotate="true" Shape="SPR_GRD_W3_1" Tics="10" Think="T_Chase" Speed="1536" Next="s_grdchase3s" />
-			<State Name="s_grdchase3s" Rotate="true" Shape="SPR_GRD_W3_1" Tics="3" Speed="1536" Next="s_grdchase4" />
-			<State Name="s_grdchase4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="8" Think="T_Chase" Speed="1536" Next="s_grdchase1" />
-			<State Name="s_grddie1" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie2" Action="A_DeathScream" Alive="false" Mark="false" />
-			<State Name="s_grddie2" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddie3" Alive="false" Mark="false" />
-			<State Name="s_grddie3" Shape="SPR_GRD_DIE_3" Tics="15" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
-			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4" Alive="false" Mark="false" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertSound="DOGBARKSND" Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
-			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
-			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500" Next="s_dogpath2" />
-			<State Name="s_dogpath2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="15" Think="T_Path" Speed="1500" Next="s_dogpath3" />
-			<State Name="s_dogpath3" Rotate="true" Shape="SPR_DOG_W3_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath3s" />
-			<State Name="s_dogpath3s" Rotate="true" Shape="SPR_DOG_W3_1" Tics="5" Speed="1500" Next="s_dogpath4" />
-			<State Name="s_dogpath4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="15" Think="T_Path" Speed="1500" Next="s_dogpath1" />
+			<State Name="s_grdchase1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="10" Think="T_Chase"
+				Speed="1536" Next="s_grdchase1s" />
+			<State Name="s_grdchase1s" Rotate="true" Shape="SPR_GRD_W1_1" Tics="3" Speed="1536"
+				Next="s_grdchase2" />
+			<State Name="s_grdchase2" Rotate="true" Shape="SPR_GRD_W2_1" Tics="8" Think="T_Chase"
+				Speed="1536" Next="s_grdchase3" />
+			<State Name="s_grdchase3" Rotate="true" Shape="SPR_GRD_W3_1" Tics="10" Think="T_Chase"
+				Speed="1536" Next="s_grdchase3s" />
+			<State Name="s_grdchase3s" Rotate="true" Shape="SPR_GRD_W3_1" Tics="3" Speed="1536"
+				Next="s_grdchase4" />
+			<State Name="s_grdchase4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="8" Think="T_Chase"
+				Speed="1536" Next="s_grdchase1" />
+			<State Name="s_grddie1" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie2"
+				Action="A_DeathScream" Alive="false" Mark="false" />
+			<State Name="s_grddie2" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddie3"
+				Alive="false" Mark="false" />
+			<State Name="s_grddie3" Shape="SPR_GRD_DIE_3" Tics="15" Speed="0" Next="s_grddie4"
+				Alive="false" Mark="false" />
+			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4"
+				Alive="false" Mark="false" />
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertSound="DOGBARKSND"
+				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
+			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path"
+				Speed="1500" Next="s_dogpath1s" />
+			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500"
+				Next="s_dogpath2" />
+			<State Name="s_dogpath2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="15" Think="T_Path"
+				Speed="1500" Next="s_dogpath3" />
+			<State Name="s_dogpath3" Rotate="true" Shape="SPR_DOG_W3_1" Tics="20" Think="T_Path"
+				Speed="1500" Next="s_dogpath3s" />
+			<State Name="s_dogpath3s" Rotate="true" Shape="SPR_DOG_W3_1" Tics="5" Speed="1500"
+				Next="s_dogpath4" />
+			<State Name="s_dogpath4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="15" Think="T_Path"
+				Speed="1500" Next="s_dogpath1" />
 			<State Name="s_dogjump1" Shape="SPR_DOG_JUMP1" Tics="10" Speed="0" Next="s_dogjump2" />
-			<State Name="s_dogjump2" Shape="SPR_DOG_JUMP2" Tics="10" Action="T_Bite" Speed="0" Next="s_dogjump3" />
+			<State Name="s_dogjump2" Shape="SPR_DOG_JUMP2" Tics="10" Action="T_Bite" Speed="0"
+				Next="s_dogjump3" />
 			<State Name="s_dogjump3" Shape="SPR_DOG_JUMP3" Tics="10" Speed="0" Next="s_dogjump4" />
 			<State Name="s_dogjump4" Shape="SPR_DOG_JUMP1" Tics="10" Speed="0" Next="s_dogjump5" />
 			<State Name="s_dogjump5" Shape="SPR_DOG_W1_1" Tics="10" Speed="0" Next="s_dogchase1" />
-			<State Name="s_dogchase1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="10" Think="T_DogChase" Speed="3000" Next="s_dogchase1s" />
-			<State Name="s_dogchase1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="3" Speed="3000" Next="s_dogchase2" />
-			<State Name="s_dogchase2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="8" Think="T_DogChase" Speed="3000" Next="s_dogchase3" />
-			<State Name="s_dogchase3" Rotate="true" Shape="SPR_DOG_W3_1" Tics="10" Think="T_DogChase" Speed="3000" Next="s_dogchase3s" />
-			<State Name="s_dogchase3s" Rotate="true" Shape="SPR_DOG_W3_1" Tics="3" Speed="3000" Next="s_dogchase4" />
-			<State Name="s_dogchase4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="8" Think="T_DogChase" Speed="3000" Next="s_dogchase1" />
-			<State Name="s_dogdie1" Shape="SPR_DOG_DIE_1" Tics="15" Speed="0" Next="s_dogdie2" Action="A_DeathScream" Alive="false" Mark="false" />
-			<State Name="s_dogdie2" Shape="SPR_DOG_DIE_2" Tics="15" Speed="0" Next="s_dogdie3" Alive="false" Mark="false" />
-			<State Name="s_dogdie3" Shape="SPR_DOG_DIE_3" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
-			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead" Alive="false" Mark="false" />
-			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertSound="SCHUTZADSND" Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1" Pain="s_sspain" Pain1="s_sspain1" />
-			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand" Speed="0" Next="s_ssstand" />
-			<State Name="s_sspath1" Rotate="true" Shape="SPR_SS_W1_1" Tics="20" Think="T_Path" Speed="512" Next="s_sspath1s" />
-			<State Name="s_sspath1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="5" Speed="512" Next="s_sspath2" />
-			<State Name="s_sspath2" Rotate="true" Shape="SPR_SS_W2_1" Tics="15" Think="T_Path" Speed="512" Next="s_sspath3" />
-			<State Name="s_sspath3" Rotate="true" Shape="SPR_SS_W3_1" Tics="20" Think="T_Path" Speed="512" Next="s_sspath3s" />
-			<State Name="s_sspath3s" Rotate="true" Shape="SPR_SS_W3_1" Tics="5" Speed="512" Next="s_sspath4" />
-			<State Name="s_sspath4" Rotate="true" Shape="SPR_SS_W4_1" Tics="15" Think="T_Path" Speed="512" Next="s_sspath1" />
+			<State Name="s_dogchase1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="10"
+				Think="T_DogChase" Speed="3000" Next="s_dogchase1s" />
+			<State Name="s_dogchase1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="3" Speed="3000"
+				Next="s_dogchase2" />
+			<State Name="s_dogchase2" Rotate="true" Shape="SPR_DOG_W2_1" Tics="8" Think="T_DogChase"
+				Speed="3000" Next="s_dogchase3" />
+			<State Name="s_dogchase3" Rotate="true" Shape="SPR_DOG_W3_1" Tics="10"
+				Think="T_DogChase" Speed="3000" Next="s_dogchase3s" />
+			<State Name="s_dogchase3s" Rotate="true" Shape="SPR_DOG_W3_1" Tics="3" Speed="3000"
+				Next="s_dogchase4" />
+			<State Name="s_dogchase4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="8" Think="T_DogChase"
+				Speed="3000" Next="s_dogchase1" />
+			<State Name="s_dogdie1" Shape="SPR_DOG_DIE_1" Tics="15" Speed="0" Next="s_dogdie2"
+				Action="A_DeathScream" Alive="false" Mark="false" />
+			<State Name="s_dogdie2" Shape="SPR_DOG_DIE_2" Tics="15" Speed="0" Next="s_dogdie3"
+				Alive="false" Mark="false" />
+			<State Name="s_dogdie3" Shape="SPR_DOG_DIE_3" Tics="15" Speed="0" Next="s_dogdead"
+				Alive="false" Mark="false" />
+			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead"
+				Alive="false" Mark="false" />
+			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertSound="SCHUTZADSND"
+				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
+				Pain="s_sspain" Pain1="s_sspain1" />
+			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand"
+				Speed="0" Next="s_ssstand" />
+			<State Name="s_sspath1" Rotate="true" Shape="SPR_SS_W1_1" Tics="20" Think="T_Path"
+				Speed="512" Next="s_sspath1s" />
+			<State Name="s_sspath1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="5" Speed="512"
+				Next="s_sspath2" />
+			<State Name="s_sspath2" Rotate="true" Shape="SPR_SS_W2_1" Tics="15" Think="T_Path"
+				Speed="512" Next="s_sspath3" />
+			<State Name="s_sspath3" Rotate="true" Shape="SPR_SS_W3_1" Tics="20" Think="T_Path"
+				Speed="512" Next="s_sspath3s" />
+			<State Name="s_sspath3s" Rotate="true" Shape="SPR_SS_W3_1" Tics="5" Speed="512"
+				Next="s_sspath4" />
+			<State Name="s_sspath4" Rotate="true" Shape="SPR_SS_W4_1" Tics="15" Think="T_Path"
+				Speed="512" Next="s_sspath1" />
 			<State Name="s_sspain" Shape="SPR_SS_PAIN_1" Tics="10" Speed="0" Next="s_sschase1" />
 			<State Name="s_sspain1" Shape="SPR_SS_PAIN_2" Tics="10" Speed="0" Next="s_sschase1" />
 			<State Name="s_ssshoot1" Shape="SPR_SS_SHOOT1" Tics="20" Speed="0" Next="s_ssshoot2" />
-			<State Name="s_ssshoot2" Shape="SPR_SS_SHOOT2" Tics="20" Action="T_Shoot" Speed="0" Next="s_ssshoot3" />
+			<State Name="s_ssshoot2" Shape="SPR_SS_SHOOT2" Tics="20" Action="T_Shoot" Speed="0"
+				Next="s_ssshoot3" />
 			<State Name="s_ssshoot3" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_ssshoot4" />
-			<State Name="s_ssshoot4" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0" Next="s_ssshoot5" />
+			<State Name="s_ssshoot4" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"
+				Next="s_ssshoot5" />
 			<State Name="s_ssshoot5" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_ssshoot6" />
-			<State Name="s_ssshoot6" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0" Next="s_ssshoot7" />
+			<State Name="s_ssshoot6" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"
+				Next="s_ssshoot7" />
 			<State Name="s_ssshoot7" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_ssshoot8" />
-			<State Name="s_ssshoot8" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0" Next="s_ssshoot9" />
+			<State Name="s_ssshoot8" Shape="SPR_SS_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"
+				Next="s_ssshoot9" />
 			<State Name="s_ssshoot9" Shape="SPR_SS_SHOOT3" Tics="10" Speed="0" Next="s_sschase1" />
-			<State Name="s_sschase1" Rotate="true" Shape="SPR_SS_W1_1" Tics="10" Think="T_Chase" Speed="2048" Next="s_sschase1s" />
-			<State Name="s_sschase1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="3" Speed="2048" Next="s_sschase2" />
-			<State Name="s_sschase2" Rotate="true" Shape="SPR_SS_W2_1" Tics="8" Think="T_Chase" Speed="2048" Next="s_sschase3" />
-			<State Name="s_sschase3" Rotate="true" Shape="SPR_SS_W3_1" Tics="10" Think="T_Chase" Speed="2048" Next="s_sschase3s" />
-			<State Name="s_sschase3s" Rotate="true" Shape="SPR_SS_W3_1" Tics="3" Speed="2048" Next="s_sschase4" />
-			<State Name="s_sschase4" Rotate="true" Shape="SPR_SS_W4_1" Tics="8" Think="T_Chase" Speed="2048" Next="s_sschase1" />
-			<State Name="s_ssdie1" Shape="SPR_SS_DIE_1" Tics="15" Speed="0" Next="s_ssdie2" Action="A_DeathScream" Alive="false" Mark="false" />
-			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3" Alive="false" Mark="false" />
-			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
-			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertSound="GUTENTAGSND" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
-			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0" Next="s_bossstand" />
-			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase1s" />
+			<State Name="s_sschase1" Rotate="true" Shape="SPR_SS_W1_1" Tics="10" Think="T_Chase"
+				Speed="2048" Next="s_sschase1s" />
+			<State Name="s_sschase1s" Rotate="true" Shape="SPR_SS_W1_1" Tics="3" Speed="2048"
+				Next="s_sschase2" />
+			<State Name="s_sschase2" Rotate="true" Shape="SPR_SS_W2_1" Tics="8" Think="T_Chase"
+				Speed="2048" Next="s_sschase3" />
+			<State Name="s_sschase3" Rotate="true" Shape="SPR_SS_W3_1" Tics="10" Think="T_Chase"
+				Speed="2048" Next="s_sschase3s" />
+			<State Name="s_sschase3s" Rotate="true" Shape="SPR_SS_W3_1" Tics="3" Speed="2048"
+				Next="s_sschase4" />
+			<State Name="s_sschase4" Rotate="true" Shape="SPR_SS_W4_1" Tics="8" Think="T_Chase"
+				Speed="2048" Next="s_sschase1" />
+			<State Name="s_ssdie1" Shape="SPR_SS_DIE_1" Tics="15" Speed="0" Next="s_ssdie2"
+				Action="A_DeathScream" Alive="false" Mark="false" />
+			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3"
+				Alive="false" Mark="false" />
+			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4"
+				Alive="false" Mark="false" />
+			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4"
+				Alive="false" Mark="false" />
+			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertSound="GUTENTAGSND"
+				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
+				Ambush="true" />
+			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0"
+				Next="s_bossstand" />
+			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512"
+				Next="s_bosschase1s" />
 			<State Name="s_bosschase1s" Shape="SPR_BOSS_W1" Tics="3" Speed="512" Next="s_bosschase2" />
-			<State Name="s_bosschase2" Shape="SPR_BOSS_W2" Tics="8" Think="T_Chase" Speed="512" Next="s_bosschase3" />
-			<State Name="s_bosschase3" Shape="SPR_BOSS_W3" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase3s" />
+			<State Name="s_bosschase2" Shape="SPR_BOSS_W2" Tics="8" Think="T_Chase" Speed="512"
+				Next="s_bosschase3" />
+			<State Name="s_bosschase3" Shape="SPR_BOSS_W3" Tics="10" Think="T_Chase" Speed="512"
+				Next="s_bosschase3s" />
 			<State Name="s_bosschase3s" Shape="SPR_BOSS_W3" Tics="3" Speed="512" Next="s_bosschase4" />
-			<State Name="s_bosschase4" Shape="SPR_BOSS_W4" Tics="8" Think="T_Chase" Speed="512" Next="s_bosschase1" />
-			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Action="A_DeathScream" Alive="false" />
-			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3" Alive="false" Mark="false" />
-			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
-			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
-			<State Name="s_bossshoot1" Shape="SPR_BOSS_SHOOT1" Tics="30" Speed="0" Next="s_bossshoot2" />
-			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot3" />
-			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot4" />
-			<State Name="s_bossshoot4" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot5" />
-			<State Name="s_bossshoot5" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot6" />
-			<State Name="s_bossshoot6" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot7" />
-			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot8" />
-			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
+			<State Name="s_bosschase4" Shape="SPR_BOSS_W4" Tics="8" Think="T_Chase" Speed="512"
+				Next="s_bosschase1" />
+			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2"
+				Action="A_DeathScream" Alive="false" />
+			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3"
+				Alive="false" Mark="false" />
+			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4"
+				Alive="false" Mark="false" />
+			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Next="s_bossdie4"
+				Alive="false" Mark="false" />
+			<State Name="s_bossshoot1" Shape="SPR_BOSS_SHOOT1" Tics="30" Speed="0"
+				Next="s_bossshoot2" />
+			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot"
+				Next="s_bossshoot3" />
+			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot"
+				Next="s_bossshoot4" />
+			<State Name="s_bossshoot4" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot"
+				Next="s_bossshoot5" />
+			<State Name="s_bossshoot5" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot"
+				Next="s_bossshoot6" />
+			<State Name="s_bossshoot6" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot"
+				Next="s_bossshoot7" />
+			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot"
+				Next="s_bossshoot8" />
+			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0"
+				Next="s_bosschase1" />
 			<!-- Weapon States -->
 			<!-- Weapon states based on WL_AGENT.C attackinfo structure -->
 			<!-- All weapon logic in Lua - fully moddable, no C# hardcoding -->
 
-			<!-- Knife weapon states (wp_knife = 0) - WL_AGENT.C:attackinfo[0] = {{6,0,1},{6,2,2},{6,0,3},{6,-1,4}} -->
-			<State Name="s_knife" Rotate="false" Shape="SPR_KNIFEREADY" Tics="0"/>
-			<State Name="s_knife_1" Rotate="false" Shape="SPR_KNIFEATK1" Tics="6" Next="s_knife_2"/>
-			<State Name="s_knife_2" Rotate="false" Shape="SPR_KNIFEATK2" Tics="6" Action="A_KnifeAttack" Next="s_knife_3"/>
-			<State Name="s_knife_3" Rotate="false" Shape="SPR_KNIFEATK3" Tics="6" Next="s_knife_4"/>
-			<State Name="s_knife_4" Rotate="false" Shape="SPR_KNIFEATK4" Tics="6" Next="s_knife"/>
-			<!-- Pistol weapon states (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] = {{6,0,1},{6,1,2},{6,0,3},{6,-1,4}} -->
-			<State Name="s_pistol" Rotate="false" Shape="SPR_PISTOLREADY" Tics="0"/>
-			<State Name="s_pistol_1" Rotate="false" Shape="SPR_PISTOLATK1" Tics="6" Next="s_pistol_2"/>
-			<State Name="s_pistol_2" Rotate="false" Shape="SPR_PISTOLATK2" Tics="6" Action="A_PistolAttack" Next="s_pistol_3"/>
-			<State Name="s_pistol_3" Rotate="false" Shape="SPR_PISTOLATK3" Tics="6" Next="s_pistol_4"/>
-			<State Name="s_pistol_4" Rotate="false" Shape="SPR_PISTOLATK4" Tics="6" Action="A_WeaponReady" Next="s_pistol"/>
-			<!-- Machine gun weapon states (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] = {{6,0,1},{6,1,2},{6,3,3},{6,-1,4}} -->
-			<State Name="s_machinegun" Rotate="false" Shape="SPR_MACHINEGUNREADY" Tics="0"/>
-			<State Name="s_machinegun_1" Rotate="false" Shape="SPR_MACHINEGUNATK1" Tics="6" Next="s_machinegun_2"/>
-			<State Name="s_machinegun_2" Rotate="false" Shape="SPR_MACHINEGUNATK2" Tics="6" Action="A_MachineGunAttack" Next="s_machinegun_3"/>
-			<State Name="s_machinegun_3" Rotate="false" Shape="SPR_MACHINEGUNATK3" Tics="6" Action="A_RapidFire" Next="s_machinegun_4"/>
-			<State Name="s_machinegun_4" Rotate="false" Shape="SPR_MACHINEGUNATK4" Tics="6" Action="A_WeaponReady" Next="s_machinegun"/>
-			<!-- Chain gun weapon states (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] = {{6,0,1},{6,1,2},{6,4,3},{6,-1,4}} -->
-			<State Name="s_chaingun" Rotate="false" Shape="SPR_CHAINREADY" Tics="0"/>
-			<State Name="s_chaingun_1" Rotate="false" Shape="SPR_CHAINATK1" Tics="6" Next="s_chaingun_2"/>
-			<State Name="s_chaingun_2" Rotate="false" Shape="SPR_CHAINATK2" Tics="6" Action="A_ChainGunAttack" Next="s_chaingun_3"/>
-			<State Name="s_chaingun_3" Rotate="false" Shape="SPR_CHAINATK3" Tics="6" Action="A_RapidFire" Next="s_chaingun_4"/>
-			<State Name="s_chaingun_4" Rotate="false" Shape="SPR_CHAINATK4" Tics="6" Action="A_WeaponReady" Next="s_chaingun"/>
+			<!-- Knife weapon states (wp_knife = 0) - WL_AGENT.C:attackinfo[0] =
+			{{6,0,1},{6,2,2},{6,0,3},{6,-1,4}} -->
+			<State Name="s_knife" Rotate="false" Shape="SPR_KNIFEREADY" Tics="0" />
+			<State Name="s_knife_1" Rotate="false" Shape="SPR_KNIFEATK1" Tics="6" Next="s_knife_2" />
+			<State Name="s_knife_2" Rotate="false" Shape="SPR_KNIFEATK2" Tics="6"
+				Action="A_KnifeAttack" Next="s_knife_3" />
+			<State Name="s_knife_3" Rotate="false" Shape="SPR_KNIFEATK3" Tics="6" Next="s_knife_4" />
+			<State Name="s_knife_4" Rotate="false" Shape="SPR_KNIFEATK4" Tics="6" Next="s_knife" />
+			<!-- Pistol weapon states (wp_pistol = 1) - WL_AGENT.C:attackinfo[1] =
+			{{6,0,1},{6,1,2},{6,0,3},{6,-1,4}} -->
+			<State Name="s_pistol" Rotate="false" Shape="SPR_PISTOLREADY" Tics="0" />
+			<State Name="s_pistol_1" Rotate="false" Shape="SPR_PISTOLATK1" Tics="6"
+				Next="s_pistol_2" />
+			<State Name="s_pistol_2" Rotate="false" Shape="SPR_PISTOLATK2" Tics="6"
+				Action="A_PistolAttack" Next="s_pistol_3" />
+			<State Name="s_pistol_3" Rotate="false" Shape="SPR_PISTOLATK3" Tics="6"
+				Next="s_pistol_4" />
+			<State Name="s_pistol_4" Rotate="false" Shape="SPR_PISTOLATK4" Tics="6"
+				Action="A_WeaponReady" Next="s_pistol" />
+			<!-- Machine gun weapon states (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] =
+			{{6,0,1},{6,1,2},{6,3,3},{6,-1,4}} -->
+			<State Name="s_machinegun" Rotate="false" Shape="SPR_MACHINEGUNREADY" Tics="0" />
+			<State Name="s_machinegun_1" Rotate="false" Shape="SPR_MACHINEGUNATK1" Tics="6"
+				Next="s_machinegun_2" />
+			<State Name="s_machinegun_2" Rotate="false" Shape="SPR_MACHINEGUNATK2" Tics="6"
+				Action="A_MachineGunAttack" Next="s_machinegun_3" />
+			<State Name="s_machinegun_3" Rotate="false" Shape="SPR_MACHINEGUNATK3" Tics="6"
+				Action="A_RapidFire" Next="s_machinegun_4" />
+			<State Name="s_machinegun_4" Rotate="false" Shape="SPR_MACHINEGUNATK4" Tics="6"
+				Action="A_WeaponReady" Next="s_machinegun" />
+			<!-- Chain gun weapon states (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] =
+			{{6,0,1},{6,1,2},{6,4,3},{6,-1,4}} -->
+			<State Name="s_chaingun" Rotate="false" Shape="SPR_CHAINREADY" Tics="0" />
+			<State Name="s_chaingun_1" Rotate="false" Shape="SPR_CHAINATK1" Tics="6"
+				Next="s_chaingun_2" />
+			<State Name="s_chaingun_2" Rotate="false" Shape="SPR_CHAINATK2" Tics="6"
+				Action="A_ChainGunAttack" Next="s_chaingun_3" />
+			<State Name="s_chaingun_3" Rotate="false" Shape="SPR_CHAINATK3" Tics="6"
+				Action="A_RapidFire" Next="s_chaingun_4" />
+			<State Name="s_chaingun_4" Rotate="false" Shape="SPR_CHAINATK4" Tics="6"
+				Action="A_WeaponReady" Next="s_chaingun" />
 			<!-- StatusBar ActionFunctions -->
-			<!-- WL_GAME.C:Died() — decrement lives, reset to pistol/init ammo/no keys, restart or game over -->
+			<!-- WL_GAME.C:Died() — decrement lives, reset to pistol/init ammo/no keys, restart or
+			game over -->
 			<Function Name="OnDeath">
 				<![CDATA[
-PlayAdLibSound("PLAYERDEATHSND")
+PlaySound("PLAYERDEATHSND")
 if GetValue("Lives") > 0 then
 	AddValue("Lives", -1)
 	SetValue("Health", 100)
@@ -1617,280 +1834,290 @@ SetValue("Silver Key", 0)
 SetPicture("SilverKey", "NOKEYPIC")
 ]]>
 			</Function>
-		<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->
-		<Actor Name="BJ" HP="1,1,1,1" Stand="s_bjstart" />
-		<!-- s_bjstart: one-shot spawn state; A_InitBJRun runs once here (not on loop-back to s_bjrun1) -->
-		<State Name="s_bjstart"  Shape="SPR_BJ_W1"    Tics="1"   Think="T_BJRun"  Speed="2048" Action="A_InitBJRun" Next="s_bjrun1" />
-		<State Name="s_bjrun1"  Shape="SPR_BJ_W1"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun1s" />
-		<State Name="s_bjrun1s" Shape="SPR_BJ_W1"    Tics="3"                    Speed="2048" Next="s_bjrun2" />
-		<State Name="s_bjrun2"  Shape="SPR_BJ_W2"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun3" />
-		<State Name="s_bjrun3"  Shape="SPR_BJ_W3"    Tics="12"  Think="T_BJRun"  Speed="2048" Next="s_bjrun3s" />
-		<State Name="s_bjrun3s" Shape="SPR_BJ_W3"    Tics="3"                    Speed="2048" Next="s_bjrun4" />
-		<State Name="s_bjrun4"  Shape="SPR_BJ_W4"    Tics="8"   Think="T_BJRun"  Speed="2048" Next="s_bjrun1" />
-		<State Name="s_bjjump1" Shape="SPR_BJ_JUMP1" Tics="14"  Think="T_BJJump" Speed="680"  Next="s_bjjump2" />
-		<State Name="s_bjjump2" Shape="SPR_BJ_JUMP2" Tics="14"  Think="T_BJJump" Speed="680"  Action="A_BJYell" Next="s_bjjump3" />
-		<State Name="s_bjjump3" Shape="SPR_BJ_JUMP3" Tics="14"  Think="T_BJJump" Speed="680"  Next="s_bjjump4" />
-		<State Name="s_bjjump4" Shape="SPR_BJ_JUMP4" Tics="300"                  Speed="0"    Action="A_BJDone" Next="s_bjjump4" />
+			<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->
+			<Actor Name="BJ" HP="1,1,1,1" Stand="s_bjstart" />
+			<!-- s_bjstart: one-shot spawn state; A_InitBJRun runs once here (not on loop-back to
+			s_bjrun1) -->
+			<State Name="s_bjstart" Shape="SPR_BJ_W1" Tics="1" Think="T_BJRun" Speed="2048"
+				Action="A_InitBJRun" Next="s_bjrun1" />
+			<State Name="s_bjrun1" Shape="SPR_BJ_W1" Tics="12" Think="T_BJRun" Speed="2048"
+				Next="s_bjrun1s" />
+			<State Name="s_bjrun1s" Shape="SPR_BJ_W1" Tics="3" Speed="2048" Next="s_bjrun2" />
+			<State Name="s_bjrun2" Shape="SPR_BJ_W2" Tics="8" Think="T_BJRun" Speed="2048"
+				Next="s_bjrun3" />
+			<State Name="s_bjrun3" Shape="SPR_BJ_W3" Tics="12" Think="T_BJRun" Speed="2048"
+				Next="s_bjrun3s" />
+			<State Name="s_bjrun3s" Shape="SPR_BJ_W3" Tics="3" Speed="2048" Next="s_bjrun4" />
+			<State Name="s_bjrun4" Shape="SPR_BJ_W4" Tics="8" Think="T_BJRun" Speed="2048"
+				Next="s_bjrun1" />
+			<State Name="s_bjjump1" Shape="SPR_BJ_JUMP1" Tics="14" Think="T_BJJump" Speed="680"
+				Next="s_bjjump2" />
+			<State Name="s_bjjump2" Shape="SPR_BJ_JUMP2" Tics="14" Think="T_BJJump" Speed="680"
+				Action="A_BJYell" Next="s_bjjump3" />
+			<State Name="s_bjjump3" Shape="SPR_BJ_JUMP3" Tics="14" Think="T_BJJump" Speed="680"
+				Next="s_bjjump4" />
+			<State Name="s_bjjump4" Shape="SPR_BJ_JUMP4" Tics="300" Speed="0" Action="A_BJDone"
+				Next="s_bjjump4" />
 		</Actors>
 	</VSwap>
 	<Palettes>
 		<Palette>
-			<Color Hex="#000000"/>
-			<Color Hex="#0000A8"/>
-			<Color Hex="#00A800"/>
-			<Color Hex="#00A8A8"/>
-			<Color Hex="#A80000"/>
-			<Color Hex="#A800A8"/>
-			<Color Hex="#A85400"/>
-			<Color Hex="#A8A8A8"/>
-			<Color Hex="#545454"/>
-			<Color Hex="#5454FC"/>
-			<Color Hex="#54FC54"/>
-			<Color Hex="#54FCFC"/>
-			<Color Hex="#FC5454"/>
-			<Color Hex="#FC54FC"/>
-			<Color Hex="#FCFC54"/>
-			<Color Hex="#FCFCFC"/>
-			<Color Hex="#ECECEC"/>
-			<Color Hex="#DCDCDC"/>
-			<Color Hex="#D0D0D0"/>
-			<Color Hex="#C0C0C0"/>
-			<Color Hex="#B4B4B4"/>
-			<Color Hex="#A8A8A8"/>
-			<Color Hex="#989898"/>
-			<Color Hex="#8C8C8C"/>
-			<Color Hex="#7C7C7C"/>
-			<Color Hex="#707070"/>
-			<Color Hex="#646464"/>
-			<Color Hex="#545454"/>
-			<Color Hex="#484848"/>
-			<Color Hex="#383838"/>
-			<Color Hex="#2C2C2C"/>
-			<Color Hex="#202020"/>
-			<Color Hex="#FC0000"/>
-			<Color Hex="#EC0000"/>
-			<Color Hex="#E00000"/>
-			<Color Hex="#D40000"/>
-			<Color Hex="#C80000"/>
-			<Color Hex="#BC0000"/>
-			<Color Hex="#B00000"/>
-			<Color Hex="#A40000"/>
-			<Color Hex="#980000"/>
-			<Color Hex="#880000"/>
-			<Color Hex="#7C0000"/>
-			<Color Hex="#700000"/>
-			<Color Hex="#640000"/>
-			<Color Hex="#580000"/>
-			<Color Hex="#4C0000"/>
-			<Color Hex="#400000"/>
-			<Color Hex="#FCD8D8"/>
-			<Color Hex="#FCB8B8"/>
-			<Color Hex="#FC9C9C"/>
-			<Color Hex="#FC7C7C"/>
-			<Color Hex="#FC5C5C"/>
-			<Color Hex="#FC4040"/>
-			<Color Hex="#FC2020"/>
-			<Color Hex="#FC0000"/>
-			<Color Hex="#FCA85C"/>
-			<Color Hex="#FC9840"/>
-			<Color Hex="#FC8820"/>
-			<Color Hex="#FC7800"/>
-			<Color Hex="#E46C00"/>
-			<Color Hex="#CC6000"/>
-			<Color Hex="#B45400"/>
-			<Color Hex="#9C4C00"/>
-			<Color Hex="#FCFCD8"/>
-			<Color Hex="#FCFCB8"/>
-			<Color Hex="#FCFC9C"/>
-			<Color Hex="#FCFC7C"/>
-			<Color Hex="#FCF85C"/>
-			<Color Hex="#FCF440"/>
-			<Color Hex="#FCF420"/>
-			<Color Hex="#FCF400"/>
-			<Color Hex="#E4D800"/>
-			<Color Hex="#CCC400"/>
-			<Color Hex="#B4AC00"/>
-			<Color Hex="#9C9C00"/>
-			<Color Hex="#848400"/>
-			<Color Hex="#706C00"/>
-			<Color Hex="#585400"/>
-			<Color Hex="#404000"/>
-			<Color Hex="#D0FC5C"/>
-			<Color Hex="#C4FC40"/>
-			<Color Hex="#B4FC20"/>
-			<Color Hex="#A0FC00"/>
-			<Color Hex="#90E400"/>
-			<Color Hex="#80CC00"/>
-			<Color Hex="#74B400"/>
-			<Color Hex="#609C00"/>
-			<Color Hex="#D8FCD8"/>
-			<Color Hex="#BCFCB8"/>
-			<Color Hex="#9CFC9C"/>
-			<Color Hex="#80FC7C"/>
-			<Color Hex="#60FC5C"/>
-			<Color Hex="#40FC40"/>
-			<Color Hex="#20FC20"/>
-			<Color Hex="#00FC00"/>
-			<Color Hex="#00FC00"/>
-			<Color Hex="#00EC00"/>
-			<Color Hex="#00E000"/>
-			<Color Hex="#00D400"/>
-			<Color Hex="#04C800"/>
-			<Color Hex="#04BC00"/>
-			<Color Hex="#04B000"/>
-			<Color Hex="#04A400"/>
-			<Color Hex="#049800"/>
-			<Color Hex="#048800"/>
-			<Color Hex="#047C00"/>
-			<Color Hex="#047000"/>
-			<Color Hex="#046400"/>
-			<Color Hex="#045800"/>
-			<Color Hex="#044C00"/>
-			<Color Hex="#044000"/>
-			<Color Hex="#D8FCFC"/>
-			<Color Hex="#B8FCFC"/>
-			<Color Hex="#9CFCFC"/>
-			<Color Hex="#7CFCF8"/>
-			<Color Hex="#5CFCFC"/>
-			<Color Hex="#40FCFC"/>
-			<Color Hex="#20FCFC"/>
-			<Color Hex="#00FCFC"/>
-			<Color Hex="#00E4E4"/>
-			<Color Hex="#00CCCC"/>
-			<Color Hex="#00B4B4"/>
-			<Color Hex="#009C9C"/>
-			<Color Hex="#008484"/>
-			<Color Hex="#007070"/>
-			<Color Hex="#005858"/>
-			<Color Hex="#004040"/>
-			<Color Hex="#5CBCFC"/>
-			<Color Hex="#40B0FC"/>
-			<Color Hex="#20A8FC"/>
-			<Color Hex="#009CFC"/>
-			<Color Hex="#008CE4"/>
-			<Color Hex="#007CCC"/>
-			<Color Hex="#006CB4"/>
-			<Color Hex="#005C9C"/>
-			<Color Hex="#D8D8FC"/>
-			<Color Hex="#B8BCFC"/>
-			<Color Hex="#9C9CFC"/>
-			<Color Hex="#7C80FC"/>
-			<Color Hex="#5C60FC"/>
-			<Color Hex="#4040FC"/>
-			<Color Hex="#2024FC"/>
-			<Color Hex="#0004FC"/>
-			<Color Hex="#0000FC"/>
-			<Color Hex="#0000EC"/>
-			<Color Hex="#0000E0"/>
-			<Color Hex="#0000D4"/>
-			<Color Hex="#0000C8"/>
-			<Color Hex="#0000BC"/>
-			<Color Hex="#0000B0"/>
-			<Color Hex="#0000A4"/>
-			<Color Hex="#000098"/>
-			<Color Hex="#000088"/>
-			<Color Hex="#00007C"/>
-			<Color Hex="#000070"/>
-			<Color Hex="#000064"/>
-			<Color Hex="#000058"/>
-			<Color Hex="#00004C"/>
-			<Color Hex="#000040"/>
-			<Color Hex="#282828"/>
-			<Color Hex="#FCE034"/>
-			<Color Hex="#FCD424"/>
-			<Color Hex="#FCCC18"/>
-			<Color Hex="#FCC008"/>
-			<Color Hex="#FCB400"/>
-			<Color Hex="#B420FC"/>
-			<Color Hex="#A800FC"/>
-			<Color Hex="#9800E4"/>
-			<Color Hex="#8000CC"/>
-			<Color Hex="#7400B4"/>
-			<Color Hex="#60009C"/>
-			<Color Hex="#500084"/>
-			<Color Hex="#440070"/>
-			<Color Hex="#340058"/>
-			<Color Hex="#280040"/>
-			<Color Hex="#FCD8FC"/>
-			<Color Hex="#FCB8FC"/>
-			<Color Hex="#FC9CFC"/>
-			<Color Hex="#FC7CFC"/>
-			<Color Hex="#FC5CFC"/>
-			<Color Hex="#FC40FC"/>
-			<Color Hex="#FC20FC"/>
-			<Color Hex="#FC00FC"/>
-			<Color Hex="#E000E4"/>
-			<Color Hex="#C800CC"/>
-			<Color Hex="#B400B4"/>
-			<Color Hex="#9C009C"/>
-			<Color Hex="#840084"/>
-			<Color Hex="#6C0070"/>
-			<Color Hex="#580058"/>
-			<Color Hex="#400040"/>
-			<Color Hex="#FCE8DC"/>
-			<Color Hex="#FCE0D0"/>
-			<Color Hex="#FCD8C4"/>
-			<Color Hex="#FCD4BC"/>
-			<Color Hex="#FCCCB0"/>
-			<Color Hex="#FCC4A4"/>
-			<Color Hex="#FCBC9C"/>
-			<Color Hex="#FCB890"/>
-			<Color Hex="#FCB080"/>
-			<Color Hex="#FCA470"/>
-			<Color Hex="#FC9C60"/>
-			<Color Hex="#F0945C"/>
-			<Color Hex="#E88C58"/>
-			<Color Hex="#DC8854"/>
-			<Color Hex="#D08050"/>
-			<Color Hex="#C87C4C"/>
-			<Color Hex="#BC7848"/>
-			<Color Hex="#B47044"/>
-			<Color Hex="#A86840"/>
-			<Color Hex="#A0643C"/>
-			<Color Hex="#9C6038"/>
-			<Color Hex="#905C34"/>
-			<Color Hex="#885830"/>
-			<Color Hex="#80502C"/>
-			<Color Hex="#744C28"/>
-			<Color Hex="#6C4824"/>
-			<Color Hex="#5C4020"/>
-			<Color Hex="#543C1C"/>
-			<Color Hex="#483818"/>
-			<Color Hex="#403018"/>
-			<Color Hex="#382C14"/>
-			<Color Hex="#28200C"/>
-			<Color Hex="#600064"/>
-			<Color Hex="#006464"/>
-			<Color Hex="#006060"/>
-			<Color Hex="#00001C"/>
-			<Color Hex="#00002C"/>
-			<Color Hex="#302410"/>
-			<Color Hex="#480048"/>
-			<Color Hex="#500050"/>
-			<Color Hex="#000034"/>
-			<Color Hex="#1C1C1C"/>
-			<Color Hex="#4C4C4C"/>
-			<Color Hex="#5C5C5C"/>
-			<Color Hex="#404040"/>
-			<Color Hex="#303030"/>
-			<Color Hex="#343434"/>
-			<Color Hex="#D8F4F4"/>
-			<Color Hex="#B8E8E8"/>
-			<Color Hex="#9CDCDC"/>
-			<Color Hex="#74C8C8"/>
-			<Color Hex="#48C0C0"/>
-			<Color Hex="#20B4B4"/>
-			<Color Hex="#20B0B0"/>
-			<Color Hex="#00A4A4"/>
-			<Color Hex="#009898"/>
-			<Color Hex="#008C8C"/>
-			<Color Hex="#008484"/>
-			<Color Hex="#007C7C"/>
-			<Color Hex="#007878"/>
-			<Color Hex="#007474"/>
-			<Color Hex="#007070"/>
-			<Color Hex="#006C6C"/>
-			<Color Hex="#980088"/>
+			<Color Hex="#000000" />
+			<Color Hex="#0000A8" />
+			<Color Hex="#00A800" />
+			<Color Hex="#00A8A8" />
+			<Color Hex="#A80000" />
+			<Color Hex="#A800A8" />
+			<Color Hex="#A85400" />
+			<Color Hex="#A8A8A8" />
+			<Color Hex="#545454" />
+			<Color Hex="#5454FC" />
+			<Color Hex="#54FC54" />
+			<Color Hex="#54FCFC" />
+			<Color Hex="#FC5454" />
+			<Color Hex="#FC54FC" />
+			<Color Hex="#FCFC54" />
+			<Color Hex="#FCFCFC" />
+			<Color Hex="#ECECEC" />
+			<Color Hex="#DCDCDC" />
+			<Color Hex="#D0D0D0" />
+			<Color Hex="#C0C0C0" />
+			<Color Hex="#B4B4B4" />
+			<Color Hex="#A8A8A8" />
+			<Color Hex="#989898" />
+			<Color Hex="#8C8C8C" />
+			<Color Hex="#7C7C7C" />
+			<Color Hex="#707070" />
+			<Color Hex="#646464" />
+			<Color Hex="#545454" />
+			<Color Hex="#484848" />
+			<Color Hex="#383838" />
+			<Color Hex="#2C2C2C" />
+			<Color Hex="#202020" />
+			<Color Hex="#FC0000" />
+			<Color Hex="#EC0000" />
+			<Color Hex="#E00000" />
+			<Color Hex="#D40000" />
+			<Color Hex="#C80000" />
+			<Color Hex="#BC0000" />
+			<Color Hex="#B00000" />
+			<Color Hex="#A40000" />
+			<Color Hex="#980000" />
+			<Color Hex="#880000" />
+			<Color Hex="#7C0000" />
+			<Color Hex="#700000" />
+			<Color Hex="#640000" />
+			<Color Hex="#580000" />
+			<Color Hex="#4C0000" />
+			<Color Hex="#400000" />
+			<Color Hex="#FCD8D8" />
+			<Color Hex="#FCB8B8" />
+			<Color Hex="#FC9C9C" />
+			<Color Hex="#FC7C7C" />
+			<Color Hex="#FC5C5C" />
+			<Color Hex="#FC4040" />
+			<Color Hex="#FC2020" />
+			<Color Hex="#FC0000" />
+			<Color Hex="#FCA85C" />
+			<Color Hex="#FC9840" />
+			<Color Hex="#FC8820" />
+			<Color Hex="#FC7800" />
+			<Color Hex="#E46C00" />
+			<Color Hex="#CC6000" />
+			<Color Hex="#B45400" />
+			<Color Hex="#9C4C00" />
+			<Color Hex="#FCFCD8" />
+			<Color Hex="#FCFCB8" />
+			<Color Hex="#FCFC9C" />
+			<Color Hex="#FCFC7C" />
+			<Color Hex="#FCF85C" />
+			<Color Hex="#FCF440" />
+			<Color Hex="#FCF420" />
+			<Color Hex="#FCF400" />
+			<Color Hex="#E4D800" />
+			<Color Hex="#CCC400" />
+			<Color Hex="#B4AC00" />
+			<Color Hex="#9C9C00" />
+			<Color Hex="#848400" />
+			<Color Hex="#706C00" />
+			<Color Hex="#585400" />
+			<Color Hex="#404000" />
+			<Color Hex="#D0FC5C" />
+			<Color Hex="#C4FC40" />
+			<Color Hex="#B4FC20" />
+			<Color Hex="#A0FC00" />
+			<Color Hex="#90E400" />
+			<Color Hex="#80CC00" />
+			<Color Hex="#74B400" />
+			<Color Hex="#609C00" />
+			<Color Hex="#D8FCD8" />
+			<Color Hex="#BCFCB8" />
+			<Color Hex="#9CFC9C" />
+			<Color Hex="#80FC7C" />
+			<Color Hex="#60FC5C" />
+			<Color Hex="#40FC40" />
+			<Color Hex="#20FC20" />
+			<Color Hex="#00FC00" />
+			<Color Hex="#00FC00" />
+			<Color Hex="#00EC00" />
+			<Color Hex="#00E000" />
+			<Color Hex="#00D400" />
+			<Color Hex="#04C800" />
+			<Color Hex="#04BC00" />
+			<Color Hex="#04B000" />
+			<Color Hex="#04A400" />
+			<Color Hex="#049800" />
+			<Color Hex="#048800" />
+			<Color Hex="#047C00" />
+			<Color Hex="#047000" />
+			<Color Hex="#046400" />
+			<Color Hex="#045800" />
+			<Color Hex="#044C00" />
+			<Color Hex="#044000" />
+			<Color Hex="#D8FCFC" />
+			<Color Hex="#B8FCFC" />
+			<Color Hex="#9CFCFC" />
+			<Color Hex="#7CFCF8" />
+			<Color Hex="#5CFCFC" />
+			<Color Hex="#40FCFC" />
+			<Color Hex="#20FCFC" />
+			<Color Hex="#00FCFC" />
+			<Color Hex="#00E4E4" />
+			<Color Hex="#00CCCC" />
+			<Color Hex="#00B4B4" />
+			<Color Hex="#009C9C" />
+			<Color Hex="#008484" />
+			<Color Hex="#007070" />
+			<Color Hex="#005858" />
+			<Color Hex="#004040" />
+			<Color Hex="#5CBCFC" />
+			<Color Hex="#40B0FC" />
+			<Color Hex="#20A8FC" />
+			<Color Hex="#009CFC" />
+			<Color Hex="#008CE4" />
+			<Color Hex="#007CCC" />
+			<Color Hex="#006CB4" />
+			<Color Hex="#005C9C" />
+			<Color Hex="#D8D8FC" />
+			<Color Hex="#B8BCFC" />
+			<Color Hex="#9C9CFC" />
+			<Color Hex="#7C80FC" />
+			<Color Hex="#5C60FC" />
+			<Color Hex="#4040FC" />
+			<Color Hex="#2024FC" />
+			<Color Hex="#0004FC" />
+			<Color Hex="#0000FC" />
+			<Color Hex="#0000EC" />
+			<Color Hex="#0000E0" />
+			<Color Hex="#0000D4" />
+			<Color Hex="#0000C8" />
+			<Color Hex="#0000BC" />
+			<Color Hex="#0000B0" />
+			<Color Hex="#0000A4" />
+			<Color Hex="#000098" />
+			<Color Hex="#000088" />
+			<Color Hex="#00007C" />
+			<Color Hex="#000070" />
+			<Color Hex="#000064" />
+			<Color Hex="#000058" />
+			<Color Hex="#00004C" />
+			<Color Hex="#000040" />
+			<Color Hex="#282828" />
+			<Color Hex="#FCE034" />
+			<Color Hex="#FCD424" />
+			<Color Hex="#FCCC18" />
+			<Color Hex="#FCC008" />
+			<Color Hex="#FCB400" />
+			<Color Hex="#B420FC" />
+			<Color Hex="#A800FC" />
+			<Color Hex="#9800E4" />
+			<Color Hex="#8000CC" />
+			<Color Hex="#7400B4" />
+			<Color Hex="#60009C" />
+			<Color Hex="#500084" />
+			<Color Hex="#440070" />
+			<Color Hex="#340058" />
+			<Color Hex="#280040" />
+			<Color Hex="#FCD8FC" />
+			<Color Hex="#FCB8FC" />
+			<Color Hex="#FC9CFC" />
+			<Color Hex="#FC7CFC" />
+			<Color Hex="#FC5CFC" />
+			<Color Hex="#FC40FC" />
+			<Color Hex="#FC20FC" />
+			<Color Hex="#FC00FC" />
+			<Color Hex="#E000E4" />
+			<Color Hex="#C800CC" />
+			<Color Hex="#B400B4" />
+			<Color Hex="#9C009C" />
+			<Color Hex="#840084" />
+			<Color Hex="#6C0070" />
+			<Color Hex="#580058" />
+			<Color Hex="#400040" />
+			<Color Hex="#FCE8DC" />
+			<Color Hex="#FCE0D0" />
+			<Color Hex="#FCD8C4" />
+			<Color Hex="#FCD4BC" />
+			<Color Hex="#FCCCB0" />
+			<Color Hex="#FCC4A4" />
+			<Color Hex="#FCBC9C" />
+			<Color Hex="#FCB890" />
+			<Color Hex="#FCB080" />
+			<Color Hex="#FCA470" />
+			<Color Hex="#FC9C60" />
+			<Color Hex="#F0945C" />
+			<Color Hex="#E88C58" />
+			<Color Hex="#DC8854" />
+			<Color Hex="#D08050" />
+			<Color Hex="#C87C4C" />
+			<Color Hex="#BC7848" />
+			<Color Hex="#B47044" />
+			<Color Hex="#A86840" />
+			<Color Hex="#A0643C" />
+			<Color Hex="#9C6038" />
+			<Color Hex="#905C34" />
+			<Color Hex="#885830" />
+			<Color Hex="#80502C" />
+			<Color Hex="#744C28" />
+			<Color Hex="#6C4824" />
+			<Color Hex="#5C4020" />
+			<Color Hex="#543C1C" />
+			<Color Hex="#483818" />
+			<Color Hex="#403018" />
+			<Color Hex="#382C14" />
+			<Color Hex="#28200C" />
+			<Color Hex="#600064" />
+			<Color Hex="#006464" />
+			<Color Hex="#006060" />
+			<Color Hex="#00001C" />
+			<Color Hex="#00002C" />
+			<Color Hex="#302410" />
+			<Color Hex="#480048" />
+			<Color Hex="#500050" />
+			<Color Hex="#000034" />
+			<Color Hex="#1C1C1C" />
+			<Color Hex="#4C4C4C" />
+			<Color Hex="#5C5C5C" />
+			<Color Hex="#404040" />
+			<Color Hex="#303030" />
+			<Color Hex="#343434" />
+			<Color Hex="#D8F4F4" />
+			<Color Hex="#B8E8E8" />
+			<Color Hex="#9CDCDC" />
+			<Color Hex="#74C8C8" />
+			<Color Hex="#48C0C0" />
+			<Color Hex="#20B4B4" />
+			<Color Hex="#20B0B0" />
+			<Color Hex="#00A4A4" />
+			<Color Hex="#009898" />
+			<Color Hex="#008C8C" />
+			<Color Hex="#008484" />
+			<Color Hex="#007C7C" />
+			<Color Hex="#007878" />
+			<Color Hex="#007474" />
+			<Color Hex="#007070" />
+			<Color Hex="#006C6C" />
+			<Color Hex="#980088" />
 		</Palette>
 	</Palettes>
 </Game>

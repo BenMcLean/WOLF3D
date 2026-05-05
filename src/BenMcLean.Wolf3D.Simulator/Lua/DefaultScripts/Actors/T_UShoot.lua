@@ -25,9 +25,9 @@ end
 
 local shootSound = GetShootSound()
 if shootSound ~= nil and shootSound ~= "" then
-	PlayLocalDigiSound(shootSound)
+	PlayLocalSound(shootSound)
 else
-	PlayLocalDigiSound("NAZIFIRESND")
+	PlayLocalSound("NAZIFIRESND")
 end
 
 if CalculateDistanceToPlayer() <= 1 then

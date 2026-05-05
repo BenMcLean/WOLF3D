@@ -1,6 +1,6 @@
 if GetValue("Health") < 12 then
 	AddValue("Health", 1)
-	PlayDigiSound("SLURPIESND")
+	PlaySound("SLURPIESND")
 	FlashScreen(0xFFF800)
 	return true
 end

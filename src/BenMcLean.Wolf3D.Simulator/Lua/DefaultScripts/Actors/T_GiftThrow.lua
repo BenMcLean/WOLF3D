@@ -3,4 +3,4 @@
 -- Original: GetNewActor(), new->obclass = rocketobj, new->angle = iangle, PlaySoundLocActor(MISSILEFIRESND)
 local angle = GetAngleToPlayer()
 SpawnProjectile("rocket", angle)
-PlayLocalDigiSound("MISSILEFIRESND")
+PlayLocalSound("MISSILEFIRESND")

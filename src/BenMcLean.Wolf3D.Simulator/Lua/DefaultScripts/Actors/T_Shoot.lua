@@ -51,7 +51,7 @@ end
 -- Defaults to NAZIFIRESND (guards, officers, mutants, gretelobj).
 local shootSound = GetShootSound()
 if shootSound ~= nil and shootSound ~= "" then
-	PlayLocalDigiSound(shootSound)
+	PlayLocalSound(shootSound)
 else
-	PlayLocalDigiSound("NAZIFIRESND")
+	PlayLocalSound("NAZIFIRESND")
 end

@@ -15,11 +15,11 @@ end
 
 if actorType == "Angel" then
 	SpawnProjectile("spark", angle)
-	PlayLocalDigiSound("ANGELFIRESND")
+	PlayLocalSound("ANGELFIRESND")
 elseif actorType == "Death" then
 	SpawnProjectile("hrocket", angle)
-	PlayLocalDigiSound("KNIGHTMISSILESND")
+	PlayLocalSound("KNIGHTMISSILESND")
 else
 	SpawnProjectile("rocket", angle)
-	PlayLocalDigiSound("MISSILEFIRESND")
+	PlayLocalSound("MISSILEFIRESND")
 end

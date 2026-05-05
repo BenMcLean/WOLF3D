@@ -1,6 +1,6 @@
 if GetValue("Health") < GetMax("Health") then
 	AddValue("Health", 25)
-	PlayAdLibSound("HEALTH2SND")
+	PlaySound("HEALTH2SND")
 	FlashScreen(0xFFF800)
 	return true
 end

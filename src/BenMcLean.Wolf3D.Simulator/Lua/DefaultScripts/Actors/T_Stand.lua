@@ -44,7 +44,7 @@ local chaseState = GetChaseState()
 if chaseState ~= nil and chaseState ~= "" then
 	local alertSound = GetAlertSound()
 	if alertSound ~= nil and alertSound ~= "" then
-		PlayLocalDigiSound(alertSound)
+		PlayLocalSound(alertSound)
 	end
 	ChangeState(chaseState)
 end

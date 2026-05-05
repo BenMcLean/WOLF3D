@@ -25,7 +25,7 @@ local function touchPlayer(oldX, oldY, oldDistance)
 	local oldHealth = GetValue("Health")
 	DamagePlayer(damage)
 	if GetValue("Health") < oldHealth then
-		PlayLocalDigiSound("NAZIHITPLAYERSND")
+		PlayLocalSound("NAZIHITPLAYERSND")
 	end
 	SetPosition(oldX, oldY)
 	SetDistance(oldDistance)
