@@ -16,7 +16,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// <code>
 /// if GetValue("Health") &lt; GetMax("Health") then
 ///     AddValue("Health", 10)
-///     PlayLocalDigiSound("HEALTH1SND")
+///     PlaySound("HEALTH1SND")
 ///     return true
 /// end
 /// return false
@@ -25,7 +25,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// Example Lua script for key pickup:
 /// <code>
 /// SetValue("Gold Key", 1)
-/// PlayLocalDigiSound("GETKEYSND")
+/// PlaySound("GETKEYSND")
 /// return true
 /// </code>
 ///
@@ -35,7 +35,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// SetValue("Weapon2", 1)
 /// AddValue("Ammo", 6)
 /// if isNew then SwitchToWeapon("machinegun") end
-/// PlayAdLibSound("GETMACHINESND")
+/// PlaySound("GETMACHINESND")
 /// FlashScreen(0xFFF800)
 /// return true
 /// </code>

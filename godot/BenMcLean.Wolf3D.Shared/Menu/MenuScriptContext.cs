@@ -24,7 +24,7 @@ public class MenuScriptContext(
 	Config config,
 	ILogger logger = null) : Simulator.Lua.BaseScriptContext(logger)
 {
-	// Sound methods (PlayDigiSound, PlayAdLibSound, PlayMusic, StopMusic) inherited from BaseScriptContext
+	// Sound methods (PlaySound, PlayMusic, StopMusic) inherited from BaseScriptContext
 	#region Logging
 	/// <summary>
 	/// Log a debug message from Lua script.
@@ -506,7 +506,7 @@ public class MenuScriptContext(
 				targetValue,
 				tickerDef,
 				UpdateTickerAction,
-				PlayAdLibSoundAction));
+				PlaySoundAction));
 		}
 		else
 			// No sequence active - set value immediately

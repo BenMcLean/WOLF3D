@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,12 @@ namespace BenMcLean.Wolf3D.Assets.Sound;
 /// </summary>
 public sealed class AudioT
 {
+	public sealed class SoundInfo
+	{
+		public required uint Number { get; init; }
+		public required string Name { get; init; }
+		public string DigiSoundName { get; init; }
+	}
 	public static AudioT Load(XElement xml, string folder = "")
 	{
 		XElement el   = xml.Element("Audio");
@@ -22,9 +29,30 @@ public sealed class AudioT
 		using FileStream audioTStream = new(Path.Combine(folder, audioT), FileMode.Open);
 		return new AudioT(audioHead, audioTStream, el);
 	}
+	public Dictionary<string, SoundInfo> LogicalSounds { get; private init; }
+	public Dictionary<string, string> LogicalToDigiSoundName { get; private init; }
+	public Dictionary<string, string> DigiToLogicalSoundName { get; private init; }
 	public Dictionary<string, PcSpeaker> PcSounds { get; private init; }
 	public Dictionary<string, Adl> Sounds { get; private init; }
 	public Dictionary<string, Music> Songs { get; private init; }
+	public bool HasLogicalSound(string soundName) =>
+		!string.IsNullOrWhiteSpace(soundName) && LogicalSounds.ContainsKey(soundName);
+	public string ResolveLogicalSoundName(string requestedSoundName)
+	{
+		if (string.IsNullOrWhiteSpace(requestedSoundName) || HasLogicalSound(requestedSoundName))
+			return requestedSoundName;
+		return DigiToLogicalSoundName.TryGetValue(requestedSoundName, out string logicalSoundName)
+			? logicalSoundName
+			: requestedSoundName;
+	}
+	public bool TryGetMappedDigiSoundName(string requestedSoundName, out string digiSoundName)
+	{
+		digiSoundName = null;
+		if (string.IsNullOrWhiteSpace(requestedSoundName))
+			return false;
+		string logicalSoundName = ResolveLogicalSoundName(requestedSoundName);
+		return LogicalToDigiSoundName.TryGetValue(logicalSoundName, out digiSoundName);
+	}
 	public static uint[] ParseHead(Stream stream)
 	{
 		List<uint> list = [];
@@ -63,54 +91,72 @@ public sealed class AudioT
 	}
 	public AudioT(byte[][] file, XElement xml)
 	{
+		SoundInfo[] logicalSounds = [..
+			xml.Elements("Sound")
+				.Select(soundElement =>
+				{
+					if (!uint.TryParse(soundElement.Attribute("Number")?.Value, out uint number))
+						return null;
+					string name = soundElement.Attribute("Name")?.Value;
+					if (string.IsNullOrWhiteSpace(name))
+						return null;
+					return new SoundInfo
+					{
+						Number = number,
+						Name = name,
+						DigiSoundName = soundElement.Attribute("DigiSound")?.Value
+					};
+				})
+				.Where(sound => sound is not null)];
+		LogicalSounds = logicalSounds.ToDictionary(sound => sound.Name, StringComparer.OrdinalIgnoreCase);
+		LogicalToDigiSoundName = logicalSounds
+			.Where(sound => !string.IsNullOrWhiteSpace(sound.DigiSoundName))
+			.ToDictionary(sound => sound.Name, sound => sound.DigiSoundName, StringComparer.OrdinalIgnoreCase);
+		DigiToLogicalSoundName = new(StringComparer.OrdinalIgnoreCase);
+		foreach (SoundInfo sound in logicalSounds)
+			if (!string.IsNullOrWhiteSpace(sound.DigiSoundName) &&
+				!DigiToLogicalSoundName.ContainsKey(sound.DigiSoundName))
+				DigiToLogicalSoundName[sound.DigiSoundName] = sound.Name;
 		// Load PC Speaker sounds (if StartPCSounds attribute exists)
 		// From AUDIOWL1.H: #define STARTPCSOUNDS 0
 		// PC Speaker sounds are stored first in AUDIOT, before AdLib sounds
 		PcSounds = uint.TryParse(xml.Attribute("StartPCSounds")?.Value, out uint startPcSounds)
-			? xml.Elements("Sound")
+			? logicalSounds
 				.AsParallel()
-				.Select(soundElement =>
+				.Select(sound =>
 				{
-					uint number = (uint)soundElement.Attribute("Number");
-					string name = soundElement.Attribute("Name")?.Value;
-					if (string.IsNullOrWhiteSpace(name))
-						return null;
-					byte[] bytes = file[startPcSounds + number];
+					byte[] bytes = file[startPcSounds + sound.Number];
 					if (bytes is null)
 						return null;
-					using MemoryStream sound = new(bytes);
+					using MemoryStream pcSound = new(bytes);
 					return new
 					{
-						Name = name,
-						Sound = new PcSpeaker(sound)
+						Name = sound.Name,
+						Sound = new PcSpeaker(pcSound)
 					};
 				})
 				.Where(x => x is not null)
-				.ToDictionary(x => x.Name, x => x.Sound)
+				.ToDictionary(x => x.Name, x => x.Sound, StringComparer.OrdinalIgnoreCase)
 			: [];
 		// Load AdLib sounds
 		// From AUDIOWL1.H: #define STARTADLIBSOUNDS 69
 		Sounds = uint.TryParse(xml.Attribute("StartAdlibSounds")?.Value, out uint startAdlibSounds)
-			? xml.Elements("Sound")
+			? logicalSounds
 				.AsParallel()
-				.Select(soundElement =>
+				.Select(sound =>
 				{
-					uint number = (uint)soundElement.Attribute("Number");
-					string name = soundElement.Attribute("Name")?.Value;
-					if (string.IsNullOrWhiteSpace(name))
-						return null;
-					byte[] bytes = file[startAdlibSounds + number];
+					byte[] bytes = file[startAdlibSounds + sound.Number];
 					if (bytes is null)
 						return null;
-					using MemoryStream sound = new(bytes);
+					using MemoryStream adlSound = new(bytes);
 					return new
 					{
-						Name = name,
-						Sound = new Adl(sound)
+						Name = sound.Name,
+						Sound = new Adl(adlSound)
 					};
 				})
 				.Where(x => x is not null)
-				.ToDictionary(x => x.Name, x => x.Sound)
+				.ToDictionary(x => x.Name, x => x.Sound, StringComparer.OrdinalIgnoreCase)
 			: [];
 		uint startMusic = (uint)xml.Attribute("StartMusic"),
 			endMusic = (uint)file.Length - startMusic;
@@ -146,6 +192,6 @@ public sealed class AudioT
 						Imf = Imf.ReadImf(song),
 					};
 			})
-			.ToDictionary(song => song.Name, song => song);
+			.ToDictionary(song => song.Name, song => song, StringComparer.OrdinalIgnoreCase);
 	}
 }

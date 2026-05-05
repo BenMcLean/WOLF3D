@@ -127,8 +127,7 @@ public class MenuManager
 			GetSelectedIndexFunc = () => _selectedItemIndex,
 			SetPictureAction = SetPicture,
 			// Wire up sound playback
-			PlayDigiSoundAction = PlayAdLibSoundImpl,
-			PlayAdLibSoundAction = PlayAdLibSoundImpl,
+			PlaySoundAction = PlaySoundImpl,
 			PlayMusicAction = PlayMusicImpl,
 			StopMusicAction = StopMusicImpl,
 			// Wire up dynamic content updates (for intermission screen)
@@ -373,7 +372,7 @@ public class MenuManager
 	{
 		// WL_MENU.C:HandleMenu case 2: SD_PlaySound(ESCPRESSEDSND); return -1;
 		if (!string.IsNullOrEmpty(_menuCollection.EscPressedSound))
-			_scriptContext.PlayAdLibSound(_menuCollection.EscPressedSound);
+			_scriptContext.PlaySound(_menuCollection.EscPressedSound);
 		if (string.IsNullOrEmpty(menuDef.OnCancel))
 			return;
 		try
@@ -790,7 +789,7 @@ public class MenuManager
 		if (selectSound is null && _menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition currentMenu))
 			selectSound = currentMenu.SelectSound;
 		if (!string.IsNullOrEmpty(selectSound))
-			PlayAdLibSoundImpl(selectSound);
+			PlaySoundImpl(selectSound);
 
 		if (item.IsPresentationSlot)
 		{
@@ -846,7 +845,7 @@ public class MenuManager
 	private void PlayCursorMoveSound(MenuDefinition menuDef)
 	{
 		if (!string.IsNullOrEmpty(menuDef.CursorMoveSound))
-			_scriptContext.PlayAdLibSound(menuDef.CursorMoveSound);
+			_scriptContext.PlaySound(menuDef.CursorMoveSound);
 	}
 	/// <summary>
 	/// Update a named text label's content.
@@ -886,15 +885,15 @@ public class MenuManager
 	}
 	#region Sound Playback Implementation
 	/// <summary>
-	/// Play an AdLib sound effect by name.
-	/// Looks up the sound in the current game's AudioT and plays it via SoundBlaster.
+	/// Play a logical sound effect by name.
+	/// The active sound pipeline resolves the requested sound to the selected device.
 	/// </summary>
-	/// <param name="soundName">Name of the AdLib sound (e.g., "MOVEGUN2SND")</param>
-	private void PlayAdLibSoundImpl(string soundName)
+	/// <param name="soundName">Logical sound name (e.g., "MOVEGUN2SND")</param>
+	private void PlaySoundImpl(string soundName)
 	{
-		if (SharedAssetManager.CurrentGame?.AudioT?.Sounds is null)
+		if (SharedAssetManager.CurrentGame?.AudioT is null)
 		{
-			GD.PrintErr($"Warning: Cannot play AdLib sound '{soundName}' - no AudioT loaded");
+			GD.PrintErr($"Warning: Cannot play sound '{soundName}' - no AudioT loaded");
 			return;
 		}
 		EventBus.Emit(GameEvent.PlaySound, soundName);

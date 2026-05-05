@@ -193,8 +193,8 @@ public partial class SoundBlaster : Node
 		if (config is null || string.IsNullOrWhiteSpace(soundName))
 			return;
 
-		// Wolf3D resolves from a single logical sound id, preferring digitized playback
-		// whenever digi is enabled and a digi mapping exists for the requested sound.
+		// Wolf3D resolves from a single logical sound id, preferring a mapped DigiSound
+		// whenever digitized playback is enabled for that logical sound.
 		if (SharedAssetManager.IsDigitizedSoundEnabled &&
 			SharedAssetManager.TryGetDigiSound(soundName, out AudioStreamWav stream, out _))
 		{

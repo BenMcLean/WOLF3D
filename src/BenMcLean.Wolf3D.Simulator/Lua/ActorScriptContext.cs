@@ -8,7 +8,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// <summary>
 /// Script context for actor Think and Action functions.
 /// Extends EntityScriptContext with actor-specific API for AI, movement, combat, and state transitions.
-/// Inherits PlayLocalDigiSound for positional audio at actor's location.
+/// Uses PlayLocalSound for positional sound intent at the actor's location.
 /// </summary>
 public class ActorScriptContext(
 	Simulator simulator,
@@ -816,13 +816,12 @@ public class ActorScriptContext(
 	/// <summary>
 	/// Play a positional sound at this actor's location.
 	/// WL_STATE.C:PlaySoundLocActor
-	/// Sound will be attached to this actor and move with it during playback when digi is
-	/// available; presentation falls back to global logical playback otherwise.
+	/// Sound will be attached to this actor and move with it during playback when enhanced
+	/// positional playback is available; presentation falls back to the logical sound path otherwise.
 	/// Overrides EntityScriptContext.PlayLocalSound to use actor-specific sound emission.
 	/// </summary>
 	/// <param name="soundName">Sound name (e.g., "HALTSND")</param>
 	public override void PlayLocalSound(string soundName) => simulator.EmitActorPlaySound(actorIndex, soundName);
-	public override void PlayLocalDigiSound(string soundName) => PlayLocalSound(soundName);
 	// DespawnActor not yet implemented — SpawnActor is inherited from ActionScriptContext
 	public void DespawnActor(int actorId) =>
 		throw new System.NotImplementedException("DespawnActor from Lua scripts is not yet implemented.");

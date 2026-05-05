@@ -13,19 +13,9 @@ public class BaseScriptContext(ILogger logger = null) : IScriptContext
 	protected readonly ILogger _logger = logger;
 	/// <summary>
 	/// Action to invoke when PlaySound is called.
-	/// Set by the host to wire up logical sound playback with engine-side fallback.
+	/// Set by the host to resolve the requested logical sound on the active sound hardware.
 	/// </summary>
 	public Action<string> PlaySoundAction { get; set; }
-	/// <summary>
-	/// Action to invoke when PlayDigiSound is called.
-	/// Set by the host (e.g., MenuManager, ActionStage) to wire up sound playback.
-	/// </summary>
-	public Action<string> PlayDigiSoundAction { get; set; }
-	/// <summary>
-	/// Action to invoke when PlayAdLibSound is called.
-	/// Set by the host (e.g., MenuManager, ActionStage) to wire up AdLib sound playback.
-	/// </summary>
-	public Action<string> PlayAdLibSoundAction { get; set; }
 	/// <summary>
 	/// Action to invoke when PlayMusic is called.
 	/// Set by the host (e.g., MenuManager, ActionStage) to wire up music playback.
@@ -38,27 +28,15 @@ public class BaseScriptContext(ILogger logger = null) : IScriptContext
 	public Action StopMusicAction { get; set; }
 	/// <summary>
 	/// Play a sound effect globally (non-positional).
-	/// The host resolves digi/AdLib/PC fallback automatically.
+	/// The host resolves the logical sound to the active output device automatically.
 	/// </summary>
 	public virtual void PlaySound(string soundName)
 	{
 		if (PlaySoundAction is not null)
 			PlaySoundAction(soundName);
-		else if (PlayDigiSoundAction is not null)
-			PlayDigiSoundAction(soundName);
-		else if (PlayAdLibSoundAction is not null)
-			PlayAdLibSoundAction(soundName);
 		else
 			_logger?.LogDebug("BaseScriptContext: PlaySound({soundName}) - no handler wired", soundName);
 	}
-	/// <summary>
-	/// Legacy compatibility wrapper for explicit DigiSound calls.
-	/// </summary>
-	public virtual void PlayDigiSound(string soundName) => PlaySound(soundName);
-	/// <summary>
-	/// Legacy compatibility wrapper for explicit AdLib calls.
-	/// </summary>
-	public virtual void PlayAdLibSound(string soundName) => PlaySound(soundName);
 	/// <summary>
 	/// Play background music by name.
 	/// </summary>

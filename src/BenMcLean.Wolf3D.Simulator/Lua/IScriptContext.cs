@@ -9,19 +9,9 @@ public interface IScriptContext
 {
 	/// <summary>
 	/// Play a sound effect by logical sound name.
-	/// The host resolves digi/AdLib/PC fallback automatically.
+	/// The host resolves the logical sound to the active output device automatically.
 	/// </summary>
 	void PlaySound(string soundName);
-	/// <summary>
-	/// Legacy compatibility wrapper for mods/scripts that explicitly ask for DigiSound.
-	/// Resolved through the same logical sound pipeline as PlaySound().
-	/// </summary>
-	void PlayDigiSound(string soundName);
-	/// <summary>
-	/// Legacy compatibility wrapper for mods/scripts that explicitly ask for AdLib sound.
-	/// Resolved through the same logical sound pipeline as PlaySound().
-	/// </summary>
-	void PlayAdLibSound(string soundName);
 	/// <summary>
 	/// Play background music by name.
 	/// </summary>

@@ -538,7 +538,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext faceContext = new(this, rng, gameClock, logger)
 			{
-				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
 			};
 			faceController.Update(faceContext);
 		}
@@ -616,11 +616,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			door.TileY,
 			logger)
 		{
-			// Wire up sound callbacks
-			PlayAdLibSoundAction = soundName =>
-				EmitDoorPlaySound(doorIndex, soundName),
-			PlayDigiSoundAction = soundName =>
-				EmitDoorPlaySound(doorIndex, soundName)
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			PlayLocalSoundAction = soundName => EmitDoorPlaySound(doorIndex, soundName)
 		};
 
 		try
@@ -633,7 +630,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				if (!result.Boolean)
 				{
-					// Door is locked - fire event (script handles sound via PlayLocalDigiSound)
+					// Door is locked - fire event (script handles sound via PlayLocalSound)
 					DoorLocked?.Invoke(new DoorLockedEvent
 					{
 						DoorIndex = doorIndex,
@@ -2847,7 +2844,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
 			};
 			try
 			{
@@ -2888,15 +2885,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <summary>
 	/// Emit a BonusPlaySound event for positional audio at an item's location.
 	/// </summary>
-	public void EmitBonusPlaySound(int statObjIndex, ushort tileX, ushort tileY, string soundName, bool isDigiSound)
+	public void EmitBonusPlaySound(int statObjIndex, ushort tileX, ushort tileY, string soundName)
 	{
 		BonusPlaySound?.Invoke(new BonusPlaySoundEvent
 		{
 			StatObjIndex = statObjIndex,
 			TileX = tileX,
 			TileY = tileY,
-			SoundName = soundName,
-			IsDigiSound = isDigiSound
+			SoundName = soundName
 		});
 	}
 
@@ -3008,7 +3004,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
 			};
 			try
 			{
@@ -3031,7 +3027,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlayAdLibSoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
 			};
 			try
 			{
@@ -3162,11 +3158,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			gameClock,
 			logger)
 		{
-			// Wire up sound callbacks - these emit events for the VR layer
-			PlayAdLibSoundAction = soundName =>
-					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: false),
-			PlayDigiSoundAction = soundName =>
-					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName, isDigiSound: true),
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			PlayLocalSoundAction = soundName =>
+					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName),
 			// Wire up menu navigation - generic mechanism for VictoryTile, quiz triggers, etc.
 			// Set navLocal so callers can detect a level transition and stop path traversal.
 			NavigateToMenuAction = menuName =>

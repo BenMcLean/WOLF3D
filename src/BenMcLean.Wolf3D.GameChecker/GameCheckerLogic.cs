@@ -239,7 +239,7 @@ public static class GameCheckerLogic
 		}
 
 		foreach (XElement el in doc.Descendants("Sound"))
-			if (CheckAttr(el, "Digi", digis, "digi sound") is { } i)
+			if (CheckAttr(el, "DigiSound", digis, "digi sound") is { } i)
 				yield return i;
 		#endregion Assets
 	}

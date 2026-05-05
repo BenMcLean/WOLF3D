@@ -488,21 +488,11 @@ public static class SharedAssetManager
 		_logicalToDigiSoundName = new(StringComparer.OrdinalIgnoreCase);
 		if (CurrentGame?.VSwap?.DigiSoundsByName is null)
 			return;
-		foreach (System.Xml.Linq.XElement soundElement in CurrentGame.XML.Element("Audio")?.Elements("Sound") ?? [])
+		if (CurrentGame.AudioT is not null)
 		{
-			string logicalName = soundElement.Attribute("Name")?.Value;
-			if (string.IsNullOrWhiteSpace(logicalName))
-				continue;
-
-			string digiName = soundElement.Attribute("Digi")?.Value;
-			if (string.IsNullOrWhiteSpace(digiName))
-				digiName = CurrentGame.VSwap.DigiSoundsByName.ContainsKey(logicalName) ? logicalName : null;
-
-			if (string.IsNullOrWhiteSpace(digiName))
-				continue;
-
-			_digiToLogicalSoundName[digiName] = logicalName;
-			if (!_logicalToDigiSoundName.ContainsKey(logicalName))
+			foreach ((string digiName, string logicalName) in CurrentGame.AudioT.DigiToLogicalSoundName)
+				_digiToLogicalSoundName[digiName] = logicalName;
+			foreach ((string logicalName, string digiName) in CurrentGame.AudioT.LogicalToDigiSoundName)
 				_logicalToDigiSoundName[logicalName] = digiName;
 		}
 		foreach ((string name, byte[] pcmData) in CurrentGame.VSwap.DigiSoundsByName)
@@ -526,17 +516,9 @@ public static class SharedAssetManager
 
 	public static string ResolveLogicalSoundName(string requestedSoundName)
 	{
-		if (string.IsNullOrWhiteSpace(requestedSoundName))
+		if (string.IsNullOrWhiteSpace(requestedSoundName) || CurrentGame?.AudioT is null)
 			return requestedSoundName;
-
-		if (HasLogicalSound(requestedSoundName))
-			return requestedSoundName;
-
-		return _digiToLogicalSoundName is not null &&
-			_digiToLogicalSoundName.TryGetValue(requestedSoundName, out string fallbackName) &&
-			!string.IsNullOrWhiteSpace(fallbackName)
-			? fallbackName
-			: requestedSoundName;
+		return CurrentGame.AudioT.ResolveLogicalSoundName(requestedSoundName);
 	}
 
 	public static bool TryGetDigiSound(
@@ -553,14 +535,13 @@ public static class SharedAssetManager
 		if (_digiSounds.TryGetValue(requestedSoundName, out stream))
 			return true;
 
-		return _logicalToDigiSoundName is not null &&
-			_logicalToDigiSoundName.TryGetValue(logicalSoundName, out string digiSoundName) &&
+		return CurrentGame?.AudioT is not null &&
+			CurrentGame.AudioT.TryGetMappedDigiSoundName(logicalSoundName, out string digiSoundName) &&
 			_digiSounds.TryGetValue(digiSoundName, out stream);
 	}
 
 	private static bool HasLogicalSound(string soundName) =>
-		CurrentGame?.AudioT?.Sounds?.ContainsKey(soundName) == true ||
-		CurrentGame?.AudioT?.PcSounds?.ContainsKey(soundName) == true;
+		CurrentGame?.AudioT?.HasLogicalSound(soundName) == true;
 	#endregion DigiSounds
 	#region BonusAutomapTiles
 	/// <summary>

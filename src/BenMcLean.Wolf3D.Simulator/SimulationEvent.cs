@@ -185,7 +185,7 @@ public struct ActorDespawnedEvent
 }
 
 /// <summary>
-/// An actor should play a digi sound.
+/// An actor should play a sound.
 /// Triggered by actor scripts (WL_STATE.C:PlaySoundLocActor).
 /// Presentation layer attaches sound to the actor - sound moves with actor during playback.
 /// </summary>
@@ -202,7 +202,7 @@ public struct ActorPlaySoundEvent
 }
 
 /// <summary>
-/// A door should play a digi sound.
+/// A door should play a sound.
 /// Triggered by door events (WL_ACT1.C:DoorOpening, DoorClosing).
 /// Presentation layer attaches sound to the door - can sweep across doorframe as it opens/closes.
 /// </summary>
@@ -244,7 +244,7 @@ public struct PushWallPositionChangedEvent
 }
 
 /// <summary>
-/// A pushwall should play a digi sound.
+/// A pushwall should play a sound.
 /// Triggered when pushwall starts moving (WL_ACT1.C).
 /// Presentation layer attaches sound to the pushwall - sound moves with pushwall during playback.
 /// </summary>
@@ -375,8 +375,6 @@ public struct BonusPlaySoundEvent
 	public required ushort TileY { get; init; }
 	/// <summary>Sound name to play (e.g., "HEALTH1SND", "GETKEYSND")</summary>
 	public required string SoundName { get; init; }
-	/// <summary>True if this is a digitized sound, false for AdLib/PC speaker</summary>
-	public required bool IsDigiSound { get; init; }
 }
 
 /// <summary>

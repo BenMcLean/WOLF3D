@@ -1428,15 +1428,16 @@
 	<xs:element name="Sound">
 		<xs:annotation>
 			<xs:documentation>
-				AdLib/PC Speaker sound effect from AUDIOT file.
-				Distinct from DigiSound (Sound Blaster samples stored in VSWAP).
-				Number is the index into the AUDIOT sound table.
+				Logical sound definition from AUDIOT.
+				Number is the index into the AUDIOT sound table for the non-digitized form.
+				If DigiSound is present, PlaySound/PlayLocalSound should prefer that VSWAP
+				digitized sound when digitized playback is enabled.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:attribute name="Number" type="xs:nonNegativeInteger" use="required"/>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
-			<xs:attribute name="Digi" type="xs:string" use="optional"/>
+			<xs:attribute name="DigiSound" type="xs:string" use="optional"/>
 		</xs:complexType>
 	</xs:element>
 
@@ -1816,7 +1817,7 @@
 				&lt;BonusScript Name="health_small"&gt;
 				if GetPlayerHealth() &lt; GetPlayerMaxHealth() then
 				HealPlayer(4)
-				PlayLocalDigiSound("HEALTH1SND")
+				PlaySound("HEALTH1SND")
 				return true
 				end
 				return false
@@ -1947,7 +1948,7 @@
 				(PUSHABLETILE = 98) that Cmd_Use checks (WL_AGENT.C). The wall plane at the same
 				position holds the actual wall texture (any tile) chosen by the level designer —
 				PushWall() reads it as oldtile to display as the wall slides (WL_ACT1.C).
-				DigiSound plays when the player pushes the wall.
+				Logical sound name to use when the player pushes the wall.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>

@@ -6,7 +6,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// Script context for door interaction scripts.
 /// Extends EntityScriptContext with door-specific API.
 /// Called when player attempts to open a door, script returns true to allow opening.
-/// Inherits PlayLocalDigiSound for positional audio at door location.
+/// Uses PlayLocalSound for positional audio intent at the door location.
 ///
 /// Uses generic inventory API inherited from ActionScriptContext:
 /// - GetValue(name), SetValue(name, value), AddValue(name, delta)
@@ -17,7 +17,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua;
 /// if Has("Gold Key") then
 ///     return true
 /// end
-/// PlayLocalDigiSound("NOWAYSND")
+/// PlayLocalSound("NOWAYSND")
 /// return false
 /// </code>
 /// </summary>
