@@ -510,33 +510,37 @@ end
 			</Menu>
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
-			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="ViewScores" Font="SMALL" Music="XAWARD_MUS" BordColor="153" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
-				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
-				<Text X="32" Y="68">NAME</Text>
-				<Text X="160" Y="68">LEVEL</Text>
-				<Text X="224" Y="68">SCORE</Text>
-				<Text Id="Name0"  X="32"  Y="76"> </Text>
-				<Text Id="Level0" X="160" Y="76"> </Text>
-				<Text Id="Score0" X="224" Y="76"> </Text>
-				<Text Id="Name1"  X="32"  Y="92"> </Text>
-				<Text Id="Level1" X="160" Y="92"> </Text>
-				<Text Id="Score1" X="224" Y="92"> </Text>
-				<Text Id="Name2"  X="32"  Y="108"> </Text>
-				<Text Id="Level2" X="160" Y="108"> </Text>
-				<Text Id="Score2" X="224" Y="108"> </Text>
-				<Text Id="Name3"  X="32"  Y="124"> </Text>
-				<Text Id="Level3" X="160" Y="124"> </Text>
-				<Text Id="Score3" X="224" Y="124"> </Text>
-				<Text Id="Name4"  X="32"  Y="140"> </Text>
-				<Text Id="Level4" X="160" Y="140"> </Text>
-				<Text Id="Score4" X="224" Y="140"> </Text>
-				<Text Id="Name5"  X="32"  Y="156"> </Text>
-				<Text Id="Level5" X="160" Y="156"> </Text>
-				<Text Id="Score5" X="224" Y="156"> </Text>
-				<Text Id="Name6"  X="32"  Y="172"> </Text>
-				<Text Id="Level6" X="160" Y="172"> </Text>
-				<Text Id="Score6" X="224" Y="172"> </Text>
+			<!-- WL_HSCOR.C SPEAR: fontnumber=1 (STARTFONT+1) = BIG font for all text -->
+			<Menu Name="ViewScores" Font="BIG" Music="XAWARD_MUS" BordColor="153" TextColor="19" X="0" Y="0" Indent="0" Spacing="0">
+				<!-- WL_HSCOR.C SPEAR: ClearMScreen() = VWB_DrawPic(0,0,C_BACKDROPPIC) -->
+				<Picture Name="C_BACKDROPPIC" X="0" Y="0" />
+				<!-- WL_HSCOR.C SPEAR: DrawStripes(10) = VWB_Bar(0,10,320,22,0) + VWB_Hlin(0,319,33,0) -->
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" />
+				<!-- WL_HSCOR.C SPEAR: VWB_DrawPic(0,0,HIGHSCORESPIC) — column headers baked into graphic, no C_NAMEPIC/C_LEVELPIC/C_SCOREPIC -->
+				<Picture Name="HIGHSCORESPIC" X="0" Y="0" />
+				<!-- 7 rows at PrintY = 76 + 16*i; Name PrintX=16, Level right-align to 194, Score right-align to 292 -->
+				<Text Id="Name0"  X="16"  Y="76"> </Text>
+				<Text Id="Level0" X="178" Y="76"> </Text>
+				<Text Id="Score0" X="252" Y="76"> </Text>
+				<Text Id="Name1"  X="16"  Y="92"> </Text>
+				<Text Id="Level1" X="178" Y="92"> </Text>
+				<Text Id="Score1" X="252" Y="92"> </Text>
+				<Text Id="Name2"  X="16"  Y="108"> </Text>
+				<Text Id="Level2" X="178" Y="108"> </Text>
+				<Text Id="Score2" X="252" Y="108"> </Text>
+				<Text Id="Name3"  X="16"  Y="124"> </Text>
+				<Text Id="Level3" X="178" Y="124"> </Text>
+				<Text Id="Score3" X="252" Y="124"> </Text>
+				<Text Id="Name4"  X="16"  Y="140"> </Text>
+				<Text Id="Level4" X="178" Y="140"> </Text>
+				<Text Id="Score4" X="252" Y="140"> </Text>
+				<Text Id="Name5"  X="16"  Y="156"> </Text>
+				<Text Id="Level5" X="178" Y="156"> </Text>
+				<Text Id="Score5" X="252" Y="156"> </Text>
+				<Text Id="Name6"  X="16"  Y="172"> </Text>
+				<Text Id="Level6" X="178" Y="172"> </Text>
+				<Text Id="Score6" X="252" Y="172"> </Text>
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
 				<Pause>NavigateToMenu("Main")</Pause>
 				<OnShow>
@@ -659,39 +663,38 @@ GivePoints(15000)
 			</Menu>
 			<!-- High scores screen: WL_HSCOR.C:CheckHighScore / DrawHighScores -->
 			<!-- Shown after game over or victory. Auto-advances to Title after 9 seconds. -->
-			<!-- WL_HSCOR.C: StartCPMusic(ROSTER_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
-			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
-			<Menu Name="HighScores" Font="SMALL" Music="XAWARD_MUS" BordColor="153" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
-				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
-				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
-				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
-				<Text X="32" Y="68">NAME</Text>
-				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
-				<Text X="160" Y="68">LEVEL</Text>
-				<!-- WL_HSCOR.C:VWB_DrawPic(28*8,68,C_SCOREPIC) -->
-				<Text X="224" Y="68">SCORE</Text>
-				<!-- 7 rows at PrintY = 76 + 16*i -->
-				<Text Id="Name0"  X="32"  Y="76"> </Text>
-				<Text Id="Level0" X="160" Y="76"> </Text>
-				<Text Id="Score0" X="224" Y="76"> </Text>
-				<Text Id="Name1"  X="32"  Y="92"> </Text>
-				<Text Id="Level1" X="160" Y="92"> </Text>
-				<Text Id="Score1" X="224" Y="92"> </Text>
-				<Text Id="Name2"  X="32"  Y="108"> </Text>
-				<Text Id="Level2" X="160" Y="108"> </Text>
-				<Text Id="Score2" X="224" Y="108"> </Text>
-				<Text Id="Name3"  X="32"  Y="124"> </Text>
-				<Text Id="Level3" X="160" Y="124"> </Text>
-				<Text Id="Score3" X="224" Y="124"> </Text>
-				<Text Id="Name4"  X="32"  Y="140"> </Text>
-				<Text Id="Level4" X="160" Y="140"> </Text>
-				<Text Id="Score4" X="224" Y="140"> </Text>
-				<Text Id="Name5"  X="32"  Y="156"> </Text>
-				<Text Id="Level5" X="160" Y="156"> </Text>
-				<Text Id="Score5" X="224" Y="156"> </Text>
-				<Text Id="Name6"  X="32"  Y="172"> </Text>
-				<Text Id="Level6" X="160" Y="172"> </Text>
-				<Text Id="Score6" X="224" Y="172"> </Text>
+			<!-- WL_HSCOR.C SPEAR: StartCPMusic(XAWARD_MUS); DrawHighScores(); IN_UserInput(500) ≈ 9 sec -->
+			<!-- WL_HSCOR.C SPEAR: fontnumber=1 (STARTFONT+1) = BIG font for all text -->
+			<Menu Name="HighScores" Font="BIG" Music="XAWARD_MUS" BordColor="153" TextColor="19" X="0" Y="0" Indent="0" Spacing="0">
+				<!-- WL_HSCOR.C SPEAR: ClearMScreen() = VWB_DrawPic(0,0,C_BACKDROPPIC) -->
+				<Picture Name="C_BACKDROPPIC" X="0" Y="0" />
+				<!-- WL_HSCOR.C SPEAR: DrawStripes(10) = VWB_Bar(0,10,320,22,0) + VWB_Hlin(0,319,33,0) -->
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" />
+				<!-- WL_HSCOR.C SPEAR: VWB_DrawPic(0,0,HIGHSCORESPIC) — column headers baked into graphic, no C_NAMEPIC/C_LEVELPIC/C_SCOREPIC -->
+				<Picture Name="HIGHSCORESPIC" X="0" Y="0" />
+				<!-- 7 rows at PrintY = 76 + 16*i; Name PrintX=16, Level right-align to 194, Score right-align to 292 -->
+				<Text Id="Name0"  X="16"  Y="76"> </Text>
+				<Text Id="Level0" X="178" Y="76"> </Text>
+				<Text Id="Score0" X="252" Y="76"> </Text>
+				<Text Id="Name1"  X="16"  Y="92"> </Text>
+				<Text Id="Level1" X="178" Y="92"> </Text>
+				<Text Id="Score1" X="252" Y="92"> </Text>
+				<Text Id="Name2"  X="16"  Y="108"> </Text>
+				<Text Id="Level2" X="178" Y="108"> </Text>
+				<Text Id="Score2" X="252" Y="108"> </Text>
+				<Text Id="Name3"  X="16"  Y="124"> </Text>
+				<Text Id="Level3" X="178" Y="124"> </Text>
+				<Text Id="Score3" X="252" Y="124"> </Text>
+				<Text Id="Name4"  X="16"  Y="140"> </Text>
+				<Text Id="Level4" X="178" Y="140"> </Text>
+				<Text Id="Score4" X="252" Y="140"> </Text>
+				<Text Id="Name5"  X="16"  Y="156"> </Text>
+				<Text Id="Level5" X="178" Y="156"> </Text>
+				<Text Id="Score5" X="252" Y="156"> </Text>
+				<Text Id="Name6"  X="16"  Y="172"> </Text>
+				<Text Id="Level6" X="178" Y="172"> </Text>
+				<Text Id="Score6" X="252" Y="172"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
 				<!-- After high scores, game is over: discard suspended game and return to startup -->
 				<Pause Duration="00:00:09">EndGame()</Pause>
