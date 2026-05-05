@@ -505,7 +505,7 @@ end
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score add -->
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="ViewScores" Font="SMALL" Music="XAWARD_MUS" BordColor="153" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
-				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
 				<Text X="32" Y="68">NAME</Text>
 				<Text X="160" Y="68">LEVEL</Text>
 				<Text X="224" Y="68">SCORE</Text>
@@ -656,7 +656,7 @@ GivePoints(15000)
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="HighScores" Font="SMALL" Music="XAWARD_MUS" BordColor="153" TextColor="15" X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
-				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
 				<Text X="32" Y="68">NAME</Text>
 				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->
@@ -707,20 +707,11 @@ end
 			</Menu>
 			<!-- Spear victory prelude: WL_INTER.C:Victory collapse sequence -->
 			<!-- Shown when BJ finishes the victory run/jump animation. -->
-			<Menu Name="Victory" Music="XTHEEND_MUS" KeepWeapons="true">
-				<Picture Name="BJCOLLAPSE1PIC" X="124" Y="44" />
-				<Pause Duration="00:00:02">NavigateToMenu("VictoryCollapse2")</Pause>
-			</Menu>
-			<Menu Name="VictoryCollapse2" KeepWeapons="true">
-				<Picture Name="BJCOLLAPSE2PIC" X="124" Y="44" />
-				<Pause Duration="00:00:01.5">NavigateToMenu("VictoryCollapse3")</Pause>
-			</Menu>
-			<Menu Name="VictoryCollapse3" KeepWeapons="true">
-				<Picture Name="BJCOLLAPSE3PIC" X="124" Y="44" />
-				<Pause Duration="00:00:01.5">NavigateToMenu("VictoryCollapse4")</Pause>
-			</Menu>
-			<Menu Name="VictoryCollapse4" KeepWeapons="true">
-				<Picture Name="BJCOLLAPSE4PIC" X="124" Y="44" />
+			<Menu Name="Victory" Music="XTHEEND_MUS" BordColor="127" KeepWeapons="true">
+				<Picture Id="BJCollapse" Name="BJCOLLAPSE1PIC" X="124" Y="44" />
+				<Pause Duration="00:00:02">SetPicture("BJCollapse", "BJCOLLAPSE2PIC")</Pause>
+				<Pause Duration="00:00:01.5">SetPicture("BJCollapse", "BJCOLLAPSE3PIC")</Pause>
+				<Pause Duration="00:00:01.5">SetPicture("BJCollapse", "BJCOLLAPSE4PIC")</Pause>
 				<Pause Duration="00:00:03">NavigateToMenu("VictoryStats")</Pause>
 			</Menu>
 			<!-- Victory screen: WL_INTER.C:Victory statistics screen after the Spear collapse prelude -->
@@ -768,45 +759,46 @@ StartTicker("AvgTreasureRatio", tr)
 			</Menu>
 			<!-- Spear finale: WL_INTER.C:EndSpear -->
 			<!-- Palette-specific fades are not modeled yet; this keeps the original screen order and timing/input flow. -->
-			<Menu Name="EndSpear11" KeepWeapons="true">
+			<!-- WL_INTER.C:EndSpear has no StartCPMusic call; URAHERO_MUS continues from VictoryStats through all ending screens. -->
+			<Menu Name="EndSpear11" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN11PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpearText1")</Pause>
 			</Menu>
-			<Menu Name="EndSpearText1" Font="SMALL" TextColor="208" KeepWeapons="true">
+			<Menu Name="EndSpearText1" Font="SMALL" TextColor="208" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN3PIC" X="0" Y="0" />
 				<Text X="20" Y="180">WE OWE YOU A GREAT DEBT, MR. BLAZKOWICZ.&#10;YOU HAVE SERVED YOUR COUNTRY WELL.</Text>
 				<Pause Duration="00:00:10">NavigateToMenu("EndSpearText2")</Pause>
 			</Menu>
-			<Menu Name="EndSpearText2" Font="SMALL" TextColor="208" KeepWeapons="true">
+			<Menu Name="EndSpearText2" Font="SMALL" TextColor="208" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN3PIC" X="0" Y="0" />
 				<Text X="16" Y="180">WITH THE SPEAR GONE, THE ALLIES WILL FINALLY&#10;BY ABLE TO DESTROY HITLER...</Text>
 				<Pause Duration="00:00:10">NavigateToMenu("EndSpear4")</Pause>
 			</Menu>
-			<Menu Name="EndSpear4" KeepWeapons="true">
+			<Menu Name="EndSpear4" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN4PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpear5")</Pause>
 			</Menu>
-			<Menu Name="EndSpear5" KeepWeapons="true">
+			<Menu Name="EndSpear5" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN5PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpear6")</Pause>
 			</Menu>
-			<Menu Name="EndSpear6" KeepWeapons="true">
+			<Menu Name="EndSpear6" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN6PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpear7")</Pause>
 			</Menu>
-			<Menu Name="EndSpear7" KeepWeapons="true">
+			<Menu Name="EndSpear7" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN7PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpear8")</Pause>
 			</Menu>
-			<Menu Name="EndSpear8" KeepWeapons="true">
+			<Menu Name="EndSpear8" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN8PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpear9")</Pause>
 			</Menu>
-			<Menu Name="EndSpear9" KeepWeapons="true">
+			<Menu Name="EndSpear9" BordColor="0" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN9PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("EndSpear12")</Pause>
 			</Menu>
-			<Menu Name="EndSpear12" KeepWeapons="true">
+			<Menu Name="EndSpear12" Music="URAHERO_MUS" KeepWeapons="true">
 				<Picture Name="ENDSCREEN12PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("HighScores")</Pause>
 			</Menu>
@@ -1647,6 +1639,7 @@ return false
 		</Sprites>
 		<DigiSounds>
 			<DigiSound Number="0" Name="HALTSND" />
+			<DigiSound Number="1" Name="DOGBARKSND" />
 			<DigiSound Number="2" Name="CLOSEDOORSND" />
 			<DigiSound Number="3" Name="OPENDOORSND" />
 			<DigiSound Number="4" Name="ATKMACHINEGUNSND" />
@@ -1686,7 +1679,6 @@ return false
 			<DigiSound Number="37" Name="ANGELDEATHSND" />
 			<DigiSound Number="38" Name="GETGATLINGSND" />
 			<DigiSound Number="39" Name="GETSPEARSND" />
-			<DigiSound Number="1" Name="DOGBARKSND" />
 		</DigiSounds>
 		<StatInfo UseWallSound="DONOTHINGSND">
 			<BonusScript Name="VictoryTile">
