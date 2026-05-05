@@ -383,18 +383,33 @@ public class MenuRenderer
 			return;
 		foreach (MenuBoxDefinition boxDef in menuDef.Boxes)
 		{
-			// WL_MENU.C:DrawWindow + DrawOutline - fill then beveled border
-			// Top and left edges use DEACTIVE color (lighter); bottom and right use BORD2COLOR (darker)
-			byte deactiveColor = boxDef.Deactive ?? 0x2b, // DEACTIVE default
-				border2Color = boxDef.Bord2Color ?? 0x23; // BORD2COLOR default
 			Color? bgColor = boxDef.BkgdColor.HasValue
 				? SharedAssetManager.GetPaletteColor(boxDef.BkgdColor.Value)
 				: null;
-			DrawBevelledBox(boxDef.X, boxDef.Y, boxDef.W, boxDef.H,
-				bgColor,
-				SharedAssetManager.GetPaletteColor(deactiveColor),
-				SharedAssetManager.GetPaletteColor(border2Color),
-				bgZIndex: 6, borderZIndex: 7);
+			if (boxDef.Bevel)
+			{
+				// WL_MENU.C:DrawWindow + DrawOutline - fill then beveled border
+				// Top and left edges use DEACTIVE color (lighter); bottom and right use BORD2COLOR (darker)
+				byte deactiveColor = boxDef.Deactive ?? 0x2b, // DEACTIVE default
+					border2Color = boxDef.Bord2Color ?? 0x23; // BORD2COLOR default
+				DrawBevelledBox(boxDef.X, boxDef.Y, boxDef.W, boxDef.H,
+					bgColor,
+					SharedAssetManager.GetPaletteColor(deactiveColor),
+					SharedAssetManager.GetPaletteColor(border2Color),
+					bgZIndex: 6, borderZIndex: 7);
+			}
+			else if (bgColor.HasValue)
+			{
+				// WL_MENU.C:VWB_Bar - plain filled rectangle, no border
+				// ZIndex 4: same layer as Stripes, below pictures (5) and beveled panels (6/7)
+				_canvas.AddChild(new ColorRect
+				{
+					Color = bgColor.Value,
+					Position = new Vector2(boxDef.X, boxDef.Y),
+					Size = new Vector2(boxDef.W, boxDef.H),
+					ZIndex = 4,
+				});
+			}
 		}
 	}
 	/// <summary>

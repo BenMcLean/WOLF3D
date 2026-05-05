@@ -933,8 +933,9 @@
 	<xs:element name="Box">
 		<xs:annotation>
 			<xs:documentation>
-				3D beveled box in a menu (WL_MENU.C:DrawWindow).
-				Draws a filled box with a 3D outline effect.
+				Filled box in a menu. By default draws a 3D beveled box (WL_MENU.C:DrawWindow).
+				Set Bevel="false" for a plain filled rectangle with no border (WL_MENU.C:VWB_Bar),
+				as used by Spear of Destiny's DrawStripes.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -965,12 +966,21 @@
 			</xs:attribute>
 			<xs:attribute name="Deactive" type="xs:nonNegativeInteger">
 				<xs:annotation>
-					<xs:documentation>Top/left border color. WL_MENU.H:DEACTIVE = 0x2b</xs:documentation>
+					<xs:documentation>Top/left border color. WL_MENU.H:DEACTIVE = 0x2b. Ignored when Bevel="false".</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:attribute name="Bord2Color" type="xs:nonNegativeInteger">
 				<xs:annotation>
-					<xs:documentation>Bottom/right border color. WL_MENU.H:BORD2COLOR = 0x23</xs:documentation>
+					<xs:documentation>Bottom/right border color. WL_MENU.H:BORD2COLOR = 0x23. Ignored when Bevel="false".</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Bevel" type="xs:boolean" default="true">
+				<xs:annotation>
+					<xs:documentation>
+						Whether to draw the 3D beveled border (WL_MENU.C:DrawOutline).
+						true (default): beveled box, WL_MENU.C:DrawWindow.
+						false: plain filled rectangle only, WL_MENU.C:VWB_Bar.
+					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 		</xs:complexType>

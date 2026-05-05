@@ -204,10 +204,13 @@
 				<Picture Name="TITLE2PIC" X="0" Y="80" />
 				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
 			</Menu>
-			<!-- Spear control panel uses C_BACKDROPPIC via ClearMScreen(), then overlays OPTIONS art and the menu box. -->
+			<!-- Spear control panel uses C_BACKDROPPIC via ClearMScreen(), then DrawStripes(10), then OPTIONS art. -->
+			<!-- DrawStripes(10): VWB_Bar(0,10,320,22,0) + VWB_Hlin(0,319,33,0) -->
 			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13">
-				<Picture Name="C_BACKDROPPIC" X="0" Y="0" />
-				<Picture Name="C_OPTIONSPIC" X="84" Y="0" Stripes="true" >
+				<Picture Name="C_BACKDROPPIC" X="0" Y="0" ZIndex="3" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" />
+				<Picture Name="C_OPTIONSPIC" X="84" Y="0" >
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
@@ -403,8 +406,10 @@ end
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_BACKDROPPIC" X="0" Y="0" />
-				<Picture Name="C_LOADGAMEPIC" X="60" Y="0" Stripes="true" />
+				<Picture Name="C_BACKDROPPIC" X="0" Y="0" ZIndex="3" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" />
+				<Picture Name="C_LOADGAMEPIC" X="60" Y="0" />
 				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
@@ -453,8 +458,10 @@ end
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_BACKDROPPIC" X="0" Y="0" />
-				<Picture Name="C_SAVEGAMEPIC" X="60" Y="0" Stripes="true" />
+				<Picture Name="C_BACKDROPPIC" X="0" Y="0" ZIndex="3" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" />
+				<Picture Name="C_SAVEGAMEPIC" X="60" Y="0" />
 				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>

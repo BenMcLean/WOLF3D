@@ -45,9 +45,9 @@ public class MenuFunction
 }
 
 /// <summary>
-/// Represents a 3D beveled box in a menu.
+/// Represents a filled box in a menu.
 /// Maps to a &lt;Box&gt; element in XML.
-/// WL_MENU.C:DrawWindow - draws a filled box with 3D outline
+/// WL_MENU.C:DrawWindow (Bevel=true) or VWB_Bar (Bevel=false)
 /// </summary>
 public class MenuBoxDefinition
 {
@@ -80,6 +80,10 @@ public class MenuBoxDefinition
 	/// </summary>
 	public byte? Bord2Color { get; set; }
 	/// <summary>
+	/// Whether to draw the 3D beveled border. Default true (DrawWindow). False = plain fill only (VWB_Bar).
+	/// </summary>
+	public bool Bevel { get; set; } = true;
+	/// <summary>
 	/// Creates a MenuBoxDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing box data (&lt;Box&gt;)</param>
@@ -101,6 +105,8 @@ public class MenuBoxDefinition
 			box.Deactive = deactive;
 		if (byte.TryParse(element.Attribute("Bord2Color")?.Value, out byte border2))
 			box.Bord2Color = border2;
+		if (bool.TryParse(element.Attribute("Bevel")?.Value, out bool bevel))
+			box.Bevel = bevel;
 
 		return box;
 	}
