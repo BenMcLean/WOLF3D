@@ -816,57 +816,6 @@ StartTicker("AvgTreasureRatio", tr)
 				<Picture Name="ENDSCREEN12PIC" X="0" Y="0" />
 				<Pause>NavigateToMenu("HighScores")</Pause>
 			</Menu>
-			<Menu Name="DeathCam_Schabbs_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_Schabbs_Cam")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_Schabbs_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_schabbdie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("MEINGOTTSND")</OnShow>
-				<Pause>NavigateToMenu("HighScores")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_Hitler_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_Hitler_Cam")</Pause>
-			</Menu>
-			<!-- WL_ACT2.C:A_StartDeathCam - only fires for realhitlerobj (not mechahitlerobj) -->
-			<Menu Name="DeathCam_Hitler_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_hitlerdie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("EVASND")</OnShow>
-				<Pause>NavigateToMenu("HighScores")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_Gretel_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_Gretel_Cam")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_Gretel_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_greteldie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("MEINSND")</OnShow>
-				<Pause>NavigateToMenu("HighScores")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_Giftmacher_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_Giftmacher_Cam")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_Giftmacher_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_giftdie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("DONNERSND")</OnShow>
-				<Pause>NavigateToMenu("HighScores")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_FatFace_See" Font="L" BordColor="127" Music="" KeepWeapons="true">
-				<Text X="0" Y="56" Font="L">LET'S SEE THAT AGAIN!</Text>
-				<Pause>NavigateToMenu("DeathCam_FatFace_Cam")</Pause>
-			</Menu>
-			<Menu Name="DeathCam_FatFace_Cam" Font="L" BordColor="0" Music="" KeepWeapons="true">
-				<StaticSprite Name="SPR_DEATHCAM" X="160" Y="32"/>
-				<ActorAnimation StartState="s_fatdie1" X="160" Y="130"/>
-				<OnShow>PlayDigiSound("ROSESND")</OnShow>
-				<Pause>NavigateToMenu("HighScores")</Pause>
-			</Menu>
 		</Menus>
 	</VgaGraph>
 	<Maps MapHead="MAPHEAD.SOD" GameMaps="GAMEMAPS.SOD" Floor="25" Ceiling="29" >
@@ -1059,8 +1008,6 @@ StartTicker("AvgTreasureRatio", tr)
 		</GameplayWeapons>
 		<Projectiles>
 			<!-- Enemy projectile definitions used by boss Lua attack scripts. -->
-			<Projectile Name="fire" InitialState="s_fire1" MinDamage="1" MaxDamage="128" Speed="4608" />
-			<Projectile Name="needle" InitialState="s_needle1" MinDamage="20" MaxDamage="51" Speed="8192" />
 			<Projectile Name="rocket" InitialState="s_rocket" MinDamage="30" MaxDamage="61" Speed="8192" />
 			<Projectile Name="hrocket" InitialState="s_hrocket" MinDamage="30" MaxDamage="61" Speed="8192" />
 			<Projectile Name="spark" InitialState="s_spark1" MinDamage="20" MaxDamage="51" Speed="8192" />
@@ -1527,7 +1474,7 @@ return false
 			<Sprite Page="473" Name="SPR_GIFT_DIE2" />
 			<Sprite Page="474" Name="SPR_GIFT_DIE3" />
 			<Sprite Page="475" Name="SPR_GIFT_DEAD" />
-			<!-- Rocket projectile (Giftmacher, FatFace) - positions 370-377 -->
+			<!-- Rocket projectile (Wilhelm) - positions 370-377 -->
 			<Sprite Page="426" Name="SPR_ROCKET_1" />
 			<Sprite Page="427" Name="SPR_ROCKET_2" />
 			<Sprite Page="428" Name="SPR_ROCKET_3" />
@@ -1882,10 +1829,6 @@ return false
 			<ObjectType Number="221" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="0" State="s_mutpath1" />
 			<ObjectType Number="222" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="0" State="s_mutpath1" />
 			<ObjectType Number="223" ObClass="actor" Actor="Mutant" Direction="S" Difficulty="0" State="s_mutpath1" />
-			<ObjectType Number="224" ObClass="actor" Actor="Blinky" Direction="E" Difficulty="0" State="s_blinkychase1" />
-			<ObjectType Number="225" ObClass="actor" Actor="Clyde" Direction="E" Difficulty="0" State="s_clydechase1" />
-			<ObjectType Number="226" ObClass="actor" Actor="Pinky" Direction="E" Difficulty="0" State="s_pinkychase1" />
-			<ObjectType Number="227" ObClass="actor" Actor="Inky" Direction="E" Difficulty="0" State="s_inkychase1" />
 			<ObjectType Number="234" ObClass="actor" Actor="Mutant" Direction="E" Difficulty="2" State="s_mutstand" />
 			<ObjectType Number="235" ObClass="actor" Actor="Mutant" Direction="N" Difficulty="2" State="s_mutstand" />
 			<ObjectType Number="236" ObClass="actor" Actor="Mutant" Direction="W" Difficulty="2" State="s_mutstand" />
@@ -1909,19 +1852,6 @@ return false
 			<ObjectType Number="142" ObClass="actor" Actor="Uber" Direction="S" />
 			<ObjectType Number="143" ObClass="actor" Actor="Wilhelm" Direction="S" />
 			<ObjectType Number="161" ObClass="actor" Actor="Death" Direction="S" />
-			<!-- WL_GAME.C:PlaceObjects case 160: SpawnFakeHitler -->
-			<ObjectType Number="160" ObClass="actor" Actor="FakeHitler" Direction="N" State="s_fakestand" />
-			<!-- WL_GAME.C:PlaceObjects case 178: SpawnHitler (Mecha-Hitler phase 1) -->
-			<ObjectType Number="178" ObClass="actor" Actor="MechaHitler" Direction="S" State="s_mechastand" />
-			<!-- WL_GAME.C:PlaceObjects case 179: SpawnFat (General Fettgesicht) -->
-			<ObjectType Number="179" ObClass="actor" Actor="FatFace" Direction="S" State="s_fatstand" />
-			<!-- WL_GAME.C:PlaceObjects case 196: SpawnSchabbs -->
-			<ObjectType Number="196" ObClass="actor" Actor="Schabbs" Direction="S" State="s_schabbstand" />
-			<!-- WL_GAME.C:PlaceObjects case 197: SpawnGretel -->
-			<ObjectType Number="197" ObClass="actor" Actor="Gretel" Direction="N" State="s_gretelstand" />
-			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
-			<!-- WL_GAME.C:PlaceObjects case 215: SpawnGift (Otto Giftmacher) -->
-			<ObjectType Number="215" ObClass="actor" Actor="Giftmacher" Direction="S" State="s_giftstand" />
 		</StatInfo>
 		<Actors>
 			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertSound="HALTSND" Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1" Pain="s_grdpain" Pain1="s_grdpain1" />
@@ -1996,18 +1926,6 @@ return false
 			<State Name="s_mutdie3" Shape="SPR_MUT_DIE_3" Tics="7" Speed="0" Next="s_mutdie4" Alive="false" Mark="false" />
 			<State Name="s_mutdie4" Shape="SPR_MUT_DIE_4" Tics="7" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
 			<State Name="s_mutdie5" Shape="SPR_MUT_DEAD" Tics="0" Speed="0" Next="s_mutdie5" Alive="false" Mark="false" />
-			<Actor Name="Blinky" HP="25,25,25,25" Stand="s_blinkychase1" Chase="s_blinkychase1" Ambush="true" />
-			<State Name="s_blinkychase1" Shape="SPR_BLINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase2" />
-			<State Name="s_blinkychase2" Shape="SPR_BLINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_blinkychase1" />
-			<Actor Name="Clyde" HP="25,25,25,25" Stand="s_clydechase1" Chase="s_clydechase1" Ambush="true" />
-			<State Name="s_clydechase1" Shape="SPR_CLYDE_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase2" />
-			<State Name="s_clydechase2" Shape="SPR_CLYDE_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_clydechase1" />
-			<Actor Name="Pinky" HP="25,25,25,25" Stand="s_pinkychase1" Chase="s_pinkychase1" Ambush="true" />
-			<State Name="s_pinkychase1" Shape="SPR_PINKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase2" />
-			<State Name="s_pinkychase2" Shape="SPR_PINKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_pinkychase1" />
-			<Actor Name="Inky" HP="25,25,25,25" Stand="s_inkychase1" Chase="s_inkychase1" Ambush="true" />
-			<State Name="s_inkychase1" Shape="SPR_INKY_W1" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase2" />
-			<State Name="s_inkychase2" Shape="SPR_INKY_W2" Tics="10" Think="T_Ghosts" Speed="1500" Next="s_inkychase1" />
 			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertSound="DOGBARKSND" Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogstand" Rotate="true" Shape="SPR_DOG_W1_1" Tics="0" Think="T_Stand" Speed="0" Next="s_dogstand" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path" Speed="1500" Next="s_dogpath1s" />
@@ -2060,178 +1978,7 @@ return false
 			<State Name="s_ssdie2" Shape="SPR_SS_DIE_2" Tics="15" Speed="0" Next="s_ssdie3" Alive="false" Mark="false" />
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_3" Tics="15" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4" Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" Ambush="true" />
-			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0" Next="s_bossstand" />
-			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase1s" />
-			<State Name="s_bosschase1s" Shape="SPR_BOSS_W1" Tics="3" Speed="512" Next="s_bosschase2" />
-			<State Name="s_bosschase2" Shape="SPR_BOSS_W2" Tics="8" Think="T_Chase" Speed="512" Next="s_bosschase3" />
-			<State Name="s_bosschase3" Shape="SPR_BOSS_W3" Tics="10" Think="T_Chase" Speed="512" Next="s_bosschase3s" />
-			<State Name="s_bosschase3s" Shape="SPR_BOSS_W3" Tics="3" Speed="512" Next="s_bosschase4" />
-			<State Name="s_bosschase4" Shape="SPR_BOSS_W4" Tics="8" Think="T_Chase" Speed="512" Next="s_bosschase1" />
-			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Speed="0" Next="s_bossdie2" Action="A_DeathScream" Alive="false" />
-			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Speed="0" Next="s_bossdie3" Alive="false" Mark="false" />
-			<State Name="s_bossdie3" Shape="SPR_BOSS_DIE3" Tics="15" Speed="0" Next="s_bossdie4" Alive="false" Mark="false" />
-			<State Name="s_bossdie4" Shape="SPR_BOSS_DEAD" Tics="0" Speed="0" Action="A_StartDeathCam" Next="s_bossdie4" Alive="false" Mark="false" />
-			<State Name="s_bossshoot1" Shape="SPR_BOSS_SHOOT1" Tics="30" Speed="0" Next="s_bossshoot2" />
-			<State Name="s_bossshoot2" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot3" />
-			<State Name="s_bossshoot3" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot4" />
-			<State Name="s_bossshoot4" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot5" />
-			<State Name="s_bossshoot5" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot6" />
-			<State Name="s_bossshoot6" Shape="SPR_BOSS_SHOOT2" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot7" />
-			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Speed="0" Action="T_Shoot" Next="s_bossshoot8" />
-			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Speed="0" Next="s_bosschase1" />
-			<!-- WL_ACT2.C:SpawnSchabbs — Episode 2 boss -->
-			<!-- Corrected HP from starthitpoints[]: Baby=850, DHM=950, BEO=1550, DI=2400 -->
-			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1" Death="s_schabbdie1" Ambush="true" />
-			<State Name="s_schabbstand"   Shape="SPR_SCHABB_W1"     Tics="0"  Think="T_Stand"      Speed="0"   Next="s_schabbstand" />
-			<State Name="s_schabbchase1"  Shape="SPR_SCHABB_W1"     Tics="10" Think="T_Schabb"     Speed="512" Next="s_schabbchase1s" />
-			<State Name="s_schabbchase1s" Shape="SPR_SCHABB_W1"     Tics="3"                       Speed="512" Next="s_schabbchase2" />
-			<State Name="s_schabbchase2"  Shape="SPR_SCHABB_W2"     Tics="8"  Think="T_Schabb"     Speed="512" Next="s_schabbchase3" />
-			<State Name="s_schabbchase3"  Shape="SPR_SCHABB_W3"     Tics="10" Think="T_Schabb"     Speed="512" Next="s_schabbchase3s" />
-			<State Name="s_schabbchase3s" Shape="SPR_SCHABB_W3"     Tics="3"                       Speed="512" Next="s_schabbchase4" />
-			<State Name="s_schabbchase4"  Shape="SPR_SCHABB_W4"     Tics="8"  Think="T_Schabb"     Speed="512" Next="s_schabbchase1" />
-			<!-- s_schabbdeathcam: replay re-entry state — A_StartDeathCam transitions here for DeathCam replay -->
-			<State Name="s_schabbdeathcam" Shape="SPR_SCHABB_W1"    Tics="1"                       Speed="0"   Next="s_schabbdie1" />
-			<State Name="s_schabbdie1"    Shape="SPR_SCHABB_W1"     Tics="10" Action="A_DeathScream" Speed="0" Alive="false" Next="s_schabbdie2" />
-			<State Name="s_schabbdie2"    Shape="SPR_SCHABB_W1"     Tics="10"                      Speed="0"   Alive="false" Mark="false" Next="s_schabbdie3" />
-			<State Name="s_schabbdie3"    Shape="SPR_SCHABB_DIE1"   Tics="10"                      Speed="0"   Alive="false" Mark="false" Next="s_schabbdie4" />
-			<State Name="s_schabbdie4"    Shape="SPR_SCHABB_DIE2"   Tics="10"                      Speed="0"   Alive="false" Mark="false" Next="s_schabbdie5" />
-			<State Name="s_schabbdie5"    Shape="SPR_SCHABB_DIE3"   Tics="10"                      Speed="0"   Alive="false" Mark="false" Next="s_schabbdie6" />
-			<State Name="s_schabbdie6"    Shape="SPR_SCHABB_DEAD"   Tics="20" Action="A_StartDeathCam" Speed="0" Next="s_schabbdie6" Alive="false" Mark="false" />
-			<!-- WL_ACT2.C:T_SchabbThrow — spawns needleobj at s_needle1, speed=0x2000 (8192) -->
-			<State Name="s_schabbshoot1"  Shape="SPR_SCHABB_SHOOT1" Tics="30"                      Speed="0"   Next="s_schabbshoot2" />
-			<State Name="s_schabbshoot2"  Shape="SPR_SCHABB_SHOOT2" Tics="10" Action="T_SchabbThrow" Speed="0" Next="s_schabbchase1" />
-			<!-- Hypodermic needle projectile states — WL_ACT2.C:T_SchabbThrow sets ob->speed=0x2000 at spawn -->
-			<State Name="s_needle1" Shape="SPR_HYPO1" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle2" />
-			<State Name="s_needle2" Shape="SPR_HYPO2" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle3" />
-			<State Name="s_needle3" Shape="SPR_HYPO3" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle4" />
-			<State Name="s_needle4" Shape="SPR_HYPO4" Tics="6" Think="T_Projectile" Speed="8192" Next="s_needle1" />
-			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 enemy -->
-			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1" Ambush="true" />
-			<State Name="s_fakestand"   Shape="SPR_FAKE_W1"     Tics="0" Think="T_Stand" Speed="0" Next="s_fakestand" />
-			<State Name="s_fakechase1"  Shape="SPR_FAKE_W1"     Tics="10" Think="T_Fake" Speed="512" Next="s_fakechase1s" />
-			<State Name="s_fakechase1s" Shape="SPR_FAKE_W1"     Tics="3" Speed="512" Next="s_fakechase2" />
-			<State Name="s_fakechase2"  Shape="SPR_FAKE_W2"     Tics="8" Think="T_Fake" Speed="512" Next="s_fakechase3" />
-			<State Name="s_fakechase3"  Shape="SPR_FAKE_W3"     Tics="10" Think="T_Fake" Speed="512" Next="s_fakechase3s" />
-			<State Name="s_fakechase3s" Shape="SPR_FAKE_W3"     Tics="3" Speed="512" Next="s_fakechase4" />
-			<State Name="s_fakechase4"  Shape="SPR_FAKE_W4"     Tics="8" Think="T_Fake" Speed="512" Next="s_fakechase1" />
-			<State Name="s_fakedie1"    Shape="SPR_FAKE_DIE1"   Tics="10" Action="A_DeathScream" Speed="0" Alive="false" Next="s_fakedie2" />
-			<State Name="s_fakedie2"    Shape="SPR_FAKE_DIE2"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie3" />
-			<State Name="s_fakedie3"    Shape="SPR_FAKE_DIE3"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie4" />
-			<State Name="s_fakedie4"    Shape="SPR_FAKE_DIE4"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie5" />
-			<State Name="s_fakedie5"    Shape="SPR_FAKE_DIE5"   Tics="10" Speed="0" Alive="false" Mark="false" Next="s_fakedie6" />
-			<State Name="s_fakedie6"    Shape="SPR_FAKE_DEAD"   Tics="0" Speed="0" Alive="false" Mark="false" Next="s_fakedie6" />
-			<State Name="s_fakeshoot1"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot2" />
-			<State Name="s_fakeshoot2"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot3" />
-			<State Name="s_fakeshoot3"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot4" />
-			<State Name="s_fakeshoot4"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot5" />
-			<State Name="s_fakeshoot5"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot6" />
-			<State Name="s_fakeshoot6"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot7" />
-			<State Name="s_fakeshoot7"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot8" />
-			<State Name="s_fakeshoot8"  Shape="SPR_FAKE_SHOOT"  Tics="8" Action="T_FakeFire" Speed="0" Next="s_fakeshoot9" />
-			<State Name="s_fakeshoot9"  Shape="SPR_FAKE_SHOOT"  Tics="8" Speed="0" Next="s_fakechase1" />
-			<!-- Fireball projectile states — WL_ACT2.C:T_FakeFire spawns fireobj at s_fire1, speed=0x1200 (4608) -->
-			<State Name="s_fire1" Shape="SPR_FIRE1" Tics="6" Think="T_Projectile" Speed="4608" Next="s_fire2" />
-			<State Name="s_fire2" Shape="SPR_FIRE2" Tics="6" Think="T_Projectile" Speed="4608" Next="s_fire1" />
-			<!-- WL_ACT2.C:SpawnHitler — Episode 3 boss, Phase 1 (Mecha-Hitler) -->
-			<!-- Corrected HP from starthitpoints[]: Baby=800, DHM=950, BEO=1050, DI=1200 -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case mechahitlerobj → DIESND -->
-			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1" Death="s_mechadie1" Ambush="true" />
-			<State Name="s_mechastand"   Shape="SPR_MECHA_W1"     Tics="0"  Think="T_Stand"  Speed="0"   Next="s_mechastand" />
-			<!-- WL_ACT2.C:A_MechaSound — plays MECHSTEPSND; fires on chase1 and chase3 (Action, not Think) -->
-			<State Name="s_mechachase1"  Shape="SPR_MECHA_W1"     Tics="10" Think="T_Chase"  Action="A_MechaSound" Speed="512" Next="s_mechachase1s" />
-			<State Name="s_mechachase1s" Shape="SPR_MECHA_W1"     Tics="6"                   Speed="512" Next="s_mechachase2" />
-			<State Name="s_mechachase2"  Shape="SPR_MECHA_W2"     Tics="8"  Think="T_Chase"  Speed="512" Next="s_mechachase3" />
-			<State Name="s_mechachase3"  Shape="SPR_MECHA_W3"     Tics="10" Think="T_Chase"  Action="A_MechaSound" Speed="512" Next="s_mechachase3s" />
-			<State Name="s_mechachase3s" Shape="SPR_MECHA_W3"     Tics="6"                   Speed="512" Next="s_mechachase4" />
-			<State Name="s_mechachase4"  Shape="SPR_MECHA_W4"     Tics="8"  Think="T_Chase"  Speed="512" Next="s_mechachase1" />
-			<!-- WL_ACT2.C:A_HitlerMorph fires on s_mechadie3 — spawns Real Hitler, mech loops dead in s_mechadie4 -->
-			<State Name="s_mechadie1"    Shape="SPR_MECHA_DIE1"   Tics="10" Action="A_DeathScream" Speed="0" Alive="false" Next="s_mechadie2" />
-			<State Name="s_mechadie2"    Shape="SPR_MECHA_DIE2"   Tics="10"                  Speed="0"   Alive="false" Mark="false" Next="s_mechadie3" />
-			<State Name="s_mechadie3"    Shape="SPR_MECHA_DIE3"   Tics="10" Action="A_HitlerMorph" Speed="0" Alive="false" Mark="false" Next="s_mechadie4" />
-			<State Name="s_mechadie4"    Shape="SPR_MECHA_DEAD"   Tics="0"                   Speed="0"   Alive="false" Mark="false" Next="s_mechadie4" />
-			<State Name="s_mechashoot1"  Shape="SPR_MECHA_SHOOT1" Tics="30"                  Speed="0"   Next="s_mechashoot2" />
-			<State Name="s_mechashoot2"  Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechashoot3" />
-			<State Name="s_mechashoot3"  Shape="SPR_MECHA_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechashoot4" />
-			<State Name="s_mechashoot4"  Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechashoot5" />
-			<State Name="s_mechashoot5"  Shape="SPR_MECHA_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechashoot6" />
-			<State Name="s_mechashoot6"  Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_mechachase1" />
-			<!-- WL_ACT2.C:A_HitlerMorph — Episode 3 boss, Phase 2 (Real Hitler, spawned by A_HitlerMorph) -->
-			<!-- Corrected HP from starthitpoints[]: Baby=200, DHM=300, BEO=400, DI=500 -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case realhitlerobj → DIESND -->
-			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1" Death="s_hitlerdie1" Ambush="true" />
-			<State Name="s_hitlerstand"    Shape="SPR_HITLER_W1"     Tics="0"  Think="T_Stand"  Speed="0"    Next="s_hitlerstand" />
-			<State Name="s_hitlerchase1"   Shape="SPR_HITLER_W1"     Tics="6"  Think="T_Chase"  Speed="1024" Next="s_hitlerchase1s" />
-			<State Name="s_hitlerchase1s"  Shape="SPR_HITLER_W1"     Tics="4"                   Speed="1024" Next="s_hitlerchase2" />
-			<State Name="s_hitlerchase2"   Shape="SPR_HITLER_W2"     Tics="2"  Think="T_Chase"  Speed="1024" Next="s_hitlerchase3" />
-			<State Name="s_hitlerchase3"   Shape="SPR_HITLER_W3"     Tics="6"  Think="T_Chase"  Speed="1024" Next="s_hitlerchase3s" />
-			<State Name="s_hitlerchase3s"  Shape="SPR_HITLER_W3"     Tics="4"                   Speed="1024" Next="s_hitlerchase4" />
-			<State Name="s_hitlerchase4"   Shape="SPR_HITLER_W4"     Tics="2"  Think="T_Chase"  Speed="1024" Next="s_hitlerchase1" />
-			<!-- s_hitlerdeathcam: replay re-entry state -->
-			<State Name="s_hitlerdeathcam" Shape="SPR_HITLER_W1"     Tics="10"                  Speed="0"    Next="s_hitlerdie1" />
-			<!-- WL_ACT2.C:s_hitlerdie3 fires A_Slurpie (plays SLURPIESND); s_hitlerdie10 fires A_StartDeathCam -->
-			<State Name="s_hitlerdie1"    Shape="SPR_HITLER_W1"     Tics="1"  Action="A_DeathScream" Speed="0" Alive="false" Next="s_hitlerdie2" />
-			<State Name="s_hitlerdie2"    Shape="SPR_HITLER_W1"     Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie3" />
-			<State Name="s_hitlerdie3"    Shape="SPR_HITLER_DIE1"   Tics="10" Action="A_Slurpie" Speed="0"  Alive="false" Mark="false" Next="s_hitlerdie4" />
-			<State Name="s_hitlerdie4"    Shape="SPR_HITLER_DIE2"   Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie5" />
-			<State Name="s_hitlerdie5"    Shape="SPR_HITLER_DIE3"   Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie6" />
-			<State Name="s_hitlerdie6"    Shape="SPR_HITLER_DIE4"   Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie7" />
-			<State Name="s_hitlerdie7"    Shape="SPR_HITLER_DIE5"   Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie8" />
-			<State Name="s_hitlerdie8"    Shape="SPR_HITLER_DIE6"   Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie9" />
-			<State Name="s_hitlerdie9"    Shape="SPR_HITLER_DIE7"   Tics="10"                  Speed="0"    Alive="false" Mark="false" Next="s_hitlerdie10" />
-			<State Name="s_hitlerdie10"   Shape="SPR_HITLER_DEAD"   Tics="20" Action="A_StartDeathCam" Speed="0" Next="s_hitlerdie10" Alive="false" Mark="false" />
-			<State Name="s_hitlershoot1"  Shape="SPR_HITLER_SHOOT1" Tics="30"                  Speed="0"    Next="s_hitlershoot2" />
-			<State Name="s_hitlershoot2"  Shape="SPR_HITLER_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlershoot3" />
-			<State Name="s_hitlershoot3"  Shape="SPR_HITLER_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlershoot4" />
-			<State Name="s_hitlershoot4"  Shape="SPR_HITLER_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlershoot5" />
-			<State Name="s_hitlershoot5"  Shape="SPR_HITLER_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlershoot6" />
-			<State Name="s_hitlershoot6"  Shape="SPR_HITLER_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"    Next="s_hitlerchase1" />
-			<!-- WL_ACT2.C:SpawnGretel — Episode 4 boss (chaingun, same AI as Hans) -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case gretelobj → KEINSND -->
-			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1" Death="s_greteldie1" Ambush="true" />
-			<State Name="s_gretelstand"   Shape="SPR_GRETEL_W1"     Tics="0"  Think="T_Stand"  Speed="0"   Next="s_gretelstand" />
-			<State Name="s_gretelchase1"  Shape="SPR_GRETEL_W1"     Tics="10" Think="T_Chase"  Speed="512" Next="s_gretelchase1s" />
-			<State Name="s_gretelchase1s" Shape="SPR_GRETEL_W1"     Tics="3"                   Speed="512" Next="s_gretelchase2" />
-			<State Name="s_gretelchase2"  Shape="SPR_GRETEL_W2"     Tics="8"  Think="T_Chase"  Speed="512" Next="s_gretelchase3" />
-			<State Name="s_gretelchase3"  Shape="SPR_GRETEL_W3"     Tics="10" Think="T_Chase"  Speed="512" Next="s_gretelchase3s" />
-			<State Name="s_gretelchase3s" Shape="SPR_GRETEL_W3"     Tics="3"                   Speed="512" Next="s_gretelchase4" />
-			<State Name="s_gretelchase4"  Shape="SPR_GRETEL_W4"     Tics="8"  Think="T_Chase"  Speed="512" Next="s_gretelchase1" />
-			<State Name="s_greteldie1"    Shape="SPR_GRETEL_DIE1"   Tics="15" Action="A_DeathScream" Speed="0" Alive="false" Next="s_greteldie2" />
-			<State Name="s_greteldie2"    Shape="SPR_GRETEL_DIE2"   Tics="15"                  Speed="0"   Alive="false" Mark="false" Next="s_greteldie3" />
-			<State Name="s_greteldie3"    Shape="SPR_GRETEL_DIE3"   Tics="15"                  Speed="0"   Alive="false" Mark="false" Next="s_greteldie4" />
-			<!-- Original source has no A_StartDeathCam for Gretel; added here as project extension -->
-			<State Name="s_greteldie4"    Shape="SPR_GRETEL_DEAD"   Tics="0"  Action="A_StartDeathCam" Speed="0" Next="s_greteldie4" Alive="false" Mark="false" />
-			<State Name="s_gretelshoot1"  Shape="SPR_GRETEL_SHOOT1" Tics="30"                  Speed="0"   Next="s_gretelshoot2" />
-			<State Name="s_gretelshoot2"  Shape="SPR_GRETEL_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_gretelshoot3" />
-			<State Name="s_gretelshoot3"  Shape="SPR_GRETEL_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"   Next="s_gretelshoot4" />
-			<State Name="s_gretelshoot4"  Shape="SPR_GRETEL_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_gretelshoot5" />
-			<State Name="s_gretelshoot5"  Shape="SPR_GRETEL_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"   Next="s_gretelshoot6" />
-			<State Name="s_gretelshoot6"  Shape="SPR_GRETEL_SHOOT2" Tics="10" Action="T_Shoot" Speed="0"   Next="s_gretelshoot7" />
-			<State Name="s_gretelshoot7"  Shape="SPR_GRETEL_SHOOT3" Tics="10" Action="T_Shoot" Speed="0"   Next="s_gretelshoot8" />
-			<State Name="s_gretelshoot8"  Shape="SPR_GRETEL_SHOOT1" Tics="10"                  Speed="0"   Next="s_gretelchase1" />
-			<!-- WL_ACT2.C:SpawnGift — Episode 5 boss (throws rockets via T_GiftThrow) -->
-			<!-- WL_ACT2.C:T_GiftThrow spawns rocketobj/s_rocket, NOT needles — plan was wrong -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case giftobj → EINESND -->
-			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" Ambush="true" />
-			<State Name="s_giftstand"   Shape="SPR_GIFT_W1"     Tics="0"  Think="T_Stand"     Speed="0"   Next="s_giftstand" />
-			<State Name="s_giftchase1"  Shape="SPR_GIFT_W1"     Tics="10" Think="T_Gift"      Speed="512" Next="s_giftchase1s" />
-			<State Name="s_giftchase1s" Shape="SPR_GIFT_W1"     Tics="3"                      Speed="512" Next="s_giftchase2" />
-			<State Name="s_giftchase2"  Shape="SPR_GIFT_W2"     Tics="8"  Think="T_Gift"      Speed="512" Next="s_giftchase3" />
-			<State Name="s_giftchase3"  Shape="SPR_GIFT_W3"     Tics="10" Think="T_Gift"      Speed="512" Next="s_giftchase3s" />
-			<State Name="s_giftchase3s" Shape="SPR_GIFT_W3"     Tics="3"                      Speed="512" Next="s_giftchase4" />
-			<State Name="s_giftchase4"  Shape="SPR_GIFT_W4"     Tics="8"  Think="T_Gift"      Speed="512" Next="s_giftchase1" />
-			<!-- s_giftdeathcam: replay re-entry state -->
-			<State Name="s_giftdeathcam" Shape="SPR_GIFT_W1"    Tics="1"                      Speed="0"   Next="s_giftdie1" />
-			<State Name="s_giftdie1"    Shape="SPR_GIFT_W1"     Tics="1"  Action="A_DeathScream" Speed="0" Alive="false" Next="s_giftdie2" />
-			<State Name="s_giftdie2"    Shape="SPR_GIFT_W1"     Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_giftdie3" />
-			<State Name="s_giftdie3"    Shape="SPR_GIFT_DIE1"   Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_giftdie4" />
-			<State Name="s_giftdie4"    Shape="SPR_GIFT_DIE2"   Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_giftdie5" />
-			<State Name="s_giftdie5"    Shape="SPR_GIFT_DIE3"   Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_giftdie6" />
-			<State Name="s_giftdie6"    Shape="SPR_GIFT_DEAD"   Tics="20" Action="A_StartDeathCam" Speed="0" Next="s_giftdie6" Alive="false" Mark="false" />
-			<!-- WL_ACT2.C:T_GiftThrow — spawns rocketobj at s_rocket, speed=0x2000 (8192) -->
-			<State Name="s_giftshoot1"  Shape="SPR_GIFT_SHOOT1" Tics="30"                     Speed="0"   Next="s_giftshoot2" />
-			<State Name="s_giftshoot2"  Shape="SPR_GIFT_SHOOT2" Tics="10" Action="T_GiftThrow" Speed="0"  Next="s_giftchase1" />
-			<!-- Rocket projectile states — WL_ACT2.C:T_GiftThrow sets ob->speed=0x2000 at spawn -->
+			<!-- Rocket projectile states — PREROTT/WL_ACT2.C:T_Launch default case; used by Wilhelm -->
 			<State Name="s_rocket"  Shape="SPR_ROCKET_1" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket2" />
 			<State Name="s_rocket2" Shape="SPR_ROCKET_2" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket3" />
 			<State Name="s_rocket3" Shape="SPR_ROCKET_3" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket4" />
@@ -2240,31 +1987,6 @@ return false
 			<State Name="s_rocket6" Shape="SPR_ROCKET_6" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket7" />
 			<State Name="s_rocket7" Shape="SPR_ROCKET_7" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket8" />
 			<State Name="s_rocket8" Shape="SPR_ROCKET_8" Tics="6" Think="T_Projectile" Speed="8192" Next="s_rocket" />
-			<!-- WL_ACT2.C:SpawnFat — Episode 6 boss (mixed attack: rocket then hitscan) -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case fatobj → ERLAUBENSND -->
-			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" Ambush="true" />
-			<State Name="s_fatstand"   Shape="SPR_FAT_W1"     Tics="0"  Think="T_Stand"     Speed="0"   Next="s_fatstand" />
-			<State Name="s_fatchase1"  Shape="SPR_FAT_W1"     Tics="10" Think="T_Fat"       Speed="512" Next="s_fatchase1s" />
-			<State Name="s_fatchase1s" Shape="SPR_FAT_W1"     Tics="3"                      Speed="512" Next="s_fatchase2" />
-			<State Name="s_fatchase2"  Shape="SPR_FAT_W2"     Tics="8"  Think="T_Fat"       Speed="512" Next="s_fatchase3" />
-			<State Name="s_fatchase3"  Shape="SPR_FAT_W3"     Tics="10" Think="T_Fat"       Speed="512" Next="s_fatchase3s" />
-			<State Name="s_fatchase3s" Shape="SPR_FAT_W3"     Tics="3"                      Speed="512" Next="s_fatchase4" />
-			<State Name="s_fatchase4"  Shape="SPR_FAT_W4"     Tics="8"  Think="T_Fat"       Speed="512" Next="s_fatchase1" />
-			<!-- s_fatdeathcam: replay re-entry state -->
-			<State Name="s_fatdeathcam" Shape="SPR_FAT_W1"    Tics="1"                      Speed="0"   Next="s_fatdie1" />
-			<State Name="s_fatdie1"    Shape="SPR_FAT_W1"     Tics="1"  Action="A_DeathScream" Speed="0" Alive="false" Next="s_fatdie2" />
-			<State Name="s_fatdie2"    Shape="SPR_FAT_W1"     Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_fatdie3" />
-			<State Name="s_fatdie3"    Shape="SPR_FAT_DIE1"   Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_fatdie4" />
-			<State Name="s_fatdie4"    Shape="SPR_FAT_DIE2"   Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_fatdie5" />
-			<State Name="s_fatdie5"    Shape="SPR_FAT_DIE3"   Tics="10"                     Speed="0"   Alive="false" Mark="false" Next="s_fatdie6" />
-			<State Name="s_fatdie6"    Shape="SPR_FAT_DEAD"   Tics="20" Action="A_StartDeathCam" Speed="0" Next="s_fatdie6" Alive="false" Mark="false" />
-			<!-- WL_ACT2.C:fatshoot2=T_GiftThrow (rocket), fatshoot3-6=T_Shoot (hitscan) -->
-			<State Name="s_fatshoot1"  Shape="SPR_FAT_SHOOT1" Tics="30"                     Speed="0"   Next="s_fatshoot2" />
-			<State Name="s_fatshoot2"  Shape="SPR_FAT_SHOOT2" Tics="10" Action="T_GiftThrow" Speed="0"  Next="s_fatshoot3" />
-			<State Name="s_fatshoot3"  Shape="SPR_FAT_SHOOT3" Tics="10" Action="T_Shoot"    Speed="0"   Next="s_fatshoot4" />
-			<State Name="s_fatshoot4"  Shape="SPR_FAT_SHOOT4" Tics="10" Action="T_Shoot"    Speed="0"   Next="s_fatshoot5" />
-			<State Name="s_fatshoot5"  Shape="SPR_FAT_SHOOT3" Tics="10" Action="T_Shoot"    Speed="0"   Next="s_fatshoot6" />
-			<State Name="s_fatshoot6"  Shape="SPR_FAT_SHOOT4" Tics="10" Action="T_Shoot"    Speed="0"   Next="s_fatchase1" />
 			<!-- Spear of Destiny actor families -->
 			<Actor Name="Spectre" HP="5,10,15,25" Reaction="1" AlertSound="GHOSTSIGHTSND" Stand="s_spectrewait1" Chase="s_spectrechase1" Death="s_spectredie1" Ambush="true" />
 			<State Name="s_spectrewait1" Shape="SPR_SPECTRE_W1" Tics="10" Think="T_Stand" Speed="0" Next="s_spectrewait2" />
@@ -2491,10 +2213,6 @@ elseif actorType == "SS" then
 	end
 	PlayLocalDigiSound("LEBENSND")
 
-elseif actorType == "Hans" then
-	AddValue("Score", 5000)
-	PlaceItemType(43, "SPR_STAT_20")
-	PlayLocalDigiSound("MUTTISND")
 elseif actorType == "Spectre" then
 	AddValue("Score", 200)
 
