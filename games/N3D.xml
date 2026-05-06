@@ -1493,7 +1493,7 @@ AddValue("Score", 200)
 				Mark="false" />
 			<State Name="s_ssdead2" Shape="SPR_SS_DEAD2" Tics="55" Next="s_ssdead" Alive="false"
 				Mark="false" />
-			<Actor Name="Carl the Camel" HP="850,950,1050,1200" Reaction="1" AlertSound="D_CAMELSND"
+			<Actor Name="Carl the Camel" HP="150,150,150,150" Reaction="1" AlertSound="D_CAMELSND"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
 				Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true">
 				<Script>
@@ -1538,7 +1538,7 @@ AddValue("Score", 5000)
 			<State Name="s_bossshoot7" Shape="SPR_BOSS_SHOOT3" Tics="10" Action="T_Shoot"
 				Next="s_bossshoot8" />
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Next="s_bosschase1" />
-			<Actor Name="Ginny the Giraffe" HP="25,25,25,25" Reaction="1-43"
+			<Actor Name="Ginny the Giraffe" HP="300,300,300,300" Reaction="1-43"
 				AlertSound="D_GIRAFESND" Stand="s_gretelstand" Chase="s_gretelchase1"
 				Attack="s_gretelshoot1" Death="s_greteldie1">
 				<Script>
@@ -1583,7 +1583,7 @@ AddValue("Score", 200)
 			<State Name="s_gretelshoot7" Shape="SPR_GRETEL_SHOOT3" Tics="10" Action="T_Shoot"
 				Next="s_gretelshoot8" />
 			<State Name="s_gretelshoot8" Shape="SPR_GRETEL_SHOOT1" Tics="10" Next="s_gretelchase1" />
-			<Actor Name="Melvin the Monkey" HP="25,25,25,25" Reaction="1-43"
+			<Actor Name="Melvin the Monkey" HP="350,350,350,350" Reaction="1-43"
 				AlertSound="D_MONKEYSND" Stand="s_schabbstand" Chase="s_schabbchase1"
 				Attack="s_schabbshoot1" Death="s_schabbdie1">
 				<Script>
@@ -1618,7 +1618,7 @@ AddValue("Score", 200)
 			<State Name="s_schabbshoot1" Shape="SPR_SCHABB_SHOOT1" Tics="20" Next="s_schabbshoot2" />
 			<State Name="s_schabbshoot2" Shape="SPR_SCHABB_SHOOT2" Tics="20" Action="T_SchabbThrow"
 				Next="s_schabbchase1" />
-			<Actor Name="Kerry the Kangaroo" HP="25,25,25,25" Reaction="1-43"
+			<Actor Name="Kerry the Kangaroo" HP="400,400,400,400" Reaction="1-43"
 				AlertSound="D_KANGROSND" Stand="s_giftstand" Chase="s_giftchase1"
 				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="MISSILEFIRESND">
 				<Script>
@@ -1652,7 +1652,7 @@ AddValue("Score", 200)
 			<State Name="s_giftshoot3" Shape="SPR_GIFT_SHOOT3" Tics="10" Next="s_giftshoot4" />
 			<State Name="s_giftshoot4" Shape="SPR_GIFT_SHOOT4" Tics="10" Action="T_GiftThrow"
 				Next="s_giftchase1" />
-			<Actor Name="Ernie the Elephant" HP="25,25,25,25" Reaction="1-43"
+			<Actor Name="Ernie the Elephant" HP="450,450,450,450" Reaction="1-43"
 				AlertSound="D_ELPHNTSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1"
 				Death="s_fatdie1" ShootSound="MISSILEFIRESND">
 				<Script>
@@ -1693,7 +1693,7 @@ AddValue("Score", 200)
 				Next="s_fatshoot6" />
 			<State Name="s_fatshoot6" Shape="SPR_FAT_SHOOT4" Tics="10" Action="T_Shoot"
 				Next="s_fatchase1" />
-			<Actor Name="Burt the Bear" HP="25,25,25,25" Reaction="1-43" AlertSound="D_BEARSND"
+			<Actor Name="Burt the Bear" HP="500,500,500,500" Reaction="1-43" AlertSound="D_BEARSND"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
 				Death="s_mechadie1" ShootSound="BOSSFIRESND">
 				<Script>
@@ -1717,14 +1717,13 @@ AddValue("Score", 200)
 			<State Name="s_mechachase3s" Shape="SPR_MECHA_W3" Tics="6" Next="s_mechachase4" />
 			<State Name="s_mechachase4" Shape="SPR_MECHA_W4" Tics="8" Think="T_Chase" Speed="1536"
 				Next="s_mechachase1" />
-			<State Name="s_mechadie1" Shape="SPR_MECHA_DIE1" Tics="10" Next="s_mechadie2"
-				Alive="false" Mark="false" />
-			<!-- TODO A_DeathScream -->
-			<State Name="s_mechadie2" Shape="SPR_MECHA_DIE2" Tics="10" Next="s_mechadie3"
-				Alive="false" Mark="false" />
-			<State Name="s_mechadie3" Shape="SPR_MECHA_DIE3" Tics="10" Next="s_mechadie4"
-				Alive="false" Mark="false" />
-			<!-- TODO A_HitlerMorph -->
+			<State Name="s_mechadie1" Shape="SPR_MECHA_DIE1" Tics="10" Action="A_DeathScream"
+				Alive="false" Next="s_mechadie2" />
+			<State Name="s_mechadie2" Shape="SPR_MECHA_DIE2" Tics="10" Alive="false"
+				Mark="false" Next="s_mechadie3" />
+			<!-- WL_ACT2.C:A_HitlerMorph fires on s_mechadie3 — spawns Real Burt, mech loops dead in s_mechadie4 -->
+			<State Name="s_mechadie3" Shape="SPR_MECHA_DIE3" Tics="10" Action="A_HitlerMorph"
+				Alive="false" Mark="false" Next="s_mechadie4" />
 			<State Name="s_mechadie4" Shape="SPR_MECHA_DEAD" Tics="0" Next="s_mechadie4"
 				Alive="false" Mark="false" />
 			<State Name="s_mechashoot1" Shape="SPR_MECHA_SHOOT1" Tics="30" Next="s_mechashoot2" />
@@ -1738,6 +1737,21 @@ AddValue("Score", 200)
 				Next="s_mechashoot6" />
 			<State Name="s_mechashoot6" Shape="SPR_MECHA_SHOOT2" Tics="10" Action="T_Shoot"
 				Next="s_mechachase1" />
+			<!-- WL_ACT2.C:A_HitlerMorph — Real Burt phase 2 (realhitlerobj, spawned by A_HitlerMorph) -->
+			<!-- HP from A_HitlerMorph local hitpoints[4]={500,700,800,900} -->
+			<!-- AlertSound: N3D A_Alert realhitlerobj plays EVASND; AUDION3D.H has no EVASND alias so using D_BEARSND -->
+			<Actor Name="Hitler" HP="500,700,800,900" Reaction="1" AlertSound="D_BEARSND"
+				Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1"
+				Death="s_hitlerdie1" Ambush="true">
+				<Script>
+					<![CDATA[
+AddValue("Score", 5000)
+-- TODO: Correct score/death effects for Real Burt (Step 3)
+]]>
+				</Script>
+			</Actor>
+			<State Name="s_hitlerstand" Shape="SPR_HITLER_W1" Tics="0" Think="T_Stand"
+				Next="s_hitlerstand" />
 			<State Name="s_hitlerchase1" Shape="SPR_HITLER_W1" Tics="6" Think="T_Chase" Speed="1536"
 				Next="s_hitlerchase1s" />
 			<State Name="s_hitlerchase1s" Shape="SPR_HITLER_W1" Tics="4" Next="s_hitlerchase2" />
@@ -1748,21 +1762,20 @@ AddValue("Score", 200)
 			<State Name="s_hitlerchase3s" Shape="SPR_HITLER_W3" Tics="4" Next="s_hitlerchase4" />
 			<State Name="s_hitlerchase4" Shape="SPR_HITLER_W4" Tics="2" Think="T_Chase" Speed="1536"
 				Next="s_hitlerchase1" />
-			<State Name="s_hitlerdie1" Shape="SPR_HITLER_W1" Tics="1" Next="s_hitlerdie2"
-				Alive="false" Mark="false" />
-			<!-- TODO A_DeathScream -->
-			<State Name="s_hitlerdie2" Shape="SPR_HITLER_W1" Tics="15" Next="s_hitlerdie3"
-				Alive="false" Mark="false" />
-			<State Name="s_hitlerdie3" Shape="SPR_HITLER_DIE1" Tics="15" Next="s_hitlerdie4"
-				Alive="false" Mark="false" />
-			<!-- TODO A_Slurpie -->
-			<State Name="s_hitlerdie4" Shape="SPR_HITLER_DIE2" Tics="15" Next="s_hitlerdie5"
-				Alive="false" Mark="false" />
-			<State Name="s_hitlerdie5" Shape="SPR_HITLER_DEAD" Tics="55" Next="s_hitlerdie6"
-				Alive="false" Mark="false" />
-			<State Name="s_hitlerdie6" Shape="SPR_HITLER_DEAD2" Tics="55" Next="s_hitlerdead"
-				Alive="false" Mark="false" />
-			<!-- TODO A_StartDeathCam -->
+			<!-- N3D die sequence: 6 states (not 10 like WL6); s_hitlerdeathcam not defined in N3D build -->
+			<State Name="s_hitlerdie1" Shape="SPR_HITLER_W1" Tics="1" Action="A_DeathScream"
+				Alive="false" Next="s_hitlerdie2" />
+			<State Name="s_hitlerdie2" Shape="SPR_HITLER_W1" Tics="15" Alive="false"
+				Mark="false" Next="s_hitlerdie3" />
+			<State Name="s_hitlerdie3" Shape="SPR_HITLER_DIE1" Tics="15" Action="A_Slurpie"
+				Alive="false" Mark="false" Next="s_hitlerdie4" />
+			<State Name="s_hitlerdie4" Shape="SPR_HITLER_DIE2" Tics="15" Alive="false"
+				Mark="false" Next="s_hitlerdie5" />
+			<State Name="s_hitlerdie5" Shape="SPR_HITLER_DEAD" Tics="55" Alive="false"
+				Mark="false" Next="s_hitlerdie6" />
+			<!-- N3D source fires A_StartDeathCam here; s_hitlerdeathcam undefined in N3D so no replay screen -->
+			<State Name="s_hitlerdie6" Shape="SPR_HITLER_DEAD2" Tics="55" Action="A_StartDeathCam"
+				Next="s_hitlerdead" Alive="false" Mark="false" />
 			<State Name="s_hitlerdead" Shape="SPR_HITLER_DEAD" Tics="55" Next="s_hitlerdead2"
 				Alive="false" Mark="false" />
 			<State Name="s_hitlerdead2" Shape="SPR_HITLER_DEAD2" Tics="55" Next="s_hitlerdead"
