@@ -1873,6 +1873,25 @@ AddValue("Score", 5000)
 			<State Name="s_mexplode1" Shape="SPR_WATERMELONEXP" Tics="6" Next="s_mexplode2" />
 			<State Name="s_mexplode2" Shape="SPR_WATERMELONEXP" Tics="6" Next="s_mexplode3" />
 			<State Name="s_mexplode3" Shape="SPR_WATERMELONEXP" Tics="6" />
+			<!-- Flamethrower / missile launcher weapon states (WL_AGENT.C attackinfo[4]/[5]) -->
+			<State Name="s_cantaready" Rotate="false" Shape="SPR_CANTAREADY" Tics="0" />
+			<State Name="s_cantaatk1" Rotate="false" Shape="SPR_CANTAATK1" Tics="7"
+				Next="s_cantaatk2" />
+			<State Name="s_cantaatk2" Rotate="false" Shape="SPR_CANTAATK2" Tics="7"
+				Action="A_CantaloupeAttack" Next="s_cantaatk3" />
+			<State Name="s_cantaatk3" Rotate="false" Shape="SPR_CANTAATK3" Tics="7"
+				Action="A_CantaloupeAttack" Next="s_cantaatk4" />
+			<State Name="s_cantaatk4" Rotate="false" Shape="SPR_CANTAATK4" Tics="7"
+				Action="A_CantaloupeReady" Next="s_cantaready" />
+			<State Name="s_waterready" Rotate="false" Shape="SPR_WATERREADY" Tics="0" />
+			<State Name="s_wateratk1" Rotate="false" Shape="SPR_WATERATK1" Tics="6"
+				Next="s_wateratk2" />
+			<State Name="s_wateratk2" Rotate="false" Shape="SPR_WATERATK2" Tics="6"
+				Next="s_wateratk3" />
+			<State Name="s_wateratk3" Rotate="false" Shape="SPR_WATERATK3" Tics="6"
+				Action="A_WatermelonAttack" Next="s_wateratk4" />
+			<State Name="s_wateratk4" Rotate="false" Shape="SPR_WATERATK4" Tics="6"
+				Action="A_WatermelonReady" Next="s_waterready" />
 			<!-- Projectile motion is handled by the simulator's UpdateProjectile path; this name is
 			     kept to mirror WL_ACT2.C's player-projectile state table. -->
 			<Function Name="T_Missile">
@@ -1936,6 +1955,36 @@ RequestHitScan({
 })
 ]]>
 			</Function>
+			<Function Name="A_CantaloupeAttack">
+				<![CDATA[
+if GetValue("Gas") < 1 then return end
+PlaySound("D_COCTHRSND")
+AddValue("Gas", -1)
+SpawnProjectile("cantaloupe")
+]]>
+			</Function>
+			<Function Name="A_CantaloupeReady">
+				<![CDATA[
+if GetValue("Gas") < 1 then
+	SwitchToLowestWeapon()
+end
+]]>
+			</Function>
+			<Function Name="A_WatermelonAttack">
+				<![CDATA[
+if GetValue("Missile") < 1 then return end
+PlaySound("D_WATTHRSND")
+AddValue("Missile", -1)
+SpawnProjectile("watermelon")
+]]>
+			</Function>
+			<Function Name="A_WatermelonReady">
+				<![CDATA[
+if GetValue("Missile") < 1 then
+	SwitchToLowestWeapon()
+end
+]]>
+			</Function>
 		</Actors>
 		<GameplayWeapons>
 			<!-- N3D weapons: WL_AGENT.C attackinfo[6][14] #ifdef GAMEVER_NOAH3D block -->
@@ -1980,6 +2029,24 @@ RequestHitScan({
 				FireSound="D_GATLINSND"
 				BaseDamage="5"
 				RapidFire="true" />
+			<!-- Flamethrower (wp_flamethrower = 4) - WL_AGENT.C:attackinfo[4] = {{7,0,1},{7,5,2},{7,5,3},{7,-1,4}} -->
+			<GameplayWeapon
+				Name="flamethrower"
+				WeaponNumber="4"
+				IdleState="s_cantaready"
+				FireState="s_cantaatk1"
+				AmmoType="Gas"
+				AmmoPerShot="1"
+				FireSound="D_COCTHRSND" />
+			<!-- Missile launcher (wp_missile = 5) - WL_AGENT.C:attackinfo[5] = {{6,0,1},{6,0,2},{6,6,3},{6,-1,4}} -->
+			<GameplayWeapon
+				Name="missile"
+				WeaponNumber="5"
+				IdleState="s_waterready"
+				FireState="s_wateratk1"
+				AmmoType="Missile"
+				AmmoPerShot="1"
+				FireSound="D_WATTHRSND" />
 		</GameplayWeapons>
 		<Projectiles>
 			<!-- Player projectile definitions used by Noah-specific weapon attack frames. -->
