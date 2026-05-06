@@ -33,7 +33,7 @@ public class AssetManager
 	public readonly Dictionary<string, string> TextChunks;
 	public static AssetManager Load(string xmlPath, ILoggerFactory loggerFactory = null)
 	{
-		XElement xml = XDocument.Load(xmlPath).Root;
+		XElement xml = GameXmlResolver.Load(xmlPath);
 		return new(xml, Path.Combine(Path.GetDirectoryName(xmlPath), xml.Attribute("Path")?.Value), loggerFactory);
 	}
 	public static AssetManager Load(

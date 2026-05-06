@@ -112,8 +112,21 @@ public static class GameCatalog
 	{
 		try
 		{
-			XElement xml = XDocument.Load(xmlPath).Root
-				?? throw new InvalidDataException($"Missing root element in {xmlPath}.");
+			XElement xml = Assets.GameXmlResolver.Load(
+				xmlPath,
+				baseReference =>
+				{
+					string baseFileName = Path.GetFileName(baseReference);
+					if (string.IsNullOrWhiteSpace(baseFileName) ||
+						!EmbeddedXmlResources.Value.TryGetValue(baseFileName, out string baseResourceName))
+						throw new FileNotFoundException(
+							$"Unable to resolve embedded base game XML '{baseReference}' for '{xmlPath}'.",
+							baseReference);
+					return LoadEmbeddedGameDefinitionXml(
+						baseFileName,
+						baseResourceName,
+						new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+				});
 			definition = new(xmlPath, xml, IsEmbedded: false);
 			return true;
 		}
@@ -128,15 +141,7 @@ public static class GameCatalog
 	{
 		try
 		{
-			using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
-			if (stream is null)
-			{
-				definition = default!;
-				return false;
-			}
-
-			XElement xml = XDocument.Load(stream).Root
-				?? throw new InvalidDataException($"Missing root element in embedded resource {resourceName}.");
+			XElement xml = LoadEmbeddedGameDefinitionXml(fileName, resourceName, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 			definition = new(Path.Combine(gamesDirectory, fileName), xml, IsEmbedded: true);
 			return true;
 		}
@@ -144,6 +149,35 @@ public static class GameCatalog
 		{
 			definition = default!;
 			return false;
+		}
+	}
+
+	private static XElement LoadEmbeddedGameDefinitionXml(string fileName, string resourceName, HashSet<string> visited)
+	{
+		if (!visited.Add(fileName))
+			throw new InvalidDataException($"Circular embedded game XML inheritance detected involving '{fileName}'.");
+
+		try
+		{
+			using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName)
+				?? throw new InvalidDataException($"Missing embedded resource {resourceName}.");
+			XElement xml = XDocument.Load(stream).Root
+				?? throw new InvalidDataException($"Missing root element in embedded resource {resourceName}.");
+			return Assets.GameXmlResolver.Resolve(xml, baseReference =>
+			{
+				string baseFileName = Path.GetFileName(baseReference);
+				if (string.IsNullOrWhiteSpace(baseFileName) ||
+					!EmbeddedXmlResources.Value.TryGetValue(baseFileName, out string baseResourceName))
+					throw new FileNotFoundException(
+						$"Unable to resolve embedded base game XML '{baseReference}' for '{fileName}'.",
+						baseReference);
+
+				return LoadEmbeddedGameDefinitionXml(baseFileName, baseResourceName, visited);
+			});
+		}
+		finally
+		{
+			visited.Remove(fileName);
 		}
 	}
 

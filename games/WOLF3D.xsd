@@ -9,12 +9,13 @@
 		<xs:annotation>
 			<xs:documentation>
 				Root element for Wolfenstein 3D game definition.
-				Defines all game assets, levels, and configuration.
+				Defines all game assets, levels, and configuration. When Base is specified,
+				Name and Path override the base definition; any other local content is ignored.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:all>
-				<xs:element name="OnStartup" type="xs:string"/>
+				<xs:element name="OnStartup" type="xs:string" minOccurs="0"/>
 				<xs:element ref="VgaGraph" minOccurs="0"/>
 				<xs:element ref="Maps" minOccurs="0"/>
 				<xs:element ref="Audio" minOccurs="0"/>
@@ -27,6 +28,15 @@
 					<xs:documentation>
 						Game version string (e.g., "1.4"). Informational metadata identifying
 						the specific release of the game this definition targets.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="Base" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Optional base game XML file to inherit from. When present, Name and Path
+						should also be specified and are the only meaningful overrides; other local
+						attributes or child elements are ignored by the loader.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

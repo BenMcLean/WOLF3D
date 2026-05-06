@@ -87,9 +87,27 @@ public sealed class GameMap
 		{
 			if (mapHeadReader.ReadUInt16() != 0xABCD)
 				throw new InvalidDataException("File \"" + stream + "\" has invalid signature code!");
-			uint offset;
-			while (stream.CanRead && (offset = mapHeadReader.ReadUInt32()) != 0)
+			while (true)
+			{
+				// Some mission-pack MAPHEAD files end immediately after the last offset instead of
+				// storing an additional zero terminator. Stop cleanly at EOF in either layout.
+				if (stream.CanSeek && stream.Length - stream.Position < sizeof(uint))
+					break;
+
+				uint offset;
+				try
+				{
+					offset = mapHeadReader.ReadUInt32();
+				}
+				catch (EndOfStreamException)
+				{
+					break;
+				}
+
+				if (offset == 0)
+					break;
 				offsets.Add(offset);
+			}
 		}
 		return [.. offsets];
 	}
