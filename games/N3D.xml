@@ -1232,13 +1232,26 @@ SetValue("Silver Key", 0)
 SetPicture("BlueKey", "NOKEYPIC")
 ]]>
 			</Function>
+			<!-- Overrides DefaultScripts/Actors/A_DeathScream.lua for this game only.
+			     In N3D, WL_ACT2.C:A_DeathScream plays D_EDIESND for all actor types — no per-type
+			     switching. Score and item drops are handled by each actor's own <Script> block
+			     rather than here, unlike the WL6 default which does all three in one function. -->
+			<Function Name="A_DeathScream">
+				<![CDATA[
+PlayLocalSound("D_EDIESND")
+]]>
+			</Function>
 			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertSound="D_GOATSND"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
 				Pain="s_grdpain" Pain1="s_grdpain1">
 				<Script>
 					<![CDATA[
+-- WL_STATE.C:KillActor - guardobj
 AddValue("Score", 100)
--- TODO: May drop ammo clip (bo_clip2) if player Ammo < 99
+-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+if GetValue("Feed") < GetMax("Feed") then
+	PlaceItemType(45, "SPR_STAT_22")
+end
 ]]>
 				</Script>
 			</Actor>
@@ -1275,8 +1288,7 @@ AddValue("Score", 100)
 			<State Name="s_grdchase4" Rotate="true" Shape="SPR_GRD_W4_1" Tics="8" Think="T_Chase"
 				Speed="1536" Next="s_grdchase1" />
 			<State Name="s_grddie1" Shape="SPR_GRD_PAIN" Tics="15" Speed="0" Next="s_grddie2"
-				Alive="false" Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Alive="false" Mark="false" Action="A_DeathScream" />
 			<State Name="s_grddie2" Shape="SPR_GRD_DIE_1" Tics="15" Speed="0" Next="s_grddie3"
 				Alive="false" Mark="false" />
 			<State Name="s_grddie3" Shape="SPR_GRD_DIE_2" Tics="15" Speed="0" Next="s_grddead"
@@ -1289,8 +1301,9 @@ AddValue("Score", 100)
 				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1">
 				<Script>
 					<![CDATA[
+-- WL_STATE.C:KillActor - dogobj
 AddValue("Score", 200)
--- TODO: Correct death effects for Goat
+-- No item drop
 ]]>
 				</Script>
 			</Actor>
@@ -1325,7 +1338,7 @@ AddValue("Score", 200)
 			<State Name="s_dogchase4" Rotate="true" Shape="SPR_DOG_W4_1" Tics="8" Think="T_DogChase"
 				Speed="3000" Next="s_dogchase1" />
 			<State Name="s_dogdie1" Shape="SPR_DOG_DIE_1" Tics="15" Speed="0" Next="s_dogdie2"
-				Alive="false" Mark="false" />
+				Alive="false" Mark="false" Action="A_DeathScream" />
 			<State Name="s_dogdie2" Shape="SPR_DOG_DIE_2" Tics="15" Speed="0" Next="s_dogdead"
 				Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="55" Speed="0" Next="s_dogdead2"
@@ -1337,8 +1350,12 @@ AddValue("Score", 200)
 				Pain="s_ofcpain" Pain1="s_ofcpain1">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO: Correct death effects for Ostrich
+-- WL_STATE.C:KillActor - officerobj
+AddValue("Score", 400)
+-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+if GetValue("Feed") < GetMax("Feed") then
+	PlaceItemType(45, "SPR_STAT_22")
+end
 ]]>
 				</Script>
 			</Actor>
@@ -1373,8 +1390,7 @@ AddValue("Score", 200)
 			<State Name="s_ofcchase4" Rotate="true" Shape="SPR_OFC_W4_1" Tics="8" Think="T_Chase"
 				Speed="1536" Next="s_ofcchase1" />
 			<State Name="s_ofcdie1" Shape="SPR_OFC_PAIN" Tics="11" Next="s_ofcdie2" Alive="false"
-				Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Mark="false" Action="A_DeathScream" />
 			<State Name="s_ofcdie2" Shape="SPR_OFC_DIE_1" Tics="11" Next="s_ofcdie3" Alive="false"
 				Mark="false" />
 			<State Name="s_ofcdie3" Shape="SPR_OFC_DIE_2" Tics="11" Next="s_ofcdead" Alive="false"
@@ -1388,8 +1404,12 @@ AddValue("Score", 200)
 				Pain="s_mutpain" Pain1="s_mutpain1">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO Correct death effects for Ox (mutant)
+-- WL_STATE.C:KillActor - mutantobj
+AddValue("Score", 700)
+-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+if GetValue("Feed") < GetMax("Feed") then
+	PlaceItemType(45, "SPR_STAT_22")
+end
 ]]>
 				</Script>
 			</Actor>
@@ -1425,8 +1445,7 @@ AddValue("Score", 200)
 			<State Name="s_mutchase4" Rotate="true" Shape="SPR_MUT_W4_1" Tics="8" Think="T_Chase"
 				Speed="1536" Next="s_mutchase1" />
 			<State Name="s_mutdie1" Shape="SPR_MUT_PAIN" Tics="7" Next="s_mutdie2" Alive="false"
-				Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Mark="false" Action="A_DeathScream" />
 			<State Name="s_mutdie2" Shape="SPR_MUT_DIE_1" Tics="7" Next="s_mutdie3" Alive="false"
 				Mark="false" />
 			<State Name="s_mutdie3" Shape="SPR_MUT_DIE_2" Tics="7" Next="s_mutdead" Alive="false"
@@ -1440,8 +1459,16 @@ AddValue("Score", 200)
 				Pain="s_sspain" Pain1="s_sspain1" ShootSound="SSFIRESND" AimBonus="true">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO: Correct death effects for Antelope (SS)
+-- WL_STATE.C:KillActor - ssobj
+AddValue("Score", 500)
+if GetValue("Weapon2") < 1 then
+	PlaceItemType(46, "SPR_STAT_23")  -- bo_machinegun (Slingshot 2)
+else
+	-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+	if GetValue("Feed") < GetMax("Feed") then
+		PlaceItemType(45, "SPR_STAT_22")
+	end
+end
 ]]>
 				</Script>
 			</Actor>
@@ -1483,8 +1510,7 @@ AddValue("Score", 200)
 			<State Name="s_sschase4" Rotate="true" Shape="SPR_SS_W4_1" Tics="8" Think="T_Chase"
 				Speed="1536" Next="s_sschase1" />
 			<State Name="s_ssdie1" Shape="SPR_SS_PAIN" Tics="15" Next="s_ssdie2" Alive="false"
-				Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Mark="false" Action="A_DeathScream" />
 			<State Name="s_ssdie2" Shape="SPR_SS_DIE_1" Tics="15" Next="s_ssdie3" Alive="false"
 				Mark="false" />
 			<State Name="s_ssdie3" Shape="SPR_SS_DIE_2" Tics="15" Next="s_ssdead" Alive="false"
@@ -1498,8 +1524,9 @@ AddValue("Score", 200)
 				Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true">
 				<Script>
 					<![CDATA[
+-- WL_STATE.C:KillActor - bossobj
 AddValue("Score", 5000)
--- TODO: Correct death effects for Carl (Hans)
+PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 ]]>
 				</Script>
 			</Actor>
@@ -1516,8 +1543,7 @@ AddValue("Score", 5000)
 			<State Name="s_bosschase4" Shape="SPR_BOSS_W4" Tics="8" Think="T_Chase" Speed="1536"
 				Next="s_bosschase1" />
 			<State Name="s_bossdie1" Shape="SPR_BOSS_DIE1" Tics="15" Next="s_bossdie2" Alive="false"
-				Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Mark="false" Action="A_DeathScream" />
 			<State Name="s_bossdie2" Shape="SPR_BOSS_DIE2" Tics="15" Next="s_bossdead" Alive="false"
 				Mark="false" />
 			<State Name="s_bossdead" Shape="SPR_BOSS_DEAD" Tics="55" Next="s_bossdead2"
@@ -1543,8 +1569,9 @@ AddValue("Score", 5000)
 				Attack="s_gretelshoot1" Death="s_greteldie1">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO: Correct death effects for Giraffe (Gretel)
+-- WL_STATE.C:KillActor - gretelobj
+AddValue("Score", 5000)
+PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 ]]>
 				</Script>
 			</Actor>
@@ -1561,8 +1588,7 @@ AddValue("Score", 200)
 			<State Name="s_gretelchase4" Shape="SPR_GRETEL_W4" Tics="8" Think="T_Chase" Speed="1536"
 				Next="s_gretelchase1" />
 			<State Name="s_greteldie1" Shape="SPR_GRETEL_DIE1" Tics="15" Next="s_greteldie2"
-				Alive="false" Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Alive="false" Mark="false" Action="A_DeathScream" />
 			<State Name="s_greteldie2" Shape="SPR_GRETEL_DIE2" Tics="15" Next="s_greteldead"
 				Alive="false" Mark="false" />
 			<State Name="s_greteldead" Shape="SPR_GRETEL_DEAD" Tics="55" Next="s_greteldead2"
@@ -1588,8 +1614,9 @@ AddValue("Score", 200)
 				Attack="s_schabbshoot1" Death="s_schabbdie1">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO: Correct death effects for Melvin the Monkey (Schabbs)
+-- WL_STATE.C:KillActor - schabbobj
+AddValue("Score", 5000)
+PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 ]]>
 				</Script>
 			</Actor>
@@ -1605,8 +1632,7 @@ AddValue("Score", 200)
 			<State Name="s_schabbchase3s" Shape="SPR_SCHABB_W3" Tics="3" Next="s_schabbchase4" />
 			<State Name="s_schabbchase4" Shape="SPR_SCHABB_W4" Tics="8" Think="T_Schabb"
 				Next="s_schabbchase1" />
-			<State Name="s_schabbdie1" Shape="SPR_SCHABB_W1" Tics="10" Next="s_schabbdie2" />
-			<!-- TODO A_DeathScream -->
+			<State Name="s_schabbdie1" Shape="SPR_SCHABB_W1" Tics="10" Next="s_schabbdie2" Action="A_DeathScream" />
 			<State Name="s_schabbdie2" Shape="SPR_SCHABB_DIE1" Tics="10" Next="s_schabbdie3"
 				Alive="false" Mark="false" />
 			<State Name="s_schabbdie3" Shape="SPR_SCHABB_DIE2" Tics="10" Next="s_schabbdead"
@@ -1623,8 +1649,9 @@ AddValue("Score", 200)
 				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="MISSILEFIRESND">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO: Correct death effects for Kangaroo (Gift)
+-- WL_STATE.C:KillActor - giftobj
+AddValue("Score", 5000)
+PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 ]]>
 				</Script>
 			</Actor>
@@ -1640,8 +1667,7 @@ AddValue("Score", 200)
 			<State Name="s_giftchase3s" Shape="SPR_GIFT_W3" Tics="3" Next="s_giftchase4" />
 			<State Name="s_giftchase4" Shape="SPR_GIFT_W4" Tics="8" Think="T_Gift"
 				Next="s_giftchase1" />
-			<State Name="s_giftdie1" Shape="SPR_GIFT_W1" Tics="1" Next="s_giftdie2" />
-			<!-- TODO A_DeathScream -->
+			<State Name="s_giftdie1" Shape="SPR_GIFT_W1" Tics="1" Next="s_giftdie2" Action="A_DeathScream" />
 			<State Name="s_giftdie2" Shape="SPR_GIFT_W1" Tics="10" Next="s_giftdie3" />
 			<State Name="s_giftdie3" Shape="SPR_GIFT_DIE1" Tics="10" Next="s_giftdie4" />
 			<State Name="s_giftdie4" Shape="SPR_GIFT_DIE2" Tics="10" Next="s_giftdead" />
@@ -1657,8 +1683,9 @@ AddValue("Score", 200)
 				Death="s_fatdie1" ShootSound="MISSILEFIRESND">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO Correct death effects for Ernie the Elephant (Fat)
+-- WL_STATE.C:KillActor - fatobj
+AddValue("Score", 5000)
+PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 ]]>
 				</Script>
 			</Actor>
@@ -1670,8 +1697,7 @@ AddValue("Score", 200)
 			<State Name="s_fatchase3s" Shape="SPR_FAT_W3" Tics="3" Next="s_fatchase4" />
 			<State Name="s_fatchase4" Shape="SPR_FAT_W4" Tics="8" Think="T_Fat" Next="s_fatchase1" />
 			<State Name="s_fatdie1" Shape="SPR_FAT_W1" Tics="1" Next="s_fatdie2" Alive="false"
-				Mark="false" />
-			<!-- TODO A_DeathScream -->
+				Mark="false" Action="A_DeathScream" />
 			<State Name="s_fatdie2" Shape="SPR_FAT_W1" Tics="10" Next="s_fatdie3" Alive="false"
 				Mark="false" />
 			<State Name="s_fatdie3" Shape="SPR_FAT_DIE1" Tics="10" Next="s_fatdie4" Alive="false"
@@ -1698,8 +1724,9 @@ AddValue("Score", 200)
 				Death="s_mechadie1" ShootSound="BOSSFIRESND">
 				<Script>
 					<![CDATA[
-AddValue("Score", 200)
--- TODO: Correct death effects for Burt the Bear (Mecha/Hitler)
+-- WL_STATE.C:KillActor - mechahitlerobj
+AddValue("Score", 5000)
+-- No item drop
 ]]>
 				</Script>
 			</Actor>
@@ -1745,8 +1772,9 @@ AddValue("Score", 200)
 				Death="s_hitlerdie1" Ambush="true">
 				<Script>
 					<![CDATA[
+-- WL_STATE.C:KillActor - realhitlerobj
 AddValue("Score", 5000)
--- TODO: Correct score/death effects for Real Burt (Step 3)
+-- No item drop
 ]]>
 				</Script>
 			</Actor>
@@ -1796,6 +1824,9 @@ AddValue("Score", 5000)
 			<Sprite Page="63" Name="Ground" />
 			<Sprite Page="64" Name="Ceiling" />
 			<Sprite Page="71" Name="SPR_DEMO" />
+			<Sprite Page="88" Name="SPR_STAT_16" />
+			<Sprite Page="94" Name="SPR_STAT_22" />
+			<Sprite Page="95" Name="SPR_STAT_23" />
 			<Sprite Page="121" Name="SPR_GRD_W1_1" />
 			<Sprite Page="122" Name="SPR_GRD_W1_2" />
 			<Sprite Page="123" Name="SPR_GRD_W1_3" />

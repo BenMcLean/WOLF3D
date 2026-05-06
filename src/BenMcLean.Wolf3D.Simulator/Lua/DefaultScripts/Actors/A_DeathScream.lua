@@ -1,5 +1,8 @@
--- Combined KillActor (score + drops) and A_DeathScream (sound) logic
--- Both original functions switch on ob->obclass
+-- WL6 implementation: combines KillActor (score + drops) and A_DeathScream (sound).
+-- WL6 has no per-actor <Script> blocks, so all three effects live here.
+-- Games that handle score/drops in per-actor <Script> blocks (e.g. N3D) override
+-- this function in their XML with a sound-only version.
+-- Both original C functions switch on ob->obclass.
 local actorType = GetActorType()
 
 if actorType == "Guard" then
