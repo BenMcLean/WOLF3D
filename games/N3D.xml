@@ -1860,6 +1860,26 @@ AddValue("Score", 5000)
 				Action="A_RapidFire" Next="s_chaingun_4" />
 			<State Name="s_chaingun_4" Rotate="false" Shape="SPR_CHAINATK4" Tics="6"
 				Action="A_WeaponReady" Next="s_chaingun" />
+			<!-- Player projectile states (WL_ACT2.C #ifdef GAMEVER_NOAH3D) -->
+			<!-- Flamethrower / cantaloupe -->
+			<State Name="s_flame" Shape="SPR_CANTALOUPE" Tics="3" Think="T_Missile" Speed="12288"
+				Next="s_flame" />
+			<State Name="s_fexplode1" Shape="SPR_CANTALOUPEEXP" Tics="6" Next="s_fexplode2" />
+			<State Name="s_fexplode2" Shape="SPR_CANTALOUPEEXP" Tics="6" Next="s_fexplode3" />
+			<State Name="s_fexplode3" Shape="SPR_CANTALOUPEEXP" Tics="6" />
+			<!-- Missile launcher / watermelon -->
+			<State Name="s_missile" Shape="SPR_WATERMELON" Tics="3" Think="T_Missile" Speed="12288"
+				Next="s_missile" />
+			<State Name="s_mexplode1" Shape="SPR_WATERMELONEXP" Tics="6" Next="s_mexplode2" />
+			<State Name="s_mexplode2" Shape="SPR_WATERMELONEXP" Tics="6" Next="s_mexplode3" />
+			<State Name="s_mexplode3" Shape="SPR_WATERMELONEXP" Tics="6" />
+			<!-- Projectile motion is handled by the simulator's UpdateProjectile path; this name is
+			     kept to mirror WL_ACT2.C's player-projectile state table. -->
+			<Function Name="T_Missile">
+				<![CDATA[
+-- No-op. Active projectile movement/collision is simulated in C#.
+]]>
+			</Function>
 			<!-- N3D weapon attack sound overrides.
 			     AUDION3D.H aliases: ATKKNIFESND=D_KNIFESND, ATKPISTOLSND=D_GUNSHTSND,
 			     ATKMACHINEGUNSND=ATKGATLINGSND=D_GATLINSND -->
@@ -1961,6 +1981,13 @@ RequestHitScan({
 				BaseDamage="5"
 				RapidFire="true" />
 		</GameplayWeapons>
+		<Projectiles>
+			<!-- Player projectile definitions used by Noah-specific weapon attack frames. -->
+			<Projectile Name="cantaloupe" InitialState="s_flame" ExplodeState="s_fexplode1"
+				MinDamage="1" MaxDamage="16" Speed="12288" ActorCollisionSize="32768" />
+			<Projectile Name="watermelon" InitialState="s_missile" ExplodeState="s_mexplode1"
+				MinDamage="16" MaxDamage="64" Speed="12288" ActorCollisionSize="32768" />
+		</Projectiles>
 		<Sprites>
 			<Sprite Page="63" Name="Ground" />
 			<Sprite Page="64" Name="Ceiling" />
@@ -2276,6 +2303,10 @@ RequestHitScan({
 			<Sprite Page="426" Name="SPR_WATERATK2" />
 			<Sprite Page="427" Name="SPR_WATERATK3" />
 			<Sprite Page="428" Name="SPR_WATERATK4" />
+			<Sprite Page="429" Name="SPR_WATERMELON" />
+			<Sprite Page="430" Name="SPR_WATERMELONEXP" />
+			<Sprite Page="433" Name="SPR_CANTALOUPE" />
+			<Sprite Page="434" Name="SPR_CANTALOUPEEXP" />
 		</Sprites>
 		<DigiSounds>
 			<DigiSound Number="0" Name="D_ANTLPESND" />
