@@ -5,6 +5,7 @@ using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
+using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator;
 using BenMcLean.Wolf3D.VR.ActionStage;
 using BenMcLean.Wolf3D.VR.VR;
@@ -29,6 +30,7 @@ public partial class MenuRoom : Node3D, IRoom
 	private bool _playerOriented;
 	private bool _elevatorMode;
 	private IMenuInput _menuInput;
+	private StatusBarRenderer _statusBarRenderer;
 
 	// Menu panel sizing in VR (in meters)
 	private const float PanelWidth = Constants.TileWidth;                // One tile wide
@@ -178,6 +180,12 @@ public partial class MenuRoom : Node3D, IRoom
 	public PendingQuizData PendingQuiz { private get; init; }
 
 	/// <summary>
+	/// Status bar controller from Root. When set and the initial menu declares StatusBar="true",
+	/// a StatusBarRenderer is created and the live status bar is displayed at y=160 on the menu canvas.
+	/// </summary>
+	public StatusBarController StatusBarController { private get; init; }
+
+	/// <summary>
 	/// Current debug marker visibility from the menu session state.
 	/// Polled by Root and applied to newly created gameplay rooms.
 	/// </summary>
@@ -317,6 +325,21 @@ public partial class MenuRoom : Node3D, IRoom
 				_menuManager.ScriptContext.AllLevelStats = PendingAllLevelStats;
 			// Navigate to the override menu (e.g., "LevelComplete") instead of default
 			_menuManager.NavigateToMenu(StartMenuOverride);
+		}
+
+		// If the initial menu declares StatusBar="true", inject the live status bar at y=160.
+		// Matches original Wolf3D: quiz menus left the status bar row (y=160..200) untouched.
+		if (StatusBarController is not null && !string.IsNullOrEmpty(StartMenuOverride))
+		{
+			MenuCollection collection = MenuCollectionOverride
+				?? SharedAssetManager.CurrentGame?.MenuCollection;
+			MenuStatusBarDefinition statusBarDef = collection?.GetMenu(StartMenuOverride)?.StatusBar;
+			if (statusBarDef is not null)
+			{
+				_statusBarRenderer = new StatusBarRenderer(StatusBarController.State);
+				_statusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
+				_menuManager.Renderer.Viewport.AddChild(_statusBarRenderer.Canvas);
+			}
 		}
 
 		// Add the menu viewport to the scene tree (required for rendering)
@@ -827,6 +850,9 @@ void sky() {
 			_displayMode.HandButtonPressed -= OnHandButtonPressed;
 			(_menuInput as VRMenuInput)?.Dispose();
 		}
+		// StatusBarRenderer subscribes to state events in its constructor; Dispose() removes them
+		// so they cannot fire against freed Godot nodes after the MenuRoom exits the tree.
+		_statusBarRenderer?.Dispose();
 	}
 
 	/// <summary>

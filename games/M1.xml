@@ -584,6 +584,8 @@ end
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
 				X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
+				<!-- WL_INTER.C: "Still in split screen mode with the status bar" -->
+				<StatusBar X="0" Y="160" />
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC"
 					FrameInterval="0.5" />
@@ -657,6 +659,8 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			</Menu>
 			<Menu Name="LevelCompleteSpecial" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
 				X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
+				<!-- WL_INTER.C: "Still in split screen mode with the status bar" -->
+				<StatusBar X="0" Y="160" />
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC"
 					FrameInterval="0.5" />
@@ -760,6 +764,8 @@ end
 			prelude -->
 			<Menu Name="VictoryStats" Font="L" BordColor="127" Music="URAHERO_MUS"
 				X="0" Y="0" Indent="0" Spacing="13" KeepWeapons="true">
+				<!-- WL_INTER.C: VWB_Bar fills only y=0..159 (200-STATUSLINES); status bar remains visible -->
+				<StatusBar X="0" Y="160" />
 				<!-- WL_INTER.C:VWB_DrawPic(8,4,L_BJWINSPIC) = pixel (64,32) -->
 				<Picture Name="L_BJWINSPIC" X="8" Y="4" />
 				<!-- WL_INTER.C:Write(18,2,STR_YOUWIN) = pixel (144,16) -->

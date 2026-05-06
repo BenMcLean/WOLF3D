@@ -733,6 +733,28 @@
 						</xs:attribute>
 					</xs:complexType>
 				</xs:element>
+				<xs:element name="StatusBar" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>
+							When present, the presentation layer renders the live status bar at the specified canvas position.
+							Allows per-menu positioning so games with differently sized status bars (e.g. Kitchens of Doom)
+							can place it at the correct coordinate. X and Y are in 320×200 canvas space.
+							Matches original Wolf3D behaviour where quiz menus left y=160..200 (the status bar row) untouched.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="X" type="xs:integer" use="required">
+							<xs:annotation>
+								<xs:documentation>X position of the status bar canvas on the 320×200 menu surface.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Y" type="xs:integer" use="required">
+							<xs:annotation>
+								<xs:documentation>Y position of the status bar canvas on the 320×200 menu surface.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
 				<xs:element name="VRElevatorEnvironment" minOccurs="0">
 					<xs:annotation>
 						<xs:documentation>
@@ -1141,6 +1163,11 @@
 					<xs:attribute name="Color" type="xs:nonNegativeInteger">
 						<xs:annotation>
 							<xs:documentation>Text color index (VGA palette 0-255). If not specified, uses menu TextColor, then default TextColor. Example: READHCOLOR = 0x47 (71) for yellow text.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="MaxWidth" type="xs:nonNegativeInteger">
+						<xs:annotation>
+							<xs:documentation>Maximum pixel width before word wrapping. Mirrors the original Wolf3D text window width (WindowW), for cases like Noah 3-D quiz text that wraps within a boxed area.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Id" type="xs:string">

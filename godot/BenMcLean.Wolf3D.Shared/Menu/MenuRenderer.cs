@@ -21,6 +21,7 @@ public class MenuRenderer
 	private readonly List<Rect2> _menuItemBounds = [];
 	private readonly List<ClickablePictureBounds> _clickablePictureBounds = [];
 	private readonly Dictionary<string, Label> _namedTextLabels = [];
+	private readonly Dictionary<string, string> _textOverrides = [];
 	private readonly Dictionary<string, Label> _tickerLabels = [];
 	private readonly List<AnimatedPictureState> _animatedPictures = [];
 	private readonly List<ActorAnimationState> _actorAnimations = [];
@@ -435,6 +436,8 @@ public class MenuRenderer
 			byte colorIndex = textDef.Color ?? menuDef.TextColor ?? 0x17;
 			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
 			// Create label with text
+			Font font = theme.DefaultFont;
+			bool hasMaxWidth = textDef.MaxWidth.HasValue;
 			Label label = new()
 			{
 				Text = textDef.Content,
@@ -445,14 +448,19 @@ public class MenuRenderer
 							// LineSpacing is extra inter-line spacing; 0 gives tight single-line spacing.
 				LabelSettings = new LabelSettings
 				{
-					Font = theme.DefaultFont,
+					Font = font,
 					FontSize = theme.DefaultFontSize,
 					LineSpacing = 0,
 					FontColor = textColor,
 				}
 			};
+			if (hasMaxWidth)
+			{
+				// Enable word wrap within the specified pixel width (WL_QUIZ.C: WindowW=276)
+				label.AutowrapMode = TextServer.AutowrapMode.Word;
+				label.CustomMinimumSize = new Vector2(textDef.MaxWidth.Value, 0);
+			}
 			// Measure text size from font directly — label.Size is zero until Godot lays out the node
-			Font font = theme.DefaultFont;
 			Vector2 textSize = font.GetStringSize(textDef.Content, fontSize: theme.DefaultFontSize);
 			// Set position before adding to canvas
 			label.Position = new Vector2(
@@ -466,7 +474,20 @@ public class MenuRenderer
 			label.PivotOffset = Vector2.Zero;
 			// Track named text labels for dynamic updates from Lua
 			if (!string.IsNullOrEmpty(textDef.Id))
+			{
 				_namedTextLabels[textDef.Id] = label;
+				// Re-apply any override set by SetText before this re-render
+				// (needed because SetItemVisible/SetItemText trigger RefreshMenu which clears the canvas)
+				if (_textOverrides.TryGetValue(textDef.Id, out string overrideText))
+				{
+					label.Text = overrideText;
+					if (textDef.CenterX)
+					{
+						Vector2 overrideSize = font.GetStringSize(overrideText, fontSize: theme.DefaultFontSize);
+						label.Position = label.Position with { X = (Constants.MenuScreenWidth - overrideSize.X) / 2f };
+					}
+				}
+			}
 		}
 	}
 	/// <summary>
@@ -700,13 +721,20 @@ public class MenuRenderer
 		}
 	}
 	/// <summary>
+	/// Clears all text overrides set by UpdateText.
+	/// Call when navigating to a new menu so stale overrides from the previous menu are not reapplied.
+	/// </summary>
+	public void ClearTextOverrides() => _textOverrides.Clear();
+	/// <summary>
 	/// Updates a named text label's content dynamically.
+	/// Persists the value so it survives subsequent RefreshMenu calls within the same menu session.
 	/// Called from Lua via SetText(id, value).
 	/// </summary>
 	/// <param name="name">The Id attribute of the text element</param>
 	/// <param name="value">New text content</param>
 	public void UpdateText(string name, string value)
 	{
+		_textOverrides[name] = value;
 		if (_namedTextLabels.TryGetValue(name, out Label label))
 			label.Text = value;
 	}

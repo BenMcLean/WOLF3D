@@ -118,6 +118,7 @@ public class MenuManager
 		{
 			// Wire up script context delegates
 			NavigateToMenuAction = NavigateToMenu,
+			NavigateToMenuImmediateAction = NavigateToMenuImmediate,
 			NavigateToArticleAction = NavigateToArticle,
 			CloseAllMenusAction = CloseAllMenus,
 			// IsGameInProgressFunc is wired up by MenuRoom after construction
@@ -345,6 +346,7 @@ public class MenuManager
 		if (!_menuCollection.Menus.TryGetValue(menuName, out MenuDefinition menuDef))
 			return;
 		_hiddenItemIndices.Clear();
+		_renderer.ClearTextOverrides();
 		// Set new current menu
 		_currentMenuName = menuName;
 		// WL_MENU.H:CP_iteminfo:curpos — use configured initial selection, defaulting to 0

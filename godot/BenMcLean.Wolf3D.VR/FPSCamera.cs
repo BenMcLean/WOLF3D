@@ -13,6 +13,9 @@ public partial class FPSCamera : Camera3D
 	private const float SHIFT_MULTIPLIER = 2.5f;
 	private const float ALT_MULTIPLIER = 1.0f / SHIFT_MULTIPLIER;
 
+	// Degrees per second for arrow-key turning
+	private const float KEYBOARD_TURN_SPEED = 90f;
+
 	[Export(PropertyHint.Range, "0.0f,1.0f")]
 	public float Sensitivity { get; set; } = 0.25f;
 
@@ -51,6 +54,8 @@ public partial class FPSCamera : Camera3D
 	private bool _s = false;
 	private bool _a = false;
 	private bool _d = false;
+	private bool _left = false;
+	private bool _right = false;
 	private bool _shift = false;
 	private bool _alt = false;
 
@@ -109,7 +114,7 @@ public partial class FPSCamera : Camera3D
 			}
 		}
 
-		// Keyboard for movement
+		// Keyboard for movement, turning, and actions
 		if (@event is InputEventKey keyEvent)
 		{
 			switch (keyEvent.Keycode)
@@ -126,11 +131,27 @@ public partial class FPSCamera : Camera3D
 				case Key.D:
 					_d = keyEvent.Pressed;
 					break;
+				case Key.Left:
+					_left = keyEvent.Pressed;
+					break;
+				case Key.Right:
+					_right = keyEvent.Pressed;
+					break;
 				case Key.Shift:
 					_shift = keyEvent.Pressed;
 					break;
 				case Key.Alt:
 					_alt = keyEvent.Pressed;
+					break;
+				case Key.Space:
+					if (keyEvent.Pressed)
+						RightClickPressed?.Invoke();
+					break;
+				case Key.Ctrl:
+					if (keyEvent.Pressed)
+						LeftClickPressed?.Invoke();
+					else
+						LeftClickReleased?.Invoke();
 					break;
 			}
 		}
@@ -139,7 +160,28 @@ public partial class FPSCamera : Camera3D
 	public override void _Process(double delta)
 	{
 		UpdateMouseLook();
+		UpdateTurning((float)delta);
 		UpdateMovement((float)delta);
+	}
+
+	/// <summary>
+	/// Updates camera rotation based on left/right arrow keys.
+	/// Shift applies SHIFT_MULTIPLIER to turn speed.
+	/// </summary>
+	private void UpdateTurning(float delta)
+	{
+		if (!MovementEnabled)
+			return;
+
+		float turn = 0f;
+		if (_left) turn += 1f;
+		if (_right) turn -= 1f;
+
+		if (turn == 0f)
+			return;
+
+		float speedMulti = _shift ? SHIFT_MULTIPLIER : 1f;
+		RotateY(Mathf.DegToRad(turn * KEYBOARD_TURN_SPEED * speedMulti * delta));
 	}
 
 	/// <summary>

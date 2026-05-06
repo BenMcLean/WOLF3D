@@ -78,6 +78,18 @@ public class MenuScriptContext(
 	/// <param name="menuName">Name of menu to navigate to (e.g., "Main", "Episodes")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
 	/// <summary>
+	/// Delegate for navigating to a menu by name without a fade transition.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<string> NavigateToMenuImmediateAction { get; set; }
+	/// <summary>
+	/// Navigate to a menu by name without a fade transition.
+	/// Used for instantaneous switches where a fade would be jarring (e.g., quiz result screens).
+	/// Exposed to Lua.
+	/// </summary>
+	/// <param name="menuName">Name of menu to navigate to</param>
+	public void NavigateToMenuImmediate(string menuName) => NavigateToMenuImmediateAction?.Invoke(menuName);
+	/// <summary>
 	/// Close all menus and return to game.
 	/// Exposed to Lua. Delegates to MenuManager.
 	/// </summary>

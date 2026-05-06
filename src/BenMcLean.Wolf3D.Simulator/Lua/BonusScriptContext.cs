@@ -107,7 +107,7 @@ public class BonusScriptContext(
 		PendingQuizData quiz = simulator.BuildPendingQuiz(questionNum);
 		if (quiz is null)
 		{
-			logger?.LogWarning("AskQuiz({QuestionNum}) failed because no question data is loaded.", questionNum);
+			_logger?.LogWarning("AskQuiz({QuestionNum}) failed because no question data is loaded.", questionNum);
 			return;
 		}
 		simulator.PendingQuiz = quiz;

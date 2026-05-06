@@ -7,6 +7,7 @@ using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Setup;
+using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
 using BenMcLean.Wolf3D.VR.MenuStage;
 using BenMcLean.Wolf3D.VR.VR;
@@ -59,6 +60,7 @@ public partial class Root : Node3D
 	private TransitionState _transitionState = TransitionState.Idle;
 	private bool _skipFadeIn = false;
 	private SuspendedGameState _suspendedGame;
+	private StatusBarController _statusBarController;
 
 	/// <summary>
 	/// The active display mode (VR or flatscreen).
@@ -248,7 +250,8 @@ public partial class Root : Node3D
 					levelIndex: intermissionRequest.LevelIndex,
 					savedInventory: intermissionRequest.SavedInventory,
 					savedLevelStats: intermissionRequest.AllLevelStats,
-					debugMarkersEnabled: _debugMarkersEnabled);
+					debugMarkersEnabled: _debugMarkersEnabled,
+					statusBarController: GetOrCreateStatusBarController());
 				TransitionTo(newStage);
 			}
 			else if (menuRoom.ShouldStartGame)
@@ -260,7 +263,7 @@ public partial class Root : Node3D
 				ushort episode = (ushort)(selectedEpisode >= 1 ? selectedEpisode : selectedEpisode + 1);
 				int difficulty = menuRoom.SelectedDifficulty;
 				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
-				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled);
+				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController());
 				TransitionTo(actionStage);
 			}
 		}
@@ -293,7 +296,8 @@ public partial class Root : Node3D
 							levelIndex: currentLevel,
 							difficulty: difficulty,
 							savedInventory: savedInventory,
-							debugMarkersEnabled: _debugMarkersEnabled);
+							debugMarkersEnabled: _debugMarkersEnabled,
+							statusBarController: GetOrCreateStatusBarController());
 						_currentScene = newStage;
 						_pendingScene = null;
 						AddChild(newStage);
@@ -345,7 +349,8 @@ public partial class Root : Node3D
 						debugMarkersEnabled: _debugMarkersEnabled,
 						playerXOverride: request.PlayerXOverride,
 						playerYOverride: request.PlayerYOverride,
-						playerAngleOverride: request.PlayerAngleOverride);
+						playerAngleOverride: request.PlayerAngleOverride,
+						statusBarController: GetOrCreateStatusBarController());
 					TransitionTo(newStage);
 				}
 				else
@@ -388,6 +393,24 @@ public partial class Root : Node3D
 			: System.IO.Path.GetFullPath(@"..\..\games");
 
 	/// <summary>
+	/// Returns the current StatusBarController, creating it if needed.
+	/// Creates a fresh controller each time a new game XML is loaded so the state
+	/// is initialised from the correct StatusBarDefinition. Returns null when the
+	/// current game has no StatusBar defined.
+	/// </summary>
+	private StatusBarController GetOrCreateStatusBarController()
+	{
+		StatusBarDefinition statusBarDef = Shared.SharedAssetManager.StatusBar;
+		if (statusBarDef is null)
+		{
+			_statusBarController = null;
+			return null;
+		}
+		_statusBarController ??= new StatusBarController(statusBarDef);
+		return _statusBarController;
+	}
+
+	/// <summary>
 	/// Reads the WeaponSprite attribute from the current game's Menus XML element.
 	/// Returns null when no game is loaded or the attribute is absent.
 	/// </summary>
@@ -403,6 +426,11 @@ public partial class Root : Node3D
 	/// </summary>
 	private void InitializeVRAssets()
 	{
+		// Reset the status bar controller so GetOrCreateStatusBarController() rebuilds it
+		// from the newly loaded game's StatusBarDefinition on next access.
+		_statusBarController?.Unsubscribe();
+		_statusBarController = null;
+
 		VSwap vswap = Shared.SharedAssetManager.CurrentGame.VSwap;
 		byte scaleFactor = byte.TryParse(
 			Shared.SharedAssetManager.CurrentGame.XML
@@ -445,7 +473,7 @@ public partial class Root : Node3D
 					throw new InvalidOperationException(
 						$"StartLevel({mapIndex}): index out of range (0\u2013{analyses.Length - 1}).");
 				_suspendedGame = null;
-				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled));
+				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController()));
 			},
 		};
 		LuaScriptEngine startupEngine = new([typeof(Shared.Menu.MenuScriptContext)]);
@@ -476,6 +504,7 @@ public partial class Root : Node3D
 			PendingQuiz = actionStage.PendingQuiz,
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
+			StatusBarController = _statusBarController,
 		};
 		_pendingScene = menuRoom;
 		StartFade(() =>
@@ -509,7 +538,8 @@ public partial class Root : Node3D
 		ActionRoom actionStage = new(
 			DisplayMode,
 			state.Simulator,
-			debugMarkersEnabled: _debugMarkersEnabled);
+			debugMarkersEnabled: _debugMarkersEnabled,
+			statusBarController: _statusBarController);
 
 		_suspendedGame = null;
 		TransitionTo(actionStage);
@@ -534,7 +564,7 @@ public partial class Root : Node3D
 
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
-		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled);
+		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController());
 		TransitionTo(actionStage);
 	}
 

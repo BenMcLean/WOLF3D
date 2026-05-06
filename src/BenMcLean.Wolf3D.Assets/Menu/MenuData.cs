@@ -271,6 +271,11 @@ public class TextDefinition
 	/// </summary>
 	public int YValue => (CenterY || BottomY) ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
+	/// Maximum pixel width for word-wrapping. When set, the label wraps at this width.
+	/// Maps to the original Wolf3D US_Print window width (WindowW).
+	/// </summary>
+	public int? MaxWidth { get; set; }
+	/// <summary>
 	/// Creates a TextDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing text data (&lt;Text&gt;)</param>
@@ -287,6 +292,8 @@ public class TextDefinition
 		};
 		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
 			text.Color = color;
+		if (int.TryParse(element.Attribute("MaxWidth")?.Value, out int maxWidth))
+			text.MaxWidth = maxWidth;
 		return text;
 	}
 }
@@ -584,6 +591,27 @@ public class ActorAnimationDefinition
 }
 
 /// <summary>
+/// Declares the canvas position at which the live status bar is overlaid on a menu.
+/// Maps to a &lt;StatusBar X="..." Y="..."/&gt; child element of &lt;Menu&gt; in XML.
+/// When present, the presentation layer creates a StatusBarRenderer at (X, Y).
+/// Allows per-menu positioning so games with differently sized status bars
+/// (e.g. Kitchens of Doom) can place it at the correct coordinate.
+/// </summary>
+public class MenuStatusBarDefinition
+{
+	/// <summary>X position of the status bar canvas on the 320×200 menu surface.</summary>
+	public int X { get; set; }
+	/// <summary>Y position of the status bar canvas on the 320×200 menu surface.</summary>
+	public int Y { get; set; }
+
+	public static MenuStatusBarDefinition FromXElement(XElement element) => new()
+	{
+		X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
+		Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
+	};
+}
+
+/// <summary>
 /// Represents a menu screen definition.
 /// Maps to a &lt;Menu&gt; element in XML.
 /// </summary>
@@ -719,6 +747,14 @@ public class MenuDefinition
 	/// </summary>
 	public List<StaticSpriteDefinition> StaticSprites { get; set; } = [];
 	/// <summary>
+	/// When non-null, the presentation layer renders the live status bar at this canvas position.
+	/// Maps to a &lt;StatusBar X="..." Y="..."/&gt; child element.
+	/// Matches the original Wolf3D behaviour where quiz menus left y=160..200 untouched.
+	/// Position is per-menu so games with differently sized status bars (e.g. Kitchens of Doom)
+	/// can place it at the correct Y coordinate.
+	/// </summary>
+	public MenuStatusBarDefinition StatusBar { get; set; }
+	/// <summary>
 	/// Additional custom properties that can be defined in XML.
 	/// Allows for extensibility without modifying the core class.
 	/// </summary>
@@ -798,6 +834,9 @@ public class MenuDefinition
 
 		if (bool.TryParse(element.Attribute("KeepWeapons")?.Value, out bool keepWeapons))
 			menu.KeepWeapons = keepWeapons;
+		XElement statusBarElement = element.Element("StatusBar");
+		if (statusBarElement is not null)
+			menu.StatusBar = MenuStatusBarDefinition.FromXElement(statusBarElement);
 
 		IEnumerable<XElement> actorAnimElements = element.Elements("ActorAnimation");
 		if (actorAnimElements is not null)

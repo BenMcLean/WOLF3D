@@ -695,6 +695,8 @@ end
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="ENDLEVEL_MUS"
 				X="112" Y="168" Indent="0" Spacing="13" KeepWeapons="true">
+				<!-- WL_INTER.C: "Still in split screen mode with the status bar" -->
+				<StatusBar X="0" Y="160" />
 				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
 				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40"
 					DoorframePage="100" />
@@ -825,6 +827,8 @@ end
 			<!-- Shown when player walks on VictoryTile (ObjectType 99) -->
 			<Menu Name="Victory" Font="L" BordColor="127" Music="URAHERO_MUS"
 				X="0" Y="0" Indent="0" Spacing="13" KeepWeapons="true">
+				<!-- WL_INTER.C: VWB_Bar fills only y=0..159; status bar remains visible -->
+				<StatusBar X="0" Y="160" />
 				<!-- VR-only: recreate elevator illusion around player (ignored in flatscreen) -->
 				<VRElevatorEnvironment SwitchPage="43" DoorPage="103" SideWallPage="40"
 					DoorframePage="100" />

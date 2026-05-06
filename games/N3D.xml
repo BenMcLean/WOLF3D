@@ -146,7 +146,7 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
 			<Text Id="Episode" X="24" Y="16">1</Text>
 			<Text Id="Floor" X="40" Y="16">1</Text>
 			<Text Id="Score" X="112" Y="16">     0</Text>
@@ -180,28 +180,6 @@
 			<EndString>You know the food&#10;Noah throws is&#10;drugged, right?&#10;Press N to keep&#10;playing or Y to&#10;Just Say No.</EndString>
 			<EndString>Flood almost over?&#10;Press N for more rain.&#10;Press Y to find the&#10;Rainbow Connection.</EndString>
 			<EndString>Press N to calm down&#10;more goats or Y to&#10;let them eat your&#10;sandals.</EndString>
-			<MenuFunction Name="QuizAnswerCorrect">
-				<![CDATA[
-AddValue("Score", 1000)
-if GetValue("Health") < 100 then
-	AddValue("Health", 25)
-	AddValue("Feed", 10)
-else
-	AddValue("Feed", 25)
-end
-PlaySound("PERCENT100SND")
-ClearPendingQuiz()
-ResumeGame()
-]]>
-			</MenuFunction>
-			<MenuFunction Name="QuizAnswerIncorrect">
-				<![CDATA[
-AddValue("Health", 4)
-PlaySound("NOBONUSSND")
-ClearPendingQuiz()
-ResumeGame()
-]]>
-			</MenuFunction>
 			<Menu Name="Title" Music="NOAH02_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
 				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
@@ -622,12 +600,19 @@ end
 ]]>
 				</OnShow>
 			</Menu>
-			<Menu Name="Quiz" Font="SMALL" BordColor="41" TextColor="71" Highlight="71"
-				X="34" Y="116" Indent="24" Spacing="13">
-				<Box X="14" Y="21" W="292" H="134" BkgdColor="45" Deactive="43" Bord2Color="35" />
-				<Text Id="QuizHeader" X="Center" Y="25" Font="SMALL">Question #1</Text>
-				<Text Id="QuizBody" X="26" Y="47" Font="SMALL"> </Text>
-				<Text Id="QuizRef" X="26" Y="95" Font="SMALL"> </Text>
+			<!-- WL_QUIZ.C:AskQuestion: QuizItems={30,96,4,0,24}; SETFONTCOLOR(READHCOLOR,BKGDCOLOR) -->
+			<!-- N3D palette: VIEWCOLOR=0xda=218 (BordColor), READHCOLOR=0x0f=15 (text Color) -->
+			<Menu Name="Quiz" BordColor="218" X="30" Y="96" Indent="24" Spacing="13">
+				<!-- WL_QUIZ.C: "Still in split screen mode with the status bar" -->
+				<StatusBar X="0" Y="160" />
+				<!-- Box colors inherit from Menus defaults (BkgdColor=221, Deactive=219, Bord2Color=215) -->
+				<Box X="14" Y="21" W="292" H="134" />
+				<!-- WL_QUIZ.C: US_CPrint at WindowY=4 (above box); READHCOLOR=15 differs from TextColor default -->
+				<Text Id="QuizHeader" X="Center" Y="4" Color="15">Question #1</Text>
+				<!-- WL_QUIZ.C: US_Print at WindowX=26, WindowY=26 (inside box); WindowW=276 for word wrap -->
+				<Text Id="QuizBody" X="26" Y="26" Color="15" />
+				<!-- Bible reference: below body text, above answers at Y=96 -->
+				<Text Id="QuizRef" X="26" Y="80" Color="15" />
 				<OnShow>
 					<![CDATA[
 if not HasPendingQuiz() then
@@ -660,42 +645,98 @@ ResumeGame()
 				<MenuItem Text="1">
 					<![CDATA[
 if GetQuizCorrectAnswerIndex() == 0 then
-	QuizAnswerCorrect()
+	NavigateToMenuImmediate("QuizResultCorrect")
 else
-	QuizAnswerIncorrect()
+	NavigateToMenuImmediate("QuizResultIncorrect")
 end
 ]]>
 				</MenuItem>
 				<MenuItem Text="2">
 					<![CDATA[
 if GetQuizCorrectAnswerIndex() == 1 then
-	QuizAnswerCorrect()
+	NavigateToMenuImmediate("QuizResultCorrect")
 else
-	QuizAnswerIncorrect()
+	NavigateToMenuImmediate("QuizResultIncorrect")
 end
 ]]>
 				</MenuItem>
 				<MenuItem Text="3">
 					<![CDATA[
 if GetQuizCorrectAnswerIndex() == 2 then
-	QuizAnswerCorrect()
+	NavigateToMenuImmediate("QuizResultCorrect")
 else
-	QuizAnswerIncorrect()
+	NavigateToMenuImmediate("QuizResultIncorrect")
 end
 ]]>
 				</MenuItem>
 				<MenuItem Text="4">
 					<![CDATA[
 if GetQuizCorrectAnswerIndex() == 3 then
-	QuizAnswerCorrect()
+	NavigateToMenuImmediate("QuizResultCorrect")
 else
-	QuizAnswerIncorrect()
+	NavigateToMenuImmediate("QuizResultIncorrect")
 end
 ]]>
 				</MenuItem>
 			</Menu>
+			<!-- WL_QUIZ.C:AskQuestion: shows result then waits for sound + VL_WaitVBL(30) before resuming -->
+			<Menu Name="QuizResultCorrect" BordColor="218">
+				<StatusBar X="0" Y="160" />
+				<!-- Box colors inherit from Menus defaults -->
+				<Box X="14" Y="21" W="292" H="134" />
+				<!-- WL_QUIZ.C: US_CPrint at WindowY=88; READHCOLOR=15 -->
+				<Text X="Center" Y="88" Color="15">Correct!</Text>
+				<OnShow>
+					<![CDATA[
+AddValue("Score", 1000)
+if GetValue("Health") < 100 then
+	AddValue("Health", 25)
+	AddValue("Feed", 10)
+else
+	AddValue("Feed", 25)
+end
+SetValue("FaceGrinTics", 4)
+SetPicture("Face", "GOTGATLINGPIC")
+PlaySound("PERCENT100SND")
+]]>
+				</OnShow>
+				<Pause Duration="00:00:01">
+					<![CDATA[
+ClearPendingQuiz()
+ResumeGame()
+]]>
+				</Pause>
+			</Menu>
+			<Menu Name="QuizResultIncorrect" BordColor="218">
+				<StatusBar X="0" Y="160" />
+				<!-- Box colors inherit from Menus defaults -->
+				<Box X="14" Y="21" W="292" H="134" />
+				<!-- WL_QUIZ.C: US_CPrint at WindowY=88; READHCOLOR=15 -->
+				<Text X="Center" Y="88" Color="15">Incorrect!</Text>
+				<OnShow>
+					<![CDATA[
+AddValue("Health", 4)
+local health = GetValue("Health")
+if health <= 0 then
+	SetPicture("Face", "FACE8APIC")
+else
+	local level = math.min(7, math.floor((100 - health) / 16) + 1)
+	SetPicture("Face", "FACE" .. level .. "APIC")
+end
+PlaySound("NOBONUSSND")
+]]>
+				</OnShow>
+				<Pause Duration="00:00:01">
+					<![CDATA[
+ClearPendingQuiz()
+ResumeGame()
+]]>
+				</Pause>
+			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="NOAH05_MUS"
 				X="112" Y="168" Indent="0" Spacing="13">
+				<!-- WL_INTER.C: "Still in split screen mode with the status bar" -->
+				<StatusBar X="0" Y="160" />
 				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
 				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC"
 					FrameInterval="0.5" />
@@ -1797,6 +1838,27 @@ SetValue("Gold Key", 0)
 SetPicture("YellowKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
 SetPicture("BlueKey", "NOKEYPIC")
+SetValue("FaceGrinTics", 0)
+]]>
+			</Function>
+			<!-- Shared face controller: same grin/health-based face selection used in the Wolf3D XMLs.
+			     Quiz result menus still set Face directly because gameplay is paused while they are visible. -->
+			<Function Name="UpdateFace">
+				<![CDATA[
+local grinTics = GetValue("FaceGrinTics")
+if grinTics > 0 then
+	AddValue("FaceGrinTics", -1)
+	SetPicture("Face", "GOTGATLINGPIC")
+	return
+end
+local health = GetValue("Health")
+if health <= 0 then
+	SetPicture("Face", "FACE8APIC")
+	return
+end
+local level = math.min(7, math.floor((100 - health) / 16) + 1)
+local frames = {"A", "B", "C"}
+SetPicture("Face", "FACE" .. level .. frames[math.random(1, 3)] .. "PIC")
 ]]>
 			</Function>
 			<Function Name="OnTakeDamage">

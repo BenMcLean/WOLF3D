@@ -191,11 +191,9 @@ void sky() {
 	private PixelPerfectAiming _pixelPerfectAiming;
 	private AimIndicator _aimIndicator;
 	private TeleportationOverlay _teleportOverlay;
-	private StatusBarState _statusBarState;
+	private readonly StatusBarController _statusBarController;
 	private StatusBarRenderer _statusBarRenderer;
 	private CanvasLayer _statusBarCanvas;
-	private Action<StatusBarPicChangedEvent> _onStatusBarPicChanged;
-	private Action<StatusBarTextChangedEvent> _onStatusBarTextChanged;
 	private AutomapController _automapController;
 	private WristwatchDisplay _wristwatchDisplay;
 
@@ -206,7 +204,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
@@ -219,6 +217,7 @@ void sky() {
 		_playerXOverride = playerXOverride;
 		_playerYOverride = playerYOverride;
 		_playerAngleOverride = playerAngleOverride;
+		_statusBarController = statusBarController;
 	}
 
 	/// <summary>
@@ -228,12 +227,13 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false)
+	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, StatusBarController statusBarController = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
 		_initialLevelIndex = existingSimulator.Inventory.GetValue("MapOn");
 		_debugMarkersEnabled = debugMarkersEnabled;
+		_statusBarController = statusBarController;
 	}
 
 	/// <summary>
@@ -243,7 +243,7 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="snapshot">The saved simulator state to restore.</param>
-	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false)
+	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, StatusBarController statusBarController = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
@@ -253,6 +253,7 @@ void sky() {
 			&& snapshot.InventoryValues.Values.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
 		_difficulty = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("Difficulty", out int d) ? d : 2;
+		_statusBarController = statusBarController;
 	}
 
 	public override void _Ready()
@@ -546,21 +547,13 @@ void sky() {
 			// Wire status bar events before OnNewGame script runs.
 			// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
 			// Both VR (wristwatch) and flatscreen need the renderer and events wired here.
-			if (SharedAssetManager.StatusBar is not null)
+			if (_statusBarController is not null)
 			{
-				_statusBarState = new StatusBarState(SharedAssetManager.StatusBar);
-				_statusBarRenderer = new StatusBarRenderer(_statusBarState);
-
-				// Wire simulator picture events (e.g., face updates from OnFace Lua) to status bar state
-				_onStatusBarPicChanged = evt => _statusBarState.SetPic(evt.Name, evt.PicName);
-				_simulatorController.Simulator.StatusBarPicChanged += _onStatusBarPicChanged;
-				// Wire simulator text events (e.g., health, ammo, score) to status bar state
-				_onStatusBarTextChanged = evt => _statusBarState.SetText(evt.Id, evt.Content);
-				_simulatorController.Simulator.StatusBarTextChanged += _onStatusBarTextChanged;
-				// Sync current simulator state to the newly created status bar.
-				// Without this, a status bar created during level load or game load would show
-				// stale XML defaults instead of the actual current inventory and pic values.
-				_simulatorController.Simulator.SyncStatusBarState();
+				// For new/loaded games, subscribe to the fresh simulator and sync initial state.
+				// For resumed games (_existingSimulator != null), the controller is already
+				// subscribed and state is current — Subscribe re-wires and re-syncs safely.
+				_statusBarController.Subscribe(_simulatorController.Simulator);
+				_statusBarRenderer = new StatusBarRenderer(_statusBarController.State);
 			}
 
 			// Execute OnNewGame script for new games (VR and flatscreen).
@@ -1264,18 +1257,10 @@ void sky() {
 		if (_deathFizzleOverlay is not null)
 			_deathFizzleOverlay.FizzleComplete -= OnDeathFizzleComplete;
 
-		// Unsubscribe from simulator status bar events to prevent ObjectDisposedException
-		// when the ActionRoom exits the scene (e.g., pausing to menu) while the simulator
-		// is retained. Without this, the old lambdas fire against disposed Godot Labels.
-		if (_simulatorController?.Simulator is not null)
-		{
-			if (_onStatusBarPicChanged is not null)
-				_simulatorController.Simulator.StatusBarPicChanged -= _onStatusBarPicChanged;
-			if (_onStatusBarTextChanged is not null)
-				_simulatorController.Simulator.StatusBarTextChanged -= _onStatusBarTextChanged;
-		}
 		// StatusBarRenderer subscribes UpdateText/UpdatePicture to state events in its constructor;
 		// Dispose() unsubscribes them so they cannot fire against freed Godot Label/TextureRect nodes.
+		// The StatusBarController itself remains subscribed to the simulator (owned by Root)
+		// so the state stays current while a quiz menu is displayed during suspension.
 		_statusBarRenderer?.Dispose();
 
 		// Unsubscribe automap from simulator events
