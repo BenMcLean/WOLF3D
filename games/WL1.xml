@@ -224,7 +224,10 @@
 			     WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,184,C_MOUSELBACKPIC)
 			     WL_MENU.C:DrawWindow(MENU_X-8,MENU_Y-3,MENU_W,MENU_H,BKGDCOLOR) = DrawWindow(68,52,178,136,45) -->
 			<Menu Name="Main" X="76" Y="55" Indent="24" Spacing="13">
-				<Picture Name="C_OPTIONSPIC" X="Center" Y="0" Stripes="true">
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="C_OPTIONSPIC" X="Center" Y="0">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
@@ -521,7 +524,10 @@ end
 			</Menu>
 
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_LOADGAMEPIC" X="Center" Y="0" Stripes="true" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="C_LOADGAMEPIC" X="Center" Y="0" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -569,7 +575,10 @@ end
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
-				<Picture Name="C_SAVEGAMEPIC" X="Center" Y="0" Stripes="true" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="C_SAVEGAMEPIC" X="Center" Y="0" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -621,7 +630,10 @@ end
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="ViewScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15"
 				X="0" Y="0" Indent="0" Spacing="0">
-				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
 				<Picture Name="C_NAMEPIC" X="32" Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
@@ -745,7 +757,10 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			<Menu Name="HighScores" Font="SMALL" Music="ROSTER_MUS" BordColor="41" TextColor="15"
 				X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
-				<Picture Name="HIGHSCORESPIC" X="48" Y="0" Stripes="true" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="HIGHSCORESPIC" X="48" Y="0" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
 				<Picture Name="C_NAMEPIC" X="32" Y="68" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->

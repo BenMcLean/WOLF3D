@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
+using BenMcLean.Wolf3D.Shared.Layout;
 using BenMcLean.Wolf3D.Shared.Text;
 using Godot;
 
@@ -18,7 +19,7 @@ public class MenuRenderer
 	#region Data
 	private readonly SubViewport _viewport;
 	private readonly Control _canvas;
-	private readonly List<AtlasTexture> _temporaryAtlasTextures = [];
+	private readonly CanvasLayoutRenderer _layoutRenderer;
 	private readonly List<Rect2> _menuItemBounds = [];
 	private readonly List<ClickablePictureBounds> _clickablePictureBounds = [];
 	private readonly Dictionary<string, Label> _namedTextLabels = [];
@@ -78,6 +79,7 @@ public class MenuRenderer
 			CustomMinimumSize = new Vector2(Constants.MenuScreenWidth, Constants.MenuScreenHeight),
 			AnchorsPreset = (int)Control.LayoutPreset.FullRect,
 		};
+		_layoutRenderer = new CanvasLayoutRenderer(_canvas, Constants.MenuScreenWidth, Constants.MenuScreenHeight);
 		_viewport.AddChild(_canvas);
 	}
 	/// <summary>
@@ -98,10 +100,6 @@ public class MenuRenderer
 		// Remove all children from canvas
 		foreach (Node child in _canvas.GetChildren())
 			child.QueueFree();
-		// Dispose temporary AtlasTextures created for stripes
-		foreach (AtlasTexture texture in _temporaryAtlasTextures)
-			texture?.Dispose();
-		_temporaryAtlasTextures.Clear();
 		// Clear menu item bounds and clickable picture bounds
 		_menuItemBounds.Clear();
 		_clickablePictureBounds.Clear();
@@ -159,16 +157,62 @@ public class MenuRenderer
 				BordColorChanged?.Invoke(black);
 			}
 		}
-		// Render pictures (backgrounds and decorative images - WL_MENU.C:DrawMainMenu)
-		RenderPictures(menuDef);
+		// Render shared non-interactive canvas primitives.
+		int pictureIndex = -1;
+		_layoutRenderer.RenderAll(menuDef, new CanvasLayoutRenderOptions
+		{
+			DefaultDeactive = 0x2b,
+			DefaultBorder2Color = 0x23,
+			BoxFillZIndex = 6,
+			BoxBorderZIndex = 7,
+			PictureZIndex = 5,
+			FallbackFontName = "BIG",
+			AfterAddPicture = (pictureDef, picture) =>
+			{
+				pictureIndex++;
+				if (!string.IsNullOrEmpty(pictureDef.Script))
+					_clickablePictureBounds.Add(new ClickablePictureBounds(
+						new Rect2(picture.Position, picture.Size),
+						pictureIndex));
+				if (!string.IsNullOrEmpty(pictureDef.Frames))
+				{
+					string[] frameNames = pictureDef.Frames.Split(',');
+					if (frameNames.Length > 1)
+						_animatedPictures.Add(new AnimatedPictureState
+						{
+							TextureRect = picture,
+							FrameNames = frameNames,
+							FrameInterval = pictureDef.FrameInterval,
+							CurrentFrame = 0,
+							Elapsed = 0f
+						});
+				}
+			},
+			TextContentProvider = textDef => _textOverrides.TryGetValue(textDef.Id ?? string.Empty, out string overrideText)
+				? overrideText
+				: textDef.Content,
+			TextColorProvider = textDef => textDef.Color ?? menuDef.TextColor,
+			AfterAddText = (textDef, label, theme, content) =>
+			{
+				label.ZIndex = 8;
+				label.PivotOffset = Vector2.Zero;
+				if (!string.IsNullOrEmpty(textDef.Id))
+				{
+					_namedTextLabels[textDef.Id] = label;
+					if (_textOverrides.ContainsKey(textDef.Id) && textDef.CenterX)
+						label.Position = TextLayoutHelper.GetPosition(
+							textDef,
+							theme,
+							content,
+							Constants.MenuScreenWidth,
+							Constants.MenuScreenHeight);
+				}
+			}
+		});
 		// Render static VSWAP sprites (e.g., SPR_DEATHCAM title - WL_ACT2.C:A_StartDeathCam)
 		RenderStaticSprites(menuDef);
 		// Render actor animations (e.g., boss death cam - WL_ACT2.C:A_StartDeathCam)
 		RenderActorAnimations(menuDef);
-		// Render menu boxes (WL_MENU.C:DrawWindow)
-		RenderMenuBoxes(menuDef);
-		// Render text labels (WL_MENU.C:US_Print - "How tough are you?")
-		RenderTexts(menuDef);
 		// Render tickers (intermission screen percent counters)
 		RenderTickers(menuDef);
 		// Render menu items (visible items only)
@@ -201,65 +245,6 @@ public class MenuRenderer
 		{
 			_currentBordColor = color;
 			BordColorChanged?.Invoke(color);
-		}
-	}
-	/// <summary>
-	/// Render decorative pictures from VgaGraph.
-	/// WL_MENU.C:DrawMainMenu - VWB_DrawPic(112,GAMEVER_MOUSELBACKY,C_MOUSELBACKPIC)
-	/// </summary>
-	/// <param name="menuDef">Menu definition containing pictures list</param>
-	private void RenderPictures(MenuDefinition menuDef)
-	{
-		if (menuDef.Pictures is null || menuDef.Pictures.Count == 0)
-			return;
-		for (int pictureIndex = 0; pictureIndex < menuDef.Pictures.Count; pictureIndex++)
-		{
-			PictureDefinition pictureDef = menuDef.Pictures[pictureIndex];
-			// Get texture from SharedAssetManager
-			if (!SharedAssetManager.VgaGraph.TryGetValue(pictureDef.Name, out AtlasTexture texture))
-			{
-				GD.PrintErr($"ERROR: Picture '{pictureDef.Name}' not found in VgaGraph");
-				continue;
-			}
-			// Render horizontal stripes if enabled
-		// Resolve centering using the actual texture dimensions
-			float picX = pictureDef.CenterX ? (Constants.MenuScreenWidth - texture.Region.Size.X) / 2f
-				: pictureDef.RightX ? Constants.MenuScreenWidth - texture.Region.Size.X
-				: pictureDef.XValue;
-			float picY = pictureDef.CenterY ? (Constants.MenuScreenHeight - texture.Region.Size.Y) / 2f
-				: pictureDef.BottomY ? Constants.MenuScreenHeight - texture.Region.Size.Y
-				: pictureDef.YValue;
-			if (pictureDef.Stripes)
-				RenderStripes(texture, (int)picY);
-			// Render the normal picture
-			TextureRect picture = new()
-			{
-				Texture = texture,
-				Position = new Vector2(picX, picY),
-				Size = texture.Region.Size,
-				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				ZIndex = pictureDef.ZIndex ?? 5, // Default 5 (below boxes), or custom value (e.g., 9 for difficulty pic)
-			};
-			_canvas.AddChild(picture);
-			// Track clickable pictures (those with Lua scripts)
-			if (!string.IsNullOrEmpty(pictureDef.Script))
-				_clickablePictureBounds.Add(new ClickablePictureBounds(
-					new Rect2(new Vector2(picX, picY), texture.Region.Size),
-					pictureIndex));
-			// Track animated pictures for frame cycling
-			if (!string.IsNullOrEmpty(pictureDef.Frames))
-			{
-				string[] frameNames = pictureDef.Frames.Split(',');
-				if (frameNames.Length > 1)
-					_animatedPictures.Add(new AnimatedPictureState
-					{
-						TextureRect = picture,
-						FrameNames = frameNames,
-						FrameInterval = pictureDef.FrameInterval,
-						CurrentFrame = 0,
-						Elapsed = 0f
-					});
-			}
 		}
 	}
 	/// <summary>
@@ -341,136 +326,6 @@ public class MenuRenderer
 	}
 	/// <summary>
 	/// Render decorative horizontal stripes by stretching the leftmost pixel column.
-	/// Used for C_OPTIONSPIC background stripes in Options menu.
-	/// </summary>
-	/// <param name="texture">Source texture to extract leftmost column from</param>
-	/// <param name="y">Y coordinate to render stripes at</param>
-	private void RenderStripes(AtlasTexture texture, int y)
-	{
-		// Get the region within the atlas
-		Rect2 region = texture.Region;
-		// Create a 1-pixel-wide AtlasTexture for the leftmost column
-		AtlasTexture stripeTexture = new()
-		{
-			Atlas = texture.Atlas,
-			Region = new Rect2(
-				region.Position.X, // Same X position
-				region.Position.Y, // Same Y position
-				1,                 // Width = 1 pixel
-				region.Size.Y      // Same height
-			)
-		};
-		// Track for disposal
-		_temporaryAtlasTextures.Add(stripeTexture);
-		// Render the stripe, stretched to 320 pixels wide
-		TextureRect stripes = new()
-		{
-			Texture = stripeTexture,
-			Position = new Vector2(0, y),
-			Size = new Vector2(Constants.MenuScreenWidth, region.Size.Y),
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			ZIndex = 4, // Draw stripes below the picture itself
-		};
-		_canvas.AddChild(stripes);
-	}
-	/// <summary>
-	/// Render 3D beveled boxes.
-	/// WL_MENU.C:DrawWindow - VWB_Bar + DrawOutline
-	/// WL_MENU.C:DrawOutline - horizontal and vertical lines for 3D effect
-	/// </summary>
-	/// <param name="menuDef">Menu definition containing box list</param>
-	private void RenderMenuBoxes(MenuDefinition menuDef)
-	{
-		if (menuDef.Boxes is null || menuDef.Boxes.Count == 0)
-			return;
-		foreach (MenuBoxDefinition boxDef in menuDef.Boxes)
-		{
-			Color? bgColor = boxDef.BkgdColor.HasValue
-				? SharedAssetManager.GetPaletteColor(boxDef.BkgdColor.Value)
-				: null;
-			if (boxDef.Bevel)
-			{
-				// WL_MENU.C:DrawWindow + DrawOutline - fill then beveled border
-				// Top and left edges use DEACTIVE color (lighter); bottom and right use BORD2COLOR (darker)
-				byte deactiveColor = boxDef.Deactive ?? 0x2b, // DEACTIVE default
-					border2Color = boxDef.Bord2Color ?? 0x23; // BORD2COLOR default
-				DrawBevelledBox(boxDef.X, boxDef.Y, boxDef.W, boxDef.H,
-					bgColor,
-					SharedAssetManager.GetPaletteColor(deactiveColor),
-					SharedAssetManager.GetPaletteColor(border2Color),
-					bgZIndex: 6, borderZIndex: 7);
-			}
-			else if (bgColor.HasValue)
-			{
-				// WL_MENU.C:VWB_Bar - plain filled rectangle, no border
-				// ZIndex 4: same layer as Stripes, below pictures (5) and beveled panels (6/7)
-				_canvas.AddChild(new ColorRect
-				{
-					Color = bgColor.Value,
-					Position = new Vector2(boxDef.X, boxDef.Y),
-					Size = new Vector2(boxDef.W, boxDef.H),
-					ZIndex = 4,
-				});
-			}
-		}
-	}
-	/// <summary>
-	/// Render text labels (non-interactive text).
-	/// WL_MENU.C:US_Print - Used for static text like "How tough are you?"
-	/// </summary>
-	/// <param name="menuDef">Menu definition containing text list</param>
-	private void RenderTexts(MenuDefinition menuDef)
-	{
-		if (menuDef.Texts is null || menuDef.Texts.Count == 0)
-			return;
-		foreach (TextDefinition textDef in menuDef.Texts)
-		{
-			// Determine font: textDef.Font > menuDef.Font > "BIG" (default)
-			string fontName = textDef.Font ?? menuDef.Font ?? "BIG";
-			// Get theme from SharedAssetManager
-			if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
-			{
-				GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager");
-				continue;
-			}
-			// Determine color: textDef.Color > menuDef.TextColor > 0x17 (TEXTCOLOR default)
-			byte colorIndex = textDef.Color ?? menuDef.TextColor ?? 0x17;
-			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
-			// Create label with text
-			Font font = theme.DefaultFont;
-			bool hasMaxWidth = textDef.MaxWidth.HasValue;
-			Label label = TextLayoutHelper.CreateLabel(textDef, theme, textDef.Content, textColor);
-			label.ZIndex = 8; // Draw text labels below menu items but above boxes
-			label.Position = TextLayoutHelper.GetPosition(
-				textDef,
-				theme,
-				textDef.Content,
-				Constants.MenuScreenWidth,
-				Constants.MenuScreenHeight);
-			_canvas.AddChild(label);
-			label.PivotOffset = Vector2.Zero;
-			// Track named text labels for dynamic updates from Lua
-			if (!string.IsNullOrEmpty(textDef.Id))
-			{
-				_namedTextLabels[textDef.Id] = label;
-				// Re-apply any override set by SetText before this re-render
-				// (needed because SetItemVisible/SetItemText trigger RefreshMenu which clears the canvas)
-				if (_textOverrides.TryGetValue(textDef.Id, out string overrideText))
-				{
-					label.Text = overrideText;
-					if (textDef.CenterX)
-					{
-						label.Position = TextLayoutHelper.GetPosition(
-							textDef,
-							theme,
-							overrideText,
-							Constants.MenuScreenWidth,
-							Constants.MenuScreenHeight);
-					}
-				}
-			}
-		}
-	}
 	/// <summary>
 	/// Render menu items as text labels.
 	/// Uses layout coordinates from menuDef (matching original Wolf3D layout).
@@ -877,7 +732,7 @@ public class MenuRenderer
 			ZIndex = 48,
 		});
 		// Message box: fill + single PixelRect-style bevel (NWColor top/left, SEColor bottom/right)
-		DrawBevelledBox(msgBoxX, msgBoxY, msgBoxW, msgBoxH, bgColor, colorNW, colorSE, 50, 51);
+		CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, msgBoxX, msgBoxY, msgBoxW, msgBoxH, bgColor, colorNW, colorSE, 50, 51);
 		// Message text
 		_canvas.AddChild(new Label
 		{
@@ -894,7 +749,7 @@ public class MenuRenderer
 			}
 		});
 		// "Yes" box — outside/below the message box, left-aligned with it
-		DrawBevelledBox(yesBoxX, btnBoxY, yesBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
+		CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, yesBoxX, btnBoxY, yesBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
 		_canvas.AddChild(new Label
 		{
 			Text = "Yes",
@@ -904,7 +759,7 @@ public class MenuRenderer
 			LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
 		});
 		// "No" box — outside/below the message box, right-aligned with it
-		DrawBevelledBox(noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
+		CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
 		_canvas.AddChild(new Label
 		{
 			Text = "No",
@@ -921,42 +776,6 @@ public class MenuRenderer
 		modal.NoButtonBounds = new Rect2(
 			noBoxX - hitExtra, btnBoxY - hitExtra,
 			noBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
-	}
-	/// <summary>
-	/// Draws a filled rectangle with a PixelRect-style bevelled border.
-	/// Used by RenderMenuBoxes and RenderModal for boxes and Yes/No buttons.
-	/// colorNW = top/left bevel (lighter); colorSE = bottom/right bevel (darker).
-	/// bgColor may be null to skip the fill and draw only the border.
-	/// </summary>
-	private void DrawBevelledBox(float x, float y, float w, float h,
-		Color? bgColor, Color colorNW, Color colorSE,
-		int bgZIndex, int borderZIndex)
-	{
-		if (bgColor.HasValue)
-			_canvas.AddChild(new ColorRect
-			{
-				Color = bgColor.Value,
-				Position = new Vector2(x, y),
-				Size = new Vector2(w, h),
-				ZIndex = bgZIndex,
-			});
-		AddOutline(x, y, w, h, colorNW, colorSE, borderZIndex);
-	}
-	/// <summary>
-	/// Draws a bevelled outline (WL_MENU.C:DrawOutline / PixelRect bevel).
-	/// topLeft is used for top and left edges; bottomRight for bottom and right edges.
-	/// </summary>
-	private void AddOutline(float x, float y, float w, float h,
-		Color topLeft, Color bottomRight, int zIndex)
-	{
-		// Top edge (topLeft color, WL_MENU.C:VWB_Hlin top)
-		_canvas.AddChild(new ColorRect { Color = topLeft, Position = new Vector2(x, y), Size = new Vector2(w + 1f, 1f), ZIndex = zIndex });
-		// Left edge (topLeft color, WL_MENU.C:VWB_Vlin left)
-		_canvas.AddChild(new ColorRect { Color = topLeft, Position = new Vector2(x, y), Size = new Vector2(1f, h + 1f), ZIndex = zIndex });
-		// Bottom edge (bottomRight color, WL_MENU.C:VWB_Hlin bottom)
-		_canvas.AddChild(new ColorRect { Color = bottomRight, Position = new Vector2(x, y + h), Size = new Vector2(w + 1f, 1f), ZIndex = zIndex });
-		// Right edge (bottomRight color, WL_MENU.C:VWB_Vlin right)
-		_canvas.AddChild(new ColorRect { Color = bottomRight, Position = new Vector2(x + w, y), Size = new Vector2(1f, h + 1f), ZIndex = zIndex });
 	}
 	/// <summary>
 	/// Checks if a position is within the visible screen area.

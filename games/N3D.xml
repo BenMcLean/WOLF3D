@@ -561,7 +561,9 @@ end
 			<!-- WL_HSCOR.C: fontnumber=0 (STARTFONT) = SMALL font for all text -->
 			<Menu Name="ViewScores" Font="SMALL" Music="NOAH11_MUS" BordColor="41"
 				X="0" Y="0" Indent="0" Spacing="0">
-				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
 				<Picture Name="C_NAMEPIC" X="32" Y="68" />
 				<Picture Name="C_LEVELPIC" X="160" Y="68" />
 				<Picture Name="C_SCOREPIC" X="224" Y="68" />
@@ -818,7 +820,9 @@ StartTicker("TreasureRatio", tr)   -- Then treasure ratio
 			<Menu Name="HighScores" Font="SMALL" Music="NOAH11_MUS" BordColor="41"
 				X="0" Y="0" Indent="0" Spacing="0">
 				<!-- WL_HSCOR.C:VWB_DrawPic(48,0,HIGHSCORESPIC) -->
-				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" Stripes="true" />
+				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
+				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
+				<Picture Name="HIGHSCORESPIC" X="Center" Y="0" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(4*8,68,C_NAMEPIC) -->
 				<Picture Name="C_NAMEPIC" X="32" Y="68" />
 				<!-- WL_HSCOR.C:VWB_DrawPic(20*8,68,C_LEVELPIC) -->

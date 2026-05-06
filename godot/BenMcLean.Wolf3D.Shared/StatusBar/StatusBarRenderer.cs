@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
+using BenMcLean.Wolf3D.Shared.Layout;
 using BenMcLean.Wolf3D.Shared.Text;
 using Godot;
 
@@ -14,6 +15,7 @@ namespace BenMcLean.Wolf3D.Shared.StatusBar;
 public class StatusBarRenderer
 {
 	private readonly Control _canvas;
+	private readonly CanvasLayoutRenderer _layoutRenderer;
 	private readonly StatusBarState _state;
 	private readonly StatusBarDefinition _definition;
 	private readonly Dictionary<string, Label> _textLabels = [];
@@ -33,6 +35,7 @@ public class StatusBarRenderer
 			CustomMinimumSize = new Vector2(320, 40),
 			Size = new Vector2(320, 40),
 		};
+		_layoutRenderer = new CanvasLayoutRenderer(_canvas, 320, 40);
 		// Subscribe to state changes
 		_state.TextChanged += UpdateText;
 		_state.PicChanged += UpdatePicture;
@@ -56,9 +59,35 @@ public class StatusBarRenderer
 	public void RenderAll()
 	{
 		Clear();
-		RenderBackground();
-		RenderTexts();
-		RenderPictures();
+		_layoutRenderer.RenderAll(_definition, new CanvasLayoutRenderOptions
+		{
+			BackgroundPictureName = _definition.BackgroundPic,
+			BackgroundZIndex = 0,
+			BoxFillZIndex = 5,
+			BoxBorderZIndex = 6,
+			PictureZIndex = 10,
+			FallbackFontName = "N",
+			RenderTextsBeforePictures = true,
+			PictureNameProvider = picDef =>
+			{
+				string picName = !string.IsNullOrEmpty(picDef.Id) ? _state.GetPic(picDef.Id) : string.Empty;
+				return string.IsNullOrEmpty(picName) ? picDef.Name : picName;
+			},
+			AfterAddPicture = (picDef, pictureRect) =>
+			{
+				if (!string.IsNullOrEmpty(picDef.Id))
+					_pictureTextures[picDef.Id] = pictureRect;
+			},
+			TextContentProvider = textDef => !string.IsNullOrEmpty(textDef.Id) ? _state.GetText(textDef.Id) : textDef.Content,
+			TextColorProvider = textDef => textDef.Color,
+			AfterAddText = (textDef, label, _, _) =>
+			{
+				label.ZIndex = 10;
+				label.PivotOffset = Vector2.Zero;
+				if (!string.IsNullOrEmpty(textDef.Id))
+					_textLabels[textDef.Id] = label;
+			}
+		});
 	}
 	/// <summary>
 	/// Clears all rendered elements.
@@ -69,89 +98,6 @@ public class StatusBarRenderer
 			child.QueueFree();
 		_textLabels.Clear();
 		_pictureTextures.Clear();
-	}
-	/// <summary>
-	/// Renders the status bar background image.
-	/// </summary>
-	private void RenderBackground()
-	{
-		if (string.IsNullOrEmpty(_definition.BackgroundPic))
-			return;
-		if (!SharedAssetManager.VgaGraph.TryGetValue(_definition.BackgroundPic, out AtlasTexture texture))
-		{
-			GD.PrintErr($"ERROR: Status bar background '{_definition.BackgroundPic}' not found in VgaGraph");
-			return;
-		}
-		TextureRect background = new()
-		{
-			Texture = texture,
-			Position = Vector2.Zero,
-			Size = new Vector2(320, 40),
-			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-			ZIndex = 0,
-		};
-		_canvas.AddChild(background);
-	}
-	/// <summary>
-	/// Renders all text label elements from the StatusBar definition.
-	/// Each label's initial content comes from the definition; runtime updates
-	/// arrive via UpdateText() when the simulator fires StatusBarTextChangedEvent.
-	/// </summary>
-	private void RenderTexts()
-	{
-		if (_definition.Texts is null || _definition.Texts.Count == 0)
-			return;
-		string fontName = !string.IsNullOrEmpty(_definition.Font) ? _definition.Font : "N";
-		if (!SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
-		{
-			GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager - cannot render status bar texts");
-			return;
-		}
-		foreach (TextDefinition textDef in _definition.Texts)
-		{
-			string content = !string.IsNullOrEmpty(textDef.Id)
-				? _state.GetText(textDef.Id)
-				: textDef.Content;
-			Label label = TextLayoutHelper.CreateLabel(textDef, theme, content);
-			label.ZIndex = 10;
-			label.Position = TextLayoutHelper.GetPosition(textDef, theme, content, 320, 40);
-			_canvas.AddChild(label);
-			label.PivotOffset = Vector2.Zero;
-			if (!string.IsNullOrEmpty(textDef.Id))
-				_textLabels[textDef.Id] = label;
-		}
-	}
-	/// <summary>
-	/// Renders all named picture elements from the StatusBar definition.
-	/// Each picture's initial pic name comes from the definition; runtime updates
-	/// arrive via UpdatePicture() when the simulator fires StatusBarPicChangedEvent.
-	/// </summary>
-	private void RenderPictures()
-	{
-		foreach (PictureDefinition picDef in _definition.Pictures)
-		{
-			string picName = !string.IsNullOrEmpty(picDef.Id) ? _state.GetPic(picDef.Id) : string.Empty;
-			if (string.IsNullOrEmpty(picName))
-				picName = picDef.Name;
-			if (string.IsNullOrEmpty(picName))
-				continue;
-			if (!SharedAssetManager.VgaGraph.TryGetValue(picName, out AtlasTexture texture))
-			{
-				GD.PrintErr($"ERROR: Status bar picture '{picName}' (Id='{picDef.Id}') not found in VgaGraph");
-				continue;
-			}
-			TextureRect pictureRect = new()
-			{
-				Texture = texture,
-				Position = new Vector2(picDef.XValue, picDef.YValue),
-				Size = texture.Region.Size,
-				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-				ZIndex = 10,
-			};
-			_canvas.AddChild(pictureRect);
-			if (!string.IsNullOrEmpty(picDef.Id))
-				_pictureTextures[picDef.Id] = pictureRect;
-		}
 	}
 	/// <summary>
 	/// Updates a named text label's content.

@@ -310,14 +310,48 @@
 		</xs:complexType>
 	</xs:element>
 
+	<xs:group name="CanvasLayoutChildren">
+		<xs:annotation>
+			<xs:documentation>
+				Shared visual primitives valid on both Menu and StatusBar surfaces.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:choice>
+			<xs:element ref="Box"/>
+			<xs:element ref="Picture"/>
+			<xs:element ref="Text"/>
+		</xs:choice>
+	</xs:group>
+
+	<xs:attributeGroup name="CanvasLayoutAttributes">
+		<xs:annotation>
+			<xs:documentation>
+				Shared attributes for Menu and StatusBar canvas layouts.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Font" type="xs:string">
+			<xs:annotation>
+				<xs:documentation>
+					Default font name for text primitives within this layout. Individual Text
+					elements may override it.
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+
 	<xs:element name="StatusBar">
+		<xs:annotation>
+			<xs:documentation>
+				Status-bar layout and runtime hooks. Status bars share the same Box, Picture, and Text
+				primitives as menus.
+			</xs:documentation>
+		</xs:annotation>
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<xs:element ref="Text"/>
-				<xs:element ref="Picture"/>
+				<xs:group ref="CanvasLayoutChildren"/>
 			</xs:choice>
 			<xs:attribute name="Pic" type="xs:string"/>
-			<xs:attribute name="Font" type="xs:string"/>
+			<xs:attributeGroup ref="CanvasLayoutAttributes"/>
 			<xs:attribute name="OnFace" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>
@@ -541,8 +575,9 @@
 			<xs:attribute name="BordColor" type="xs:unsignedByte">
 				<xs:annotation>
 					<xs:documentation>
-						Palette index for the screen background stripe drawn behind menus.
-						WL_MENU.H:BORDCOLOR. Used in WL_MENU.C:ClearMScreen via DrawStripes.
+						Palette index for the screen background area drawn behind menus.
+						WL_MENU.H:BORDCOLOR. Historically tied to the original ClearMScreen/DrawStripes
+						look; in this schema that effect is authored explicitly with Box elements.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -632,13 +667,12 @@
 			<xs:documentation>
 				Menu definition for a single menu screen.
 				Contains display layout, styling, and menu items.
+				Box, Picture, and Text are shared canvas primitives that are also valid on StatusBar.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<xs:element ref="Box"/>
-				<xs:element ref="Picture"/>
-				<xs:element ref="Text"/>
+				<xs:group ref="CanvasLayoutChildren"/>
 				<xs:element ref="Ticker"/>
 				<xs:element ref="Pause"/>
 				<xs:element ref="MenuItem"/>
@@ -809,11 +843,7 @@
 					<xs:documentation>Selected menu item text color. WL_MENU.H:HIGHLIGHT = 0x13</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Font" type="xs:string">
-				<xs:annotation>
-					<xs:documentation>Font name to use for this menu (e.g., "BIG", "SMALL")</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
+			<xs:attributeGroup ref="CanvasLayoutAttributes"/>
 			<xs:attribute name="Music" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>Music track name to play while in this menu</xs:documentation>
@@ -1022,9 +1052,10 @@
 	<xs:element name="Box">
 		<xs:annotation>
 			<xs:documentation>
-				Filled box in a menu. By default draws a 3D beveled box (WL_MENU.C:DrawWindow).
-				Set Bevel="false" for a plain filled rectangle with no border (WL_MENU.C:VWB_Bar),
-				as used by Spear of Destiny's DrawStripes.
+				Filled box in a shared canvas layout. Valid on both Menu and StatusBar.
+				By default draws a 3D beveled box (WL_MENU.C:DrawWindow).
+				Set Bevel="false" for a plain filled rectangle with no border (WL_MENU.C:VWB_Bar).
+				This is also how stripe-like menu background bands are authored now.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
@@ -1072,13 +1103,21 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="ZIndex" type="xs:integer">
+				<xs:annotation>
+					<xs:documentation>
+						Optional base Z-index for the box. Plain filled boxes render at this layer.
+						Beveled boxes render their fill at this layer and their outline one layer above it.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
 	<xs:element name="Picture">
 		<xs:annotation>
 			<xs:documentation>
-				A picture element used in menus and the status bar.
+				A picture element used in shared canvas layouts such as menus and status bars.
 				Name is always the VgaGraph image to display.
 				The optional Id attribute identifies this picture for Lua scripts,
 				allowing SetPicture(id, picName) to change the displayed image at runtime.
@@ -1100,17 +1139,12 @@
 					</xs:attribute>
 					<xs:attribute name="X" type="XCoordinateOrAlignment">
 						<xs:annotation>
-							<xs:documentation>X coordinate for picture placement, or "Left"/"Center"/"Right" for alignment.</xs:documentation>
+							<xs:documentation>X coordinate for picture placement, or "Center"/"Right" for alignment.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Y" type="YCoordinateOrAlignment">
 						<xs:annotation>
-							<xs:documentation>Y coordinate for picture placement, or "Top"/"Center"/"Bottom" for alignment.</xs:documentation>
-						</xs:annotation>
-					</xs:attribute>
-					<xs:attribute name="Stripes" type="xs:boolean">
-						<xs:annotation>
-							<xs:documentation>If true, renders the leftmost column of pixels stretched horizontally across the screen before rendering the normal picture. Used for decorative stripe backgrounds.</xs:documentation>
+							<xs:documentation>Y coordinate for picture placement, or "Center"/"Bottom" for alignment.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="ZIndex" type="xs:integer">
@@ -1136,7 +1170,7 @@
 	<xs:element name="Text">
 		<xs:annotation>
 			<xs:documentation>
-				Text label used in menus and the status bar.
+				Text label used in shared canvas layouts such as menus and the status bar.
 				In menus: non-interactive, not selectable (WL_MENU.C:US_Print()).
 				In the status bar: dynamically updated via SetText(id, value) from Lua.
 				For numeric status-bar fields that mirror WL_AGENT.C:LatchNumber, the element content
@@ -1150,12 +1184,12 @@
 				<xs:extension base="xs:string">
 					<xs:attribute name="X" type="XCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>X coordinate for text placement, or "Left"/"Center"/"Right" for alignment. For status-bar numeric fields that mirror WL_AGENT.C:LatchNumber, this is the left edge of the first character cell in screen pixels.</xs:documentation>
+							<xs:documentation>X coordinate for text placement, or "Center"/"Right" for alignment. For status-bar numeric fields that mirror WL_AGENT.C:LatchNumber, this is the left edge of the fixed-width field in screen pixels.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Y" type="YCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>Y coordinate for text placement, or "Top"/"Center"/"Bottom" for alignment</xs:documentation>
+							<xs:documentation>Y coordinate for text placement, or "Center"/"Bottom" for alignment.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Font" type="xs:string">
@@ -1173,14 +1207,14 @@
 							<xs:documentation>Maximum pixel width before word wrapping. Mirrors the original Wolf3D text window width (WindowW), for cases like Noah 3-D quiz text that wraps within a boxed area.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
-					<xs:attribute name="Align" type="xs:string">
+					<xs:attribute name="Align" type="FixedFieldAlignmentType">
 						<xs:annotation>
-							<xs:documentation>Text alignment within the field. Use "Right" for numeric status-bar fields and other fixed-width text boxes that should right-justify updates within the width implied by the element's initial content.</xs:documentation>
+							<xs:documentation>Text alignment within the field. "Right" means right-align within the fixed width implied by the element's initial content. Numeric status-bar fields use X as the left edge of that fixed field, matching WL_AGENT.C:LatchNumber semantics.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Id" type="xs:string">
 						<xs:annotation>
-							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(id, value). Used by status bar displays, intermission screen for floor number, time, par time, bonus values. When the Id matches an inventory key, runtime status-bar updates use the element's initial content length as the fixed display width.</xs:documentation>
+							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(id, value). Used by status bar displays and intermission screens. When the Id matches a runtime numeric field, the element's initial content length defines the fixed display width for right-aligned updates.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 				</xs:extension>
@@ -1221,9 +1255,9 @@
 					<xs:documentation>Color override (VGA palette 0-255). If not specified, uses menu TextColor.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Align" type="xs:string">
+			<xs:attribute name="Align" type="FixedFieldAlignmentType">
 				<xs:annotation>
-					<xs:documentation>Text alignment ("Right" for right-aligned numbers, default is left-aligned)</xs:documentation>
+					<xs:documentation>Alignment for fixed-width ticker output. "Right" keeps the changing number aligned to its right edge.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:attribute name="TickSound" type="xs:string">
@@ -2652,6 +2686,18 @@
 				</xs:restriction>
 			</xs:simpleType>
 		</xs:union>
+	</xs:simpleType>
+
+	<xs:simpleType name="FixedFieldAlignmentType">
+		<xs:annotation>
+			<xs:documentation>
+				Alignment contract for fixed-width numeric fields. "Right" means the rendered value is
+				right-aligned within the width implied by the element's initial text content.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Right"/>
+		</xs:restriction>
 	</xs:simpleType>
 
 </xs:schema>

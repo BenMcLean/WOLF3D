@@ -60,19 +60,23 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 	/// </summary>
 	/// <param name="element">The XElement containing status bar data (&lt;StatusBar&gt;)</param>
 	/// <returns>A new StatusBarDefinition instance</returns>
-	public static StatusBarDefinition FromXElement(XElement element) => new()
+	public static StatusBarDefinition FromXElement(XElement element)
 	{
-		BackgroundPic = element.Attribute("Pic")?.Value,
-		Font = element.Attribute("Font")?.Value,
-		Boxes = [.. element.Elements("Box").Select(MenuBoxDefinition.FromXElement)],
-		Texts = [.. element.Elements("Text").Select(TextDefinition.FromXElement)],
-		Pictures = [.. element.Elements("Picture").Select(PictureDefinition.FromXElement)],
-		OnFace = element.Attribute("OnFace")?.Value,
-		OnDeath = element.Attribute("OnDeath")?.Value,
-		OnNewGame = element.Attribute("OnNewGame")?.Value,
-		OnMapStart = element.Attribute("OnMapStart")?.Value,
-		OnTakeDamage = element.Attribute("OnTakeDamage")?.Value,
-		FaceTics = int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics) ? faceTics : 2,
-		FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
-	};
+		StatusBarDefinition definition = new()
+		{
+			BackgroundPic = element.Attribute("Pic")?.Value,
+			OnFace = element.Attribute("OnFace")?.Value,
+			OnDeath = element.Attribute("OnDeath")?.Value,
+			OnNewGame = element.Attribute("OnNewGame")?.Value,
+			OnMapStart = element.Attribute("OnMapStart")?.Value,
+			OnTakeDamage = element.Attribute("OnTakeDamage")?.Value,
+			FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
+		};
+
+		CanvasLayoutDefinitionParser.PopulateLayout(element, definition);
+		if (int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics))
+			definition.FaceTics = faceTics;
+
+		return definition;
+	}
 }

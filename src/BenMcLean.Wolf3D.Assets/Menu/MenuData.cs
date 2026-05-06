@@ -92,6 +92,11 @@ public class MenuBoxDefinition
 	/// </summary>
 	public bool Bevel { get; set; } = true;
 	/// <summary>
+	/// Optional base Z-index for the box. For beveled boxes, the border uses one layer above this value.
+	/// For plain filled boxes, this is the fill layer directly.
+	/// </summary>
+	public int? ZIndex { get; set; }
+	/// <summary>
 	/// Creates a MenuBoxDefinition instance from an XElement.
 	/// </summary>
 	/// <param name="element">The XElement containing box data (&lt;Box&gt;)</param>
@@ -115,6 +120,8 @@ public class MenuBoxDefinition
 			box.Bord2Color = border2;
 		if (bool.TryParse(element.Attribute("Bevel")?.Value, out bool bevel))
 			box.Bevel = bevel;
+		if (int.TryParse(element.Attribute("ZIndex")?.Value, out int zIndex))
+			box.ZIndex = zIndex;
 
 		return box;
 	}
@@ -168,11 +175,6 @@ public class PictureDefinition
 	/// </summary>
 	public int YValue => (CenterY || BottomY) ? 0 : (int.TryParse(Y, out int y) ? y : 0);
 	/// <summary>
-	/// If true, renders the leftmost column of pixels stretched horizontally across the screen
-	/// before rendering the normal picture. Used for decorative stripe backgrounds.
-	/// </summary>
-	public bool Stripes { get; set; }
-	/// <summary>
 	/// Z-index for controlling draw order.
 	/// Default is 5 (below boxes at 7). Use 9 for pictures that should appear above boxes (e.g., difficulty face).
 	/// </summary>
@@ -207,7 +209,6 @@ public class PictureDefinition
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Picture element must have a Name attribute"),
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
-			Stripes = bool.TryParse(element.Attribute("Stripes")?.Value, out bool stripes) && stripes,
 			Frames = element.Attribute("Frames")?.Value,
 			Script = element.Value?.Trim()
 		};
@@ -772,7 +773,6 @@ public class MenuDefinition : CanvasLayoutDefinition
 		MenuDefinition menu = new()
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Menu element must have a Name attribute"),
-			Font = element.Attribute("Font")?.Value,
 			Music = element.Attribute("Music")?.Value ?? element.Attribute("Song")?.Value,
 			SelectSound = element.Attribute("SelectSound")?.Value,
 			CursorPic = element.Attribute("CursorPic")?.Value,
@@ -781,6 +781,8 @@ public class MenuDefinition : CanvasLayoutDefinition
 			OnShow = element.Element("OnShow")?.Value?.Trim(),
 			OnCancel = element.Element("OnCancel")?.Value?.Trim()
 		};
+
+		CanvasLayoutDefinitionParser.PopulateLayout(element, menu);
 
 		// Parse color attributes using semantic names from WL_MENU.H
 		if (byte.TryParse(element.Attribute("BordColor")?.Value, out byte borderColor))
@@ -802,20 +804,6 @@ public class MenuDefinition : CanvasLayoutDefinition
 		if (int.TryParse(element.Attribute("CurPos")?.Value, out int curPos))
 			menu.CurPos = curPos;
 
-		// Parse boxes
-		IEnumerable<XElement> boxElements = element.Elements("Box");
-		if (boxElements is not null)
-			menu.Boxes = [.. boxElements.Select(MenuBoxDefinition.FromXElement)];
-
-		// Parse decorative pictures
-		IEnumerable<XElement> pictureElements = element.Elements("Picture");
-		if (pictureElements is not null)
-			menu.Pictures = [.. pictureElements.Select(PictureDefinition.FromXElement)];
-
-		// Parse text labels
-		IEnumerable<XElement> textElements = element.Elements("Text");
-		if (textElements is not null)
-			menu.Texts = [.. textElements.Select(TextDefinition.FromXElement)];
 		// Parse tickers
 		IEnumerable<XElement> tickerElements = element.Elements("Ticker");
 		if (tickerElements is not null)
