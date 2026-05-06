@@ -1780,60 +1780,62 @@ return true
 			     WL_GAME.C #ifdef GAMEVER_NOAH3D: SpawnStand(en_guard, x, y, 0, tile==126)
 			     All actors spawn facing East (dir=0) per SpawnStand(...,0,...) in WL_GAME.C. -->
 
-			<!-- Regular enemies: normal variants (tiles 108-112) -->
-			<ObjectType Number="108" ObClass="actor" Actor="White ram" Direction="E" Difficulty="1"
+			<!-- Regular enemies: normal variants (tiles 108-112).
+			     N3D does not use difficulty-gated spawn tile bands here; WL_GAME.C always spawns
+			     these tiles regardless of difficulty. -->
+			<ObjectType Number="108" ObClass="actor" Actor="White ram" Direction="E"
 				State="s_grdstand" />
-			<ObjectType Number="109" ObClass="actor" Actor="Ostrich" Direction="E" Difficulty="1"
+			<ObjectType Number="109" ObClass="actor" Actor="Ostrich" Direction="E"
 				State="s_ofcstand" />
-			<ObjectType Number="110" ObClass="actor" Actor="Antelope" Direction="E" Difficulty="1"
+			<ObjectType Number="110" ObClass="actor" Actor="Antelope" Direction="E"
 				State="s_ssstand" />
-			<ObjectType Number="111" ObClass="actor" Actor="Goat" Direction="E" Difficulty="1"
+			<ObjectType Number="111" ObClass="actor" Actor="Goat" Direction="E"
 				State="s_dogpath1" />
-			<ObjectType Number="112" ObClass="actor" Actor="Ox" Direction="E" Difficulty="1"
+			<ObjectType Number="112" ObClass="actor" Actor="Ox" Direction="E"
 				State="s_mutstand" />
 
 			<!-- Boss tiles: both variants always call SpawnBoss()/SpawnXxx() which sets FL_AMBUSH
 			     unconditionally (WL_ACT2.C:SpawnBoss). Ambush is on the Actor class definition,
 			     not here. Tile variants 113 and 131 are identical in behavior. -->
-			<ObjectType Number="113" ObClass="actor" Actor="Carl the Camel" Direction="E"
-				Difficulty="1" State="s_bossstand" />
-			<ObjectType Number="114" ObClass="actor" Actor="Melvin the Monkey" Direction="E"
-				Difficulty="1" State="s_schabbstand" />
-			<ObjectType Number="115" ObClass="actor" Actor="Ginny the Giraffe" Direction="E"
-				Difficulty="1" State="s_gretelstand" />
-			<ObjectType Number="116" ObClass="actor" Actor="Kerry the Kangaroo" Direction="E"
-				Difficulty="1" State="s_giftstand" />
-			<ObjectType Number="117" ObClass="actor" Actor="Ernie the Elephant" Direction="E"
-				Difficulty="1" State="s_fatstand" />
-			<ObjectType Number="118" ObClass="actor" Actor="Burt the Bear" Direction="E"
-				Difficulty="1" State="s_mechastand" />
+			<ObjectType Number="113" ObClass="actor" Actor="Carl the Camel" Direction="S"
+				State="s_bossstand" />
+			<ObjectType Number="114" ObClass="actor" Actor="Melvin the Monkey" Direction="S"
+				State="s_schabbstand" />
+			<ObjectType Number="115" ObClass="actor" Actor="Ginny the Giraffe" Direction="N"
+				State="s_gretelstand" />
+			<ObjectType Number="116" ObClass="actor" Actor="Kerry the Kangaroo" Direction="N"
+				State="s_giftstand" />
+			<ObjectType Number="117" ObClass="actor" Actor="Ernie the Elephant" Direction="S"
+				State="s_fatstand" />
+			<ObjectType Number="118" ObClass="actor" Actor="Burt the Bear" Direction="S"
+				State="s_mechastand" />
 
 			<!-- Regular enemies: ambush variants (tiles 126-130), Ambush="true" -->
-			<ObjectType Number="126" ObClass="actor" Actor="White ram" Direction="E" Difficulty="1"
+			<ObjectType Number="126" ObClass="actor" Actor="White ram" Direction="E"
 				State="s_grdstand" Ambush="true" />
-			<ObjectType Number="127" ObClass="actor" Actor="Ostrich" Direction="E" Difficulty="1"
+			<ObjectType Number="127" ObClass="actor" Actor="Ostrich" Direction="E"
 				State="s_ofcstand" Ambush="true" />
-			<ObjectType Number="128" ObClass="actor" Actor="Antelope" Direction="E" Difficulty="1"
+			<ObjectType Number="128" ObClass="actor" Actor="Antelope" Direction="E"
 				State="s_ssstand" Ambush="true" />
-			<ObjectType Number="129" ObClass="actor" Actor="Goat" Direction="E" Difficulty="1"
+			<ObjectType Number="129" ObClass="actor" Actor="Goat" Direction="E"
 				State="s_dogpath1" Ambush="true" />
-			<ObjectType Number="130" ObClass="actor" Actor="Ox" Direction="E" Difficulty="1"
+			<ObjectType Number="130" ObClass="actor" Actor="Ox" Direction="E"
 				State="s_mutstand" Ambush="true" />
 
 			<!-- Boss ambush variants (tiles 131-136): same behavior as 113-118 (Actor.Ambush
 			handles it) -->
-			<ObjectType Number="131" ObClass="actor" Actor="Carl the Camel" Direction="E"
-				Difficulty="1" State="s_bossstand" />
-			<ObjectType Number="132" ObClass="actor" Actor="Melvin the Monkey" Direction="E"
-				Difficulty="1" State="s_schabbstand" />
-			<ObjectType Number="133" ObClass="actor" Actor="Ginny the Giraffe" Direction="E"
-				Difficulty="1" State="s_gretelstand" />
-			<ObjectType Number="134" ObClass="actor" Actor="Kerry the Kangaroo" Direction="E"
-				Difficulty="1" State="s_giftstand" />
-			<ObjectType Number="135" ObClass="actor" Actor="Ernie the Elephant" Direction="E"
-				Difficulty="1" State="s_fatstand" />
-			<ObjectType Number="136" ObClass="actor" Actor="Burt the Bear" Direction="E"
-				Difficulty="1" State="s_mechastand" />
+			<ObjectType Number="131" ObClass="actor" Actor="Carl the Camel" Direction="S"
+				State="s_bossstand" />
+			<ObjectType Number="132" ObClass="actor" Actor="Melvin the Monkey" Direction="S"
+				State="s_schabbstand" />
+			<ObjectType Number="133" ObClass="actor" Actor="Ginny the Giraffe" Direction="N"
+				State="s_gretelstand" />
+			<ObjectType Number="134" ObClass="actor" Actor="Kerry the Kangaroo" Direction="N"
+				State="s_giftstand" />
+			<ObjectType Number="135" ObClass="actor" Actor="Ernie the Elephant" Direction="S"
+				State="s_fatstand" />
+			<ObjectType Number="136" ObClass="actor" Actor="Burt the Bear" Direction="S"
+				State="s_mechastand" />
 		</StatInfo>
 		<Actors>
 			<Function Name="OnNewGame">
@@ -1929,6 +1931,12 @@ return amount
 			<Function Name="A_DeathScream">
 				<![CDATA[
 PlayLocalSound("D_EDIESND")
+]]>
+			</Function>
+			<!-- N3D alias: AUDION3D.H maps MECHSTEPSND to D_MSTEPSND. -->
+			<Function Name="A_MechaSound">
+				<![CDATA[
+PlayLocalSound("D_MSTEPSND")
 ]]>
 			</Function>
 			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertSound="D_GOATSND"
@@ -2422,15 +2430,13 @@ AddValue("Score", 5000)
 			</Actor>
 			<State Name="s_mechastand" Shape="SPR_MECHA_W1" Tics="0" Think="T_Stand"
 				Next="s_mechastand" />
-			<State Name="s_mechachase1" Shape="SPR_MECHA_W1" Tics="10" Think="T_Chase" Speed="1536"
-				Next="s_mechachase1s" />
-			<!-- TODO A_MechaSound -->
+			<State Name="s_mechachase1" Shape="SPR_MECHA_W1" Tics="10" Think="T_Chase"
+				Action="A_MechaSound" Speed="1536" Next="s_mechachase1s" />
 			<State Name="s_mechachase1s" Shape="SPR_MECHA_W1" Tics="6" Next="s_mechachase2" />
 			<State Name="s_mechachase2" Shape="SPR_MECHA_W2" Tics="8" Think="T_Chase" Speed="1536"
 				Next="s_mechachase3" />
-			<State Name="s_mechachase3" Shape="SPR_MECHA_W3" Tics="10" Think="T_Chase" Speed="1536"
-				Next="s_mechachase3s" />
-			<!-- TODO A_MechaSound -->
+			<State Name="s_mechachase3" Shape="SPR_MECHA_W3" Tics="10" Think="T_Chase"
+				Action="A_MechaSound" Speed="1536" Next="s_mechachase3s" />
 			<State Name="s_mechachase3s" Shape="SPR_MECHA_W3" Tics="6" Next="s_mechachase4" />
 			<State Name="s_mechachase4" Shape="SPR_MECHA_W4" Tics="8" Think="T_Chase" Speed="1536"
 				Next="s_mechachase1" />

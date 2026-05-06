@@ -2033,7 +2033,15 @@
 			<!-- Enemy spawn properties -->
 			<xs:attribute name="Actor" type="xs:string"/>
 			<xs:attribute name="Direction" type="DirectionType"/>
-			<xs:attribute name="Difficulty" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="Difficulty" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Minimum game difficulty required for this ObjectType to spawn.
+						The runtime treats a missing Difficulty attribute as 0, meaning the
+						object spawns on all difficulties.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="State" type="xs:string"/>
 			<xs:attribute name="Ambush" type="xs:boolean">
 				<xs:annotation>
