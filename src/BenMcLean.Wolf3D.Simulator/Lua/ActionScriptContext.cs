@@ -22,7 +22,7 @@ public class ActionScriptContext(
 	#region Generic Inventory API (exposed to Lua)
 	/// <summary>
 	/// Get the value of any inventory item.
-	/// Examples: GetValue("Health"), GetValue("Ammo"), GetValue("Gold Key"), GetValue("Weapon2")
+	/// Examples: GetValue("Health"), GetValue("bullets"), GetValue("Gold Key"), GetValue("Weapon2")
 	/// </summary>
 	/// <param name="name">The inventory item name</param>
 	/// <returns>Current value, or 0 if not found</returns>
@@ -37,14 +37,14 @@ public class ActionScriptContext(
 	public void SetValue(string name, int value) => simulator.Inventory.SetValue(name, value);
 	/// <summary>
 	/// Add to any inventory item value.
-	/// Examples: AddValue("Health", 10), AddValue("Ammo", -1), AddValue("Score", 500)
+	/// Examples: AddValue("Health", 10), AddValue("bullets", -1), AddValue("Score", 500)
 	/// </summary>
 	/// <param name="name">The inventory item name</param>
 	/// <param name="delta">Amount to add (can be negative)</param>
 	public void AddValue(string name, int delta) => simulator.Inventory.AddValue(name, delta);
 	/// <summary>
 	/// Get the maximum value for any inventory item.
-	/// Examples: GetMax("Health") returns 100, GetMax("Ammo") returns 99
+	/// Examples: GetMax("Health") returns 100, GetMax("bullets") returns 99
 	/// </summary>
 	/// <param name="name">The inventory item name</param>
 	/// <returns>Maximum value, or int.MaxValue if no max defined</returns>
@@ -52,14 +52,14 @@ public class ActionScriptContext(
 	/// <summary>
 	/// Set the maximum value for any inventory item.
 	/// Used by capacity upgrade pickups (e.g., ammo bags increasing max feed capacity).
-	/// Examples: SetMax("Ammo", 150)
+	/// Examples: SetMax("bullets", 150)
 	/// </summary>
 	/// <param name="name">The inventory item name</param>
 	/// <param name="max">The new maximum value</param>
 	public void SetMax(string name, int max) => simulator.Inventory.SetMax(name, max);
 	/// <summary>
 	/// Check if player has an inventory item (value > 0).
-	/// Examples: Has("Gold Key"), Has("Weapon2"), Has("Ammo")
+	/// Examples: Has("Gold Key"), Has("Weapon2"), Has("bullets")
 	/// </summary>
 	/// <param name="name">The inventory item name</param>
 	/// <returns>True if value > 0</returns>

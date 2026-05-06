@@ -1,5 +1,5 @@
-if GetValue("Ammo") < GetMax("Ammo") then
-	AddValue("Ammo", 4)
+if GetValue("bullets") < GetMax("bullets") then
+	AddValue("bullets", 4)
 	PlaySound("GETAMMOSND")
 	FlashScreen(0xFFF800)
 	return true

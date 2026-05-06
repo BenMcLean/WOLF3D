@@ -331,7 +331,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public event Action<ElevatorSwitchFlippedEvent> ElevatorSwitchFlipped;
 	/// <summary>
-	/// Fired when player state changes (health, ammo, score, lives, keys, weapons).
+	/// Fired when player inventory-derived state changes.
 	/// Used by presentation layer to update status bar/HUD.
 	/// </summary>
 	public event Action<PlayerStateChangedEvent> PlayerStateChanged;
@@ -2986,25 +2986,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 
 	/// <summary>
-	/// Emit a PlayerStateChanged event to update HUD/status bar.
+	/// Emit a generic PlayerStateChanged event for listeners that want to know
+	/// some player inventory-derived state changed.
 	/// </summary>
 	private void EmitPlayerStateChanged()
 	{
-		// Compute key flags as bitmask
-		int keyFlags = 0;
-		if (Inventory.Has("Gold Key"))
-			keyFlags |= 1;
-		if (Inventory.Has("Silver Key"))
-			keyFlags |= 2;
-
-		PlayerStateChanged?.Invoke(new PlayerStateChangedEvent
-		{
-			Health = Inventory.GetValue("Health"),
-			Score = Inventory.GetValue("Score"),
-			Lives = Inventory.GetValue("Lives"),
-			Ammo = Inventory.GetValue("Ammo"),
-			KeyFlags = keyFlags
-		});
+		PlayerStateChanged?.Invoke(new PlayerStateChangedEvent());
 	}
 
 	/// <summary>

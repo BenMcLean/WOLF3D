@@ -1,6 +1,6 @@
 local isNew = not Has("Weapon3")
 SetValue("Weapon3", 1)
-AddValue("Ammo", 6)
+AddValue("bullets", 6)
 if isNew then SwitchToWeapon("chaingun") end
 SetValue("FaceGrinTics", 4)
 PlaySound("GETGATLINGSND")

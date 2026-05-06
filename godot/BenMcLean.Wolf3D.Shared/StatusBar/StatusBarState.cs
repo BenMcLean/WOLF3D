@@ -47,7 +47,7 @@ public class StatusBarState
 	/// Sets the content for a named status bar text label.
 	/// Fires TextChanged for the presentation layer to update the displayed text.
 	/// </summary>
-	/// <param name="id">Text Id (e.g., "Health", "Ammo")</param>
+	/// <param name="id">Text Id (e.g., "Health", "bullets")</param>
 	/// <param name="content">New text content</param>
 	public void SetText(string id, string content)
 	{
@@ -59,7 +59,7 @@ public class StatusBarState
 	/// <summary>
 	/// Gets the current content for a named status bar text label.
 	/// </summary>
-	/// <param name="id">Text Id (e.g., "Health", "Ammo")</param>
+	/// <param name="id">Text Id (e.g., "Health", "bullets")</param>
 	/// <returns>Current text content, or empty string if not found</returns>
 	public string GetText(string id) =>
 		_texts.TryGetValue(id, out string text) ? text : string.Empty;

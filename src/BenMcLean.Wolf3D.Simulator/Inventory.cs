@@ -29,7 +29,7 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// <summary>
 	/// Gets the value for a named inventory item.
 	/// </summary>
-	/// <param name="name">The name of the value (e.g., "Health", "Ammo", "Gold Key")</param>
+	/// <param name="name">The name of the value (e.g., "Health", "bullets", "Gold Key")</param>
 	/// <returns>The current value, or 0 if not found</returns>
 	public int GetValue(string name) =>
 		_values.TryGetValue(name, out int value) ? value : 0;
@@ -38,7 +38,7 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// Sets the value for a named inventory item.
 	/// Value is clamped to [0, Max] if a maximum is defined.
 	/// </summary>
-	/// <param name="name">The name of the value (e.g., "Health", "Ammo")</param>
+	/// <param name="name">The name of the value (e.g., "Health", "bullets")</param>
 	/// <param name="value">The new value</param>
 	public void SetValue(string name, int value)
 	{
@@ -62,7 +62,7 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	/// Adds a delta to a named inventory item.
 	/// Convenience method that calls GetValue and SetValue.
 	/// </summary>
-	/// <param name="name">The name of the value (e.g., "Health", "Ammo")</param>
+	/// <param name="name">The name of the value (e.g., "Health", "bullets")</param>
 	/// <param name="delta">The amount to add (can be negative)</param>
 	public void AddValue(string name, int delta) =>
 		SetValue(name, GetValue(name) + delta);

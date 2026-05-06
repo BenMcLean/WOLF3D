@@ -342,22 +342,13 @@ public struct ElevatorSwitchFlippedEvent
 }
 
 /// <summary>
-/// Player state changed (health, ammo, score, lives, keys, weapons).
-/// Triggered by item pickups, damage, scoring, etc.
-/// Presentation layer uses this to update HUD/status bar.
+/// Player inventory-derived state changed.
+/// Triggered by item pickups, damage, scoring, keys, weapon ownership, etc.
+/// Presentation layer can treat this as a generic "something player-related changed" signal
+/// and query the inventory dictionary or rely on more specific status-bar events.
 /// </summary>
 public struct PlayerStateChangedEvent
 {
-	/// <summary>Current health (0-100 typical)</summary>
-	public required int Health { get; init; }
-	/// <summary>Current score</summary>
-	public required int Score { get; init; }
-	/// <summary>Current lives</summary>
-	public required int Lives { get; init; }
-	/// <summary>Current ammo for primary ammo type ("bullets")</summary>
-	public required int Ammo { get; init; }
-	/// <summary>Which keys the player has (bitmask or list)</summary>
-	public required int KeyFlags { get; init; }
 }
 
 /// <summary>

@@ -79,7 +79,7 @@ public class WeaponScriptContext(
 	/// <summary>
 	/// Check if player has enough ammo for this weapon.
 	/// WL_AGENT.C ammo check equivalent.
-	/// Uses generic inventory API: GetValue("Ammo")
+	/// Uses generic inventory API with the weapon's configured AmmoType key.
 	/// </summary>
 	/// <param name="amount">Amount of ammo required (default: weapon's AmmoPerShot)</param>
 	/// <returns>True if enough ammo available (or weapon doesn't require ammo)</returns>
@@ -95,7 +95,7 @@ public class WeaponScriptContext(
 	/// <summary>
 	/// Consume ammo for this weapon.
 	/// WL_AGENT.C:gamestate.ammo-- equivalent.
-	/// Uses generic inventory API: AddValue("Ammo", -amount)
+	/// Uses generic inventory API with the weapon's configured AmmoType key.
 	/// </summary>
 	/// <param name="amount">Amount of ammo to consume (default: weapon's AmmoPerShot)</param>
 	public void ConsumeAmmo(int? amount = null)
@@ -110,7 +110,7 @@ public class WeaponScriptContext(
 	}
 	/// <summary>
 	/// Get current ammo count for this weapon's ammo type.
-	/// Uses generic inventory API: GetValue("Ammo")
+	/// Uses generic inventory API with the weapon's configured AmmoType key.
 	/// </summary>
 	/// <returns>Current ammo count (0 if weapon doesn't use ammo)</returns>
 	public int GetAmmoCount() => string.IsNullOrEmpty(weaponInfo.AmmoType) ? 0 : GetValue(weaponInfo.AmmoType);

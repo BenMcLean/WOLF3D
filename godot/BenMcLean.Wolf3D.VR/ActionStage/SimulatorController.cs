@@ -520,8 +520,8 @@ public partial class SimulatorController : Node3D
 	public event Action<ElevatorActivatedEvent> ElevatorActivated;
 
 	/// <summary>
-	/// Event fired when player state changes (health, ammo, score, lives, keys).
-	/// Used to update HUD/status bar in presentation layer.
+	/// Event fired when player inventory-derived state changes.
+	/// Used as a generic notification in the presentation layer.
 	/// </summary>
 	public event Action<PlayerStateChangedEvent> PlayerStateChanged;
 
