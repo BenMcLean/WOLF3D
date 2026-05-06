@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
+using BenMcLean.Wolf3D.Shared.Text;
 using Godot;
 
 namespace BenMcLean.Wolf3D.Shared.Menu;
@@ -438,38 +439,14 @@ public class MenuRenderer
 			// Create label with text
 			Font font = theme.DefaultFont;
 			bool hasMaxWidth = textDef.MaxWidth.HasValue;
-			Label label = new()
-			{
-				Text = textDef.Content,
-				Theme = theme,
-				ZIndex = 8, // Draw text labels below menu items but above boxes
-							// Explicitly set Font and FontSize so LabelSettings never falls back to the
-							// project's default dynamic font (which would be blurry/wrong for bitmap fonts).
-							// LineSpacing is extra inter-line spacing; 0 gives tight single-line spacing.
-				LabelSettings = new LabelSettings
-				{
-					Font = font,
-					FontSize = theme.DefaultFontSize,
-					LineSpacing = 0,
-					FontColor = textColor,
-				}
-			};
-			if (hasMaxWidth)
-			{
-				// Enable word wrap within the specified pixel width (WL_QUIZ.C: WindowW=276)
-				label.AutowrapMode = TextServer.AutowrapMode.Word;
-				label.CustomMinimumSize = new Vector2(textDef.MaxWidth.Value, 0);
-			}
-			// Measure text size from font directly — label.Size is zero until Godot lays out the node
-			Vector2 textSize = font.GetStringSize(textDef.Content, fontSize: theme.DefaultFontSize);
-			// Set position before adding to canvas
-			label.Position = new Vector2(
-				x: textDef.CenterX ? (Constants.MenuScreenWidth - textSize.X) / 2f
-					: textDef.RightX ? Constants.MenuScreenWidth - textSize.X
-					: textDef.XValue,
-				y: textDef.CenterY ? (Constants.MenuScreenHeight - textSize.Y) / 2f
-					: textDef.BottomY ? Constants.MenuScreenHeight - textSize.Y
-					: textDef.YValue);
+			Label label = TextLayoutHelper.CreateLabel(textDef, theme, textDef.Content, textColor);
+			label.ZIndex = 8; // Draw text labels below menu items but above boxes
+			label.Position = TextLayoutHelper.GetPosition(
+				textDef,
+				theme,
+				textDef.Content,
+				Constants.MenuScreenWidth,
+				Constants.MenuScreenHeight);
 			_canvas.AddChild(label);
 			label.PivotOffset = Vector2.Zero;
 			// Track named text labels for dynamic updates from Lua
@@ -483,8 +460,12 @@ public class MenuRenderer
 					label.Text = overrideText;
 					if (textDef.CenterX)
 					{
-						Vector2 overrideSize = font.GetStringSize(overrideText, fontSize: theme.DefaultFontSize);
-						label.Position = label.Position with { X = (Constants.MenuScreenWidth - overrideSize.X) / 2f };
+						label.Position = TextLayoutHelper.GetPosition(
+							textDef,
+							theme,
+							overrideText,
+							Constants.MenuScreenWidth,
+							Constants.MenuScreenHeight);
 					}
 				}
 			}

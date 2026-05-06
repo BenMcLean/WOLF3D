@@ -172,12 +172,12 @@ this file. -->
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath"
 			OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage"
 			FizzleFadeColor="4">
-			<Text Id="Floor" X="16" Y="16"> 1</Text>
-			<Text Id="Score" X="48" Y="16">     0</Text>
-			<Text Id="Lives" X="112" Y="16"> 3</Text>
+			<Text Id="Floor" X="16" Y="16" Align="Right"> 1</Text>
+			<Text Id="Score" X="48" Y="16" Align="Right">     0</Text>
+			<Text Id="Lives" X="112" Y="16" Align="Right">3</Text>
 			<Picture Id="Face" Name="FACE1APIC" X="136" Y="4" />
-			<Text Id="Health" X="176" Y="16">100</Text>
-			<Text Id="bullets" X="216" Y="16"> 8</Text>
+			<Text Id="Health" X="168" Y="16" Align="Right">100</Text>
+			<Text Id="bullets" X="216" Y="16" Align="Right"> 8</Text>
 			<Picture Id="GoldKey" Name="NOKEYPIC" X="240" Y="4" />
 			<Picture Id="SilverKey" Name="NOKEYPIC" X="240" Y="20" />
 			<Picture Id="WeaponPic" Name="GUNPIC" X="256" Y="8" />

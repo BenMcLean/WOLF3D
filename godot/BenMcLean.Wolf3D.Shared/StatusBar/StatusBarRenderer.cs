@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
+using BenMcLean.Wolf3D.Shared.Text;
 using Godot;
 
 namespace BenMcLean.Wolf3D.Shared.StatusBar;
@@ -111,19 +112,9 @@ public class StatusBarRenderer
 			string content = !string.IsNullOrEmpty(textDef.Id)
 				? _state.GetText(textDef.Id)
 				: textDef.Content;
-			Label label = new()
-			{
-				Text = content ?? textDef.Content ?? string.Empty,
-				Theme = theme,
-				ZIndex = 10,
-				LabelSettings = new LabelSettings
-				{
-					Font = theme.DefaultFont,
-					FontSize = theme.DefaultFontSize,
-					LineSpacing = 0,
-				}
-			};
-			label.Position = new Vector2(textDef.XValue, textDef.YValue);
+			Label label = TextLayoutHelper.CreateLabel(textDef, theme, content);
+			label.ZIndex = 10;
+			label.Position = TextLayoutHelper.GetPosition(textDef, theme, content, 320, 40);
 			_canvas.AddChild(label);
 			label.PivotOffset = Vector2.Zero;
 			if (!string.IsNullOrEmpty(textDef.Id))

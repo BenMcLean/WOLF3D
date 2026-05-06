@@ -146,17 +146,17 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
-			<Text Id="Episode" X="24" Y="16">1</Text>
-			<Text Id="Floor" X="40" Y="16">1</Text>
-			<Text Id="Score" X="112" Y="16">     0</Text>
-			<Text Id="Lives" X="142" Y="16"> 3</Text>
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
+			<Text Id="Episode" X="16" Y="16" Align="Right">1</Text>
+			<Text Id="Floor" X="32" Y="16" Align="Right">1</Text>
+			<Text Id="Score" X="56" Y="16" Align="Right">      0</Text>
+			<Text Id="Lives" X="128" Y="16" Align="Right">3</Text>
 			<Picture Id="Face" Name="FACE1APIC" X="152" Y="4" />
-			<Text Id="Health" X="208" Y="16">100</Text>
-			<Text Id="Feed" X="248" Y="16"> 7</Text>
+			<Text Id="Health" X="184" Y="16" Align="Right">100</Text>
+			<Text Id="Feed" X="224" Y="16" Align="Right">  7</Text>
 			<Picture Id="YellowKey" Name="NOKEYPIC" X="256" Y="4" />
 			<Picture Id="BlueKey" Name="NOKEYPIC" X="256" Y="20" />
-			<Text Id="Fruit" X="296" Y="16"> 0</Text>
+			<Text Id="Fruit" X="280" Y="16" Align="Right"> 0</Text>
 		</StatusBar>
 		<Menus Pause="Main" TextColor="204" Highlight="197" BordColor="217" BkgdColor="221"
 			Deactive="219" Bord2Color="215" Font="BIG" CursorPic="C_CURSOR1PIC"
@@ -1832,6 +1832,44 @@ return true
 				Difficulty="1" State="s_mechastand" />
 		</StatInfo>
 		<Actors>
+			<Function Name="OnNewGame">
+				<![CDATA[
+SetMax("Health", 100)
+SetMax("Feed", 99)
+SetMax("Gas", 99)
+SetMax("Missile", 99)
+SetMax("Weapon0", 1)
+SetMax("Weapon1", 1)
+SetMax("Weapon2", 1)
+SetMax("Weapon3", 1)
+SetMax("Weapon4", 1)
+SetMax("Weapon5", 1)
+
+SetValue("Episode", 1)
+SetValue("Floor", 1)
+SetValue("Score", 0)
+SetValue("Lives", 3)
+SetValue("Health", 100)
+SetValue("Feed", 7)
+SetValue("Fruit", 0)
+SetValue("Gas", 0)
+SetValue("Missile", 0)
+SetValue("Gold Key", 0)
+SetPicture("YellowKey", "NOKEYPIC")
+SetValue("Silver Key", 0)
+SetPicture("BlueKey", "NOKEYPIC")
+SetValue("FaceGrinTics", 0)
+SetValue("Weapon0", 1)
+SetValue("Weapon1", 1)
+SetValue("Weapon2", 0)
+SetValue("Weapon3", 0)
+SetValue("Weapon4", 0)
+SetValue("Weapon5", 0)
+SetValue("SelectedWeapon0", 1)
+SetValue("SelectedWeapon1", 1)
+SetValue("StatusBarWeapon", 1)
+]]>
+			</Function>
 			<Function Name="OnMapStart">
 				<![CDATA[
 SetValue("Gold Key", 0)

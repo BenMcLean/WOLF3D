@@ -1139,6 +1139,9 @@
 				Text label used in menus and the status bar.
 				In menus: non-interactive, not selectable (WL_MENU.C:US_Print()).
 				In the status bar: dynamically updated via SetText(id, value) from Lua.
+				For numeric status-bar fields that mirror WL_AGENT.C:LatchNumber, the element content
+				defines the fixed field width in characters, and runtime inventory updates are
+				right-justified within that width.
 				Element content is the initial text to display.
 			</xs:documentation>
 		</xs:annotation>
@@ -1147,7 +1150,7 @@
 				<xs:extension base="xs:string">
 					<xs:attribute name="X" type="XCoordinateOrAlignment" use="required">
 						<xs:annotation>
-							<xs:documentation>X coordinate for text placement, or "Left"/"Center"/"Right" for alignment</xs:documentation>
+							<xs:documentation>X coordinate for text placement, or "Left"/"Center"/"Right" for alignment. For status-bar numeric fields that mirror WL_AGENT.C:LatchNumber, this is the left edge of the first character cell in screen pixels.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 					<xs:attribute name="Y" type="YCoordinateOrAlignment" use="required">
@@ -1170,9 +1173,14 @@
 							<xs:documentation>Maximum pixel width before word wrapping. Mirrors the original Wolf3D text window width (WindowW), for cases like Noah 3-D quiz text that wraps within a boxed area.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
+					<xs:attribute name="Align" type="xs:string">
+						<xs:annotation>
+							<xs:documentation>Text alignment within the field. Use "Right" for numeric status-bar fields and other fixed-width text boxes that should right-justify updates within the width implied by the element's initial content.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 					<xs:attribute name="Id" type="xs:string">
 						<xs:annotation>
-							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(id, value). Used by status bar displays, intermission screen for floor number, time, par time, bonus values.</xs:documentation>
+							<xs:documentation>Optional identifier for Lua to update text dynamically via SetText(id, value). Used by status bar displays, intermission screen for floor number, time, par time, bonus values. When the Id matches an inventory key, runtime status-bar updates use the element's initial content length as the fixed display width.</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
 				</xs:extension>

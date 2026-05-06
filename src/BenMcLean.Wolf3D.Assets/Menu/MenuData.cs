@@ -5,6 +5,14 @@ using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets.Menu;
 
+public class CanvasLayoutDefinition
+{
+	public string Font { get; set; }
+	public List<MenuBoxDefinition> Boxes { get; set; } = [];
+	public List<PictureDefinition> Pictures { get; set; } = [];
+	public List<TextDefinition> Texts { get; set; } = [];
+}
+
 /// <summary>
 /// Represents a menu function (Lua script) for menu behavior.
 /// Similar to ActionFunction but for menus instead of Actor AI.
@@ -247,6 +255,11 @@ public class TextDefinition
 	/// </summary>
 	public byte? Color { get; set; }
 	/// <summary>
+	/// Text alignment within its field. "Right" means right-align within the fixed width
+	/// defined by the initial Content text.
+	/// </summary>
+	public string Align { get; set; }
+	/// <summary>
 	/// Returns true if X coordinate should be centered horizontally
 	/// </summary>
 	public bool CenterX => X?.Equals("Center", StringComparison.OrdinalIgnoreCase) == true;
@@ -288,7 +301,8 @@ public class TextDefinition
 			Content = element.Value ?? string.Empty,
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
-			Font = element.Attribute("Font")?.Value
+			Font = element.Attribute("Font")?.Value,
+			Align = element.Attribute("Align")?.Value
 		};
 		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
 			text.Color = color;
@@ -615,7 +629,7 @@ public class MenuStatusBarDefinition
 /// Represents a menu screen definition.
 /// Maps to a &lt;Menu&gt; element in XML.
 /// </summary>
-public class MenuDefinition
+public class MenuDefinition : CanvasLayoutDefinition
 {
 	/// <summary>
 	/// Unique identifier for this menu (e.g., "Main", "Episodes", "Sound")
@@ -636,7 +650,6 @@ public class MenuDefinition
 	/// <summary>
 	/// Font name to use for this menu (e.g., "BIG", "SMALL")
 	/// </summary>
-	public string Font { get; set; }
 	/// <summary>
 	/// Music track name to play while in this menu
 	/// </summary>
@@ -701,16 +714,6 @@ public class MenuDefinition
 	/// <summary>
 	/// 3D beveled boxes to display (WL_MENU.C:DrawWindow)
 	/// </summary>
-	public List<MenuBoxDefinition> Boxes { get; set; } = [];
-	/// <summary>
-	/// Decorative pictures to display (e.g., logos, title graphics)
-	/// </summary>
-	public List<PictureDefinition> Pictures { get; set; } = [];
-	/// <summary>
-	/// Text labels to display (e.g., "How tough are you?" in NewGame menu)
-	/// WL_MENU.C:1639-1649: US_Print() for non-interactive text
-	/// </summary>
-	public List<TextDefinition> Texts { get; set; } = [];
 	/// <summary>
 	/// Animated percent tickers (e.g., kill%, secret%, treasure% on intermission screen).
 	/// </summary>

@@ -9,26 +9,12 @@ namespace BenMcLean.Wolf3D.Assets.Gameplay;
 /// Represents the complete status bar definition.
 /// Maps to a &lt;StatusBar&gt; element in XML.
 /// </summary>
-public class StatusBarDefinition
+public class StatusBarDefinition : CanvasLayoutDefinition
 {
 	/// <summary>
 	/// Name of the background picture (e.g., "STATUSBARPIC")
 	/// </summary>
 	public string BackgroundPic { get; set; }
-	/// <summary>
-	/// Font name for number display (e.g., "N", "SMALL")
-	/// </summary>
-	public string Font { get; set; }
-	/// <summary>
-	/// Text label elements (score, health, ammo, floor, lives, etc.).
-	/// Updated at runtime by action scripts via SetText().
-	/// </summary>
-	public List<TextDefinition> Texts { get; set; } = [];
-	/// <summary>
-	/// Named picture elements (e.g., face display, weapon, keys).
-	/// Updated at runtime by action scripts via SetPicture().
-	/// </summary>
-	public List<PictureDefinition> Pictures { get; set; } = [];
 	/// <summary>
 	/// Name of the ActionFunction to call on each facecount tick.
 	/// WL_AGENT.C:UpdateFace — face frame selection logic.
@@ -78,6 +64,7 @@ public class StatusBarDefinition
 	{
 		BackgroundPic = element.Attribute("Pic")?.Value,
 		Font = element.Attribute("Font")?.Value,
+		Boxes = [.. element.Elements("Box").Select(MenuBoxDefinition.FromXElement)],
 		Texts = [.. element.Elements("Text").Select(TextDefinition.FromXElement)],
 		Pictures = [.. element.Elements("Picture").Select(PictureDefinition.FromXElement)],
 		OnFace = element.Attribute("OnFace")?.Value,
