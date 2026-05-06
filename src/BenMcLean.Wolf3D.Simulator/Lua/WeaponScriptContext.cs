@@ -86,10 +86,11 @@ public class WeaponScriptContext(
 	public bool HasAmmo(int? amount = null)
 	{
 		int required = amount ?? weaponInfo.AmmoPerShot;
+		string ammoKey = weaponInfo.AmmoType;
 		// Weapons that don't require ammo always return true
 		return required <= 0 ||
-			string.IsNullOrEmpty(weaponInfo.AmmoType) ||
-			GetValue("Ammo") >= required;
+			string.IsNullOrEmpty(ammoKey) ||
+			GetValue(ammoKey) >= required;
 	}
 	/// <summary>
 	/// Consume ammo for this weapon.
@@ -100,18 +101,19 @@ public class WeaponScriptContext(
 	public void ConsumeAmmo(int? amount = null)
 	{
 		int toConsume = amount ?? weaponInfo.AmmoPerShot;
-		if (toConsume <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
+		string ammoKey = weaponInfo.AmmoType;
+		if (toConsume <= 0 || string.IsNullOrEmpty(ammoKey))
 			return;
-		AddValue("Ammo", -toConsume);
+		AddValue(ammoKey, -toConsume);
 		_logger?.LogDebug("WeaponScriptContext: ConsumeAmmo({amount}) for {weaponType}, remaining: {remaining}",
-			toConsume, weaponSlot.WeaponType, GetValue("Ammo"));
+			toConsume, weaponSlot.WeaponType, GetValue(ammoKey));
 	}
 	/// <summary>
 	/// Get current ammo count for this weapon's ammo type.
 	/// Uses generic inventory API: GetValue("Ammo")
 	/// </summary>
 	/// <returns>Current ammo count (0 if weapon doesn't use ammo)</returns>
-	public int GetAmmoCount() => string.IsNullOrEmpty(weaponInfo.AmmoType) ? 0 : GetValue("Ammo");
+	public int GetAmmoCount() => string.IsNullOrEmpty(weaponInfo.AmmoType) ? 0 : GetValue(weaponInfo.AmmoType);
 	#endregion Ammo Management
 	#region Input State
 	/// <summary>
