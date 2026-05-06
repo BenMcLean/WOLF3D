@@ -16,6 +16,27 @@ namespace BenMcLean.Wolf3D.Assets.Graphics;
 /// </summary>
 public sealed class VgaGraph
 {
+	public sealed record QuizAnswer(string Text, bool Correct)
+	{
+		public static QuizAnswer FromXElement(XElement element) => new(
+			Text: element?.Value ?? string.Empty,
+			Correct: bool.TryParse(element?.Attribute("Correct")?.Value, out bool correct) && correct);
+	}
+	public sealed record QuizQuestion(string Text, string Reference, QuizAnswer[] Answers)
+	{
+		public static QuizQuestion FromXElement(XElement element)
+		{
+			QuizAnswer[] answers = [.. element.Elements("Answer").Select(QuizAnswer.FromXElement)];
+			if (answers.Length < 2 || answers.Length > 4)
+				throw new InvalidDataException($"Question '{element.Attribute("Text")?.Value}' must have 2-4 answers.");
+			if (answers.Count(answer => answer.Correct) != 1)
+				throw new InvalidDataException($"Question '{element.Attribute("Text")?.Value}' must have exactly one correct answer.");
+			return new(
+				Text: element.Attribute("Text")?.Value ?? throw new InvalidDataException("Question element missing required Text attribute."),
+				Reference: element.Attribute("Ref")?.Value ?? throw new InvalidDataException("Question element missing required Ref attribute."),
+				Answers: answers);
+		}
+	}
 	public static VgaGraph Load(XElement xml, string folder = "")
 	{
 		XElement el = xml.Element("VgaGraph");
@@ -78,6 +99,10 @@ public sealed class VgaGraph
 	/// Status bar definition parsed from XML.
 	/// </summary>
 	public StatusBarDefinition StatusBar { get; private init; }
+	/// <summary>
+	/// Bible quiz question bank loaded from VgaGraph/Questions in XML.
+	/// </summary>
+	public QuizQuestion[] Questions { get; private init; }
 	public VgaGraph(Stream vgaHead, Stream vgaGraph, Stream dictionary, XElement xml)
 		: this(SplitFile(vgaHead, vgaGraph, dictionary,
 			uint.TryParse(xml?.Element("VgaGraph")?.Attribute("TileChunk")?.Value, out uint tc) ? tc : null), xml)
@@ -195,6 +220,7 @@ public sealed class VgaGraph
 		// Parse StatusBar definition
 		if (vgaGraph.Element("StatusBar") is XElement statusBarElement)
 			StatusBar = StatusBarDefinition.FromXElement(statusBarElement);
+		Questions = [.. vgaGraph.Element("Questions")?.Elements("Question").Select(QuizQuestion.FromXElement) ?? []];
 	}
 	public static uint[] ParseVgaPalette(ReadOnlySpan<byte> chunk)
 	{
