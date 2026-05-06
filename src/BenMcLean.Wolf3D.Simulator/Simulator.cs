@@ -86,6 +86,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private string onNewGameFunctionName;
 	// OnMapStart ActionFunction name from StatusBar definition.
 	private string onMapStartFunctionName;
+	// Optional ActionFunction name from StatusBar definition to transform incoming player damage.
+	private string onTakeDamageFunctionName;
 	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
 	private string onFaceFunctionName;
 	// Maps StatusBar Text Id → display field width (from initial XML content length).
@@ -1387,6 +1389,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		onDeathFunctionName = statusBar.OnDeath;
 		onNewGameFunctionName = statusBar.OnNewGame;
 		onMapStartFunctionName = statusBar.OnMapStart;
+		onTakeDamageFunctionName = statusBar.OnTakeDamage;
 		onFaceFunctionName = statusBar.OnFace;
 		_statusBarPictureIds.Clear();
 		foreach (PictureDefinition picture in statusBar.Pictures)
@@ -2914,9 +2917,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// WL_AGENT.C:TakeDamage - god mode check
 		if (GodMode)
 			return;
-		// WL_AGENT.C:TakeDamage - baby difficulty halves damage twice (>>2)
-		if (Inventory.GetValue("Difficulty") == 0)
-			amount >>= 2;
+		amount = TransformIncomingPlayerDamage(amount);
 		if (amount <= 0)
 			return;
 		Inventory.AddValue("Health", -amount);
@@ -2930,6 +2931,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// after fadeout completes, so player sees health=0 during death fade
 			PlayerDied?.Invoke(new PlayerDiedEvent());
 		}
+	}
+
+	/// <summary>
+	/// Applies the optional XML/Lua-defined incoming-damage transform before health is reduced.
+	/// This keeps game-specific damage rules in data/scripts instead of baking them into the simulator.
+	/// </summary>
+	private int TransformIncomingPlayerDamage(int amount)
+	{
+		if (amount <= 0)
+			return amount;
+
+		if (string.IsNullOrEmpty(onTakeDamageFunctionName))
+			return amount;
+
+		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+		{
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
+		};
+		MoonSharp.Interpreter.DynValue result =
+			luaScriptEngine.ExecuteActionFunction(onTakeDamageFunctionName, context, amount);
+		return result.Type == MoonSharp.Interpreter.DataType.Number
+			? (int)result.Number
+			: amount;
 	}
 
 	/// <summary>

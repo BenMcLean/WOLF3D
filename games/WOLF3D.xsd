@@ -362,6 +362,15 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="OnTakeDamage" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Optional ActionFunction to transform incoming player damage before health is reduced.
+						The raw damage amount is passed as the first Lua vararg (`local amount = ...`), and the
+						function should return the final integer damage to apply.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="FizzleFadeColor" type="xs:unsignedByte">
 				<xs:annotation>
 					<xs:documentation>

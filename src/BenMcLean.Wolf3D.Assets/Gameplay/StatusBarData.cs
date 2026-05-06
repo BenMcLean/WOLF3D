@@ -57,6 +57,12 @@ public class StatusBarDefinition
 	/// </summary>
 	public string OnMapStart { get; set; }
 	/// <summary>
+	/// Optional ActionFunction to transform incoming player damage before health is reduced.
+	/// The raw damage amount is passed as the first Lua vararg; the function should return
+	/// the final integer damage to apply.
+	/// </summary>
+	public string OnTakeDamage { get; set; }
+	/// <summary>
 	/// VGA palette color index for the death fizzle-fade effect, or null to skip the fizzle.
 	/// ID_VH.C:FizzleFade — pseudo-random pixel reveal over 70 tics.
 	/// WL_GAME.C:Died — VW_Bar fills the view with this color, then FizzleFade reveals it.
@@ -78,6 +84,7 @@ public class StatusBarDefinition
 		OnDeath = element.Attribute("OnDeath")?.Value,
 		OnNewGame = element.Attribute("OnNewGame")?.Value,
 		OnMapStart = element.Attribute("OnMapStart")?.Value,
+		OnTakeDamage = element.Attribute("OnTakeDamage")?.Value,
 		FaceTics = int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics) ? faceTics : 2,
 		FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
 	};

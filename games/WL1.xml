@@ -158,7 +158,8 @@
 			<Pic Number="143" Name="GETPSYCHEDPIC" />
 		</Pics>
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath"
-			OnNewGame="OnNewGame" OnMapStart="OnMapStart" FizzleFadeColor="4">
+			OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage"
+			FizzleFadeColor="4">
 			<Text Id="Floor" X="16" Y="16"> 1</Text>
 			<Text Id="Score" X="48" Y="16">     0</Text>
 			<Text Id="Lives" X="112" Y="16"> 3</Text>

@@ -433,7 +433,7 @@ public class LuaScriptEngine
 	/// <param name="functionName">Name of the function to execute</param>
 	/// <param name="context">Execution context providing game state access</param>
 	/// <returns>The result of the Lua script execution</returns>
-	public DynValue ExecuteActionFunction(string functionName, IScriptContext context)
+	public DynValue ExecuteActionFunction(string functionName, IScriptContext context, params object[] args)
 	{
 		if (!compiledActionFunctions.TryGetValue(functionName, out DynValue compiled))
 			throw new InvalidOperationException(
@@ -449,7 +449,9 @@ public class LuaScriptEngine
 			CurrentContext = context;
 			// Execute the function (compiled with read-only proxy environment)
 			// Zero allocations - just pointer swap + function call
-			DynValue result = luaScript.Call(compiled);
+			DynValue result = args is { Length: > 0 }
+				? luaScript.Call(compiled, args)
+				: luaScript.Call(compiled);
 			// Restore previous context
 			CurrentContext = previousContext;
 			return result;

@@ -146,7 +146,7 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnMapStart="OnMapStart">
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
 			<Text Id="Episode" X="24" Y="16">1</Text>
 			<Text Id="Floor" X="40" Y="16">1</Text>
 			<Text Id="Score" X="112" Y="16">     0</Text>
@@ -1230,6 +1230,25 @@ SetValue("Gold Key", 0)
 SetPicture("YellowKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
 SetPicture("BlueKey", "NOKEYPIC")
+]]>
+			</Function>
+			<Function Name="OnTakeDamage">
+				<![CDATA[
+local amount = ...
+local difficulty = GetValue("Difficulty")
+if difficulty == 0 then
+	amount = BitShiftRight(amount, 2)
+elseif difficulty == 1 then
+	amount = BitShiftRight(amount, 1)
+elseif difficulty == 2 then
+	amount = amount - BitShiftRight(amount, 2)
+end
+
+if amount == 0 and difficulty ~= 0 then
+	amount = 1
+end
+
+return amount
 ]]>
 			</Function>
 			<!-- Overrides DefaultScripts/Actors/A_DeathScream.lua for this game only.
