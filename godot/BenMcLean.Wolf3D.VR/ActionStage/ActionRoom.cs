@@ -469,9 +469,10 @@ void sky() {
 			_simulatorController.Simulator.Inventory.SetValue("Episode", MapAnalysis.Episode);
 			_simulatorController.Simulator.Inventory.SetValue("Floor", MapAnalysis.Level);
 
-			// Wire up hit detection callback for weapon state machine
-			// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
-			_simulatorController.Simulator.HitDetection = PerformWeaponRaycast;
+		// Wire up hit detection callback for weapon state machine
+		// WL_AGENT.C:GunAttack is called on the fire frame - this provides the raycast
+		_simulatorController.Simulator.HitDetection = PerformWeaponRaycast;
+		_simulatorController.Simulator.WeaponFirePoseProvider = GetWeaponFirePose;
 
 			// Wire up movement validation for collision detection
 			// This enables wall collision and wall-sliding behavior
@@ -782,6 +783,30 @@ void sky() {
 	private void FireWeapon(int slotIndex)
 	{
 		_simulatorController.FireWeapon(slotIndex);
+	}
+
+	private WeaponFirePose? GetWeaponFirePose(int slotIndex)
+	{
+		Vector3 forward = _displayMode.IsVRActive
+			? _displayMode.GetHandForward(slotIndex)
+			: -_displayMode.Camera.GlobalTransform.Basis.Z;
+		Vector3 origin = _displayMode.IsVRActive
+			? _displayMode.GetHandPosition(slotIndex)
+			: _displayMode.Camera.GlobalPosition;
+
+		Vector2 horizontalForward = new(forward.X, forward.Z);
+		if (horizontalForward.LengthSquared() < 0.0001f)
+			return null;
+
+		float wolfAngle = Mathf.RadToDeg(Mathf.Atan2(-forward.Z, forward.X));
+		wolfAngle = ((wolfAngle % 360f) + 360f) % 360f;
+
+		return new WeaponFirePose
+		{
+			X = origin.X.ToFixedPoint(),
+			Y = origin.Z.ToFixedPoint(),
+			Angle = (short)Mathf.RoundToInt(wolfAngle)
+		};
 	}
 
 	/// <summary>
@@ -1242,9 +1267,12 @@ void sky() {
 		// Unsubscribe automap from simulator events
 		_automapController?.Unsubscribe();
 
-		// Clear HitDetection delegate (points at this ActionStage's method)
+		// Clear presentation-owned firing delegates (point at this ActionStage's methods)
 		if (_simulatorController?.Simulator is not null)
+		{
 			_simulatorController.Simulator.HitDetection = null;
+			_simulatorController.Simulator.WeaponFirePoseProvider = null;
+		}
 
 
 		// Release mouse when leaving action stage (returning to menu, etc.)

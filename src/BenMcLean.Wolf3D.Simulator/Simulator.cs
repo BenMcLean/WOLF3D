@@ -204,6 +204,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public Func<int, int?> HitDetection { get; set; }
 	/// <summary>
+	/// Callback for weapon muzzle pose. Presentation owns controller/camera transforms and converts
+	/// them to Wolf3D fixed-point coordinates plus a Wolf3D angle for the simulator.
+	/// Called when a projectile weapon reaches its actual fire frame.
+	/// </summary>
+	public Func<int, WeaponFirePose?> WeaponFirePoseProvider { get; set; }
+	/// <summary>
 	/// Accumulated level completion stats across levels, appended on elevator activation.
 	/// Corresponds to original WL_INTER.C:LRstruct LevelRatios[].
 	/// Dynamically sized (no hardcoded max) for game-agnostic modding support.
@@ -2381,15 +2387,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					ExecuteGunAttack(slotIndex, slot, weaponInfo);
 					break;
 
+				case "A_CantaloupeAttack":
+					ExecuteProjectileWeaponAttack(slotIndex, slot, weaponInfo, "Gas", "cantaloupe");
+					break;
+
+				case "A_WatermelonAttack":
+					ExecuteProjectileWeaponAttack(slotIndex, slot, weaponInfo, "Missile", "watermelon");
+					break;
+
 				// WL_AGENT.C:T_Attack cases 3 & 4 - loop back to fire state if trigger held
 				case "A_RapidFire":
 					if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
 					{
-						bool hasAmmo = true;
-						if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
-							hasAmmo = Inventory.GetValue("Ammo") >= weaponInfo.AmmoPerShot;
-
-						if (hasAmmo)
+						if (HasAmmo(weaponInfo))
 						{
 							string fireFrameState = weaponInfo.FireState;
 							if (fireFrameState is not null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
@@ -2408,6 +2418,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Update flags based on state
 		if (nextState.Tics == 0)
 		{
+			if (!string.IsNullOrEmpty(slot.PendingWeaponType))
+			{
+				string pendingWeaponType = slot.PendingWeaponType;
+				slot.PendingWeaponType = null;
+				EquipWeapon(slotIndex, pendingWeaponType);
+				return;
+			}
+
 			// Returning to idle state
 			slot.Flags |= WeaponSlotFlags.Ready;
 			slot.Flags &= ~WeaponSlotFlags.Attacking;
@@ -2424,9 +2442,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo idleWeaponInfo)
 				&& idleWeaponInfo.RapidFire)
 			{
-				bool hasAmmo = true;
-				if (idleWeaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(idleWeaponInfo.AmmoType))
-					hasAmmo = Inventory.GetValue("Ammo") >= idleWeaponInfo.AmmoPerShot;
+				bool hasAmmo = HasAmmo(idleWeaponInfo);
 
 				if (hasAmmo && stateCollection.States.TryGetValue(idleWeaponInfo.FireState, out State autoFireState))
 				{
@@ -2493,13 +2509,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			return;
 
 		// Check ammo before starting animation (dry fire check)
-		if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
+		if (!HasAmmo(weaponInfo))
 		{
-			if (Inventory.GetValue("Ammo") < weaponInfo.AmmoPerShot)
-			{
-				EmitGlobalSound("NOITEMSND");
-				return;
-			}
+			EmitGlobalSound("NOITEMSND");
+			return;
 		}
 
 		// Start fire animation - ammo consumption, hit detection, and damage
@@ -2538,13 +2551,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void ExecuteGunAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
 	{
 		// Check and consume ammo
-		if (weaponInfo.AmmoPerShot > 0 && !string.IsNullOrEmpty(weaponInfo.AmmoType))
-		{
-			int currentAmmo = Inventory.GetValue("Ammo");
-			if (currentAmmo < weaponInfo.AmmoPerShot)
-				return;
-			Inventory.SetValue("Ammo", currentAmmo - weaponInfo.AmmoPerShot);
-		}
+		if (!TryConsumeAmmo(weaponInfo))
+			return;
 
 		// Perform hit detection via presentation layer callback
 		int? hitActorIndex = HitDetection?.Invoke(slotIndex);
@@ -2565,6 +2573,33 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		// WL_AGENT.C:GunAttack - madenoise = true
 		PropagateNoise();
+	}
+
+	/// <summary>
+	/// Execute a player projectile weapon attack using presentation-provided muzzle pose data.
+	/// Keeps 3D/controller math in the presentation layer while the simulator owns ammo,
+	/// state transitions, projectile creation, and gameplay events.
+	/// </summary>
+	private void ExecuteProjectileWeaponAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo, string ammoKey, string projectileType)
+	{
+		if (!TryConsumeAmmo(weaponInfo, ammoKey))
+			return;
+
+		SpawnPlayerProjectile(slotIndex, projectileType);
+
+		WeaponFired?.Invoke(new WeaponFiredEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = slot.WeaponType,
+			SoundName = weaponInfo.FireSound ?? string.Empty,
+			DidHit = false,
+			HitActorIndex = null
+		});
+
+		PropagateNoise();
+
+		if (GetAmmoCount(ammoKey) <= 0)
+			QueueWeaponFallback(slotIndex, slot);
 	}
 
 	/// <summary>
@@ -2617,6 +2652,58 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		});
 
 		// No PropagateNoise() - knife is silent (WL_AGENT.C:KnifeAttack doesn't set madenoise)
+	}
+
+	private int GetAmmoCount(string ammoKey) =>
+		string.IsNullOrEmpty(ammoKey) ? 0 : Inventory.GetValue(ammoKey);
+
+	private bool HasAmmo(WeaponInfo weaponInfo)
+	{
+		if (weaponInfo.AmmoPerShot <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
+			return true;
+
+		return GetAmmoCount(weaponInfo.AmmoType) >= weaponInfo.AmmoPerShot;
+	}
+
+	private bool TryConsumeAmmo(WeaponInfo weaponInfo, string ammoKeyOverride = null)
+	{
+		if (weaponInfo.AmmoPerShot <= 0)
+			return true;
+
+		string ammoKey = ammoKeyOverride ?? weaponInfo.AmmoType;
+		if (string.IsNullOrEmpty(ammoKey))
+			return true;
+
+		int currentAmmo = GetAmmoCount(ammoKey);
+		if (currentAmmo < weaponInfo.AmmoPerShot)
+			return false;
+
+		Inventory.SetValue(ammoKey, currentAmmo - weaponInfo.AmmoPerShot);
+		return true;
+	}
+
+	private void QueueWeaponFallback(int slotIndex, WeaponSlot slot)
+	{
+		if (!weaponCollection.TryGetWeapon("knife", out WeaponInfo fallbackWeapon))
+			return;
+
+		if (!PlayerHasWeapon(fallbackWeapon.Name))
+			return;
+
+		slot.PendingWeaponType = fallbackWeapon.Name;
+	}
+
+	public Entities.Projectile SpawnPlayerProjectile(int slotIndex, string projectileType)
+	{
+		WeaponFirePose firePose = WeaponFirePoseProvider?.Invoke(slotIndex)
+			?? new WeaponFirePose
+			{
+				X = PlayerX,
+				Y = PlayerY,
+				Angle = PlayerAngle
+			};
+
+		return SpawnProjectile(projectileType, firePose.X, firePose.Y, firePose.Angle, isPlayerOwned: true);
 	}
 
 	/// <summary>

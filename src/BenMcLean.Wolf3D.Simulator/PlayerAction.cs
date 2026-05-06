@@ -67,6 +67,29 @@ public class FireWeaponAction : PlayerAction
 }
 
 /// <summary>
+/// Presentation-provided firing pose for a weapon slot at the moment the simulator needs to
+/// resolve a fire action. The presentation layer converts its own 3D/controller state into
+/// Wolf3D's 2D gameplay coordinates before handing it to the simulator.
+/// </summary>
+public readonly record struct WeaponFirePose
+{
+	/// <summary>
+	/// Spawn X in Wolf3D 16.16 fixed-point coordinates.
+	/// </summary>
+	public required int X { get; init; }
+
+	/// <summary>
+	/// Spawn Y in Wolf3D 16.16 fixed-point coordinates.
+	/// </summary>
+	public required int Y { get; init; }
+
+	/// <summary>
+	/// Travel angle in Wolf3D degrees (0-359).
+	/// </summary>
+	public required short Angle { get; init; }
+}
+
+/// <summary>
 /// Player releases weapon trigger (for semi-auto fire mode).
 /// Based on WL_AGENT.C:buttonheld[] tracking (line 2266-2268).
 /// Required to re-enable firing for semi-automatic weapons (pistol, knife).

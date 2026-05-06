@@ -68,6 +68,12 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 	public WeaponSlotFlags Flags { get; set; } = WeaponSlotFlags.None;
 
 	/// <summary>
+	/// The weapon type to switch to when the current attack animation finishes.
+	/// Used for out-of-ammo fallback without snapping weapons mid-animation.
+	/// </summary>
+	public string PendingWeaponType { get; set; } = null;
+
+	/// <summary>
 	/// Captures all mutable weapon slot state. CurrentState is stored as its Name string;
 	/// the Simulator resolves it back to a State reference via StateCollection after
 	/// calling LoadState() on all weapon slots.
@@ -80,7 +86,8 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 		TicCount = TicCount,
 		ShapeNum = ShapeNum,
 		AttackFrame = AttackFrame,
-		Flags = (int)Flags
+		Flags = (int)Flags,
+		PendingWeaponType = PendingWeaponType
 	};
 
 	/// <summary>
@@ -96,6 +103,7 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 		ShapeNum = state.ShapeNum;
 		AttackFrame = state.AttackFrame;
 		Flags = (WeaponSlotFlags)state.Flags;
+		PendingWeaponType = state.PendingWeaponType;
 	}
 }
 

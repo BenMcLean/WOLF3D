@@ -51,4 +51,9 @@ public record WeaponSlotSnapshot
 	/// Bitfield: Ready, TriggerHeld, Attacking.
 	/// </summary>
 	public int Flags { get; init; }
+
+	/// <summary>
+	/// Weapon to equip after the current attack animation finishes.
+	/// </summary>
+	public string PendingWeaponType { get; init; }
 }
