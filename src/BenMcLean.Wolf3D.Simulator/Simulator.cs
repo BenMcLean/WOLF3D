@@ -1948,23 +1948,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		stateCollection.ProjectileDefinitions.TryGetValue(proj.ProjectileType, out Assets.Gameplay.ProjectileDefinition projDef);
 		if (!ProjectileCanMove(proj, projDef))
 		{
-			if (projDef?.ExplodeState is not null
-				&& stateCollection.States.TryGetValue(projDef.ExplodeState, out State explodeState))
-			{
-				proj.CurrentState = explodeState;
-				proj.TicCount = explodeState.Tics;
-				proj.IsExploding = true;
-				ProjectileSpriteChanged?.Invoke(new ProjectileSpriteChangedEvent
-				{
-					ProjectileId = proj.ProjectileId,
-					Shape = (ushort)Math.Max(0, (int)explodeState.Shape),
-					IsRotated = explodeState.Rotate,
-				});
-			}
-			else
-			{
-				DespawnProjectile(index);
-			}
+			TransitionProjectileToExplosion(index, proj, projDef);
 			return;
 		}
 
@@ -1988,7 +1972,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				{
 					short damage = ComputeProjectileDamage(projDef, rng);
 					ApplyProjectileDamage(i, damage);
-					DespawnProjectile(index);
+
+					// WL_ACT2.C:MissileTryMove - Noah projectiles can pass through actors that
+					// became non-shootable from this hit (typically a kill), otherwise they
+					// transition into their explosion animation.
+					if (!actor.Flags.HasFlag(ActorFlags.Shootable))
+						continue;
+
+					TransitionProjectileToExplosion(index, proj, projDef);
 					return;
 				}
 			}
@@ -2056,6 +2047,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				return true;
 		}
 		return false;
+	}
+
+	private void TransitionProjectileToExplosion(
+		int index,
+		Entities.Projectile proj,
+		Assets.Gameplay.ProjectileDefinition projDef)
+	{
+		if (projDef?.ExplodeState is not null
+			&& stateCollection.States.TryGetValue(projDef.ExplodeState, out State explodeState))
+		{
+			proj.CurrentState = explodeState;
+			proj.TicCount = explodeState.Tics;
+			proj.IsExploding = true;
+			ProjectileSpriteChanged?.Invoke(new ProjectileSpriteChangedEvent
+			{
+				ProjectileId = proj.ProjectileId,
+				Shape = (ushort)Math.Max(0, (int)explodeState.Shape),
+				IsRotated = explodeState.Rotate,
+			});
+			return;
+		}
+
+		DespawnProjectile(index);
 	}
 
 	/// <summary>
