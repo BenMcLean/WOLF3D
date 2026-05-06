@@ -473,6 +473,7 @@ public partial class Root : Node3D
 			EquippedWeaponShapes = equippedWeaponShapes,
 			PendingCompletionStats = completionStats,
 			PendingAllLevelStats = allLevelStats,
+			PendingQuiz = actionStage.PendingQuiz,
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
 		};

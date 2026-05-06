@@ -235,6 +235,49 @@ public class MenuScriptContext(
 	/// <param name="enabled">True to enable mouse</param>
 	public void SetMouseEnabled(bool enabled) => config.MouseEnabled = enabled;
 	#endregion Settings (Config.cs)
+	#region Suspended Gameplay Inventory
+	/// <summary>
+	/// Delegate for reading inventory values from the suspended simulator.
+	/// </summary>
+	public Func<string, int> GetValueFunc { get; set; }
+	/// <summary>
+	/// Delegate for writing inventory values to the suspended simulator.
+	/// </summary>
+	public Action<string, int> SetValueAction { get; set; }
+	/// <summary>
+	/// Delegate for adding to inventory values on the suspended simulator.
+	/// </summary>
+	public Action<string, int> AddValueAction { get; set; }
+	/// <summary>
+	/// Delegate for reading max inventory values from the suspended simulator.
+	/// </summary>
+	public Func<string, int> GetMaxFunc { get; set; }
+	/// <summary>
+	/// Delegate for checking whether the suspended simulator has a non-zero inventory value.
+	/// </summary>
+	public Func<string, bool> HasFunc { get; set; }
+	/// <summary>
+	/// Reads an inventory value from the suspended simulator.
+	/// Matches the gameplay Lua API so menu scripts can reuse the same patterns.
+	/// </summary>
+	public int GetValue(string name) => GetValueFunc?.Invoke(name) ?? 0;
+	/// <summary>
+	/// Writes an inventory value to the suspended simulator.
+	/// </summary>
+	public void SetValue(string name, int value) => SetValueAction?.Invoke(name, value);
+	/// <summary>
+	/// Adds to an inventory value on the suspended simulator.
+	/// </summary>
+	public void AddValue(string name, int delta) => AddValueAction?.Invoke(name, delta);
+	/// <summary>
+	/// Reads the max value for an inventory entry from the suspended simulator.
+	/// </summary>
+	public int GetMax(string name) => GetMaxFunc?.Invoke(name) ?? int.MaxValue;
+	/// <summary>
+	/// Returns true when the suspended simulator has a non-zero value for the named inventory entry.
+	/// </summary>
+	public bool Has(string name) => HasFunc?.Invoke(name) ?? false;
+	#endregion Suspended Gameplay Inventory
 	#region Presentation Layer Menu
 	/// <summary>
 	/// Returns the display label for the presentation layer menu item, or null if no presentation
@@ -329,6 +372,15 @@ public class MenuScriptContext(
 	/// </summary>
 	public Action<int, string> SetItemTextAction { get; set; }
 	/// <summary>
+	/// Delegate for changing a menu item's visibility by index.
+	/// Set by MenuManager after context creation.
+	/// </summary>
+	public Action<int, bool> SetItemVisibleAction { get; set; }
+	/// <summary>
+	/// Delegate for clearing the pending quiz payload on the suspended simulator.
+	/// </summary>
+	public Action ClearPendingQuizAction { get; set; }
+	/// <summary>
 	/// Update a menu item's display text by index.
 	/// Exposed to Lua. Delegates to MenuManager.
 	/// Used by OnShow scripts to populate save slot names dynamically.
@@ -336,7 +388,71 @@ public class MenuScriptContext(
 	/// <param name="index">Zero-based menu item index</param>
 	/// <param name="text">New display text</param>
 	public void SetItemText(int index, string text) => SetItemTextAction?.Invoke(index, text);
+	/// <summary>
+	/// Shows or hides a menu item by index.
+	/// Useful for data-driven menus where the number of valid options varies at runtime.
+	/// </summary>
+	public void SetItemVisible(int index, bool visible) => SetItemVisibleAction?.Invoke(index, visible);
 	#endregion Dynamic Content Updates
+	#region Noah Quiz
+	/// <summary>
+	/// Returns true when a quiz question payload is waiting to be displayed.
+	/// </summary>
+	public bool HasPendingQuiz() => sessionState.PendingQuiz is not null;
+	/// <summary>
+	/// Returns the zero-based question index of the pending quiz payload.
+	/// </summary>
+	public int GetQuizQuestionIndex() => sessionState.PendingQuiz?.QuestionIndex ?? 0;
+	/// <summary>
+	/// Returns the display text for the pending quiz question.
+	/// </summary>
+	public string GetQuizQuestionText() => sessionState.PendingQuiz?.QuestionText ?? string.Empty;
+	/// <summary>
+	/// Returns the Bible reference for the pending quiz question.
+	/// </summary>
+	public string GetQuizReference() => sessionState.PendingQuiz?.ReferenceText ?? string.Empty;
+	/// <summary>
+	/// Returns the number of answers on the pending quiz question.
+	/// </summary>
+	public int GetQuizAnswerCount() => sessionState.PendingQuiz?.Answers?.Length ?? 0;
+	/// <summary>
+	/// Returns the zero-based index of the correct answer on the pending quiz question.
+	/// </summary>
+	public int GetQuizCorrectAnswerIndex() => sessionState.PendingQuiz?.CorrectAnswerIndex ?? -1;
+	/// <summary>
+	/// Returns the answer label at the specified index, or empty string when unavailable.
+	/// </summary>
+	public string GetQuizAnswerText(int index) =>
+		sessionState.PendingQuiz?.Answers is string[] answers &&
+		index >= 0 &&
+		index < answers.Length
+			? answers[index]
+			: string.Empty;
+	/// <summary>
+	/// Returns true when the pending quiz should show the Bible reference.
+	/// </summary>
+	public bool ShouldShowQuizReference() => sessionState.PendingQuiz?.ShowReference ?? false;
+	/// <summary>
+	/// Clears the pending quiz payload without modifying suspended gameplay state.
+	/// </summary>
+	public void ClearPendingQuiz()
+	{
+		sessionState.PendingQuiz = null;
+		ClearPendingQuizAction?.Invoke();
+	}
+	/// <summary>
+	/// Gets the persisted Noah's Ark quiz question number from CONFIG.N3D.
+	/// </summary>
+	public int GetQuestionNum() => config.QuestionNum;
+	/// <summary>
+	/// Sets the persisted Noah's Ark quiz question number in CONFIG.N3D.
+	/// </summary>
+	public void SetQuestionNum(int questionNum) => config.QuestionNum = (short)questionNum;
+	/// <summary>
+	/// Advances the persisted Noah's Ark quiz question number by one.
+	/// </summary>
+	public void IncrementQuestionNum() => config.QuestionNum++;
+	#endregion Noah Quiz
 	#region Save/Load Game
 	/// <summary>
 	/// Delegate for saving the game to a slot.

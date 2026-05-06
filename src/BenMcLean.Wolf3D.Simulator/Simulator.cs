@@ -221,6 +221,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private Dictionary<string, string> bonusScripts = [];
 	// Map from bonus number (byte) to script name for lookup
 	private Dictionary<byte, string> bonusNumberToScript = [];
+	/// <summary>
+	/// Noah's Ark question index persisted in CONFIG.N3D.
+	/// Managed by quiz-related Lua helpers so quiz scrolls can cycle deterministically.
+	/// </summary>
+	public int CurrentQuestionNum { get; set; }
+	/// <summary>
+	/// Pending quiz payload populated by AskQuiz() and consumed by the Quiz menu.
+	/// </summary>
+	public PendingQuizData PendingQuiz { get; set; }
+	/// <summary>
+	/// Loaded Bible quiz question bank for games that use the Noah-style quiz scroll.
+	/// </summary>
+	public IReadOnlyList<Assets.Graphics.VgaGraph.QuizQuestion> QuizQuestions { get; set; }
 	#region C# Events for Observer Pattern
 	/// <summary>
 	/// Fired when a door starts opening (position was 0).
@@ -3044,6 +3057,35 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Id = id,
 			Content = content
 		});
+	}
+
+	/// <summary>
+	/// Returns the number of loaded quiz questions.
+	/// </summary>
+	public int VgaGraphQuestionCount() => QuizQuestions?.Count ?? 0;
+
+	/// <summary>
+	/// Builds a pending quiz payload for the specified question index.
+	/// Returns null when the current game has no quiz question bank loaded.
+	/// </summary>
+	public PendingQuizData BuildPendingQuiz(int questionNum)
+	{
+		if (QuizQuestions is null || QuizQuestions.Count == 0)
+			return null;
+
+		int wrappedIndex = (questionNum % QuizQuestions.Count + QuizQuestions.Count) % QuizQuestions.Count;
+		Assets.Graphics.VgaGraph.QuizQuestion question = QuizQuestions[wrappedIndex];
+		int correctIndex = Array.FindIndex(question.Answers, answer => answer.Correct);
+		if (correctIndex < 0)
+			return null;
+
+		return new PendingQuizData(
+			QuestionIndex: wrappedIndex,
+			QuestionText: question.Text,
+			ReferenceText: question.Reference,
+			Answers: [.. question.Answers.Select(answer => answer.Text)],
+			CorrectAnswerIndex: correctIndex,
+			ShowReference: Inventory.GetValue("Difficulty") <= 1);
 	}
 
 	/// <summary>

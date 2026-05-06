@@ -35,6 +35,7 @@ public class MenuManager
 	private MenuSequence _activeSequence;
 	private ModalDialog _activeModal;
 	private List<MenuItemDefinition> _currentVisibleItems = [];
+	private readonly HashSet<int> _hiddenItemIndices = [];
 	// Independent RNG so menu randomization does not affect game state
 	private readonly Random _menuRng = new();
 	#endregion Data
@@ -137,6 +138,13 @@ public class MenuManager
 			GetTickerDefinitionFunc = GetTickerDefinition,
 			// Wire up menu item text updates (for save/load slot names)
 			SetItemTextAction = SetItemText,
+			SetItemVisibleAction = SetItemVisible,
+			ClearPendingQuizAction = () =>
+			{
+				Simulator.Simulator sim = SaveSimulatorFunc?.Invoke();
+				if (sim is not null)
+					sim.PendingQuiz = null;
+			},
 			// Wire up save/load game delegates
 			SaveGameAction = SaveGameImpl,
 			LoadGameAction = LoadGameImpl,
@@ -145,6 +153,12 @@ public class MenuManager
 			SaveConfigAction = SharedAssetManager.SaveConfig,
 			// Wire up forced end-game (no dialog) for Victory end art
 			ForceEndGameAction = () => { PendingEndGame = true; },
+			// Wire up suspended gameplay inventory access for mod-friendly menu scripts
+			GetValueFunc = name => SaveSimulatorFunc?.Invoke()?.Inventory?.GetValue(name) ?? 0,
+			SetValueAction = (name, value) => SaveSimulatorFunc?.Invoke()?.Inventory?.SetValue(name, value),
+			AddValueAction = (name, delta) => SaveSimulatorFunc?.Invoke()?.Inventory?.AddValue(name, delta),
+			GetMaxFunc = name => SaveSimulatorFunc?.Invoke()?.Inventory?.GetMax(name) ?? int.MaxValue,
+			HasFunc = name => SaveSimulatorFunc?.Invoke()?.Inventory?.Has(name) ?? false,
 		};
 		// Create renderer
 		_renderer = new MenuRenderer();
@@ -330,6 +344,7 @@ public class MenuManager
 	{
 		if (!_menuCollection.Menus.TryGetValue(menuName, out MenuDefinition menuDef))
 			return;
+		_hiddenItemIndices.Clear();
 		// Set new current menu
 		_currentMenuName = menuName;
 		// WL_MENU.H:CP_iteminfo:curpos — use configured initial selection, defaulting to 0
@@ -429,8 +444,11 @@ public class MenuManager
 	{
 		bool inGame = _scriptContext.IsGameInProgress();
 		List<MenuItemDefinition> result = [];
-		foreach (MenuItemDefinition item in menuDef.Items)
+		for (int i = 0; i < menuDef.Items.Count; i++)
 		{
+			if (_hiddenItemIndices.Contains(i))
+				continue;
+			MenuItemDefinition item = menuDef.Items[i];
 			if (item.IsPresentationSlot)
 			{
 				string label = _scriptContext.GetPresentationMenuItemLabelFunc?.Invoke();
@@ -938,6 +956,21 @@ public class MenuManager
 		menuDef.Items[index].Text = text;
 		// Re-render to show updated text
 		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
+	}
+
+	/// <summary>
+	/// Shows or hides a menu item by its original XML index.
+	/// Recomputes the visible item list immediately so OnShow scripts can shape a menu at runtime.
+	/// </summary>
+	private void SetItemVisible(int index, bool visible)
+	{
+		if (index < 0)
+			return;
+		if (visible)
+			_hiddenItemIndices.Remove(index);
+		else
+			_hiddenItemIndices.Add(index);
+		RefreshMenu();
 	}
 	#endregion Menu Item Text Updates
 	#region Save/Load Game

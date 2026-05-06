@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
@@ -172,6 +173,11 @@ public partial class MenuRoom : Node3D, IRoom
 	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { private get; init; }
 
 	/// <summary>
+	/// Pending quiz payload captured from gameplay before entering the Quiz menu.
+	/// </summary>
+	public PendingQuizData PendingQuiz { private get; init; }
+
+	/// <summary>
 	/// Current debug marker visibility from the menu session state.
 	/// Polled by Root and applied to newly created gameplay rooms.
 	/// </summary>
@@ -259,6 +265,8 @@ public partial class MenuRoom : Node3D, IRoom
 				PendingHighScoreScore.Value,
 				PendingHighScoreCompleted,
 				PendingHighScoreEpisode);
+		if (PendingQuiz is not null)
+			_menuManager.SessionState.PendingQuiz = PendingQuiz;
 
 		// Wire up save/load game delegates
 		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;

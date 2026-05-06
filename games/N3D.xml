@@ -180,6 +180,28 @@
 			<EndString>You know the food&#10;Noah throws is&#10;drugged, right?&#10;Press N to keep&#10;playing or Y to&#10;Just Say No.</EndString>
 			<EndString>Flood almost over?&#10;Press N for more rain.&#10;Press Y to find the&#10;Rainbow Connection.</EndString>
 			<EndString>Press N to calm down&#10;more goats or Y to&#10;let them eat your&#10;sandals.</EndString>
+			<MenuFunction Name="QuizAnswerCorrect">
+				<![CDATA[
+AddValue("Score", 1000)
+if GetValue("Health") < 100 then
+	AddValue("Health", 25)
+	AddValue("Feed", 10)
+else
+	AddValue("Feed", 25)
+end
+PlaySound("PERCENT100SND")
+ClearPendingQuiz()
+ResumeGame()
+]]>
+			</MenuFunction>
+			<MenuFunction Name="QuizAnswerIncorrect">
+				<![CDATA[
+AddValue("Health", 4)
+PlaySound("NOBONUSSND")
+ClearPendingQuiz()
+ResumeGame()
+]]>
+			</MenuFunction>
 			<Menu Name="Title" Music="NOAH02_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
 				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
@@ -599,6 +621,78 @@ for i = 0, GetHighScoreCount() - 1 do
 end
 ]]>
 				</OnShow>
+			</Menu>
+			<Menu Name="Quiz" Font="SMALL" BordColor="41" TextColor="71" Highlight="71"
+				X="34" Y="116" Indent="24" Spacing="13">
+				<Box X="14" Y="21" W="292" H="134" BkgdColor="45" Deactive="43" Bord2Color="35" />
+				<Text Id="QuizHeader" X="Center" Y="25" Font="SMALL">Question #1</Text>
+				<Text Id="QuizBody" X="26" Y="47" Font="SMALL"> </Text>
+				<Text Id="QuizRef" X="26" Y="95" Font="SMALL"> </Text>
+				<OnShow>
+					<![CDATA[
+if not HasPendingQuiz() then
+	ResumeGame()
+else
+	SetText("QuizHeader", "Question #" .. tostring(GetQuizQuestionIndex() + 1))
+	SetText("QuizBody", GetQuizQuestionText())
+	if ShouldShowQuizReference() then
+		SetText("QuizRef", "(" .. GetQuizReference() .. ")")
+	else
+		SetText("QuizRef", "")
+	end
+
+	for i = 0, 3 do
+		local visible = i < GetQuizAnswerCount()
+		SetItemVisible(i, visible)
+		if visible then
+			SetItemText(i, tostring(i + 1) .. ". " .. GetQuizAnswerText(i))
+		end
+	end
+end
+]]>
+				</OnShow>
+				<OnCancel>
+					<![CDATA[
+ClearPendingQuiz()
+ResumeGame()
+]]>
+				</OnCancel>
+				<MenuItem Text="1">
+					<![CDATA[
+if GetQuizCorrectAnswerIndex() == 0 then
+	QuizAnswerCorrect()
+else
+	QuizAnswerIncorrect()
+end
+]]>
+				</MenuItem>
+				<MenuItem Text="2">
+					<![CDATA[
+if GetQuizCorrectAnswerIndex() == 1 then
+	QuizAnswerCorrect()
+else
+	QuizAnswerIncorrect()
+end
+]]>
+				</MenuItem>
+				<MenuItem Text="3">
+					<![CDATA[
+if GetQuizCorrectAnswerIndex() == 2 then
+	QuizAnswerCorrect()
+else
+	QuizAnswerIncorrect()
+end
+]]>
+				</MenuItem>
+				<MenuItem Text="4">
+					<![CDATA[
+if GetQuizCorrectAnswerIndex() == 3 then
+	QuizAnswerCorrect()
+else
+	QuizAnswerIncorrect()
+end
+]]>
+				</MenuItem>
 			</Menu>
 			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="NOAH05_MUS"
 				X="112" Y="168" Indent="0" Spacing="13">
@@ -1453,13 +1547,12 @@ return true
 -- bo_alpo (SPR_QUIZ): WL_AGENT.C #ifdef GAMEVER_NOAH3D
 -- Not consumed if health >= 100 AND ammo >= maxammo.
 -- Full mechanic: AskQuestion(questionnum), cycling through 99 questions.
--- In noquestions mode: HealSelf(4).
--- TODO: Implement full quiz dialog (AskQuiz not yet available - falls back to simple heal).
 if GetValue("Health") >= 100 and GetValue("Feed") >= GetMax("Feed") then
 	return false
 end
-AddValue("Health", 4)
-PlaySound("D_BONUSSND")
+local questionNum = GetQuestionNum()
+IncrementQuestionNum()
+AskQuiz(questionNum)
 return true
 ]]>
 			</BonusScript>

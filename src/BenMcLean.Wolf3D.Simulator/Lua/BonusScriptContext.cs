@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using BenMcLean.Wolf3D.Simulator.Entities;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 
 namespace BenMcLean.Wolf3D.Simulator.Lua;
 
@@ -78,4 +79,39 @@ public class BonusScriptContext(
 			simulator.EquipWeapon(i, weaponName);
 	}
 	#endregion Weapon Switching
+	#region Noah Quiz
+	/// <summary>
+	/// Gets the current Noah's Ark quiz question index persisted in CONFIG.N3D.
+	/// </summary>
+	public int GetQuestionNum() => simulator.CurrentQuestionNum;
+	/// <summary>
+	/// Sets the current Noah's Ark quiz question index, wrapping to the loaded question count.
+	/// Falls back to the original 99-question range when the data is unavailable.
+	/// </summary>
+	public void SetQuestionNum(int value)
+	{
+		int questionCount = simulator.VgaGraphQuestionCount();
+		if (questionCount <= 0)
+			questionCount = 99;
+		simulator.CurrentQuestionNum = (value % questionCount + questionCount) % questionCount;
+	}
+	/// <summary>
+	/// Advances the current Noah's Ark quiz question index by one with wraparound.
+	/// </summary>
+	public void IncrementQuestionNum() => SetQuestionNum(simulator.CurrentQuestionNum + 1);
+	/// <summary>
+	/// Queues the specified Bible quiz question for the Quiz menu and navigates there.
+	/// </summary>
+	public void AskQuiz(int questionNum)
+	{
+		PendingQuizData quiz = simulator.BuildPendingQuiz(questionNum);
+		if (quiz is null)
+		{
+			logger?.LogWarning("AskQuiz({QuestionNum}) failed because no question data is loaded.", questionNum);
+			return;
+		}
+		simulator.PendingQuiz = quiz;
+		NavigateToMenu("Quiz");
+	}
+	#endregion Noah Quiz
 }

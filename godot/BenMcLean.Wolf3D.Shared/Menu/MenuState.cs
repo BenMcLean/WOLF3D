@@ -1,3 +1,5 @@
+using BenMcLean.Wolf3D.Assets.Gameplay;
+
 namespace BenMcLean.Wolf3D.Shared.Menu;
 
 /// <summary>
@@ -70,6 +72,11 @@ public class MenuState
 	public int? LoadGameSlot { get; set; }
 	/// <summary>Score data waiting to be checked against the high score table.</summary>
 	public PendingHighScoreData PendingHighScore { get; set; }
+	/// <summary>
+	/// Pending quiz payload populated by gameplay before opening the Quiz menu.
+	/// Cleared by menu scripts once the question is answered or cancelled.
+	/// </summary>
+	public PendingQuizData PendingQuiz { get; set; }
 	/// <summary>
 	/// Rank (0-based index) of the newly added high score entry, or -1 if not added.
 	/// Set by CheckAndAddHighScore(); read by IsNewHighScore() / GetNewHighScoreIndex().

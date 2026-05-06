@@ -108,6 +108,11 @@ public partial class ActionRoom : Node3D, IRoom
 	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { get; private set; }
 
 	/// <summary>
+	/// Pending quiz payload captured at NavigateToMenu time for the Quiz menu.
+	/// </summary>
+	public PendingQuizData PendingQuiz { get; private set; }
+
+	/// <summary>
 	/// Set when the player dies. Root polls this to initiate the death fadeout.
 	/// OnDeath script runs after fadeout completes (while screen is black)
 	/// to determine restart vs game over.
@@ -369,6 +374,15 @@ void sky() {
 					_savedInventory,
 					_savedLevelStats,
 					_loadSnapshot);
+			}
+
+			if (_simulatorController.Simulator is not null)
+			{
+				_simulatorController.Simulator.QuizQuestions =
+					SharedAssetManager.CurrentGame?.VgaGraph?.Questions;
+				if (_existingSimulator is null)
+					_simulatorController.Simulator.CurrentQuestionNum =
+						SharedAssetManager.Config?.QuestionNum ?? 0;
 			}
 
 			// Position camera: use restored state (load/resume) or map spawn point
@@ -1446,6 +1460,12 @@ void sky() {
 		Simulator.Simulator sim = _simulatorController?.Simulator;
 		MenuDefinition menuDef = SharedAssetManager.CurrentGame?.MenuCollection?.GetMenu(e.MenuName);
 		PendingMenuOverride = e.MenuName;
+		PendingQuiz = sim?.PendingQuiz;
+		if (sim is not null && SharedAssetManager.Config is not null)
+		{
+			SharedAssetManager.Config.QuestionNum = (short)sim.CurrentQuestionNum;
+			SharedAssetManager.SaveConfig();
+		}
 		PendingEquippedWeaponShapes = menuDef?.KeepWeapons == true ? GetEquippedWeaponShapes() : null;
 		// Release all weapon triggers so weapons don't continue firing after resuming.
 		// Equivalent to the player releasing all fire buttons before the menu appears.
