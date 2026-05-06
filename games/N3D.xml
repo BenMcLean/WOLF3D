@@ -728,6 +728,480 @@ end
 				</OnShow>
 			</Menu>
 		</Menus>
+		<Questions>
+			<Question Text="Who was Noah&apos;s father?" Ref="Gen 5:30">
+				<Answer>Methuselah</Answer>
+				<Answer Correct="true">Lamech</Answer>
+				<Answer>Enoch</Answer>
+			</Question>
+			<Question Text="How old was Noah when he had&#10;Shem, Ham and Japheth?" Ref="Gen 5:32">
+				<Answer>100</Answer>
+				<Answer Correct="true">500</Answer>
+				<Answer>700</Answer>
+			</Question>
+			<Question Text="How many sons did Noah have?" Ref="Gen 6:10">
+				<Answer Correct="true">3</Answer>
+				<Answer>5</Answer>
+				<Answer>7</Answer>
+			</Question>
+			<Question Text="What kind of wood was the Ark&#10;made of?" Ref="Gen 6:14">
+				<Answer>oak</Answer>
+				<Answer>pine</Answer>
+				<Answer Correct="true">gopher wood</Answer>
+			</Question>
+			<Question Text="How many cubits long was the&#10;Ark?" Ref="Gen 6:15">
+				<Answer>200</Answer>
+				<Answer Correct="true">300</Answer>
+				<Answer>500</Answer>
+			</Question>
+			<Question Text="How many windows did the Ark&#10;have?" Ref="Gen 6:16">
+				<Answer Correct="true">1</Answer>
+				<Answer>10</Answer>
+				<Answer>20</Answer>
+			</Question>
+			<Question Text="How many doors did the Ark&#10;have?" Ref="Gen 6:16">
+				<Answer Correct="true">1</Answer>
+				<Answer>3</Answer>
+				<Answer>6</Answer>
+			</Question>
+			<Question Text="How many stories did the Ark&#10;have?" Ref="Gen 6:16">
+				<Answer>2</Answer>
+				<Answer Correct="true">3</Answer>
+				<Answer>7</Answer>
+			</Question>
+			<Question Text="How many of each kind of&#10;animal did Noah have on&#10;the Ark?" Ref="Gen 6:19">
+				<Answer Correct="true">2</Answer>
+				<Answer>3</Answer>
+				<Answer>5</Answer>
+			</Question>
+			<Question Text="How many of each clean animal&#10;did Noah have on the Ark?" Ref="Gen 7:2">
+				<Answer>2</Answer>
+				<Answer>4</Answer>
+				<Answer Correct="true">7</Answer>
+			</Question>
+			<Question Text="How many days did it rain?" Ref="Gen 7:4">
+				<Answer>30</Answer>
+				<Answer Correct="true">40</Answer>
+				<Answer>100</Answer>
+			</Question>
+			<Question Text="How old was Noah when the&#10;floods came?" Ref="Gen 7:6">
+				<Answer>500</Answer>
+				<Answer Correct="true">600</Answer>
+				<Answer>650</Answer>
+			</Question>
+			<Question Text="How many days did Noah wait&#10;in the Ark for the floods to&#10;come?" Ref="Gen 7:10">
+				<Answer>1</Answer>
+				<Answer>4</Answer>
+				<Answer Correct="true">7</Answer>
+			</Question>
+			<Question Text="The flood waters only came&#10;from the sky." Ref="Gen 7:11">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="How many people were on the&#10;Ark?" Ref="Gen 7:13">
+				<Answer>4</Answer>
+				<Answer>6</Answer>
+				<Answer Correct="true">8</Answer>
+			</Question>
+			<Question Text="Noah collected the animals and&#10;put them in the Ark." Ref="Gen 7:15">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="Who survived the flood?" Ref="Gen 7:23">
+				<Answer>animals on the earth</Answer>
+				<Answer>animals in the sky</Answer>
+				<Answer Correct="true">animals in the Ark</Answer>
+			</Question>
+			<Question Text="How long did the flood last?" Ref="Gen 7:24, Gen 8:3">
+				<Answer>40 days</Answer>
+				<Answer Correct="true">150 days</Answer>
+				<Answer>365 days</Answer>
+			</Question>
+			<Question Text="Which mountain did the Ark&#10;land on?" Ref="Gen 8:4">
+				<Answer Correct="true">Ararat</Answer>
+				<Answer>St. Helen</Answer>
+				<Answer>Fuji</Answer>
+			</Question>
+			<Question Text="What was the first animal to&#10;leave the Ark?" Ref="Gen 8:7">
+				<Answer>dove</Answer>
+				<Answer Correct="true">raven</Answer>
+				<Answer>eagle</Answer>
+			</Question>
+			<Question Text="What did the dove bring back&#10;to Noah?" Ref="Gen 8:11">
+				<Answer>an apple</Answer>
+				<Answer Correct="true">an olive branch</Answer>
+				<Answer>a fig leaf</Answer>
+			</Question>
+			<Question Text="How many days did Noah stay&#10;in the Ark after the dove&#10;brought the branch?" Ref="Gen 8:12">
+				<Answer>3</Answer>
+				<Answer>5</Answer>
+				<Answer Correct="true">7</Answer>
+			</Question>
+			<Question Text="What was the first thing that&#10;Noah did after he got out of&#10;the Ark?" Ref="Gen 8:20">
+				<Answer>built a house</Answer>
+				<Answer Correct="true">built an altar</Answer>
+				<Answer>went swimming</Answer>
+			</Question>
+			<Question Text="What is the sign that God&#10;gave us to show He would&#10;never flood the world again?" Ref="Gen 9:14-15">
+				<Answer Correct="true">the rainbow</Answer>
+				<Answer>the blue sky</Answer>
+				<Answer>fire</Answer>
+			</Question>
+			<Question Text="How old was Noah when he&#10;died?" Ref="Gen 9:29">
+				<Answer>750</Answer>
+				<Answer>890</Answer>
+				<Answer Correct="true">950</Answer>
+			</Question>
+			<Question Text="Who closed the door of the&#10;Ark when the floods came?" Ref="Gen 7:16">
+				<Answer>Noah</Answer>
+				<Answer>Shem</Answer>
+				<Answer Correct="true">God</Answer>
+			</Question>
+			<Question Text="Why did God have the floods&#10;come?" Ref="Gen 6:12-13">
+				<Answer Correct="true">Man was wicked.</Answer>
+				<Answer>The earth was dirty.</Answer>
+				<Answer>The plants needed water.</Answer>
+			</Question>
+			<Question Text="Noah was the only man to find&#10;grace in the eyes of the Lord." Ref="Gen 6:8, Gen 6:11-12">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="How many years did God say He&#10;would strive with man?" Ref="Gen 6:3">
+				<Answer>10</Answer>
+				<Answer>50</Answer>
+				<Answer Correct="true">120</Answer>
+			</Question>
+			<Question Text="What did Noah do after the&#10;flood?" Ref="Gen 9:20">
+				<Answer Correct="true">He planted a vineyard.</Answer>
+				<Answer>He herded sheep.</Answer>
+				<Answer>He ran a caravan. </Answer>
+			</Question>
+			<Question Text="Who was Noah&apos;s oldest son?" Ref="Gen 10:21">
+				<Answer>Ham</Answer>
+				<Answer>Shem</Answer>
+				<Answer Correct="true">Japheth</Answer>
+			</Question>
+			<Question Text="On which side did God tell&#10;Noah to pitch the Ark?" Ref="Gen 6:14">
+				<Answer>inside</Answer>
+				<Answer>outside</Answer>
+				<Answer Correct="true">both</Answer>
+			</Question>
+			<Question Text="How wide was the Ark?" Ref="Gen 6:15">
+				<Answer>30 Cubits</Answer>
+				<Answer Correct="true">50 Cubits</Answer>
+				<Answer>60 Cubits</Answer>
+			</Question>
+			<Question Text="How tall was the Ark?" Ref="Gen 6:15">
+				<Answer Correct="true">30 Cubits</Answer>
+				<Answer>40 Cubits</Answer>
+				<Answer>50 Cubits</Answer>
+			</Question>
+			<Question Text="What did God make with Noah,&#10;so that Noah knew that he&#10;would be safe?" Ref="Gen 6:18">
+				<Answer>a lifesaver</Answer>
+				<Answer>a boat</Answer>
+				<Answer Correct="true">a covenant</Answer>
+			</Question>
+			<Question Text="Besides animals, what other&#10;things did God tell Noah to&#10;have in the Ark?" Ref="Gen 6:18-21">
+				<Answer Correct="true">food &amp; his family</Answer>
+				<Answer>books &amp; his family</Answer>
+				<Answer>swimsuit &amp; a rubber duck</Answer>
+			</Question>
+			<Question Text="Why did God choose Noah to be&#10;in the Ark?" Ref="Gen 7:1">
+				<Answer Correct="true">Noah was righteous.</Answer>
+				<Answer>Noah was a good sailor.</Answer>
+				<Answer>Noah could swim.</Answer>
+			</Question>
+			<Question Text="Noah entered the Ark early to&#10;prepare for his family." Ref="Gen 7:13">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="How did God make the floods&#10;go away?" Ref="Gen 8:1">
+				<Answer Correct="true">with the wind</Answer>
+				<Answer>with big drains</Answer>
+				<Answer>with large buckets</Answer>
+			</Question>
+			<Question Text="How many months did Noah wait&#10;in the Ark after it came to&#10;rest on Mt. Ararat?" Ref="Gen 8:4-14">
+				<Answer>1.5 months</Answer>
+				<Answer>4.5 months</Answer>
+				<Answer Correct="true">7.5 months</Answer>
+			</Question>
+			<Question Text="Who was the first man off of&#10;the Ark?" Ref="Gen 8:18">
+				<Answer Correct="true">Noah</Answer>
+				<Answer>Shem</Answer>
+				<Answer>Ham</Answer>
+			</Question>
+			<Question Text="What did Noah offer to God as&#10;thanks for keeping him safe?" Ref="Gen 8:20">
+				<Answer>himself</Answer>
+				<Answer Correct="true">animals</Answer>
+				<Answer>food</Answer>
+			</Question>
+			<Question Text="What did God promise never to&#10;do again?" Ref="Gen 9:11">
+				<Answer Correct="true">flood the earth</Answer>
+				<Answer>punish man</Answer>
+				<Answer>turn on his shower</Answer>
+			</Question>
+			<Question Text="In what book of the Bible&#10;do you find the story of&#10;Noah?" Ref="No hint">
+				<Answer Correct="true">Genesis</Answer>
+				<Answer>Exodus</Answer>
+				<Answer>Deuteronomy</Answer>
+			</Question>
+			<Question Text="Which of Noah&apos;s ancestors lived&#10;to be 969 years old?" Ref="Gen 5:27">
+				<Answer>Enoch</Answer>
+				<Answer>Adam</Answer>
+				<Answer Correct="true">Methuselah</Answer>
+			</Question>
+			<Question Text="Noah is mentioned at least 3&#10;times in the New Testament." Ref="Heb 11:7, 1 Pet 3:20,&#10;2 Pet 2:5">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="Which of Noah&apos;s descendants&#10;was called &apos;mighty upon the&#10;earth&apos;?" Ref="1 Chr 1:10">
+				<Answer>Cush</Answer>
+				<Answer Correct="true">Nimrod</Answer>
+				<Answer>Elam</Answer>
+			</Question>
+			<Question Text="Which of Noah&apos;s&#10;ancestors never died?" Ref="Gen 5:24">
+				<Answer>Adam</Answer>
+				<Answer Correct="true">Enoch</Answer>
+				<Answer>Jared</Answer>
+			</Question>
+			<Question Text="Noah is a descendent of&#10;which of Adam&apos;s sons?" Ref="Gen 5">
+				<Answer>Cain</Answer>
+				<Answer>Abel</Answer>
+				<Answer Correct="true">Seth</Answer>
+			</Question>
+			<Question Text="Why is Noah mentioned in&#10;Hebrews 11?" Ref="Heb 11:7">
+				<Answer Correct="true">for his faith</Answer>
+				<Answer>for his carpentry skills</Answer>
+				<Answer>for his sacrifices</Answer>
+			</Question>
+			<Question Text="Noah took his wife, sons,&#10;and daughters into the&#10;Ark." Ref="Gen 7:7">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="The flood waters came from&#10;the fountains of the deep&#10;and windows of heaven." Ref="Gen 7:11, Gen 8:2">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="What is a covenant?" Ref="No hint">
+				<Answer Correct="true">a contract</Answer>
+				<Answer>a book</Answer>
+				<Answer>an altar</Answer>
+			</Question>
+			<Question Text="What title is Noah given&#10;in 2 Peter 2:5?" Ref="No hint">
+				<Answer>man after God&apos;s own heart</Answer>
+				<Answer Correct="true">preacher of righteousness</Answer>
+				<Answer>an apostle</Answer>
+			</Question>
+			<Question Text="The Gospels liken the time&#10;before the flood to the time:&#10;before:" Ref="Matt 24:37-38, Luke 17:26-27">
+				<Answer>the Incarnation</Answer>
+				<Answer Correct="true">the Second Coming</Answer>
+				<Answer>the Cruxifiction</Answer>
+			</Question>
+			<Question Text="By the time of Noah, how did&#10;God feel about having created&#10;man?" Ref="Gen 6:6">
+				<Answer>It pleased Him.</Answer>
+				<Answer Correct="true">It grieved Him.</Answer>
+				<Answer>It amused Him.</Answer>
+			</Question>
+			<Question Text="Jesus is a descendant of&#10;Noah." Ref="Luke 3:36">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="What kind of creatures were&#10;NOT mentioned as destroyed&#10;in the flood?" Ref="Gen 7:21-22">
+				<Answer>birds</Answer>
+				<Answer Correct="true">sea creatures</Answer>
+				<Answer>livestock</Answer>
+			</Question>
+			<Question Text="By how much did the water&#10;cover the mountain-tops?" Ref="Gen 7:20">
+				<Answer>7 cubits</Answer>
+				<Answer Correct="true">15 cubits</Answer>
+				<Answer>40 cubits</Answer>
+			</Question>
+			<Question Text="What day of the seventh&#10;month did the Ark come to&#10;rest on Ararat?" Ref="Gen 8:4">
+				<Answer>the 7th day</Answer>
+				<Answer Correct="true">the 17th day</Answer>
+				<Answer>the 24th day</Answer>
+			</Question>
+			<Question Text="What was Noah commanded&#10;not to eat?" Ref="Gen 9:4">
+				<Answer>ham</Answer>
+				<Answer>brussel sprouts</Answer>
+				<Answer Correct="true">blood</Answer>
+			</Question>
+			<Question Text="After the flood, what were&#10;the animals supposed to do?" Ref="Gen 8:17">
+				<Answer>exercise and become strong</Answer>
+				<Answer Correct="true">be fruitful and multiply</Answer>
+				<Answer>be sacrificed to God</Answer>
+			</Question>
+			<Question Text="With whom did God make His&#10;covenant?" Ref="Gen 9:8-10">
+				<Answer>Noah</Answer>
+				<Answer>Noah and his sons</Answer>
+				<Answer Correct="true">Noah, his sons and every&#10;   living creature</Answer>
+			</Question>
+			<Question Text="Who was the father of the&#10;Canaanites?" Ref="Gen 9:22">
+				<Answer Correct="true">Ham</Answer>
+				<Answer>Shem</Answer>
+				<Answer>Japheth</Answer>
+			</Question>
+			<Question Text="Abraham is a descendent of&#10;which son of Noah?" Ref="Gen 11:10-27">
+				<Answer>Ham</Answer>
+				<Answer Correct="true">Shem</Answer>
+				<Answer>Japheth</Answer>
+			</Question>
+			<Question Text="Which of Noah&apos;s descendants&#10;did he curse?" Ref="Gen 9:25">
+				<Answer Correct="true">Canaan</Answer>
+				<Answer>Shem</Answer>
+				<Answer>Japheth</Answer>
+			</Question>
+			<Question Text="Why did Shem and Japheth&#10;cover up Noah with a&#10;garment?" Ref="Gen 9:23">
+				<Answer Correct="true">Noah was naked</Answer>
+				<Answer>Noah was cold</Answer>
+				<Answer>Noah was burning from&#10;    the sun</Answer>
+			</Question>
+			<Question Text="The rainbow is a symbol that&#10;God will never judge mankind&#10;again." Ref="Gen 9:15">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="God promised that Noah and&#10;the animals would get along." Ref="Gen 9:2">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="Man did not eat meat before&#10;the flood." Ref="Gen 9:3">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="What did God say would&#10;happen to the man who&#10;commits murder?" Ref="Gen 9:6">
+				<Answer Correct="true">He will be killed.</Answer>
+				<Answer>He will be cursed.</Answer>
+				<Answer>He will be put in jail for&#10;   the rest of his life.</Answer>
+			</Question>
+			<Question Text="Everyone on the Ark survived&#10;the flood." Ref="Gen 8:18">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="How long did it take the&#10;water to recede so that the&#10;Ark could rest on Mount&#10;Ararat?" Ref="Gen 8:3">
+				<Answer>100 days</Answer>
+				<Answer Correct="true">150 days</Answer>
+				<Answer>300 days</Answer>
+			</Question>
+			<Question Text="After the flood, God&#10;destroyed the Ark." Ref="No hint">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="Noah had to gather and store&#10;food to eat during the flood&#10;for:" Ref="Gen 7:20">
+				<Answer>himself and his family</Answer>
+				<Answer>the animals</Answer>
+				<Answer Correct="true">both</Answer>
+			</Question>
+			<Question Text="The Bible says that Noah&apos;s&#10;wife was named Sarah." Ref="No hint">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="After the flood, Noah did not&#10;have any more sons." Ref="Gen 9:19">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="How many years did God give&#10;mankind to repent before the&#10;flood?" Ref="Gen 6:3">
+				<Answer>70</Answer>
+				<Answer>100</Answer>
+				<Answer Correct="true">120</Answer>
+			</Question>
+			<Question Text="Which person lived before&#10;Noah?" Ref="Gen 5">
+				<Answer>Abraham</Answer>
+				<Answer Correct="true">Adam</Answer>
+				<Answer>Solomon</Answer>
+			</Question>
+			<Question Text="Which person lived after Noah?" Ref="No hint">
+				<Answer>Cain</Answer>
+				<Answer>Methuselah</Answer>
+				<Answer Correct="true">Joshua</Answer>
+			</Question>
+			<Question Text="Noah did everything that God&#10;told him to do." Ref="Gen 6:22">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="After Noah, with whom did God&#10;make His next covenant?" Ref="Gen 15">
+				<Answer Correct="true">Abraham</Answer>
+				<Answer>David</Answer>
+				<Answer>Moses</Answer>
+			</Question>
+			<Question Text="What kind of covenant did God&#10;make with Noah?" Ref="Gen 9:8-17">
+				<Answer>conditional</Answer>
+				<Answer Correct="true">unconditional</Answer>
+				<Answer>temporary</Answer>
+			</Question>
+			<Question Text="People did not eat vegetables&#10;before the flood." Ref="Gen 9:3">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="In the covenant, God said that&#10;seedtime and harvest, cold and&#10;heat, summer and winter, and&#10;what else would not cease?" Ref="Gen 8:22">
+				<Answer Correct="true">day and night</Answer>
+				<Answer>living and dying</Answer>
+				<Answer>land and seas</Answer>
+			</Question>
+			<Question Text="God told Noah to make windows&#10;for all of the animals." Ref="Gen 6:16">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="Rainbows existed before the&#10;flood." Ref="Gen 9:12-17">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="About how long is a cubit?" Ref="No hint">
+				<Answer>10 inches</Answer>
+				<Answer Correct="true">18 inches</Answer>
+				<Answer>3 feet</Answer>
+			</Question>
+			<Question Text="It took Noah 40 days to find&#10;two of every animal to put&#10;inside the Ark." Ref="Gen 7:8-9">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="On what day of the month did&#10;Noah look out of the Ark and&#10;see dry land?" Ref="Gen 8:13">
+				<Answer Correct="true">the first day</Answer>
+				<Answer>the third day</Answer>
+				<Answer>the last day</Answer>
+			</Question>
+			<Question Text="In Noah&apos;s curse he said&#10;Canaan would be a slave&#10;to his brethren?" Ref="Gen 9:25">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="How many years did Noah&#10;live after the flood?" Ref="Gen 9:28">
+				<Answer>200</Answer>
+				<Answer Correct="true">350</Answer>
+				<Answer>400</Answer>
+			</Question>
+			<Question Text="Which of Noah&apos;s sons was&#10;a tattle-tale?" Ref="Gen 9:22">
+				<Answer Correct="true">Ham</Answer>
+				<Answer>Shem </Answer>
+				<Answer>Japheth</Answer>
+			</Question>
+			<Question Text="What did Noah plant after&#10;the flood?" Ref="Gen 9:20">
+				<Answer>an orchard</Answer>
+				<Answer Correct="true">a vineyard</Answer>
+				<Answer>tomatoes</Answer>
+			</Question>
+			<Question Text="How did God communicate&#10;to Noah?" Ref="Gen 6:13">
+				<Answer>burning bush</Answer>
+				<Answer Correct="true">spoke directly</Answer>
+				<Answer>sent an angel</Answer>
+			</Question>
+			<Question Text="The Ark was built with&#10;sails so God could move it." Ref="No hint">
+				<Answer>True</Answer>
+				<Answer Correct="true">False</Answer>
+			</Question>
+			<Question Text="A male and female of each&#10;animal was brought on to&#10;the Ark." Ref="Gen 6:19">
+				<Answer Correct="true">True</Answer>
+				<Answer>False</Answer>
+			</Question>
+			<Question Text="How many times did Noah&#10;send the dove out of the&#10;Ark?" Ref="Gen 8:8-12">
+				<Answer>2</Answer>
+				<Answer Correct="true">3</Answer>
+				<Answer>4</Answer>
+			</Question>
+			<Question Text="How old was Lamech when&#10;he had Noah?" Ref="Gen 5:28">
+				<Answer>135</Answer>
+				<Answer Correct="true">182</Answer>
+				<Answer>199</Answer>
+			</Question>
+		</Questions>
 	</VgaGraph>
 	<Maps MapHead="maphead.n3d" GameMaps="gamemaps.n3d" Floor="212" Ceiling="220">
 		<!-- e1 -->

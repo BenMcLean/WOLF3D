@@ -64,6 +64,7 @@
 				<xs:element ref="Pics" minOccurs="0"/>
 				<xs:element ref="StatusBar" minOccurs="0"/>
 				<xs:element ref="TextChunks" minOccurs="0"/>
+				<xs:element ref="Questions" minOccurs="0"/>
 				<xs:element ref="Menus" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="VgaDict" type="xs:string"/>
@@ -420,6 +421,53 @@
 					</xs:complexType>
 				</xs:element>
 			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Questions">
+		<xs:annotation>
+			<xs:documentation>
+				Super 3-D Noah's Ark Bible quiz question bank loaded from QUESTION.ASM-derived data.
+				Each Question stores its prompt text, optional Bible reference/hint, and 2-4 answers
+				with exactly one marked Correct="true".
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Question" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Question">
+		<xs:annotation>
+			<xs:documentation>
+				One quiz entry. Text is the displayed question body, Ref is the Bible citation or
+				"No hint", and Answer children preserve the original answer ordering from QUESTION.ASM.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Answer" minOccurs="2" maxOccurs="4"/>
+			</xs:sequence>
+			<xs:attribute name="Text" type="xs:string" use="required"/>
+			<xs:attribute name="Ref" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Answer">
+		<xs:annotation>
+			<xs:documentation>
+				A selectable answer for a quiz question. The element text is the displayed label.
+				Correct defaults to false; exactly one answer per Question should set it to true.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="Correct" type="xs:boolean" default="false"/>
+				</xs:extension>
+			</xs:simpleContent>
 		</xs:complexType>
 	</xs:element>
 
