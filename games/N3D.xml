@@ -146,7 +146,7 @@
 		<Pic Number="128" Name="T_DEMO2" />
 		-->
 		</Pics>
-		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
+		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
 			<Text Id="Episode" X="16" Y="16" Align="Right">1</Text>
 			<Text Id="Floor" X="32" Y="16" Align="Right">1</Text>
 			<Text Id="Score" X="56" Y="16" Align="Right">      0</Text>
@@ -154,8 +154,8 @@
 			<Picture Id="Face" Name="FACE1APIC" X="152" Y="4" />
 			<Text Id="Health" X="184" Y="16" Align="Right">100</Text>
 			<Text Id="Feed" X="224" Y="16" Align="Right">  7</Text>
-			<Picture Id="YellowKey" Name="NOKEYPIC" X="256" Y="4" />
-			<Picture Id="BlueKey" Name="NOKEYPIC" X="256" Y="20" />
+			<Picture Id="GoldKey" Name="NOKEYPIC" X="256" Y="4" />
+			<Picture Id="SilverKey" Name="NOKEYPIC" X="256" Y="20" />
 			<Text Id="Fruit" X="280" Y="16" Align="Right"> 0</Text>
 		</StatusBar>
 		<Menus Pause="Main" TextColor="204" Highlight="197" BordColor="217" BkgdColor="221"
@@ -1535,17 +1535,17 @@ end
 		</WallPlane>
 		<StatInfo UseWallSound="NOWAYSND">
 			<!-- Bonus pickup scripts -->
-			<BonusScript Name="yellow_key">
+			<BonusScript Name="gold_key">
 				<![CDATA[
-SetValue("Yellow Key", 1)
+SetValue("Gold Key", 1)
 PlaySound("D_KEYSND")
 FlashScreen(0xFFFF00)
 return true
 ]]>
 			</BonusScript>
-			<BonusScript Name="blue_key">
+			<BonusScript Name="silver_key">
 				<![CDATA[
-SetValue("Blue Key", 1)
+SetValue("Silver Key", 1)
 PlaySound("D_KEYSND")
 FlashScreen(0xFFFF00)
 return true
@@ -1753,10 +1753,10 @@ return true
 			<ObjectType Number="38" ObClass="block" Page="87" Name="Candle" />
 			<!-- Bonus pickups -->
 			<!-- bo_key1 → tile 76; bo_key2 → tile 77 (WL_MAP.C:DrawMapPrizes) -->
-			<ObjectType Number="39" ObClass="bonus" Page="88" Script="yellow_key" AutomapTile="76"
-				Name="Yellow Key" />
-			<ObjectType Number="40" ObClass="bonus" Page="89" Script="blue_key" AutomapTile="77"
-				Name="Blue Key" />
+			<ObjectType Number="39" ObClass="bonus" Page="88" Script="gold_key" AutomapTile="76"
+				Name="Gold Key" />
+			<ObjectType Number="40" ObClass="bonus" Page="89" Script="silver_key" AutomapTile="77"
+				Name="Silver Key" />
 			<!-- bo_bandolier/bo_25clip → tile 80 (weapons/ammo group) -->
 			<ObjectType Number="41" ObClass="bonus" Page="90" Script="feed_bag" AutomapTile="80"
 				Name="Feed carrying bag" />
@@ -1869,6 +1869,31 @@ return true
 				State="s_mechastand" />
 		</StatInfo>
 		<Actors>
+			<Function Name="OnDeath">
+				<![CDATA[
+PlaySound("D_PDIESND")
+if GetValue("Lives") > 0 then
+	AddValue("Lives", -1)
+	SetValue("Health", 100)
+	SetValue("Feed", 7)
+	SetValue("Gas", 0)
+	SetValue("Missile", 0)
+	SetValue("Gold Key", 0)
+	SetPicture("GoldKey", "NOKEYPIC")
+	SetValue("Silver Key", 0)
+	SetPicture("SilverKey", "NOKEYPIC")
+	SetValue("Weapon2", 0)
+	SetValue("Weapon3", 0)
+	SetValue("Weapon4", 0)
+	SetValue("Weapon5", 0)
+	SetValue("SelectedWeapon0", 1)
+	SetValue("SelectedWeapon1", 1)
+	SetValue("StatusBarWeapon", 1)
+	return "restart"
+end
+return "HighScores"
+]]>
+			</Function>
 			<Function Name="OnNewGame">
 				<![CDATA[
 SetMax("Health", 100)
@@ -1892,9 +1917,9 @@ SetValue("Fruit", 0)
 SetValue("Gas", 0)
 SetValue("Missile", 0)
 SetValue("Gold Key", 0)
-SetPicture("YellowKey", "NOKEYPIC")
+SetPicture("GoldKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
-SetPicture("BlueKey", "NOKEYPIC")
+SetPicture("SilverKey", "NOKEYPIC")
 SetValue("FaceGrinTics", 0)
 SetValue("Weapon0", 1)
 SetValue("Weapon1", 1)
@@ -1910,9 +1935,9 @@ SetValue("StatusBarWeapon", 1)
 			<Function Name="OnMapStart">
 				<![CDATA[
 SetValue("Gold Key", 0)
-SetPicture("YellowKey", "NOKEYPIC")
+SetPicture("GoldKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
-SetPicture("BlueKey", "NOKEYPIC")
+SetPicture("SilverKey", "NOKEYPIC")
 SetValue("FaceGrinTics", 0)
 ]]>
 			</Function>
