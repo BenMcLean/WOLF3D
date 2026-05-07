@@ -359,6 +359,19 @@ public class MenuScriptContext(
 	/// <param name="id">Id attribute of the picture to update (e.g., "DifficultyFace")</param>
 	/// <param name="picName">Name of the VgaGraph picture to display (e.g., "C_BABYMODEPIC")</param>
 	public void SetPicture(string id, string picName) => SetPictureAction?.Invoke(id, picName);
+	/// <summary>
+	/// Delegate for updating a named picture in the status bar.
+	/// Set by the presentation layer (e.g., MenuRoom) when a StatusBarController is available.
+	/// </summary>
+	public Action<string, string> SetStatusBarPictureAction { get; set; }
+	/// <summary>
+	/// Update a named picture in the status bar from a menu script.
+	/// Used by quiz result menus to update the face picture while gameplay is paused.
+	/// Routes to StatusBarState.SetPic via the presentation layer delegate.
+	/// </summary>
+	/// <param name="id">Picture Id as defined in the StatusBar &lt;Picture Id="..."&gt; element</param>
+	/// <param name="picName">New VgaGraph picture name to display (e.g., "FACE1APIC")</param>
+	public void SetStatusBarPicture(string id, string picName) => SetStatusBarPictureAction?.Invoke(id, picName);
 	#endregion Menu Item Selection and Dynamic Content
 	#region Dynamic Content Updates
 	/// <summary>

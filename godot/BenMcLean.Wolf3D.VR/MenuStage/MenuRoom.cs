@@ -341,6 +341,10 @@ public partial class MenuRoom : Node3D, IRoom
 				_menuManager.Renderer.Viewport.AddChild(_statusBarRenderer.Canvas);
 			}
 		}
+		// Wire up status bar picture updates from menu scripts (e.g., quiz result face changes).
+		if (StatusBarController is not null)
+			_menuManager.ScriptContext.SetStatusBarPictureAction =
+				(id, picName) => StatusBarController.State.SetPic(id, picName);
 
 		// Add the menu viewport to the scene tree (required for rendering)
 		AddChild(_menuManager.Renderer.Viewport);
