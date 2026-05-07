@@ -1056,7 +1056,7 @@ StartTicker("AvgTreasureRatio", tr)
 			<!-- Doors with no script open freely. Doors with scripts return true to open, false to
 			stay locked. -->
 			<Door Tile="90" Name="normal" Page="0" OpenSound="OPENDOORSND" CloseSound="CLOSEDOORSND" />
-			<Door Tile="92" Name="gold" Key="Gold Key" Page="6" OpenSound="OPENDOORSND"
+			<Door Tile="92" Name="gold" Page="6" OpenSound="OPENDOORSND"
 				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Gold Key") then
@@ -1066,7 +1066,7 @@ PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="94" Name="silver" Key="Silver Key" Page="6" OpenSound="OPENDOORSND"
+			<Door Tile="94" Name="silver" Page="6" OpenSound="OPENDOORSND"
 				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Silver Key") then
@@ -1076,7 +1076,7 @@ PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="96" Name="gold2" Key="Gold Key" Page="6" OpenSound="OPENDOORSND"
+			<Door Tile="96" Name="gold2" Page="6" OpenSound="OPENDOORSND"
 				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Gold Key") then
@@ -1086,7 +1086,7 @@ PlayLocalSound("NOWAYSND")
 return false
 ]]>
 			</Door>
-			<Door Tile="98" Name="silver2" Key="Silver Key" Page="6" OpenSound="OPENDOORSND"
+			<Door Tile="98" Name="silver2" Page="6" OpenSound="OPENDOORSND"
 				CloseSound="CLOSEDOORSND" LockedSound="NOWAYSND">
 				<![CDATA[
 if Has("Silver Key") then

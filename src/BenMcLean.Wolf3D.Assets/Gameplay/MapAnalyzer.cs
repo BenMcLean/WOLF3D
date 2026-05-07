@@ -26,6 +26,10 @@ public class MapAnalyzer
 	// When true, wall tile numbers map directly to VSWAP pages (tile - 1), same texture on all sides.
 	// Default false: Wolf3D paired formula (horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1).
 	public bool UniformWallTextures { get; private set; }
+	// When true, each door type uses the same VSWAP page for both orientations (no +1 for vertical).
+	// Default false: Wolf3D paired formula (horizontal=Page, vertical=Page+1, darker).
+	// N3D: true — WL_DRAW.C HitVertDoor #ifdef GAMEVER_NOAH3D uses doorpage directly (no +1).
+	public bool UniformDoorTextures { get; private set; }
 
 	// WL_AGENT.C:Cmd_Use else branch: sound when player uses a plain non-interactive wall (null = no sound)
 	public string UseWallSound { get; private set; }
@@ -101,6 +105,7 @@ public class MapAnalyzer
 			? df2
 			: (ushort)(DoorFrame + 1);
 		UniformWallTextures = wallsElement.Attribute("UniformWallTextures")?.Value == "true";
+		UniformDoorTextures = wallsElement.Attribute("UniformDoorTextures")?.Value == "true";
 
 		// Parse elevator configurations
 		Elevators = [];
@@ -164,7 +169,6 @@ public class MapAnalyzer
 				TileNumber = tileNum,
 				Name = doorElem.Attribute("Name")?.Value
 					?? throw new InvalidDataException("Door element missing Name attribute"),
-				Key = doorElem.Attribute("Key")?.Value,  // Optional - required inventory item
 				Script = doorElem.Value?.Trim(),  // Optional - inline Lua script (CDATA)
 				Page = ushort.Parse(doorElem.Attribute("Page")?.Value
 					?? throw new InvalidDataException("Door element missing Page attribute")),
@@ -548,7 +552,8 @@ public class MapAnalyzer
 			bool FacesEastWest = false,
 			ushort TileNumber = 0,
 			short Area1 = -1,
-			short Area2 = -1);
+			short Area2 = -1,
+			bool UniformDoorTextures = false);
 		public ReadOnlyCollection<DoorSpawn> Doors { get; private set; }
 		#endregion Data
 		/// <param name="prebuiltWalls">
@@ -765,7 +770,7 @@ public class MapAnalyzer
 						// Calculate area connectivity: FacesEastWest doors connect left (X-1) and right (X+1)
 						short area1 = GetAreaNumber(x - 1, y);
 						short area2 = GetAreaNumber(x + 1, y);
-						doors.Add(new DoorSpawn(doorPage, x, y, true, tile, area1, area2));
+						doors.Add(new DoorSpawn(doorPage, x, y, true, tile, area1, area2, mapAnalyzer.UniformDoorTextures));
 					}
 					else  // Horizontal door (runs E-W, faces N/S)
 					{
@@ -775,7 +780,7 @@ public class MapAnalyzer
 						// Calculate area connectivity: horizontal doors connect above (Y-1) and below (Y+1)
 						short area1 = GetAreaNumber(x, y - 1);
 						short area2 = GetAreaNumber(x, y + 1);
-						doors.Add(new DoorSpawn(doorPage, x, y, false, tile, area1, area2));
+						doors.Add(new DoorSpawn(doorPage, x, y, false, tile, area1, area2, mapAnalyzer.UniformDoorTextures));
 					}
 				}
 				else if (mapAnalyzer.Elevators.ContainsKey(tile))
@@ -871,10 +876,9 @@ public class MapAnalyzer
 					if (doorPageByIndex.TryGetValue(i, out ushort doorPage))
 					{
 						automapData[i] = doorPage;
-						// Door faces follow the same light/dark pairing as walls:
-						// lit face = DoorWall + Page (stored in doorPage),
-						// dark face = DoorWall + Page + 1 (WL_DRAW.C: doornum*2 / doornum*2+1).
-						hasDimVariant[i] = true;
+						// Standard Wolf3D: dark face = Page+1 (WL_DRAW.C HitVertDoor doorpage+1).
+						// N3D (UniformDoorTextures): same page for both orientations, no dim variant.
+						hasDimVariant[i] = !mapAnalyzer.UniformDoorTextures;
 					}
 					else if (mapAnalyzer.IsWall(tile))
 					{
@@ -921,7 +925,6 @@ public record DoorInfo
 {
 	public ushort TileNumber { get; init; }    // Base tile number from wall plane (even, odd is +1)
 	public string Name { get; init; }          // Door type name (e.g., "normal", "gold")
-	public string Key { get; init; }           // Required key item (null if no key needed)
 	public string Script { get; init; }        // Lua script that returns true if door can open (null = always opens)
 	public ushort Page { get; init; }          // Page offset from DoorWall
 	public string OpenSound { get; init; }     // Sound when opening

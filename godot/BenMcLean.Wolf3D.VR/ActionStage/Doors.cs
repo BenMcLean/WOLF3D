@@ -45,12 +45,12 @@ public partial class Doors : Node3D
 
 	/// <summary>
 	/// Calculates which texture indices are needed for a collection of door spawns.
-	/// Accounts for FacesEastWest orientation (even=horizontal/light, odd=vertical/dark).
+	/// Standard Wolf3D: vertical doors use Shape+1 (odd/dark). N3D (UniformDoorTextures): same page for both.
 	/// </summary>
 	public static IEnumerable<ushort> GetRequiredTextureIndices(IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
 		return doorSpawns
-			.Select(d => d.FacesEastWest ? (ushort)(d.Shape + 1) : d.Shape)
+			.Select(d => (d.FacesEastWest && !d.UniformDoorTextures) ? (ushort)(d.Shape + 1) : d.Shape)
 			.Distinct();
 	}
 
@@ -83,10 +83,10 @@ public partial class Doors : Node3D
 		}
 
 		// Group doors by CALCULATED texture (accounting for FacesEastWest orientation)
-		// Horizontal doors (FacesEastWest=false) use Shape (even)
-		// Vertical doors (FacesEastWest=true) use Shape+1 (odd)
+		// Horizontal doors (FacesEastWest=false) use Shape (even/light)
+		// Vertical doors (FacesEastWest=true) use Shape+1 (odd/dark) — unless UniformDoorTextures (N3D)
 		Dictionary<ushort, List<MapAnalysis.DoorSpawn>> doorsByTexture = doorSpawns
-			.GroupBy(d => d.FacesEastWest ? (ushort)(d.Shape + 1) : d.Shape)
+			.GroupBy(d => (d.FacesEastWest && !d.UniformDoorTextures) ? (ushort)(d.Shape + 1) : d.Shape)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
 		// Calculate instance counts needed (one instance per door in each multimesh)
@@ -132,11 +132,10 @@ public partial class Doors : Node3D
 			uint baseX = ((uint)doorSpawn.X << 16) + 0x8000;
 			uint baseZ = ((uint)doorSpawn.Y << 16) + 0x8000;
 
-			// Calculate texture based on orientation (doors are paired: even=horizontal/light, odd=vertical/dark)
-			// doorSpawn.Shape is always even (base texture), add 1 for vertical doors
-			ushort textureIndex = doorSpawn.FacesEastWest
-				? (ushort)(doorSpawn.Shape + 1)  // Vertical door: use odd page (darker, like vertwall)
-				: doorSpawn.Shape;                // Horizontal door: use even page (lighter, like horizwall)
+			// Standard Wolf3D: vertical doors use Shape+1 (odd/dark). N3D: same page for both orientations.
+			ushort textureIndex = (doorSpawn.FacesEastWest && !doorSpawn.UniformDoorTextures)
+				? (ushort)(doorSpawn.Shape + 1)  // Vertical door: odd page (darker, WL_DRAW.C HitVertDoor doorpage+1)
+				: doorSpawn.Shape;                // Horizontal door or N3D: use base page directly
 
 			// Allocate ONE instance for this door (same index used in both back-cull and front-cull multimeshes)
 			int instanceIndex = AllocateInstance(textureIndex);

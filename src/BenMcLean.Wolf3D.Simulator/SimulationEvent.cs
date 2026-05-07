@@ -67,10 +67,6 @@ public struct DoorClosedEvent
 public struct DoorLockedEvent
 {
 	public required ushort DoorIndex { get; init; }
-
-	// WL_DEF.H:doorstruct:lock (byte in original)
-	// Extended to string for modding: "gold key", "silver key", etc.
-	public required string RequiredKey { get; init; }
 }
 
 /// <summary>

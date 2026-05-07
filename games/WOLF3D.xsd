@@ -1766,6 +1766,18 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="UniformDoorTextures" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						When true, each door type uses the same VSWAP page for both orientations
+						(horizontal and vertical). Use for Super 3-D Noah's Ark, which uses one
+						texture per door type (WL_DRAW.C HitVertDoor #ifdef GAMEVER_NOAH3D uses
+						doorpage directly with no +1 offset).
+						Default false: Wolf3D paired formula where horizontal doors use Page (even/light)
+						and vertical doors use Page+1 (odd/darker).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -1882,7 +1894,6 @@
 				<xs:extension base="xs:string">
 					<xs:attribute name="Tile" type="xs:nonNegativeInteger" use="required"/>
 					<xs:attribute name="Name" type="xs:string" use="required"/>
-					<xs:attribute name="Key" type="xs:string"/>
 					<xs:attribute name="Page" type="xs:nonNegativeInteger" use="required">
 						<xs:annotation>
 							<xs:documentation>

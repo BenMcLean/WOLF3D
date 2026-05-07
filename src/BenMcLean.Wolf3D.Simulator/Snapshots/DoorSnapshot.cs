@@ -3,7 +3,7 @@ namespace BenMcLean.Wolf3D.Simulator.Snapshots;
 /// <summary>
 /// Serializable snapshot of a Door's dynamic state.
 /// Only mutable fields are captured; static door properties (TileX, TileY,
-/// FacesEastWest, Lock, TileNumber, Area1, Area2) come from the map data
+/// FacesEastWest, TileNumber, Area1, Area2) come from the map data
 /// and are loaded by LoadDoorsFromMapAnalysis.
 ///
 /// Doors are matched by index (position in the doors list), which assumes

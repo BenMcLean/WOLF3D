@@ -661,8 +661,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					// Door is locked - fire event (script handles sound via PlayLocalSound)
 					DoorLocked?.Invoke(new DoorLockedEvent
 					{
-						DoorIndex = doorIndex,
-						RequiredKey = doorInfo.Key ?? "unknown"
+						DoorIndex = doorIndex
 					});
 				}
 				return result.Boolean;

@@ -27,11 +27,6 @@ public class Door(
 	// Renamed to FacesEastWest for semantic clarity
 	public bool FacesEastWest { get; } = facesEastWest;
 
-	// WL_DEF.H:doorstruct:lock (byte in original)
-	// Extended to string for modding: null = unlocked, "gold key" = requires gold key, etc.
-	// Modders can define unlimited custom keys in WOLF3D.xml
-	public string Lock { get; }
-
 	// Door type identifier for looking up metadata (sounds, etc.) from MapAnalyzer.Doors
 	public ushort TileNumber { get; } = tileNumber;
 
@@ -58,7 +53,7 @@ public class Door(
 
 	/// <summary>
 	/// Captures only dynamic door state. Static properties (TileX, TileY, FacesEastWest,
-	/// Lock, TileNumber, Area1, Area2) come from map data on restore.
+	/// TileNumber, Area1, Area2) come from map data on restore.
 	/// </summary>
 	public DoorSnapshot Save() => new()
 	{

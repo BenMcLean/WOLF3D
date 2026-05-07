@@ -1502,7 +1502,7 @@ end
 	</Audio>
 	<VSwap Name="vswap.n3d" Sqrt="64" Scale="8" MipMaps="true">
 		<WallPlane MaxWallTiles="32" DoorWall="58" DoorFrame="62" DoorFrame2="62"
-			FloorCodeFirst="107" FloorCodeLast="143">
+			FloorCodeFirst="107" FloorCodeLast="143" UniformDoorTextures="true">
 			<!-- Walls 1-31 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 			<!-- WL_DEF.H #ifdef GAMEVER_NOAH3D: MAXWALLTILES=32 (vs 64 in Wolf3D) -->
 			<!-- WL_GAME.C #ifdef GAMEVER_NOAH3D: tile &= 31 (lower 5 bits); wall tile 89 maps to
@@ -1526,12 +1526,27 @@ end
 			<!-- Page is offset from DoorWall=58: actual VSWAP page = DoorWall + Page -->
 			<Door Tile="90" Name="Unlocked" Page="0" OpenSound="D_OPENDRSND"
 				CloseSound="D_CLOSDRSND" />
-			<Door Tile="92" Name="Gold key" Key="Gold Key" Page="1" OpenSound="D_OPENDRSND"
-				CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND" />
-			<Door Tile="94" Name="Silver key" Key="Silver Key" Page="2" OpenSound="D_OPENDRSND"
-				CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND" />
-			<Door Tile="96" Name="Stairway" Page="3" OpenSound="D_OPENDRSND"
-				CloseSound="D_CLOSDRSND" />
+			<Door Tile="92" Name="Gold" Page="1" OpenSound="D_OPENDRSND"
+				CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND">
+				<![CDATA[
+if Has("Gold Key") then
+	return true
+end
+PlayLocalSound("NOWAYSND")
+return false
+]]>
+			</Door>
+			<Door Tile="94" Name="Silver" Page="2" OpenSound="D_OPENDRSND"
+				CloseSound="D_CLOSDRSND" LockedSound="NOWAYSND">
+				<![CDATA[
+if Has("Silver Key") then
+	return true
+end
+PlayLocalSound("NOWAYSND")
+return false
+]]>
+			</Door>
+			<Door Tile="96" Name="Stairway" Page="3" OpenSound="D_OPENDRSND" CloseSound="D_CLOSDRSND" />
 		</WallPlane>
 		<StatInfo UseWallSound="NOWAYSND">
 			<!-- Bonus pickup scripts -->
