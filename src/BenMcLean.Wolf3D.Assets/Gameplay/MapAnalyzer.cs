@@ -40,6 +40,7 @@ public class MapAnalyzer
 	public HashSet<ushort> ExitTiles { get; private set; }
 	public HashSet<ushort> AmbushTiles { get; private set; }
 	public HashSet<ushort> AltElevatorTiles { get; private set; }
+	public HashSet<ushort> AltElevatorInfoTiles { get; private set; }
 
 	// Door types (Object number -> door info)
 	public Dictionary<ushort, DoorInfo> Doors { get; private set; }
@@ -119,14 +120,14 @@ public class MapAnalyzer
 				? pt : null;
 			ElevatorFaces faces = Enum.TryParse(elevElem.Attribute("Faces")?.Value, out ElevatorFaces f)
 				? f : ElevatorFaces.All;  // Default: All (for modding flexibility)
-			string sound = elevElem.Attribute("Sound")?.Value ?? "LEVELDONESND";
+			string script = elevElem.Value?.Trim();
 
 			Elevators[tile] = new ElevatorConfig
 			{
 				Tile = tile,
 				PressedTile = pressedTile,
 				Faces = faces,
-				Sound = sound
+				Script = string.IsNullOrEmpty(script) ? null : script
 			};
 		}
 		// WL_AGENT.C:Cmd_Use else branch: SD_PlaySound(DONOTHINGSND) for Wolf3D, NOWAYSND for N3D
@@ -155,6 +156,9 @@ public class MapAnalyzer
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("Ambush element missing Tile attribute")))];
 		AltElevatorTiles = [.. wallsElement.Elements("AltElevator")
+			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
+				?? throw new InvalidDataException("AltElevator element missing Tile attribute")))];
+		AltElevatorInfoTiles = [.. (XML.Element("VSwap")?.Element("StatInfo")?.Elements("AltElevator") ?? Enumerable.Empty<XElement>())
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("AltElevator element missing Tile attribute")))];
 
@@ -790,9 +794,10 @@ public class MapAnalyzer
 				}
 				else if (!mapAnalyzer.IsWall(tile))
 				{
-					// Track alternate elevator tiles (these are floor tiles that modify adjacent elevator behavior)
+					// Track alternate elevator positions — wall-plane tile (WL) or info-plane object (N3D).
 					// Use original map data, not realWalls (which replaces pushwalls with FloorCodeFirst)
-					if (mapAnalyzer.AltElevatorTiles.Contains(gameMap.GetMapData(x, y)))
+					if (mapAnalyzer.AltElevatorTiles.Contains(gameMap.GetMapData(x, y))
+						|| mapAnalyzer.AltElevatorInfoTiles.Contains(gameMap.GetObjectData(x, y)))
 						altElevators.Add(x | (uint)y << 16);
 					// Track ambush tiles (these are floor tiles, not walls)
 					// Use original map data, not realWalls (which replaces pushwalls with FloorCodeFirst)
@@ -944,8 +949,8 @@ public record ElevatorConfig
 	public ushort? PressedTile { get; init; }
 	/// <summary>Which faces the switch can be activated from</summary>
 	public ElevatorFaces Faces { get; init; }
-	/// <summary>Sound to play when activated (defaults to "LEVELDONESND")</summary>
-	public string Sound { get; init; }
+	/// <summary>Optional Lua script to run on activation (inline CDATA). Null = no script.</summary>
+	public string Script { get; init; }
 }
 
 // Object metadata - unified Wolf3D object representation

@@ -89,10 +89,10 @@ public class ActionScriptContext(
 	public Action<int, bool> RequestGameplayMapTransitionAction { get; set; }
 	/// <summary>
 	/// Navigate to a named menu screen.
-	/// Exposed to Lua. Used by VictoryTile, Bible quiz triggers, etc.
+	/// Exposed to Lua. Used by VictoryTile, Bible quiz triggers, elevator switches, etc.
 	/// WL_AGENT.C:VictoryTile → gamestate.victoryflag → Victory screen.
 	/// </summary>
-	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory")</param>
+	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory", "LevelComplete")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
 	public void RequestGameplayMapTransition(int destinationLevel, bool preservePlayerTransform = false)
 	{

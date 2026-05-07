@@ -36,7 +36,6 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	public bool PreserveSimulator { get; set; }
 	// Named event handlers for cleanup in _ExitTree
-	private Action<ElevatorActivatedEvent> _elevatorHandler;
 	private Action<PlayerStateChangedEvent> _playerStateHandler;
 	private Action<ScreenFlashEvent> _screenFlashHandler;
 	private Action<NavigateToMenuEvent> _navigateToMenuHandler;
@@ -115,10 +114,6 @@ public partial class SimulatorController : Node3D
 		actors.Subscribe(simulator);
 		weapons.Subscribe(simulator);
 		projectiles.Subscribe(simulator);
-
-		// Subscribe to elevator activation for level transitions
-		_elevatorHandler = e => ElevatorActivated?.Invoke(e);
-		simulator.ElevatorActivated += _elevatorHandler;
 
 		// Forward player state changes to presentation layer for HUD updates
 		_playerStateHandler = e => PlayerStateChanged?.Invoke(e);
@@ -226,8 +221,6 @@ public partial class SimulatorController : Node3D
 		projectiles.Subscribe(simulator);
 
 		// Subscribe event forwarding handlers
-		_elevatorHandler = e => ElevatorActivated?.Invoke(e);
-		simulator.ElevatorActivated += _elevatorHandler;
 		_playerStateHandler = e => PlayerStateChanged?.Invoke(e);
 		simulator.PlayerStateChanged += _playerStateHandler;
 		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
@@ -253,8 +246,6 @@ public partial class SimulatorController : Node3D
 		{
 			if (!PreserveSimulator)
 				simulator.Cleanup();
-			if (_elevatorHandler is not null)
-				simulator.ElevatorActivated -= _elevatorHandler;
 			if (_playerStateHandler is not null)
 				simulator.PlayerStateChanged -= _playerStateHandler;
 			if (_screenFlashHandler is not null)
@@ -517,12 +508,6 @@ public partial class SimulatorController : Node3D
 	public bool HasClearTeleportPath(ushort fromTileX, ushort fromTileZ, ushort toTileX, ushort toTileZ) =>
 		simulator?.HasClearTeleportPath(fromTileX, fromTileZ, toTileX, toTileZ) ?? false;
 	#endregion
-
-	/// <summary>
-	/// Event fired when an elevator is activated, triggering level transition.
-	/// WL_AGENT.C:Cmd_Use elevator activation logic (line 1767).
-	/// </summary>
-	public event Action<ElevatorActivatedEvent> ElevatorActivated;
 
 	/// <summary>
 	/// Event fired when player inventory-derived state changes.

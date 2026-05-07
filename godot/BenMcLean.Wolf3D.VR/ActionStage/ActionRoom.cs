@@ -108,6 +108,13 @@ public partial class ActionRoom : Node3D, IRoom
 	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { get; private set; }
 
 	/// <summary>
+	/// Set when NavigateToMenu is called from Lua (e.g., elevator switch, N3D stairs).
+	/// Captures the level transition data so MenuRoom can trigger it after ContinueToNextLevel().
+	/// Null when navigating to menus that don't complete a level (pause, death cam, etc.).
+	/// </summary>
+	public LevelTransitionRequest PendingLevelTransitionForMenu { get; private set; }
+
+	/// <summary>
 	/// Pending quiz payload captured at NavigateToMenu time for the Quiz menu.
 	/// </summary>
 	public PendingQuizData PendingQuiz { get; private set; }
@@ -506,9 +513,6 @@ void sky() {
 			AddChild(_deathFizzleOverlay);
 			_deathFizzleOverlay.SetVRCamera(_displayMode.IsVRActive ? _displayMode.Camera : null);
 			_deathFizzleOverlay.FizzleComplete += OnDeathFizzleComplete;
-
-			// Subscribe to elevator activation for level transitions
-			_simulatorController.ElevatorActivated += OnElevatorActivated;
 
 			// Subscribe to menu navigation events (VictoryTile, quiz triggers, etc.)
 			_simulatorController.NavigateToMenu += OnNavigateToMenu;
@@ -1246,7 +1250,6 @@ void sky() {
 		// Unsubscribe from simulator events
 		if (_simulatorController is not null)
 		{
-			_simulatorController.ElevatorActivated -= OnElevatorActivated;
 			_simulatorController.NavigateToMenu -= OnNavigateToMenu;
 			_simulatorController.GameplayMapTransitionRequested -= OnGameplayMapTransitionRequested;
 			_simulatorController.PlayerDied -= OnPlayerDied;
@@ -1304,40 +1307,6 @@ void sky() {
 				shapes[i] = (ushort)idleState.Shape;
 		}
 		return shapes;
-	}
-
-	/// <summary>
-	/// Handles elevator activation - captures player state and sets PendingTransition
-	/// for Root to poll and initiate a fade transition.
-	/// WL_AGENT.C:Cmd_Use elevator completion triggers gamestate.victoryflag.
-	/// </summary>
-	private void OnElevatorActivated(ElevatorActivatedEvent e)
-	{
-		// Play elevator sound
-		if (!string.IsNullOrEmpty(e.SoundName))
-			EventBus.Emit(GameEvent.PlaySound, e.SoundName);
-
-		// Capture player inventory state before transition
-		InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
-
-		// Capture level completion stats for intermission screen
-		LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
-			_initialLevelIndex + 1,        // Floor number (1-based for display)
-			e.IsAltElevator,               // Secret level flag
-			MapAnalysis.Par);           // Par time from map data
-
-		// Record current level stats in Simulator's accumulated list
-		_simulatorController?.Simulator?.AddCompletionStats(stats);
-
-		PendingTransition = new LevelTransitionRequest(
-			e.DestinationLevel, savedInventory, stats,
-			menuName: GetLevelCompleteMenuName(stats),
-			allLevelStats: _simulatorController?.Simulator?.LevelRatios,
-			floorColor: MapAnalysis.Floor,
-			ceilingColor: MapAnalysis.Ceiling,
-			floorTilePage: MapAnalysis.FloorTile,
-			ceilingTilePage: MapAnalysis.CeilingTile,
-			equippedWeaponShapes: GetEquippedWeaponShapes());
 	}
 
 	/// <summary>
@@ -1435,15 +1404,51 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Handles menu navigation events from Lua scripts (e.g., VictoryTile, A_DeathScream).
-	/// Suspends the game and shows the requested menu; the menu's Lua is responsible for
-	/// calling ContinueToNextLevel() if a level advance is desired.
+	/// Handles menu navigation events from Lua scripts (e.g., VictoryTile, A_DeathScream, elevator switches).
+	/// Always suspends the game and shows the requested menu.
+	/// For level-exit menus (e.g., "LevelComplete"), also computes PendingLevelTransitionForMenu so that
+	/// MenuRoom can trigger the level transition when Lua calls ContinueToNextLevel().
 	/// WL_AGENT.C:VictoryTile → gamestate.victoryflag; WL_ACT2.C:A_StartDeathCam.
 	/// </summary>
 	private void OnNavigateToMenu(NavigateToMenuEvent e)
 	{
 		Simulator.Simulator sim = _simulatorController?.Simulator;
+		// Release all weapon triggers so weapons don't continue firing after resuming.
+		// Equivalent to the player releasing all fire buttons before the menu appears.
+		if (sim?.WeaponSlots is not null)
+			for (int i = 0; i < sim.WeaponSlots.Count; i++)
+				_simulatorController.ReleaseWeaponTrigger(i);
 		MenuDefinition menuDef = SharedAssetManager.CurrentGame?.MenuCollection?.GetMenu(e.MenuName);
+
+		// Capture level-transition data when the map has an elevator destination.
+		// This is stored in PendingLevelTransitionForMenu and passed to MenuRoom via SuspendToMenu.
+		// ContinueToNextLevel() in Lua is the sole mechanism that triggers the actual transition.
+		if (MapAnalysis?.ElevatorTo != 0 || MapAnalysis?.AltElevatorTo.HasValue == true)
+		{
+			uint playerPos = sim is not null
+				? (uint)sim.PlayerTileX | ((uint)sim.PlayerTileY << 16)
+				: 0u;
+			bool isAlt = MapAnalysis.AltElevators.Contains(playerPos);
+			byte destination = isAlt && MapAnalysis.AltElevatorTo.HasValue
+				? MapAnalysis.AltElevatorTo.Value
+				: MapAnalysis.ElevatorTo;
+			InventorySnapshot savedInventory = sim?.Inventory?.Save();
+			LevelCompletionStats stats = sim?.GetCompletionStats(
+				_initialLevelIndex + 1, isAlt, MapAnalysis.Par);
+			if (stats is not null)
+				sim.AddCompletionStats(stats);
+			IReadOnlyList<ushort?> weaponShapes = menuDef?.KeepWeapons == true ? GetEquippedWeaponShapes() : null;
+			PendingLevelTransitionForMenu = new LevelTransitionRequest(
+				destination, savedInventory, stats,
+				menuName: e.MenuName,
+				allLevelStats: sim?.LevelRatios,
+				floorColor: MapAnalysis.Floor,
+				ceilingColor: MapAnalysis.Ceiling,
+				floorTilePage: MapAnalysis.FloorTile,
+				ceilingTilePage: MapAnalysis.CeilingTile,
+				equippedWeaponShapes: weaponShapes);
+		}
+
 		PendingMenuOverride = e.MenuName;
 		PendingQuiz = sim?.PendingQuiz;
 		if (sim is not null && SharedAssetManager.Config is not null)
@@ -1452,19 +1457,22 @@ void sky() {
 			SharedAssetManager.SaveConfig();
 		}
 		PendingEquippedWeaponShapes = menuDef?.KeepWeapons == true ? GetEquippedWeaponShapes() : null;
-		// Release all weapon triggers so weapons don't continue firing after resuming.
-		// Equivalent to the player releasing all fire buttons before the menu appears.
-		if (sim?.WeaponSlots is not null)
-			for (int i = 0; i < sim.WeaponSlots.Count; i++)
-				_simulatorController.ReleaseWeaponTrigger(i);
 		// Capture and record completion stats for menus that show level stats (e.g., Victory)
-		LevelCompletionStats stats = sim?.GetCompletionStats(
-			_initialLevelIndex + 1, false, MapAnalysis.Par);
-		if (stats is not null)
+		if (PendingLevelTransitionForMenu is null)
 		{
-			sim.AddCompletionStats(stats);
-			PendingCompletionStats = stats;
-			PendingAllLevelStats = sim.LevelRatios;
+			LevelCompletionStats menuStats = sim?.GetCompletionStats(
+				_initialLevelIndex + 1, false, MapAnalysis.Par);
+			if (menuStats is not null)
+			{
+				sim.AddCompletionStats(menuStats);
+				PendingCompletionStats = menuStats;
+				PendingAllLevelStats = sim.LevelRatios;
+			}
+		}
+		else
+		{
+			PendingCompletionStats = PendingLevelTransitionForMenu.CompletionStats;
+			PendingAllLevelStats = PendingLevelTransitionForMenu.AllLevelStats;
 		}
 		PendingReturnToMenu = true;
 	}

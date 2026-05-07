@@ -1047,7 +1047,11 @@ StartTicker("AvgTreasureRatio", tr)
 			<!-- Walls 1-63 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 
 			<!-- Special floor tiles -->
-			<Elevator Tile="21" PressedTile="22" Faces="EastWest" Sound="LEVELDONESND" />
+			<Elevator Tile="21" PressedTile="22" Faces="EastWest"><![CDATA[
+PlaySound("LEVELDONESND")
+NavigateToMenu("LevelComplete")
+return true
+]]></Elevator>
 			<Exit Tile="99" />
 			<Ambush Tile="106" />
 			<AltElevator Tile="107" />

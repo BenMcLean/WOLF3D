@@ -337,11 +337,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public event Action<WeaponEquippedEvent> WeaponEquipped;
 	/// <summary>
-	/// Fired when an elevator switch is activated, triggering level completion.
-	/// WL_AGENT.C:Cmd_Use elevator activation (line 1767)
-	/// </summary>
-	public event Action<ElevatorActivatedEvent> ElevatorActivated;
-	/// <summary>
 	/// Fired when an elevator switch texture should flip to pressed state.
 	/// WL_AGENT.C:Cmd_Use - tilemap[checkx][checky]++
 	/// </summary>
@@ -1192,16 +1187,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (!facingAllowed)
 			return; // Can't activate from this direction
 
-		// Check if player is standing on an AltElevator tile (for secret/alternate level)
-		// AltElevators contains packed coordinates (x | y << 16) of alt elevator positions
-		uint playerPackedPos = PlayerTileX | ((uint)PlayerTileY << 16);
-		bool isAltElevator = mapAnalysis.AltElevators.Contains(playerPackedPos);
-
-		// Determine destination level
-		byte destinationLevel = isAltElevator && mapAnalysis.AltElevatorTo.HasValue
-			? mapAnalysis.AltElevatorTo.Value
-			: mapAnalysis.ElevatorTo;
-
 		// Emit switch flip events only if a pressed texture is configured
 		// WL_AGENT.C: tilemap[checkx][checky]++
 		if (elevatorConfig.PressedTile.HasValue)
@@ -1233,15 +1218,17 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 
-		// Emit elevator activated event
-		ElevatorActivated?.Invoke(new ElevatorActivatedEvent
+		// Run the elevator's Lua script (plays sound, navigates to menu, etc.)
+		if (!string.IsNullOrEmpty(elevatorConfig.Script))
 		{
-			TileX = tileX,
-			TileY = tileY,
-			IsAltElevator = isAltElevator,
-			DestinationLevel = destinationLevel,
-			SoundName = elevatorConfig.Sound
-		});
+			Lua.ActionScriptContext ctx = new(this, rng, gameClock, logger)
+			{
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+				AudioT = audioT,
+				NavigateToMenuAction = menuName => NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName })
+			};
+			luaScriptEngine.DoString(elevatorConfig.Script, ctx);
+		}
 	}
 	#endregion
 	#region Actor Update Logic

@@ -1364,7 +1364,7 @@ end
 			Music="NOAH07_MUS" />
 		<!-- e3 -->
 		<Map Number="7" Episode="3" Level="1" FloorTile="67" CeilingTile="68" Par="02:45"
-			Music="NOAH04_MUS" />
+			Music="NOAH04_MUS" AltElevatorTo="11" />
 		<Map Number="8" Episode="3" Level="2" FloorTile="67" CeilingTile="68" Par="02:00"
 			Music="NOAH03_MUS" />
 		<Map Number="9" Episode="3" Level="3" FloorTile="67" CeilingTile="68" Par="02:15"
@@ -1403,7 +1403,7 @@ end
 		<Map Number="24" Episode="6" Level="2" FloorTile="67" CeilingTile="68" Par="03:00"
 			Music="NOAH02_MUS" />
 		<Map Number="25" Episode="6" Level="3" FloorTile="67" CeilingTile="68" Par="03:00"
-			Music="NOAH03_MUS" />
+			Music="NOAH03_MUS" AltElevatorTo="29" />
 		<Map Number="26" Episode="6" Level="4" FloorTile="67" CeilingTile="68" Par="01:30"
 			Music="NOAH08_MUS" />
 		<Map Number="27" Episode="6" Level="5" FloorTile="67" CeilingTile="68" Par="02:30"
@@ -1748,14 +1748,7 @@ return true
 			</BonusScript>
 			<BonusScript Name="next_floor">
 				<![CDATA[
-NavigateToNextFloor()
-return true
-]]>
-			</BonusScript>
-			<BonusScript Name="secret_floor">
-				<![CDATA[
--- N3D: Always navigate to floor 10 for secret level (WL_GAME.C #ifdef GAMEVER_NOAH3D)
-NavigateToFloor(10)
+NavigateToMenu("LevelComplete")
 return true
 ]]>
 			</BonusScript>
@@ -1835,8 +1828,11 @@ return true
 			<Pushwall Number="98" DigiSound="D_PWALLSND" Name="Secret Door" SoundRepeatTics="8" />
 			<!-- 99 is "Secret Door Path" (info-plane marker, not an object) -->
 			<ObjectType Number="100" ObClass="bonus" Script="next_floor" Name="Next level trigger" />
-			<ObjectType Number="101" ObClass="bonus" Script="secret_floor"
+			<ObjectType Number="101" ObClass="bonus" Script="next_floor"
 				Name="Secret level trigger" />
+			<!-- N3D: Object 101 positions are AltElevator positions (WL_GAME.C #ifdef GAMEVER_NOAH3D).
+			     Walking onto 101 routes to AltElevatorTo instead of ElevatorTo. -->
+			<AltElevator Tile="101" />
 			<!-- N3D info-plane actor tiles. Ambush is encoded in the tile number itself:
 			     normal tile (e.g. 108) and ambush variant (e.g. 126) are separate ObjectType entries.
 			     WL_GAME.C #ifdef GAMEVER_NOAH3D: SpawnStand(en_guard, x, y, 0, tile==126)
