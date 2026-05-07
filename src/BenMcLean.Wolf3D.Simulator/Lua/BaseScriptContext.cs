@@ -1,4 +1,5 @@
 using System;
+using BenMcLean.Wolf3D.Assets.Sound;
 using Microsoft.Extensions.Logging;
 
 namespace BenMcLean.Wolf3D.Simulator.Lua;
@@ -17,6 +18,11 @@ public class BaseScriptContext(ILogger logger = null) : IScriptContext
 	/// </summary>
 	public Action<string> PlaySoundAction { get; set; }
 	/// <summary>
+	/// Active audio table used to resolve playable sound names for this script context.
+	/// Returns null when the current game has no matching logical sound.
+	/// </summary>
+	public AudioT AudioT { get; set; }
+	/// <summary>
 	/// Action to invoke when PlayMusic is called.
 	/// Set by the host (e.g., MenuManager, ActionStage) to wire up music playback.
 	/// </summary>
@@ -32,10 +38,28 @@ public class BaseScriptContext(ILogger logger = null) : IScriptContext
 	/// </summary>
 	public virtual void PlaySound(string soundName)
 	{
+		soundName = ResolveForPlayback(soundName);
 		if (PlaySoundAction is not null)
 			PlaySoundAction(soundName);
 		else
 			_logger?.LogDebug("BaseScriptContext: PlaySound({soundName}) - no handler wired", soundName);
+	}
+	/// <summary>
+	/// Returns true if the requested sound name can be resolved by the host's sound lookup rules.
+	/// </summary>
+	public virtual bool HasSound(string soundName) =>
+		TryResolveSoundName(soundName) is not null;
+	/// <summary>
+	/// Returns the first playable sound name from the requested primary/fallback pair.
+	/// If neither resolves, returns the original primary name unchanged so callers preserve current behavior.
+	/// </summary>
+	public virtual string ResolveSound(string soundName, string fallbackSoundName)
+	{
+		if (TryResolveSoundName(soundName) is string resolvedPrimary)
+			return resolvedPrimary;
+		if (TryResolveSoundName(fallbackSoundName) is string resolvedFallback)
+			return resolvedFallback;
+		return soundName;
 	}
 	/// <summary>
 	/// Play background music by name.
@@ -57,4 +81,10 @@ public class BaseScriptContext(ILogger logger = null) : IScriptContext
 		else
 			_logger?.LogDebug("BaseScriptContext: StopMusic() - no handler wired");
 	}
+	protected virtual string TryResolveSoundName(string soundName) =>
+		string.IsNullOrWhiteSpace(soundName)
+			? null
+			: AudioT?.ResolvePlayableSoundName(soundName);
+	protected string ResolveForPlayback(string soundName) =>
+		TryResolveSoundName(soundName) ?? soundName;
 }

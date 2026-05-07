@@ -45,13 +45,30 @@ public sealed class AudioT
 			? logicalSoundName
 			: requestedSoundName;
 	}
+	public bool HasPlayableSound(string requestedSoundName) =>
+		TryResolvePlayableSoundName(requestedSoundName, out _);
+	public string ResolvePlayableSoundName(string requestedSoundName) =>
+		TryResolvePlayableSoundName(requestedSoundName, out string resolvedSoundName)
+			? resolvedSoundName
+			: null;
+	public bool TryResolvePlayableSoundName(string requestedSoundName, out string resolvedSoundName)
+	{
+		resolvedSoundName = null;
+		if (string.IsNullOrWhiteSpace(requestedSoundName))
+			return false;
+		string logicalSoundName = ResolveLogicalSoundName(requestedSoundName);
+		if (!HasLogicalSound(logicalSoundName))
+			return false;
+		resolvedSoundName = logicalSoundName;
+		return true;
+	}
 	public bool TryGetMappedDigiSoundName(string requestedSoundName, out string digiSoundName)
 	{
 		digiSoundName = null;
 		if (string.IsNullOrWhiteSpace(requestedSoundName))
 			return false;
-		string logicalSoundName = ResolveLogicalSoundName(requestedSoundName);
-		return LogicalToDigiSoundName.TryGetValue(logicalSoundName, out digiSoundName);
+		return TryResolvePlayableSoundName(requestedSoundName, out string logicalSoundName) &&
+			LogicalToDigiSoundName.TryGetValue(logicalSoundName, out digiSoundName);
 	}
 	public static uint[] ParseHead(Stream stream)
 	{

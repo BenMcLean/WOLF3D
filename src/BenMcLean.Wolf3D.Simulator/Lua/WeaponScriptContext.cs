@@ -61,6 +61,7 @@ public class WeaponScriptContext(
 	/// <param name="soundName">Sound name (e.g., "ATKKNIFESND", "ATKPISTOLSND")</param>
 	public override void PlaySound(string soundName)
 	{
+		soundName = ResolveForPlayback(soundName);
 		simulator.EmitGlobalSound(soundName);
 		_logger?.LogDebug("WeaponScriptContext: PlaySound({soundName}) for slot {slotIndex}",
 			soundName, slotIndex);

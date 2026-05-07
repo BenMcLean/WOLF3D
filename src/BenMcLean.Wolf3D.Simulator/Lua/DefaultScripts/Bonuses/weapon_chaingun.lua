@@ -3,6 +3,6 @@ SetValue("Weapon3", 1)
 AddValue("bullets", 6)
 if isNew then SwitchToWeapon("chaingun") end
 SetValue("FaceGrinTics", 4)
-PlaySound("GETGATLINGSND")
+PlaySound(ResolveSound("GETGATLINGSND", "D_BONUSSND"))
 FlashScreen(0xFFF800)
 return true

@@ -78,6 +78,12 @@ public class WeaponInfo
 	public string FireSound { get; set; }
 
 	/// <summary>
+	/// Sound to play when the player tries to fire without enough ammo.
+	/// This is game-specific and is defined in XML rather than hardcoded in the simulator.
+	/// </summary>
+	public string NoAmmoSound { get; set; }
+
+	/// <summary>
 	/// Status bar picture name to display in the WeaponPic slot when this weapon is equipped.
 	/// (e.g., "KNIFEPIC", "GUNPIC", "MACHINEGUNPIC", "GATLINGGUNPIC").
 	/// Null if the weapon has no status bar picture.
@@ -103,6 +109,7 @@ public class WeaponInfo
 			AmmoType = element.Attribute("AmmoType")?.Value,
 			RapidFire = string.Equals(element.Attribute("RapidFire")?.Value, "true", StringComparison.OrdinalIgnoreCase),
 			FireSound = element.Attribute("FireSound")?.Value,
+			NoAmmoSound = element.Attribute("NoAmmoSound")?.Value,
 			StatusBarPic = element.Attribute("StatusBarPic")?.Value
 		};
 	}

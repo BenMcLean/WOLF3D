@@ -1,6 +1,6 @@
 -- Chain gun attack - single hitscan shot (can continue without ammo)
 if not HasAmmo(1) then return end
-PlaySound("ATKGATLINGSND")
+PlaySound(ResolveSound("ATKGATLINGSND", "D_GATLINSND"))
 ConsumeAmmo(1)
 RequestHitScan({
 	maxRange = 100,

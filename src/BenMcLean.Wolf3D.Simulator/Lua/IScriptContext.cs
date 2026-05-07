@@ -13,6 +13,15 @@ public interface IScriptContext
 	/// </summary>
 	void PlaySound(string soundName);
 	/// <summary>
+	/// Returns true if the requested sound name can be resolved by the active game/audio mapping.
+	/// </summary>
+	bool HasSound(string soundName);
+	/// <summary>
+	/// Returns the first playable sound name from the requested primary/fallback pair.
+	/// If neither resolves, returns the original primary name unchanged.
+	/// </summary>
+	string ResolveSound(string soundName, string fallbackSoundName);
+	/// <summary>
 	/// Play background music by name.
 	/// </summary>
 	void PlayMusic(string musicName);

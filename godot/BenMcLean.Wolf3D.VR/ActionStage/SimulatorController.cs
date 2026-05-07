@@ -93,7 +93,12 @@ public partial class SimulatorController : Node3D
 
 		// Create logger that routes to Godot console
 		ILogger logger = new GodotLogger("Simulator");
-		simulator = new Simulator.Simulator(stateCollection, rng, gameClock, logger);
+		simulator = new Simulator.Simulator(
+			stateCollection,
+			rng,
+			gameClock,
+			logger,
+			SharedAssetManager.CurrentGame?.AudioT);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));

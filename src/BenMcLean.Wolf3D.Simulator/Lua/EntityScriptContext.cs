@@ -30,6 +30,7 @@ public abstract class EntityScriptContext(
 	/// </summary>
 	public virtual void PlayLocalSound(string soundName)
 	{
+		soundName = ResolveForPlayback(soundName);
 		if (PlayLocalSoundAction is not null)
 			PlayLocalSoundAction(soundName);
 		else

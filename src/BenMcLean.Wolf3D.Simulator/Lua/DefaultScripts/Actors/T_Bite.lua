@@ -1,7 +1,7 @@
 -- WL_ACT2.C:T_Bite (lines 4270-4305)
 -- Dog bite attack: check distance, roll for hit, apply damage
 
-PlayLocalSound("DOGATTACKSND")
+PlayLocalSound(ResolveSound("DOGATTACKSND", "D_DBITESND"))
 
 -- WL_ACT2.C:4281-4291 - Check if adjacent to player (within 1 tile)
 local dx = GetPlayerX() - GetX()

@@ -2363,6 +2363,14 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="NoAmmoSound" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Sound name to play when the player tries to fire without enough ammo.
+						Examples include "NOITEMSND" in Wolf3D and "NOBONUSSND" in Super 3-D Noah's Ark.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="StatusBarPic" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>

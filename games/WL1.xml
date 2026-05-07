@@ -1013,6 +1013,7 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKPISTOLSND"
+				NoAmmoSound="NOITEMSND"
 				BaseDamage="5"
 				StatusBarPic="GUNPIC" />
 			<!-- Machine Gun (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] -->
@@ -1024,6 +1025,7 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKMACHINEGUNSND"
+				NoAmmoSound="NOITEMSND"
 				BaseDamage="5"
 				RapidFire="true"
 				StatusBarPic="MACHINEGUNPIC" />
@@ -1036,6 +1038,7 @@ StartTicker("AvgTreasureRatio", tr)
 				AmmoType="bullets"
 				AmmoPerShot="1"
 				FireSound="ATKGATLINGSND"
+				NoAmmoSound="NOITEMSND"
 				BaseDamage="5"
 				RapidFire="true"
 				StatusBarPic="GATLINGGUNPIC" />

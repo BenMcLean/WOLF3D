@@ -1,6 +1,6 @@
 -- WL_AGENT.C:KnifeAttack (line 1862)
 -- Knife attack - melee range attack
-PlaySound("ATKKNIFESND")
+PlaySound(ResolveSound("ATKKNIFESND", "D_KNIFESND"))
 RequestMelee({
 	range = 1.5,
 	arc = 60,

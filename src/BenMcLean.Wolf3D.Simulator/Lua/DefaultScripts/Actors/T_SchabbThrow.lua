@@ -3,4 +3,4 @@
 -- Original: GetNewActor(), new->obclass = needleobj, new->angle = iangle, PlaySoundLocActor(SCHABBSTHROWSND)
 local angle = GetAngleToPlayer()
 SpawnProjectile("needle", angle)
-PlayLocalSound("SCHABBSTHROWSND")
+PlayLocalSound(ResolveSound("SCHABBSTHROWSND", "D_COCTHRSND"))

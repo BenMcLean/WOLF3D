@@ -1,6 +1,6 @@
 -- Pistol attack - single hitscan shot
 if not HasAmmo(1) then return end
-PlaySound("ATKPISTOLSND")
+PlaySound(ResolveSound("ATKPISTOLSND", "D_GUNSHTSND"))
 ConsumeAmmo(1)
 RequestHitScan({
 	maxRange = 100,

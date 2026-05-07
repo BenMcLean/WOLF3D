@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
+using BenMcLean.Wolf3D.Assets.Sound;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
@@ -80,6 +81,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private readonly GameClock gameClock;
 	// Logger for debug output
 	private readonly Microsoft.Extensions.Logging.ILogger logger;
+	// Active audio table used to resolve playable logical sound names.
+	private readonly AudioT audioT;
 	// OnDeath ActionFunction name from StatusBar definition (WL_GAME.C:Died)
 	private string onDeathFunctionName;
 	// OnNewGame ActionFunction name from StatusBar definition (WL_GAME.C:NewGame)
@@ -405,12 +408,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="rng">Deterministic random number generator</param>
 	/// <param name="gameClock">Deterministic game clock</param>
 	/// <param name="logger">Optional logger for Lua script output</param>
-	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock, Microsoft.Extensions.Logging.ILogger logger = null)
+	/// <param name="audioT">Optional audio table shared by Lua sound checks and emitted playback events</param>
+	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock, Microsoft.Extensions.Logging.ILogger logger = null, AudioT audioT = null)
 	{
 		this.stateCollection = stateCollection ?? throw new ArgumentNullException(nameof(stateCollection));
 		this.rng = rng ?? throw new ArgumentNullException(nameof(rng));
 		this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
 		this.logger = logger;
+		this.audioT = audioT;
 		// Initialize Lua script engine and compile all state functions.
 		// Merge default scripts first so XML-defined functions can override them,
 		// then validate that all state references resolve, then compile.
@@ -559,7 +564,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext faceContext = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+				AudioT = audioT
 			};
 			faceController.Update(faceContext);
 		}
@@ -638,7 +644,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger)
 		{
 			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-			PlayLocalSoundAction = soundName => EmitDoorPlaySound(doorIndex, soundName)
+			PlayLocalSoundAction = soundName => EmitDoorPlaySound(doorIndex, soundName),
+			AudioT = audioT
 		};
 
 		try
@@ -1241,6 +1248,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	#region Actor Update Logic
 	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalyzer, mapAnalysis, logger)
 	{
+		AudioT = audioT,
 		NavigateToMenuAction = menuName =>
 		{
 			// WL_ACT2.C:T_BJDone sets playstate = ex_victorious; we clear victoryflag here
@@ -2541,7 +2549,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Check ammo before starting animation (dry fire check)
 		if (!HasAmmo(weaponInfo))
 		{
-			EmitGlobalSound("NOITEMSND");
+			if (!string.IsNullOrWhiteSpace(weaponInfo.NoAmmoSound))
+				EmitGlobalSound(weaponInfo.NoAmmoSound);
 			return;
 		}
 
@@ -2960,7 +2969,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 		{
-			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			AudioT = audioT
 		};
 		MoonSharp.Interpreter.DynValue result =
 			luaScriptEngine.ExecuteActionFunction(onTakeDamageFunctionName, context, amount);
@@ -2982,7 +2992,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+				AudioT = audioT
 			};
 			try
 			{
@@ -3012,6 +3023,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public void EmitBonusPlaySound(int statObjIndex, ushort tileX, ushort tileY, string soundName)
 	{
+		soundName = ResolveSoundNameForEmission(soundName);
 		BonusPlaySound?.Invoke(new BonusPlaySoundEvent
 		{
 			StatObjIndex = statObjIndex,
@@ -3026,6 +3038,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public void EmitPlayGlobalSound(string soundName)
 	{
+		soundName = ResolveSoundNameForEmission(soundName);
 		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
 		{
 			SoundName = soundName
@@ -3158,7 +3171,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+				AudioT = audioT
 			};
 			try
 			{
@@ -3181,7 +3195,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName)
+				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+				AudioT = audioT
 			};
 			try
 			{
@@ -3315,6 +3330,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
 			PlayLocalSoundAction = soundName =>
 					EmitBonusPlaySound(itemIndex, item.TileX, item.TileY, soundName),
+			AudioT = audioT,
 			// Wire up menu navigation - generic mechanism for VictoryTile, quiz triggers, etc.
 			// Set navLocal so callers can detect a level transition and stop path traversal.
 			NavigateToMenuAction = menuName =>
@@ -3695,6 +3711,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (string.IsNullOrEmpty(soundName))
 			return;
+		soundName = ResolveSoundNameForEmission(soundName);
 		ActorPlaySound?.Invoke(new ActorPlaySoundEvent
 		{
 			ActorIndex = actorIndex,
@@ -3711,6 +3728,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="soundName">Sound name (e.g., "OPENDOORSND")</param>
 	public void EmitDoorPlaySound(ushort doorIndex, string soundName)
 	{
+		soundName = ResolveSoundNameForEmission(soundName);
 		DoorPlaySound?.Invoke(new DoorPlaySoundEvent
 		{
 			DoorIndex = doorIndex,
@@ -3726,6 +3744,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="soundName">Sound name (e.g., "BONUS1SND")</param>
 	public void EmitGlobalSound(string soundName)
 	{
+		soundName = ResolveSoundNameForEmission(soundName);
 		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
 		{
 			SoundName = soundName,
@@ -3741,6 +3760,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="soundName">Sound name (e.g., "PUSHWALLSND")</param>
 	public void EmitPushWallPlaySound(ushort pushWallIndex, string soundName)
 	{
+		soundName = ResolveSoundNameForEmission(soundName);
 		PushWallPlaySound?.Invoke(new PushWallPlaySoundEvent
 		{
 			PushWallIndex = pushWallIndex,
@@ -3792,6 +3812,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		_everSeen.SetAll(true);
 		_fogVersion++;
 	}
+
+	public string ResolvePlayableSoundName(string soundName) =>
+		string.IsNullOrWhiteSpace(soundName)
+			? null
+			: audioT?.ResolvePlayableSoundName(soundName);
+
+	private string ResolveSoundNameForEmission(string soundName) =>
+		ResolvePlayableSoundName(soundName) ?? soundName;
 
 	public void RecomputeVisibilityIfNeeded()
 	{

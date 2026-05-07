@@ -226,7 +226,9 @@
 				<OnCancel>if IsGameInProgress() then ResumeGame() else RequestQuit() end</OnCancel>
 			</Menu>
 			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
-				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" >
+					NavigateToMenu("Main")
+				</Picture>
 				<Box X="6" Y="19" W="308" H="162" />
 				<Text X="Center" Y="2" Color="15">Which episode to play?</Text>
 				<Picture Name="C_EPISODE1PIC" X="42" Y="23" ZIndex="9" />
@@ -259,6 +261,7 @@
 					SetEpisode(5)
 					NavigateToMenu("NewGame")
 				</MenuItem>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Menu>
 			<!-- WL_MENU.C:NewItems={NM_X,NM_Y,4,2,24} — curpos=2 defaults to "Normal" -->
 			<Menu Name="NewGame" X="50" Y="100" CurPos="2" SelectSound="SHOOTDOORSND">
@@ -1413,37 +1416,65 @@ end
 	</Maps>
 	<Audio AudioHead="audiohed.n3d" AudioT="audiot.n3d" StartPCSounds="0" StartAdlibSounds="44"
 		StartMusic="132">
+		<!-- Canonical names come from AUDION3D.H. Aliases remain documented here only. -->
+		<!-- Alias: SCHUTZADSND -->
 		<Sound Number="0" Name="D_ANTLPESND" DigiSound="D_ANTLPESND" />
+		<!-- Alias: DIESND -->
 		<Sound Number="1" Name="D_BEARSND" DigiSound="D_BEARSND" />
+		<!-- Aliases: HEALTH1SND, HEALTH2SND, BONUS1SND, BONUS2SND, BONUS3SND, BONUS4SND,
+		     GETAMMOSND, GETAMMOBOXSND, GETMACHINESND, GETGATLINGSND -->
 		<Sound Number="2" Name="D_BONUSSND" DigiSound="D_BONUSSND" />
+		<!-- Alias: GUTENTAGSND -->
 		<Sound Number="3" Name="D_CAMELSND" DigiSound="D_CAMELSND" />
+		<!-- Alias: CLOSEDOORSND -->
 		<Sound Number="4" Name="D_CLOSDRSND" DigiSound="D_CLOSDRSND" />
+		<!-- Alias: MISSILEHITSND -->
 		<Sound Number="5" Name="D_COCHITSND" DigiSound="D_COCHITSND" />
+		<!-- Aliases: MISSILEFIRESND, SCHABBSTHROWSND -->
 		<Sound Number="6" Name="D_COCTHRSND" DigiSound="D_COCTHRSND" />
+		<!-- Alias: DOGATTACKSND -->
 		<Sound Number="7" Name="D_DBITESND" DigiSound="D_DBITESND" />
 		<Sound Number="8" Name="D_EATSND" DigiSound="D_EATSND" />
 		<Sound Number="9" Name="D_EDIESND" DigiSound="D_EDIESND" />
+		<!-- Alias: ERLAUBENSND -->
 		<Sound Number="10" Name="D_ELPHNTSND" DigiSound="D_ELPHNTSND" />
+		<!-- Alias: BONUS1UPSND -->
 		<Sound Number="11" Name="D_EXTRASND" DigiSound="D_EXTRASND" />
+		<!-- Aliases: ATKGATLINGSND, ATKMACHINEGUNSND -->
 		<Sound Number="12" Name="D_GATLINSND" DigiSound="D_GATLINSND" />
+		<!-- Alias: KEINSND -->
 		<Sound Number="13" Name="D_GIRAFESND" DigiSound="D_GIRAFESND" />
+		<!-- Alias: DOGBARKSND -->
 		<Sound Number="14" Name="D_GOATSND" DigiSound="D_GOATSND" />
+		<!-- Alias: ATKPISTOLSND -->
 		<Sound Number="15" Name="D_GUNSHTSND" DigiSound="D_GUNSHTSND" />
 		<Sound Number="16" Name="D_INCSND" DigiSound="D_INCSND" />
+		<!-- Alias: EINESND -->
 		<Sound Number="17" Name="D_KANGROSND" DigiSound="D_KANGROSND" />
+		<!-- Alias: GETKEYSND -->
 		<Sound Number="18" Name="D_KEYSND" DigiSound="D_KEYSND" />
+		<!-- Alias: ATKKNIFESND -->
 		<Sound Number="19" Name="D_KNIFESND" DigiSound="D_KNIFESND" />
+		<!-- Alias: SCHABBSHASND -->
 		<Sound Number="20" Name="D_MONKEYSND" DigiSound="D_MONKEYSND" />
+		<!-- Alias: MECHSTEPSND -->
 		<Sound Number="21" Name="D_MSTEPSND" DigiSound="D_MSTEPSND" />
+		<!-- Alias: OPENDOORSND -->
 		<Sound Number="22" Name="D_OPENDRSND" DigiSound="D_OPENDRSND" />
+		<!-- Alias: SPIONSND -->
 		<Sound Number="23" Name="D_OSTRCHSND" DigiSound="D_OSTRCHSND" />
 		<Sound Number="24" Name="D_OXSND" DigiSound="D_OXSND" />
+		<!-- Alias: TAKEDAMAGESND -->
 		<Sound Number="25" Name="D_PAINSND" DigiSound="D_PAINSND" />
+		<!-- Alias: PLAYERDEATHSND -->
 		<Sound Number="26" Name="D_PDIESND" DigiSound="D_PDIESND" />
 		<Sound Number="27" Name="NOBONUSSND" />
+		<!-- Alias: PUSHWALLSND -->
 		<Sound Number="28" Name="D_PWALLSND" DigiSound="D_PWALLSND" />
+		<!-- Alias: HALTSND -->
 		<Sound Number="29" Name="D_SHEEPSND" DigiSound="D_SHEEPSND" />
 		<Sound Number="30" Name="D_SLING2SND" DigiSound="D_SLING2SND" />
+		<!-- Aliases: NAZIFIRESND, SSFIRESND, BOSSFIRESND -->
 		<Sound Number="31" Name="D_SPITSND" DigiSound="D_SPITSND" />
 		<Sound Number="32" Name="D_WATHITSND" DigiSound="D_WATHITSND" />
 		<Sound Number="33" Name="D_WATTHRSND" DigiSound="D_WATTHRSND" />
@@ -1550,7 +1581,7 @@ return false
 				<![CDATA[
 if GetValue("Health") < 100 then
 	AddValue("Health", 10)
-	PlaySound("HEALTH1SND")
+	PlaySound("D_BONUSSND")
 	FlashScreen(0xFFFF00)
 	return true
 end
@@ -1561,7 +1592,7 @@ return false
 				<![CDATA[
 if GetValue("Health") < 100 then
 	AddValue("Health", 25)
-	PlaySound("HEALTH1SND")
+	PlaySound("D_BONUSSND")
 	FlashScreen(0xFFFF00)
 	return true
 end
@@ -1933,12 +1964,6 @@ return amount
 PlayLocalSound("D_EDIESND")
 ]]>
 			</Function>
-			<!-- N3D alias: AUDION3D.H maps MECHSTEPSND to D_MSTEPSND. -->
-			<Function Name="A_MechaSound">
-				<![CDATA[
-PlayLocalSound("D_MSTEPSND")
-]]>
-			</Function>
 			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertSound="D_GOATSND"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
 				Pain="s_grdpain" Pain1="s_grdpain1">
@@ -2154,7 +2179,7 @@ end
 				Mark="false" />
 			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" AlertSound="D_ANTLPESND"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
-				Pain="s_sspain" Pain1="s_sspain1" ShootSound="SSFIRESND" AimBonus="true">
+				Pain="s_sspain" Pain1="s_sspain1" ShootSound="D_SPITSND" AimBonus="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - ssobj
@@ -2219,7 +2244,7 @@ end
 				Mark="false" />
 			<Actor Name="Carl the Camel" HP="150,150,150,150" Reaction="1" AlertSound="D_CAMELSND"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
-				Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true">
+				Ambush="true" ShootSound="D_SPITSND" AimBonus="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - bossobj
@@ -2344,7 +2369,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_schabbchase1" />
 			<Actor Name="Kerry the Kangaroo" HP="400,400,400,400" Reaction="1-43"
 				AlertSound="D_KANGROSND" Stand="s_giftstand" Chase="s_giftchase1"
-				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="MISSILEFIRESND">
+				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="D_COCTHRSND">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - giftobj
@@ -2378,7 +2403,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_giftchase1" />
 			<Actor Name="Ernie the Elephant" HP="450,450,450,450" Reaction="1-43"
 				AlertSound="D_ELPHNTSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1"
-				Death="s_fatdie1" ShootSound="MISSILEFIRESND">
+				Death="s_fatdie1" ShootSound="D_COCTHRSND">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - fatobj
@@ -2419,7 +2444,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_fatchase1" />
 			<Actor Name="Burt the Bear" HP="500,500,500,500" Reaction="1-43" AlertSound="D_BEARSND"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
-				Death="s_mechadie1" ShootSound="BOSSFIRESND">
+				Death="s_mechadie1" ShootSound="D_SPITSND">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - mechahitlerobj
@@ -2702,6 +2727,7 @@ end
 				AmmoType="Feed"
 				AmmoPerShot="1"
 				FireSound="D_GUNSHTSND"
+				NoAmmoSound="NOBONUSSND"
 				BaseDamage="5" />
 			<!-- Machine Gun (wp_machinegun = 2) - WL_AGENT.C:attackinfo[2] = {{6,0,1},{6,1,2},{6,3,3},{6,-1,4}} -->
 			<GameplayWeapon
@@ -2712,6 +2738,7 @@ end
 				AmmoType="Feed"
 				AmmoPerShot="1"
 				FireSound="D_GATLINSND"
+				NoAmmoSound="NOBONUSSND"
 				BaseDamage="5"
 				RapidFire="true" />
 			<!-- Chain Gun (wp_chaingun = 3) - WL_AGENT.C:attackinfo[3] = {{6,0,1},{6,1,2},{6,4,3},{6,-1,4}} -->
@@ -2723,6 +2750,7 @@ end
 				AmmoType="Feed"
 				AmmoPerShot="1"
 				FireSound="D_GATLINSND"
+				NoAmmoSound="NOBONUSSND"
 				BaseDamage="5"
 				RapidFire="true" />
 			<!-- Flamethrower (wp_flamethrower = 4) - WL_AGENT.C:attackinfo[4] = {{7,0,1},{7,5,2},{7,5,3},{7,-1,4}} -->
@@ -2733,7 +2761,8 @@ end
 				FireState="s_cantaatk1"
 				AmmoType="Gas"
 				AmmoPerShot="1"
-				FireSound="D_COCTHRSND" />
+				FireSound="D_COCTHRSND"
+				NoAmmoSound="NOBONUSSND" />
 			<!-- Missile launcher (wp_missile = 5) - WL_AGENT.C:attackinfo[5] = {{6,0,1},{6,0,2},{6,6,3},{6,-1,4}} -->
 			<GameplayWeapon
 				Name="missile"
@@ -2742,7 +2771,8 @@ end
 				FireState="s_wateratk1"
 				AmmoType="Missile"
 				AmmoPerShot="1"
-				FireSound="D_WATTHRSND" />
+				FireSound="D_WATTHRSND"
+				NoAmmoSound="NOBONUSSND" />
 		</GameplayWeapons>
 		<Projectiles>
 			<!-- Player projectile definitions used by Noah-specific weapon attack frames. -->
