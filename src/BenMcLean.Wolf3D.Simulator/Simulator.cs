@@ -91,6 +91,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private string onMapStartFunctionName;
 	// Optional ActionFunction name from StatusBar definition to transform incoming player damage.
 	private string onTakeDamageFunctionName;
+	// Optional ActionFunction name from StatusBar definition to react to inventory changes.
+	private string onInventoryChangeFunctionName;
 	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
 	private string onFaceFunctionName;
 	// Maps StatusBar Text Id → display field width (from initial XML content length).
@@ -102,9 +104,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// Tracks the last-emitted pic name per StatusBar picture Id.
 	// Used by SyncStatusBarState() to replay current pic values to a newly created status bar.
 	private readonly Dictionary<string, string> _currentStatusBarPics = [];
-	// Named status bar picture ids declared by the loaded game XML.
-	// Used to rebuild HUD picture state from inventory after load and resume.
-	private readonly HashSet<string> _statusBarPictureIds = [];
 	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
 	private FaceController faceController;
 	// Map analyzer for accessing door metadata (sounds, etc.)
@@ -426,6 +425,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			EmitPlayerStateChanged();
 			if (_statusBarTextWidths.TryGetValue(name, out int width))
 				EmitStatusBarTextChanged(name, value.ToString().PadLeft(width));
+			ExecuteOnInventoryChangeScript(name, value);
 		};
 		Inventory.ValueChanged += _inventoryChangedHandler;
 	}
@@ -1397,11 +1397,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		onNewGameFunctionName = statusBar.OnNewGame;
 		onMapStartFunctionName = statusBar.OnMapStart;
 		onTakeDamageFunctionName = statusBar.OnTakeDamage;
+		onInventoryChangeFunctionName = statusBar.OnInventoryChange;
 		onFaceFunctionName = statusBar.OnFace;
-		_statusBarPictureIds.Clear();
-		foreach (PictureDefinition picture in statusBar.Pictures)
-			if (!string.IsNullOrEmpty(picture.Id))
-				_statusBarPictureIds.Add(picture.Id);
 		// Build auto-text map: StatusBar Text Id → field width from initial XML content length.
 		// When SetValue fires for a matching key, the value is right-justified to this width.
 		_statusBarTextWidths.Clear();
@@ -2210,9 +2207,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Inventory is the single source of truth for the presentation layer
 		Inventory.SetValue($"SelectedWeapon{slotIndex}", weaponInfo.Number);
 		Inventory.SetValue("StatusBarWeapon", weaponInfo.Number);
-		// Update the WeaponPic status bar picture when equipped
-		if (!string.IsNullOrEmpty(weaponInfo.StatusBarPic))
-			EmitStatusBarPicChanged("WeaponPic", weaponInfo.StatusBarPic);
 
 		WeaponEquipped?.Invoke(new WeaponEquippedEvent
 		{
@@ -2996,6 +2990,30 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 
 	/// <summary>
+	/// Execute the OnInventoryChange action function after any inventory value changes.
+	/// The inventory key name and new value are passed as Lua varargs.
+	/// </summary>
+	private void ExecuteOnInventoryChangeScript(string inventoryKey, int value)
+	{
+		if (string.IsNullOrEmpty(onInventoryChangeFunctionName))
+			return;
+
+		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+		{
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			AudioT = audioT
+		};
+		try
+		{
+			luaScriptEngine.ExecuteActionFunction(onInventoryChangeFunctionName, context, inventoryKey, value);
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing OnInventoryChange function '{FunctionName}' for inventory key '{InventoryKey}'", onInventoryChangeFunctionName, inventoryKey);
+		}
+	}
+
+	/// <summary>
 	/// Emit a generic PlayerStateChanged event for listeners that want to know
 	/// some player inventory-derived state changed.
 	/// </summary>
@@ -3095,8 +3113,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	public void SyncStatusBarState()
 	{
-		ResyncStatusBarPictures();
-
 		foreach (KeyValuePair<string, int> kvp in _statusBarTextWidths)
 		{
 			int value = Inventory.GetValue(kvp.Key);
@@ -3104,29 +3120,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 		foreach (KeyValuePair<string, string> kvp in _currentStatusBarPics)
 			EmitStatusBarPicChanged(kvp.Key, kvp.Value);
-	}
-
-	private void ResyncStatusBarPictures()
-	{
-		if (_statusBarPictureIds.Count == 0)
-			return;
-
-		if (_statusBarPictureIds.Contains("GoldKey"))
-			EmitStatusBarPicChanged("GoldKey", Inventory.Has("Gold Key") ? "GOLDKEYPIC" : "NOKEYPIC");
-		if (_statusBarPictureIds.Contains("SilverKey"))
-			EmitStatusBarPicChanged("SilverKey", Inventory.Has("Silver Key") ? "SILVERKEYPIC" : "NOKEYPIC");
-		if (_statusBarPictureIds.Contains("YellowKey"))
-			EmitStatusBarPicChanged("YellowKey", Inventory.Has("Gold Key") ? "GOLDKEYPIC" : "NOKEYPIC");
-		if (_statusBarPictureIds.Contains("BlueKey"))
-			EmitStatusBarPicChanged("BlueKey", Inventory.Has("Silver Key") ? "SILVERKEYPIC" : "NOKEYPIC");
-
-		if (_statusBarPictureIds.Contains("WeaponPic")
-			&& weaponCollection is not null
-			&& weaponCollection.TryGetWeaponByNumber(Inventory.GetValue("StatusBarWeapon"), out WeaponInfo weaponInfo)
-			&& !string.IsNullOrEmpty(weaponInfo.StatusBarPic))
-		{
-			EmitStatusBarPicChanged("WeaponPic", weaponInfo.StatusBarPic);
-		}
 	}
 
 	/// <summary>

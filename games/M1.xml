@@ -171,6 +171,7 @@ this file. -->
 		</Pics>
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath"
 			OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage"
+			OnInventoryChange="OnInventoryChange"
 			FizzleFadeColor="4">
 			<Text Id="Floor" X="32" Y="16" Align="Right"> 1</Text>
 			<Text Id="Score" X="96" Y="16" Align="Right">     0</Text>
@@ -2530,15 +2531,12 @@ if GetValue("Lives") > 0 then
 	SetValue("Health", 100)
 	SetValue("bullets", 8)
 	SetValue("Gold Key", 0)
-	SetPicture("GoldKey", "NOKEYPIC")
 	SetValue("Silver Key", 0)
-	SetPicture("SilverKey", "NOKEYPIC")
 	SetValue("Weapon2", 0)
 	SetValue("Weapon3", 0)
 	SetValue("SelectedWeapon0", 1)
 	SetValue("SelectedWeapon1", 1)
 	SetValue("StatusBarWeapon", 1)
-	SetPicture("WeaponPic", "GUNPIC")
 	return "restart"
 end
 return "HighScores"
@@ -2645,9 +2643,7 @@ SetValue("bullets", 8)         -- auto-updates "bullets" text (" 8", width 2)
 SetValue("Lives", 3)        -- auto-updates "Lives" text (" 3", width 2)
 SetValue("Score", 0)        -- auto-updates "Score" text ("     0", width 6)
 SetValue("Gold Key", 0)
-SetPicture("GoldKey", "NOKEYPIC")
 SetValue("Silver Key", 0)
-SetPicture("SilverKey", "NOKEYPIC")
 SetValue("FaceGrinTics", 0)
 SetValue("Weapon0", 1)
 SetValue("Weapon1", 1)
@@ -2656,19 +2652,33 @@ SetValue("Weapon3", 0)
 SetValue("SelectedWeapon0", 1)
 SetValue("SelectedWeapon1", 1)
 SetValue("StatusBarWeapon", 1)
-SetPicture("WeaponPic", "GUNPIC")
 ]]>
 			</Function>
 			<Function Name="OnMapStart">
 				<![CDATA[
 SetValue("Silver Key", 0)
-SetPicture("SilverKey", "NOKEYPIC")
 if GetValue("MapOn") == 20 then
 	SetValue("Gold Key", 1)
-	SetPicture("GoldKey", "GOLDKEYPIC")
 else
 	SetValue("Gold Key", 0)
-	SetPicture("GoldKey", "NOKEYPIC")
+end
+]]>
+			</Function>
+			<Function Name="OnInventoryChange">
+				<![CDATA[
+local name, value = ...
+if name == "Gold Key" then
+	SetPicture("GoldKey", value > 0 and "GOLDKEYPIC" or "NOKEYPIC")
+elseif name == "Silver Key" then
+	SetPicture("SilverKey", value > 0 and "SILVERKEYPIC" or "NOKEYPIC")
+elseif name == "StatusBarWeapon" then
+	local pics = {
+		[0] = "KNIFEPIC",
+		[1] = "GUNPIC",
+		[2] = "MACHINEGUNPIC",
+		[3] = "GATLINGGUNPIC"
+	}
+	SetPicture("WeaponPic", pics[value] or "GUNPIC")
 end
 ]]>
 			</Function>

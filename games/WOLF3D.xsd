@@ -406,6 +406,15 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="OnInventoryChange" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the ActionFunction to call whenever any inventory value changes.
+						The inventory key name and new integer value are passed as Lua varargs.
+						Use this to keep status bar pictures synchronized with inventory automatically.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="FizzleFadeColor" type="xs:unsignedByte">
 				<xs:annotation>
 					<xs:documentation>

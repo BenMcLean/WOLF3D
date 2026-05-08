@@ -49,6 +49,11 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 	/// </summary>
 	public string OnTakeDamage { get; set; }
 	/// <summary>
+	/// Name of the ActionFunction to call whenever any inventory value changes.
+	/// The inventory key name and new integer value are passed as Lua varargs.
+	/// </summary>
+	public string OnInventoryChange { get; set; }
+	/// <summary>
 	/// VGA palette color index for the death fizzle-fade effect, or null to skip the fizzle.
 	/// ID_VH.C:FizzleFade — pseudo-random pixel reveal over 70 tics.
 	/// WL_GAME.C:Died — VW_Bar fills the view with this color, then FizzleFade reveals it.
@@ -70,6 +75,7 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 			OnNewGame = element.Attribute("OnNewGame")?.Value,
 			OnMapStart = element.Attribute("OnMapStart")?.Value,
 			OnTakeDamage = element.Attribute("OnTakeDamage")?.Value,
+			OnInventoryChange = element.Attribute("OnInventoryChange")?.Value,
 			FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
 		};
 
