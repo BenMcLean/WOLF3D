@@ -32,8 +32,20 @@ end
 -- Player is visible!
 if reactionTimer == 0 and GetReactionTimer() == 0 then
 	-- WL_STATE.C:1835-1897 - First time seeing player, set reaction time based on actor type.
-	-- Use data-driven Reaction range from XML actor definition.
-	SetReactionTimer(GetReactionTime(US_RndT()))
+	-- Use data-driven Reaction range from XML actor definition, then apply the
+	-- Noah-specific difficulty adjustments from WL_STATE.C:#ifdef GAMEVER_NOAH3D.
+	local reaction = GetReactionTime(US_RndT())
+	if GetGameName() == "N3D" then
+		local difficulty = GetValue("Difficulty")
+		if difficulty == 0 then
+			reaction = reaction + BitShiftRight(reaction + 3, 1)
+		elseif difficulty == 1 then
+			reaction = reaction + BitShiftRight(reaction + 6, 2)
+		elseif difficulty == 2 then
+			reaction = reaction + BitShiftRight(reaction + 9, 3)
+		end
+	end
+	SetReactionTimer(reaction)
 	return
 end
 

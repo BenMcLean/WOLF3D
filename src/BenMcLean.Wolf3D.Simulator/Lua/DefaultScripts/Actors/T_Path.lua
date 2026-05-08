@@ -30,8 +30,20 @@ if not CheckSight() then
 else
 	-- Player is visible!
 	if reactionTimer == 0 and GetReactionTimer() == 0 then
-		-- First time seeing player, set reaction time from XML actor definition.
-		SetReactionTimer(GetReactionTime(US_RndT()))
+		-- First time seeing player, set reaction time from XML actor definition,
+		-- then apply the Noah-specific difficulty adjustments from WL_STATE.C.
+		local reaction = GetReactionTime(US_RndT())
+		if GetGameName() == "N3D" then
+			local difficulty = GetValue("Difficulty")
+			if difficulty == 0 then
+				reaction = reaction + BitShiftRight(reaction + 3, 1)
+			elseif difficulty == 1 then
+				reaction = reaction + BitShiftRight(reaction + 6, 2)
+			elseif difficulty == 2 then
+				reaction = reaction + BitShiftRight(reaction + 9, 3)
+			end
+		end
+		SetReactionTimer(reaction)
 		return  -- Don't transition yet, wait for timer
 	end
 

@@ -2199,7 +2199,7 @@ AddValue("Score", 200)
 			<State Name="s_dogjump2" Shape="SPR_DOG_JUMP2" Tics="10" Speed="0" Next="s_dogjump3" />
 			<State Name="s_dogjump3" Shape="SPR_DOG_JUMP3" Tics="10" Action="T_Bite" Speed="0"
 				Next="s_dogjump4" />
-			<State Name="s_dogjump4" Shape="SPR_DOG_JUMP4" Tics="10" Action="T_Bite" Speed="0"
+			<State Name="s_dogjump4" Shape="SPR_DOG_JUMP4" Tics="20" Action="T_Bite" Speed="0"
 				Next="s_dogchase1" />
 			<State Name="s_dogchase1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="10"
 				Think="T_DogChase" Speed="3000" Next="s_dogchase1s" />

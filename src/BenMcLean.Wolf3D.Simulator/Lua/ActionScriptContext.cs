@@ -119,6 +119,11 @@ public class ActionScriptContext(
 	/// </summary>
 	public int GetPlayerX() => simulator.PlayerX;
 	/// <summary>
+	/// Get the current game identifier (for example, "WL6" or "N3D").
+	/// Exposed to Lua for game-specific behavioral differences that exist in the original codebase.
+	/// </summary>
+	public string GetGameName() => simulator.GameName;
+	/// <summary>
 	/// Get the player's current Y position (16.16 fixed-point).
 	/// WL_DEF.H:player->y
 	/// </summary>
