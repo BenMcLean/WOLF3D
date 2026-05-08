@@ -4042,6 +4042,15 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		&& def.AimBonus;
 
 	/// <summary>
+	/// Returns whether the given actor type has 360° vision (skips facing direction check).
+	/// WL_STATE.C:CheckSight #ifndef GAMEVER_NOAH3D — for Noah's Ark, the direction check
+	/// is completely skipped, giving all animals 360° detection.
+	/// </summary>
+	public bool GetActorFullVision(string actorType) =>
+		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+		&& def.FullVision;
+
+	/// <summary>
 	/// Returns the maximum hit points for an actor type at the current difficulty.
 	/// Used by ActorScriptContext.Heal() to clamp healing.
 	/// Returns short.MaxValue if the actor type has no defined HP (won't cap healing).

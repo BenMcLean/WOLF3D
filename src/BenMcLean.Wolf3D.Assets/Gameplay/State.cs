@@ -269,6 +269,13 @@ public class ActorDefinition
 	/// </summary>
 	public bool AimBonus { get; set; }
 	/// <summary>
+	/// WL_STATE.C:CheckSight #ifndef GAMEVER_NOAH3D
+	/// When true, skip the facing direction check — actor has 360° vision.
+	/// Used for Noah's Ark (S3DNA) animals where the direction check was
+	/// compiled out with #ifndef GAMEVER_NOAH3D.
+	/// </summary>
+	public bool FullVision { get; set; }
+	/// <summary>
 	/// Minimum reaction time in tics when actor first spots player.
 	/// WL_STATE.C:SightPlayer - ob->temp2 = reaction formula varies by obclass.
 	/// Parsed from Reaction="min-max" XML attribute (e.g. "1-64").
@@ -318,6 +325,7 @@ public class ActorDefinition
 			Ambush = element.IsTrue("Ambush"),
 			ShootSound = element.Attribute("ShootSound")?.Value,
 			AimBonus = element.IsTrue("AimBonus"),
+			FullVision = element.IsTrue("FullVision"),
 			ReactionMin = reactionMin,
 			ReactionMax = reactionMax,
 		};

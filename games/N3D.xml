@@ -2018,7 +2018,7 @@ PlayLocalSound("D_EDIESND")
 			</Function>
 			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" AlertSound="D_GOATSND"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
-				Pain="s_grdpain" Pain1="s_grdpain1">
+				Pain="s_grdpain" Pain1="s_grdpain1" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - guardobj
@@ -2073,7 +2073,7 @@ end
 			<State Name="s_grddead2" Shape="SPR_GRD_DEAD2" Tics="55" Speed="0" Next="s_grddead"
 				Alive="false" Mark="false" />
 			<Actor Name="Goat" HP="1,1,1,1" Reaction="1-32" AlertSound="D_GOATSND"
-				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1">
+				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - dogobj
@@ -2122,7 +2122,7 @@ AddValue("Score", 200)
 				Alive="false" Mark="false" />
 			<Actor Name="Ostrich" HP="12,12,12,12" Reaction="1-43" AlertSound="D_OSTRCHSND"
 				Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1"
-				Pain="s_ofcpain" Pain1="s_ofcpain1">
+				Pain="s_ofcpain" Pain1="s_ofcpain1" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - officerobj
@@ -2176,7 +2176,7 @@ end
 				Mark="false" />
 			<Actor Name="Ox" HP="18,18,18,18" Reaction="1-43" AlertSound="D_OXSND"
 				Stand="s_mutstand" Chase="s_mutchase1" Attack="s_mutshoot1" Death="s_mutdie1"
-				Pain="s_mutpain" Pain1="s_mutpain1">
+				Pain="s_mutpain" Pain1="s_mutpain1" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - mutantobj
@@ -2231,7 +2231,7 @@ end
 				Mark="false" />
 			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" AlertSound="D_ANTLPESND"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
-				Pain="s_sspain" Pain1="s_sspain1" ShootSound="D_SPITSND" AimBonus="true">
+				Pain="s_sspain" Pain1="s_sspain1" ShootSound="D_SPITSND" AimBonus="true" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - ssobj
@@ -2296,7 +2296,7 @@ end
 				Mark="false" />
 			<Actor Name="Carl the Camel" HP="150,150,150,150" Reaction="1" AlertSound="D_CAMELSND"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
-				Ambush="true" ShootSound="D_SPITSND" AimBonus="true">
+				Ambush="true" ShootSound="D_SPITSND" AimBonus="true" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - bossobj
@@ -2341,7 +2341,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Next="s_bosschase1" />
 			<Actor Name="Ginny the Giraffe" HP="300,300,300,300" Reaction="1-43"
 				AlertSound="D_GIRAFESND" Stand="s_gretelstand" Chase="s_gretelchase1"
-				Attack="s_gretelshoot1" Death="s_greteldie1">
+				Attack="s_gretelshoot1" Death="s_greteldie1" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - gretelobj
@@ -2386,7 +2386,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 			<State Name="s_gretelshoot8" Shape="SPR_GRETEL_SHOOT1" Tics="10" Next="s_gretelchase1" />
 			<Actor Name="Melvin the Monkey" HP="350,350,350,350" Reaction="1-43"
 				AlertSound="D_MONKEYSND" Stand="s_schabbstand" Chase="s_schabbchase1"
-				Attack="s_schabbshoot1" Death="s_schabbdie1">
+				Attack="s_schabbshoot1" Death="s_schabbdie1" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - schabbobj
@@ -2421,7 +2421,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_schabbchase1" />
 			<Actor Name="Kerry the Kangaroo" HP="400,400,400,400" Reaction="1-43"
 				AlertSound="D_KANGROSND" Stand="s_giftstand" Chase="s_giftchase1"
-				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="D_COCTHRSND">
+				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="D_COCTHRSND" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - giftobj
@@ -2455,7 +2455,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_giftchase1" />
 			<Actor Name="Ernie the Elephant" HP="450,450,450,450" Reaction="1-43"
 				AlertSound="D_ELPHNTSND" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1"
-				Death="s_fatdie1" ShootSound="D_COCTHRSND">
+				Death="s_fatdie1" ShootSound="D_COCTHRSND" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - fatobj
@@ -2496,7 +2496,7 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_fatchase1" />
 			<Actor Name="Burt the Bear" HP="500,500,500,500" Reaction="1-43" AlertSound="D_BEARSND"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
-				Death="s_mechadie1" ShootSound="D_SPITSND">
+				Death="s_mechadie1" ShootSound="D_SPITSND" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - mechahitlerobj
@@ -2542,7 +2542,7 @@ AddValue("Score", 5000)
 			<!-- AlertSound: N3D A_Alert realhitlerobj plays EVASND; AUDION3D.H has no EVASND alias so using D_BEARSND -->
 			<Actor Name="Hitler" HP="500,700,800,900" Reaction="1" AlertSound="D_BEARSND"
 				Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1"
-				Death="s_hitlerdie1" Ambush="true">
+				Death="s_hitlerdie1" Ambush="true" FullVision="true">
 				<Script>
 					<![CDATA[
 -- WL_STATE.C:KillActor - realhitlerobj

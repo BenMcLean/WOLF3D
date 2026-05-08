@@ -502,6 +502,7 @@ public partial class Root : Node3D
 			PendingCompletionStats = completionStats,
 			PendingAllLevelStats = allLevelStats,
 			PendingQuiz = actionStage.PendingQuiz,
+			LevelTransition = actionStage.PendingLevelTransitionForMenu,
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
 			StatusBarController = _statusBarController,

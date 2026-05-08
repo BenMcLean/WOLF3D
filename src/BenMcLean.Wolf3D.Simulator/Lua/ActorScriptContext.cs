@@ -264,6 +264,14 @@ public class ActorScriptContext(
 		if (mapAnalysis is null)
 			// Fallback if no map analysis available
 			return CalculateDistanceToPlayer() < 20;
+		// WL_STATE.C:1489 MINSIGHT = 0x18000 (1.5 tiles in 16.16 fixed-point)
+		// If player is within 1.5 tiles in both X and Y, detect regardless of facing direction.
+		const int MINSIGHT = 0x18000;
+		int fixedDx = simulator.PlayerX - actor.X,
+			fixedDy = simulator.PlayerY - actor.Y;
+		if (fixedDx > -MINSIGHT && fixedDx < MINSIGHT
+			&& fixedDy > -MINSIGHT && fixedDy < MINSIGHT)
+			return true;
 		int actorTileX = actor.TileX,
 			actorTileY = actor.TileY,
 			playerTileX = simulator.PlayerTileX,
@@ -272,7 +280,8 @@ public class ActorScriptContext(
 		// Original Wolf3D (WL_STATE.C:CheckSight) uses a half-plane: facing north → detects
 		// any player not to the south (deltay <= 0), which is effectively 180°.
 		// Simulator.EnemyFovRadians defaults to Math.PI (180°) to match the original.
-		if (actor.Facing.HasValue)
+		// WL_STATE.C:#ifndef GAMEVER_NOAH3D — actors with FullVision skip this check entirely.
+		if (actor.Facing.HasValue && !simulator.GetActorFullVision(actor.ActorType))
 		{
 			// Calculate angle from actor to player
 			// Wolf3D coordinates: +X=east, +Y=south (down map), -Y=north (up map)

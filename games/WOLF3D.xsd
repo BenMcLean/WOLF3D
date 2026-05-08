@@ -2177,6 +2177,16 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="FullVision" type="xs:boolean">
+				<xs:annotation>
+					<xs:documentation>
+						WL_STATE.C:CheckSight #ifndef GAMEVER_NOAH3D
+						When true, skip the facing direction check — actor has 360° vision.
+						Used for Noah's Ark (S3DNA) animals where the direction check was
+						compiled out entirely. All actors in N3D have FullVision="true".
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
