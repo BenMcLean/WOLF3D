@@ -1719,6 +1719,13 @@
 				FloorCodeFirst/Last define the range of floor code tiles used for area
 				detection (AREATILE through AREATILE+NUMAREAS-1, typically 107-143).
 
+				WallCodeMask optionally bitmasks wall-plane values before they are interpreted as
+				wall codes. Use this when the original engine stores the actual wall identity in a
+				subset of the bits and ignores the rest for wall lookup. Example: Super 3-D Noah's
+				Ark uses tile &amp; 31 (0x1F), so a raw value like 89 is treated as wall code 25.
+				This attribute documents the decoding rule; it does not by itself define the meaning
+				of any preserved upper bits.
+
 				When UniformWallTextures="true", the paired formula is replaced by a direct
 				mapping: tile n maps to VSWAP page (n - 1), same texture on all four sides.
 				Use for games like Kitchens of Doom that store one texture per wall tile
@@ -1756,6 +1763,18 @@
 			</xs:attribute>
 			<xs:attribute name="FloorCodeFirst" type="xs:nonNegativeInteger"/>
 			<xs:attribute name="FloorCodeLast" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="WallCodeMask" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>
+						Optional bitmask applied to wall-plane values before interpreting them as
+						wall codes. This is for engines that store the real wall identity in a
+						subset of the bits. Example: Super 3-D Noah's Ark uses 31 (0x1F), matching
+						the source-level tile &amp; 31 wall lookup behavior.
+						Known non-wall control ranges such as doors, elevators, exits, and floor
+						codes should still be handled as their own tile classes before masking.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="UniformWallTextures" type="xs:boolean">
 				<xs:annotation>
 					<xs:documentation>

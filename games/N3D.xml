@@ -518,6 +518,7 @@ end
 				<MenuItem Text="- empty -">
 					LoadGame(9)
 				</MenuItem>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Menu>
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
@@ -565,6 +566,7 @@ end
 				<MenuItem Text="- empty -">
 					SaveGame(9)
 				</MenuItem>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Menu>
 
 			<!-- View Scores from main menu: same display as HighScores but no auto-advance or score
@@ -959,6 +961,7 @@ SetText("PerfectBonusValue", tostring(bonus))
 				<Text Id="Score6" X="288" Y="172" Font="SMALL" Align="Right"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
 				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
 				<OnShow>
 					<![CDATA[
 CheckAndAddHighScore()
@@ -1603,11 +1606,12 @@ end
 	</Audio>
 	<VSwap Name="vswap.n3d" Sqrt="64" Scale="8" MipMaps="true">
 		<WallPlane MaxWallTiles="32" DoorWall="58" DoorFrame="62" DoorFrame2="62"
-			FloorCodeFirst="107" FloorCodeLast="143" UniformDoorTextures="true">
+			FloorCodeFirst="107" FloorCodeLast="143" WallCodeMask="31" UniformDoorTextures="true">
 			<!-- Walls 1-31 follow formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1 -->
 			<!-- WL_DEF.H #ifdef GAMEVER_NOAH3D: MAXWALLTILES=32 (vs 64 in Wolf3D) -->
-			<!-- WL_GAME.C #ifdef GAMEVER_NOAH3D: tile &= 31 (lower 5 bits); wall tile 89 maps to
-			tile 31 special case -->
+			<!-- WL_GAME.C #ifdef GAMEVER_NOAH3D: tile &= 31 (lower 5 bits), exposed here as
+			WallCodeMask="31"; wall tile 89 maps to tile 25, with wall code 31 kept as the
+			special secret-wall case in automap logic -->
 			<!-- DoorWall=58: DOORWALL(x)=(PMSpriteStart-x)-8; PMSpriteStart=71 (first sprite page);
 			DOORWALL(5)=58 for dr_normal -->
 			<!-- WL_DRAW.C #ifdef GAMEVER_NOAH3D: DoorFrame=DOORWALL(1)=62=DoorWall+4
@@ -1901,16 +1905,16 @@ return true
 			<ObjectType Number="47" ObClass="bonus" Page="96" Script="slingshot_3" AutomapTile="80"
 				Name="Slingshot 3" />
 			<!-- fruit = treasure items (bo_cross/chalice/crown/chest group) → tile 81 -->
-			<ObjectType Number="48" ObClass="bonus" Page="97" Script="fruit" AutomapTile="81"
+			<ObjectType Number="48" ObClass="bonus" Page="97" Script="fruit" Treasure="true" AutomapTile="81"
 				Name="Banana" />
-			<ObjectType Number="49" ObClass="bonus" Page="98" Script="fruit" AutomapTile="81"
+			<ObjectType Number="49" ObClass="bonus" Page="98" Script="fruit" Treasure="true" AutomapTile="81"
 				Name="Red apple" />
-			<ObjectType Number="50" ObClass="bonus" Page="99" Script="fruit" AutomapTile="81"
+			<ObjectType Number="50" ObClass="bonus" Page="99" Script="fruit" Treasure="true" AutomapTile="81"
 				Name="Grapes" />
-			<ObjectType Number="51" ObClass="bonus" Page="100" Script="fruit" AutomapTile="81"
+			<ObjectType Number="51" ObClass="bonus" Page="100" Script="fruit" Treasure="true" AutomapTile="81"
 				Name="Peach" />
 			<!-- bo_fullheal → tile 79 -->
-			<ObjectType Number="52" ObClass="bonus" Page="101" Script="one_up" AutomapTile="79"
+			<ObjectType Number="52" ObClass="bonus" Page="101" Script="one_up" Treasure="true" AutomapTile="79"
 				Name="One Up/Extra Life" />
 			<ObjectType Number="53" ObClass="block" Page="102" Name="Cage" />
 			<ObjectType Number="54" ObClass="block" Page="103" Name="Column 2" />

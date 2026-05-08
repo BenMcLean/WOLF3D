@@ -73,6 +73,12 @@ public class MapAnalyzer
 	/// <summary>VgaGraph tile override for wall code 31. WL_MAP.C: if (tile==31) tile=75.</summary>
 	public ushort? SecretWallTile { get; private set; }
 	/// <summary>
+	/// Optional bitmask applied to wall-plane tiles before interpreting them as wall codes.
+	/// This models source ports where the low bits select the wall identity while upper bits may
+	/// carry format-specific metadata. Example: Noah uses 31 (0x1F), so wall identity is tile &amp; 31.
+	/// </summary>
+	public ushort? WallCodeMask { get; private set; }
+	/// <summary>
 	/// Optional path to a WALLSPAWNS file (relative to game folder), read from &lt;Maps WallSpawns="..."&gt;.
 	/// When set, MapAnalysis uses pre-baked wall spawns from this file instead of
 	/// running the standard Wolf3D EastWest/NorthSouth wall scan.
@@ -107,6 +113,9 @@ public class MapAnalyzer
 			: (ushort)(DoorFrame + 1);
 		UniformWallTextures = wallsElement.Attribute("UniformWallTextures")?.Value == "true";
 		UniformDoorTextures = wallsElement.Attribute("UniformDoorTextures")?.Value == "true";
+		WallCodeMask = ushort.TryParse(wallsElement.Attribute("WallCodeMask")?.Value, out ushort wallCodeMask)
+			? wallCodeMask
+			: null;
 
 		// Parse elevator configurations
 		Elevators = [];
@@ -311,14 +320,36 @@ public class MapAnalyzer
 	public static ushort GetWallPagePaired(ushort wall, bool facesEastWest = false) =>
 		(ushort)((wall - 1) * 2 + (facesEastWest ? 1 : 0));
 
+	private ushort NormalizeWallTile(ushort tile)
+	{
+		if (WallCodeMask is not ushort wallCodeMask)
+			return tile;
+
+		// Preserve special wall-plane tiles and known non-wall control ranges. The mask only
+		// applies when interpreting the value as a wall code.
+		if (Doors.ContainsKey(tile)
+			|| Elevators.ContainsKey(tile)
+			|| ExitTiles.Contains(tile)
+			|| tile >= FloorCodeFirst && tile < FloorCodeFirst + FloorCodes)
+			return tile;
+
+		return (ushort)(tile & wallCodeMask);
+	}
+
 	// Resolves wall tile to VSWAP page, respecting UniformWallTextures.
 	// Uniform: tile maps directly (tile - 1), same on all sides.
 	// Paired (default): Wolf3D light/dark formula.
 	public ushort GetWallPage(ushort wall, bool facesEastWest = false) =>
-		UniformWallTextures ? (ushort)(wall - 1) : GetWallPagePaired(wall, facesEastWest);
+		UniformWallTextures
+			? (ushort)(NormalizeWallTile(wall) - 1)
+			: GetWallPagePaired(NormalizeWallTile(wall), facesEastWest);
 
 	// Check if tile number is a wall
-	public bool IsWall(ushort tile) => tile > 0 && tile <= MaxWallTiles;
+	public bool IsWall(ushort tile)
+	{
+		ushort normalized = NormalizeWallTile(tile);
+		return normalized > 0 && normalized <= MaxWallTiles;
+	}
 
 	public bool IsNavigable(ushort mapData, ushort objectData) =>
 		IsTransparent(mapData, objectData) && (
@@ -856,11 +887,12 @@ public class MapAnalyzer
 					}
 					else if (mapAnalyzer.IsWall(wallcode))
 					{
-						// WL_MAP.C: if (tile==31) tile=75; else tile=(tile&0x1F)+35.
-						if ((wallcode & 0x1F) == 31 && mapAnalyzer.SecretWallTile is ushort secretTile)
+						ushort normalizedWallCode = mapAnalyzer.NormalizeWallTile(wallcode);
+						// Noah's automap masks wall-plane values before converting to tile art.
+						if (normalizedWallCode == 31 && mapAnalyzer.SecretWallTile is ushort secretTile)
 							automapData[i] = secretTile;
 						else
-							automapData[i] = (ushort)((wallcode & 0x1F) + wallTileBase);
+							automapData[i] = (ushort)(normalizedWallCode + wallTileBase);
 					}
 				}
 				// VgaGraph path: dressing objects not shown (WL_MAP.C DrawMapWalls shows only walls/doors).

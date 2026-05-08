@@ -576,9 +576,15 @@ public class ActorScriptContext(
 			dy = simulator.PlayerTileY - actor.TileY;
 		// Get 5 dodge directions: diagonal + 4 randomized cardinals
 		int[] dodgeDirs = GetDodgeDirections(dx, dy);
-		// Get turnaround direction to avoid (WL_STATE.C:411)
-		// Note: Original has FL_FIRSTATTACK logic here, simplified for now
-		int turnaround = actor.Facing.HasValue ? GetOppositeDirection((int)actor.Facing.Value) : -1;
+		// WL_STATE.C:411-415 - First attack is allowed to reverse immediately instead of
+		// inheriting the usual turnaround restriction from the actor's previous facing.
+		bool isFirstAttack = actor.Flags.HasFlag(ActorFlags.FirstAttack);
+		if (isFirstAttack)
+			actor.Flags &= ~ActorFlags.FirstAttack;
+		// Get turnaround direction to avoid on normal chase tics.
+		int turnaround = !isFirstAttack && actor.Facing.HasValue
+			? GetOppositeDirection((int)actor.Facing.Value)
+			: -1;
 		// Try each direction in priority order (WL_STATE.C:493)
 		for (int i = 0; i < 5; i++)
 		{
