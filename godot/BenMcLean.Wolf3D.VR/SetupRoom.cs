@@ -32,6 +32,9 @@ public partial class SetupRoom : Node3D, IRoom
 	private readonly IDisplayMode _displayMode;
 	private readonly string _xmlPath;
 	private DosScreen _dosScreen;
+	private ColorRect _flatscreenBackground;
+	private TextureRect _flatscreenDosTextureRect;
+	private Vector2I _lastWindowSize;
 	private Phase _phase = Phase.NotStarted;
 	private bool _hasExternalError;
 
@@ -45,6 +48,11 @@ public partial class SetupRoom : Node3D, IRoom
 	/// Polled by Root._Process(). True once the asset load completed successfully.
 	/// </summary>
 	public bool IsComplete => _phase == Phase.Done;
+
+	/// <summary>
+	/// DosScreen render texture for direct spectator-window capture.
+	/// </summary>
+	public Texture2D SpectatorTexture => _dosScreen?.GetSubViewport()?.GetTexture();
 
 	/// <param name="displayMode">Display mode initialized by Root (VR or flatscreen).</param>
 	/// <param name="xmlPath">Path to the game XML definition file to load.</param>
@@ -181,45 +189,30 @@ public partial class SetupRoom : Node3D, IRoom
 		CanvasLayer canvasLayer = new() { Layer = 1 };
 		AddChild(canvasLayer);
 
-		Vector2I windowSize = DisplayServer.WindowGetSize();
-
-		canvasLayer.AddChild(new ColorRect
+		_flatscreenBackground = new ColorRect
 		{
 			Color = Colors.Black,
-			Size = windowSize,
-		});
+		};
+		canvasLayer.AddChild(_flatscreenBackground);
 
-		// Scale to the largest 4:3 rectangle that fits in the window (720:400 aspect)
-		const float dosAspect = 720f / 400f;
-		float windowAspect = (float)windowSize.X / windowSize.Y;
-		Vector2 dosSize, dosPosition;
-
-		if (windowAspect > dosAspect)
-		{
-			// Widescreen window — pillarbox
-			dosSize = new Vector2(windowSize.Y * dosAspect, windowSize.Y);
-			dosPosition = new Vector2((windowSize.X - dosSize.X) / 2f, 0f);
-		}
-		else
-		{
-			// Taller window — letterbox
-			dosSize = new Vector2(windowSize.X, windowSize.X / dosAspect);
-			dosPosition = new Vector2(0f, (windowSize.Y - dosSize.Y) / 2f);
-		}
-
-		canvasLayer.AddChild(new TextureRect()
+		_flatscreenDosTextureRect = new TextureRect()
 		{
 			Texture = _dosScreen.GetSubViewport().GetTexture(),
-			Size = dosSize,
-			Position = dosPosition,
 			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 			StretchMode = TextureRect.StretchModeEnum.Scale,
 			TextureFilter = Control.TextureFilterEnum.Nearest,
-		});
+		};
+		canvasLayer.AddChild(_flatscreenDosTextureRect);
+
+		_lastWindowSize = Vector2I.Zero;
+		UpdateFlatscreenDosLayout();
 	}
 
 	public override void _Process(double delta)
 	{
+		if (!_displayMode.IsVRActive)
+			UpdateFlatscreenDosLayout();
+
 		// If an external error was shown, stop — don't start or continue loading
 		if (_hasExternalError)
 			return;
@@ -274,5 +267,35 @@ public partial class SetupRoom : Node3D, IRoom
 				}
 				break;
 		}
+	}
+
+	private void UpdateFlatscreenDosLayout()
+	{
+		if (_flatscreenBackground is null || _flatscreenDosTextureRect is null)
+			return;
+
+		Vector2I windowSize = DisplayServer.WindowGetSize();
+		if (windowSize == _lastWindowSize || windowSize.X <= 0 || windowSize.Y <= 0)
+			return;
+
+		_lastWindowSize = windowSize;
+		_flatscreenBackground.Size = windowSize;
+
+		(Vector2 dosSize, Vector2 dosPosition) = CalculateAspectFit(windowSize, 720f / 400f);
+		_flatscreenDosTextureRect.Size = dosSize;
+		_flatscreenDosTextureRect.Position = dosPosition;
+	}
+
+	private static (Vector2 Size, Vector2 Position) CalculateAspectFit(Vector2I windowSize, float aspectRatio)
+	{
+		float windowAspect = (float)windowSize.X / windowSize.Y;
+		if (windowAspect > aspectRatio)
+		{
+			Vector2 size = new(windowSize.Y * aspectRatio, windowSize.Y);
+			return (size, new Vector2((windowSize.X - size.X) / 2f, 0f));
+		}
+
+		Vector2 letterboxedSize = new(windowSize.X, windowSize.X / aspectRatio);
+		return (letterboxedSize, new Vector2(0f, (windowSize.Y - letterboxedSize.Y) / 2f));
 	}
 }

@@ -12,7 +12,7 @@ namespace BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 /// The subfolder is organisational only — the function name is always just the filename stem.
 /// Game description XML files may override any default by defining a script with the same name.
 /// </summary>
-internal static class DefaultScriptLoader
+public static class DefaultScriptLoader
 {
 	private const string ResourcePrefix = "BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts.";
 	private const string BonusesSubPrefix = "BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts.Bonuses.";

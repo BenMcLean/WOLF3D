@@ -97,7 +97,8 @@ public partial class SimulatorController : Node3D
 			rng,
 			gameClock,
 			logger,
-			SharedAssetManager.CurrentGame?.AudioT);
+			SharedAssetManager.CurrentGame?.AudioT,
+			SharedAssetManager.ActionLuaEngine);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));

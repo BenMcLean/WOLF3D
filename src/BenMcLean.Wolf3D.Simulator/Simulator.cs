@@ -407,22 +407,25 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="logger">Optional logger for Lua script output</param>
 	/// <param name="audioT">Optional audio table shared by Lua sound checks and emitted playback events</param>
 	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock, Microsoft.Extensions.Logging.ILogger logger = null, AudioT audioT = null)
+		: this(stateCollection, rng, gameClock, logger, audioT, luaScriptEngine: null)
+	{ }
+	public Simulator(StateCollection stateCollection, RNG rng, GameClock gameClock, Microsoft.Extensions.Logging.ILogger logger, AudioT audioT, Lua.LuaScriptEngine luaScriptEngine)
 	{
 		this.stateCollection = stateCollection ?? throw new ArgumentNullException(nameof(stateCollection));
 		this.rng = rng ?? throw new ArgumentNullException(nameof(rng));
 		this.gameClock = gameClock ?? throw new ArgumentNullException(nameof(gameClock));
 		this.logger = logger;
 		this.audioT = audioT;
-		// Initialize Lua script engine and compile all state functions.
-		// Merge default scripts first so XML-defined functions can override them,
-		// then validate that all state references resolve, then compile.
-		luaScriptEngine = new Lua.LuaScriptEngine(logger);
-		stateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
-		stateCollection.ValidateFunctionReferences();
-		luaScriptEngine.CompileAllActionFunctions(stateCollection);
-		foreach (ActorDefinition actorDefinition in stateCollection.ActorDefinitions.Values)
-			if (!string.IsNullOrWhiteSpace(actorDefinition.Script))
-				luaScriptEngine.CompileScript(GetActorScriptId(actorDefinition.Name), actorDefinition.Script);
+		this.luaScriptEngine = luaScriptEngine ?? new Lua.LuaScriptEngine(logger);
+		if (luaScriptEngine is null)
+		{
+			stateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
+			stateCollection.ValidateFunctionReferences();
+			this.luaScriptEngine.CompileAllActionFunctions(stateCollection);
+			foreach (ActorDefinition actorDefinition in stateCollection.ActorDefinitions.Values)
+				if (!string.IsNullOrWhiteSpace(actorDefinition.Script))
+					this.luaScriptEngine.CompileScript(GetActorScriptId(actorDefinition.Name), actorDefinition.Script);
+		}
 		// Wire Inventory.ValueChanged to PlayerStateChanged and auto-text StatusBar updates.
 		// Auto-text: if the inventory key matches a StatusBar Text Id, emit StatusBarTextChanged
 		// with the value right-justified to the field width defined by the initial XML content length.
@@ -1444,12 +1447,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		// Store MapAnalyzer for looking up door sounds when emitting events
 		this.mapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
-		foreach (DoorInfo doorInfo in this.mapAnalyzer.Doors.Values)
-			if (!string.IsNullOrWhiteSpace(doorInfo.Script))
-				luaScriptEngine.CompileScript(GetDoorScriptId(doorInfo.TileNumber), doorInfo.Script);
-		foreach (ElevatorConfig elevatorConfig in this.mapAnalyzer.Elevators.Values)
-			if (!string.IsNullOrWhiteSpace(elevatorConfig.Script))
-				luaScriptEngine.CompileScript(GetElevatorScriptId(elevatorConfig.Tile), elevatorConfig.Script);
 
 		// Initialize spatial index arrays and map dimensions
 		// Must be done before loading any entities (doors, pushwalls, actors)
@@ -3234,8 +3231,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		foreach ((string name, string code) in DefaultScriptLoader.LoadBonusScripts())
 			if (!bonusScripts.ContainsKey(name))
 				bonusScripts[name] = code;
-		foreach ((string name, string code) in bonusScripts)
-			luaScriptEngine.CompileScript(name, code);
 		bonusNumberToScript = bonusNumberToScriptMap ?? [];
 	}
 

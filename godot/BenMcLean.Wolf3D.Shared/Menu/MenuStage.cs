@@ -40,7 +40,9 @@ public partial class MenuStage : Node
 		// Create MenuManager (menus don't need RNG/GameClock - not deterministic)
 		_menuManager = new MenuManager(
 			menuCollection,
-			SharedAssetManager.Config);
+			SharedAssetManager.Config,
+			SharedAssetManager.MenuLuaEngine,
+			scriptsPrecompiled: SharedAssetManager.MenuLuaEngine is not null);
 		// Add the SubViewport to scene tree (required for rendering, but not as child of container)
 		AddChild(_menuManager.Renderer.Viewport);
 		// Create CanvasLayer to render 2D menu on top of 3D scene

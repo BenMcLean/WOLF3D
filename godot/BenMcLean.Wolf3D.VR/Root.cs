@@ -57,6 +57,7 @@ public partial class Root : Node3D
 	private Action _pendingMidFadeAction;
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
+	private SpectatorView _spectatorView;
 	private TransitionState _transitionState = TransitionState.Idle;
 	private bool _skipFadeIn = false;
 	private SuspendedGameState _suspendedGame;
@@ -79,6 +80,10 @@ public partial class Root : Node3D
 
 		try
 		{
+			// Spectator capture uses the main desktop window as its output surface,
+			// so fix that window at 1080p before any rooms create size-dependent UI.
+			RuntimeOptions.ApplyWindowConfiguration();
+
 			// Initialize display mode FIRST (VR or flatscreen)
 			// This must happen before anything else that needs the camera
 			DisplayMode = DisplayModeFactory.Create();
@@ -88,6 +93,14 @@ public partial class Root : Node3D
 			AddChild(_fadeOverlay);
 			_fadeOverlay.FadeOutComplete += OnFadeOutComplete;
 			_fadeOverlay.FadeInComplete += OnFadeInComplete;
+
+			// Optional spectator compositor for VR capture footage.
+			// It is opt-in because it adds an extra 3D render pass.
+			if (DisplayMode.IsVRActive && RuntimeOptions.SpectatorViewEnabled)
+			{
+				_spectatorView = new SpectatorView();
+				AddChild(_spectatorView);
+			}
 
 			// Add SoundBlaster to scene tree (manages both AdLib and PC Speaker audio)
 			AddChild(new Shared.Audio.SoundBlaster());
@@ -447,7 +460,7 @@ public partial class Root : Node3D
 	/// </summary>
 	private void RunOnStartup()
 	{
-		string onStartupCode = Shared.SharedAssetManager.CurrentGame.XML
+		_ = Shared.SharedAssetManager.CurrentGame.XML
 			.Element("OnStartup")?.Value
 			?? throw new InvalidOperationException(
 				"Missing required <OnStartup> element in game XML.");
@@ -476,10 +489,9 @@ public partial class Root : Node3D
 				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController()));
 			},
 		};
-		LuaScriptEngine startupEngine = new([typeof(Shared.Menu.MenuScriptContext)]);
-		const string onStartupScriptId = "startup:on-startup";
-		startupEngine.CompileScript(onStartupScriptId, onStartupCode, BenMcLean.Wolf3D.Simulator.Lua.LuaEngineMode.Permissive);
-		startupEngine.ExecuteCompiledScript(onStartupScriptId, startupCtx);
+		(SharedAssetManager.MenuLuaEngine
+			?? throw new InvalidOperationException("SharedAssetManager.MenuLuaEngine is null. LoadGame must precompile menu Lua before OnStartup runs."))
+			.ExecuteCompiledScript(SharedAssetManager.OnStartupScriptId, startupCtx);
 	}
 	/// <summary>
 	/// Suspends the current game and transitions to the main menu.
@@ -650,6 +662,7 @@ public partial class Root : Node3D
 	private void OnSceneAdded()
 	{
 		_fadeOverlay.SetVRCamera(DisplayMode.IsVRActive ? DisplayMode.Camera : null);
+		UpdateSpectatorView();
 	}
 
 	/// <summary>
@@ -670,6 +683,29 @@ public partial class Root : Node3D
 		_currentScene = newScene;
 		AddChild(_currentScene);
 		OnSceneAdded();
+	}
+
+	private void UpdateSpectatorView()
+	{
+		if (_spectatorView is null)
+			return;
+
+		if (_currentScene is ActionRoom actionRoom && DisplayMode.IsVRActive)
+		{
+			_spectatorView.AttachTo(actionRoom, DisplayMode.Camera);
+		}
+		else if (_currentScene is SetupRoom setupRoom && DisplayMode.IsVRActive)
+		{
+			_spectatorView.AttachTexture(setupRoom.SpectatorTexture);
+		}
+		else if (_currentScene is MenuRoom menuRoom && DisplayMode.IsVRActive)
+		{
+			_spectatorView.AttachTexture(menuRoom.SpectatorTexture);
+		}
+		else
+		{
+			_spectatorView.Detach();
+		}
 	}
 
 	/// <summary>

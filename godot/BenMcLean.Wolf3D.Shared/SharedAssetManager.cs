@@ -10,6 +10,10 @@ using Microsoft.Extensions.Logging;
 using static BenMcLean.Wolf3D.Shared.GodotLogger;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Graphics;
+using BenMcLean.Wolf3D.Assets.Menu;
+using BenMcLean.Wolf3D.Shared.Menu;
+using BenMcLean.Wolf3D.Simulator.Lua;
+using BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 
 namespace BenMcLean.Wolf3D.Shared;
 
@@ -26,6 +30,8 @@ public static class SharedAssetManager
 	/// The currently loaded game data (VSwap, Maps, etc.).
 	/// </summary>
 	public static Assets.AssetManager CurrentGame { get; private set; }
+	public static LuaScriptEngine ActionLuaEngine { get; private set; }
+	public static LuaScriptEngine MenuLuaEngine { get; private set; }
 	/// <summary>
 	/// Game configuration (sound/music/input settings).
 	/// Persisted to CONFIG file and used by menus and gameplay.
@@ -711,6 +717,7 @@ public static class SharedAssetManager
 				EmbeddedSharewareFileExists,
 				_loggerFactory)
 			: new Assets.AssetManager(gameDefinition.Xml, gameDefinition.GameDataDirectory, _loggerFactory);
+		PrecompileCurrentGameLua();
 		BuildAtlas();
 		BuildBonusAutomapTiles();
 		BuildDigiSounds();
@@ -750,6 +757,80 @@ public static class SharedAssetManager
 		if (!_embeddedSharewareFiles.Value.TryGetValue(Path.GetFileName(path), out byte[] bytes))
 			throw new FileNotFoundException($"Embedded shareware file not found: {Path.GetFileName(path)}", path);
 		return new MemoryStream(bytes, writable: false);
+	}
+
+	private static string GetDoorScriptId(ushort tileNumber) => $"door:{tileNumber}";
+	private static string GetElevatorScriptId(ushort tileNumber) => $"elevator:{tileNumber}";
+	private static string GetActorScriptId(string actorName) => $"actor:{actorName}";
+	private static string GetMenuOnShowScriptId(string menuName) => $"menu:{menuName}:on-show";
+	private static string GetMenuOnCancelScriptId(string menuName) => $"menu:{menuName}:on-cancel";
+	private static string GetMenuOnSelectionChangedScriptId(string menuName) => $"menu:{menuName}:on-selection-changed";
+	private static string GetMenuPauseScriptId(string menuName, int pauseIndex) => $"menu:{menuName}:pause:{pauseIndex}";
+	private static string GetMenuItemScriptId(string menuName, int itemIndex) => $"menu:{menuName}:item:{itemIndex}";
+	private static string GetMenuPictureScriptId(string menuName, int pictureIndex) => $"menu:{menuName}:picture:{pictureIndex}";
+	private static string GetArticleOnCancelScriptId(string articleName) => $"article:{articleName}:on-cancel";
+	public const string OnStartupScriptId = "startup:on-startup";
+
+	private static void PrecompileCurrentGameLua()
+	{
+		if (CurrentGame is null)
+			return;
+
+		ActionLuaEngine = new LuaScriptEngine(_loggerFactory?.CreateLogger("ActionLua"));
+		MenuLuaEngine = new LuaScriptEngine([typeof(MenuScriptContext)], _loggerFactory?.CreateLogger("MenuLua"));
+
+		CurrentGame.StateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
+		CurrentGame.StateCollection.ValidateFunctionReferences();
+		ActionLuaEngine.CompileAllActionFunctions(CurrentGame.StateCollection);
+
+		foreach (ActorDefinition actorDefinition in CurrentGame.StateCollection.ActorDefinitions.Values)
+			if (!string.IsNullOrWhiteSpace(actorDefinition.Script))
+				ActionLuaEngine.CompileScript(GetActorScriptId(actorDefinition.Name), actorDefinition.Script);
+
+		foreach (DoorInfo doorInfo in CurrentGame.MapAnalyzer.Doors.Values.DistinctBy(d => d.TileNumber))
+			if (!string.IsNullOrWhiteSpace(doorInfo.Script))
+				ActionLuaEngine.CompileScript(GetDoorScriptId(doorInfo.TileNumber), doorInfo.Script);
+
+		foreach (ElevatorConfig elevatorConfig in CurrentGame.MapAnalyzer.Elevators.Values.DistinctBy(e => e.Tile))
+			if (!string.IsNullOrWhiteSpace(elevatorConfig.Script))
+				ActionLuaEngine.CompileScript(GetElevatorScriptId(elevatorConfig.Tile), elevatorConfig.Script);
+
+		(Dictionary<string, string> bonusScripts, _) = CurrentGame.MapAnalyzer.GetBonusScripts();
+		foreach ((string name, string code) in DefaultScriptLoader.LoadBonusScripts())
+			if (!bonusScripts.ContainsKey(name))
+				bonusScripts[name] = code;
+		foreach ((string name, string code) in bonusScripts)
+			ActionLuaEngine.CompileScript(name, code);
+
+		foreach (MenuFunction function in CurrentGame.MenuCollection.Functions.Values)
+			if (!string.IsNullOrWhiteSpace(function.Code))
+				MenuLuaEngine.CompileActionFunction(function.Name, function.Code);
+
+		foreach (MenuDefinition menuDef in CurrentGame.MenuCollection.Menus.Values)
+		{
+			CompileMenuScript(menuDef.OnShow, GetMenuOnShowScriptId(menuDef.Name));
+			CompileMenuScript(menuDef.OnCancel, GetMenuOnCancelScriptId(menuDef.Name));
+			CompileMenuScript(menuDef.OnSelectionChanged, GetMenuOnSelectionChangedScriptId(menuDef.Name));
+			if (menuDef.Pauses is not null)
+				for (int i = 0; i < menuDef.Pauses.Count; i++)
+					CompileMenuScript(menuDef.Pauses[i].Script, GetMenuPauseScriptId(menuDef.Name, i));
+			for (int i = 0; i < menuDef.Items.Count; i++)
+				CompileMenuScript(menuDef.Items[i].Script, GetMenuItemScriptId(menuDef.Name, i));
+			for (int i = 0; i < menuDef.Pictures.Count; i++)
+				CompileMenuScript(menuDef.Pictures[i].Script, GetMenuPictureScriptId(menuDef.Name, i));
+		}
+
+		foreach (ArticleDefinition articleDef in CurrentGame.MenuCollection.Articles.Values)
+			CompileMenuScript(articleDef.OnCancel, GetArticleOnCancelScriptId(articleDef.Name));
+
+		CompileMenuScript(CurrentGame.XML.Element("OnStartup")?.Value, OnStartupScriptId);
+	}
+
+	private static void CompileMenuScript(string script, string scriptId)
+	{
+		if (string.IsNullOrWhiteSpace(script))
+			return;
+		MenuLuaEngine.CompileScript(scriptId, script, LuaEngineMode.Permissive);
 	}
 	/// <summary>
 	/// Get a Godot Color from a VGA palette index.
@@ -793,6 +874,8 @@ public static class SharedAssetManager
 		AtlasTexture = null;
 		AtlasImage?.Dispose();
 		AtlasImage = null;
+		ActionLuaEngine = null;
+		MenuLuaEngine = null;
 		CurrentGame = null;
 		_loggerFactory?.Dispose();
 		_loggerFactory = null;

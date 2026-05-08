@@ -26,6 +26,9 @@ public partial class MenuRoom : Node3D, IRoom
 	private MenuManager _menuManager;
 	private MeshInstance3D _menuPanel;
 	private ColorRect _marginBackground;
+	private TextureRect _flatscreenMenuTextureRect;
+	private FlatscreenMenuInput _flatscreenMenuInput;
+	private Vector2I _lastWindowSize;
 	private WorldEnvironment _worldEnvironment;
 	private bool _playerOriented;
 	private bool _elevatorMode;
@@ -192,6 +195,11 @@ public partial class MenuRoom : Node3D, IRoom
 	public bool DebugMarkersEnabled => _menuManager?.SessionState?.DebugMarkersEnabled ?? InitialDebugMarkersEnabled;
 
 	/// <summary>
+	/// Menu render texture for direct spectator-window capture.
+	/// </summary>
+	public Texture2D SpectatorTexture => _menuManager?.Renderer?.ViewportTexture;
+
+	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
 	/// Must be called after _Ready (when MenuManager exists).
@@ -246,9 +254,12 @@ public partial class MenuRoom : Node3D, IRoom
 		}
 
 		SharedAssetManager.Config ??= new Assets.Gameplay.Config();
+		bool usingSharedPrecompiledLua = MenuCollectionOverride is null && SharedAssetManager.MenuLuaEngine is not null;
 		_menuManager = new MenuManager(
 			menuCollection,
-			SharedAssetManager.Config);
+			SharedAssetManager.Config,
+			usingSharedPrecompiledLua ? SharedAssetManager.MenuLuaEngine : null,
+			scriptsPrecompiled: usingSharedPrecompiledLua);
 		_menuManager.SessionState.VRMode = InitialVRMode;
 		_menuManager.SessionState.DebugMarkersEnabled = InitialDebugMarkersEnabled;
 		// Wire up game selection (used when MenuCollectionOverride is the procedural game list)
@@ -790,57 +801,34 @@ void sky() {
 		};
 		AddChild(canvasLayer);
 
-		// Get window size
-		Vector2I windowSize = DisplayServer.WindowGetSize();
-
 		// Create margin background
 		_marginBackground = new ColorRect
 		{
 			Color = Colors.Black,
-			Size = windowSize,
 		};
 		canvasLayer.AddChild(_marginBackground);
 
-		// Calculate size for 4:3 aspect ratio display
-		const float menuAspectRatio = 4.0f / 3.0f;
-		float windowAspectRatio = (float)windowSize.X / windowSize.Y;
-		Vector2 menuSize;
-		Vector2 menuPosition;
-
-		if (windowAspectRatio > menuAspectRatio)
-		{
-			// Widescreen - pillarbox
-			menuSize = new Vector2(windowSize.Y * menuAspectRatio, windowSize.Y);
-			menuPosition = new Vector2((windowSize.X - menuSize.X) / 2, 0);
-		}
-		else
-		{
-			// Taller - letterbox
-			menuSize = new Vector2(windowSize.X, windowSize.X / menuAspectRatio);
-			menuPosition = new Vector2(0, (windowSize.Y - menuSize.Y) / 2);
-		}
-
 		// Create TextureRect to display the viewport texture
-		TextureRect textureRect = new()
+		_flatscreenMenuTextureRect = new TextureRect()
 		{
 			Texture = _menuManager.Renderer.ViewportTexture,
-			Size = menuSize,
-			Position = menuPosition,
 			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 			StretchMode = TextureRect.StretchModeEnum.Scale,
 			TextureFilter = Control.TextureFilterEnum.Nearest,
 		};
-		canvasLayer.AddChild(textureRect);
+		canvasLayer.AddChild(_flatscreenMenuTextureRect);
 
 		// Subscribe to border color changes
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
 		OnBordColorChanged(_menuManager.Renderer.CurrentBordColor);
 
 		// Create flatscreen menu input for mouse crosshair tracking
-		FlatscreenMenuInput flatscreenMenuInput = new();
-		flatscreenMenuInput.SetMenuDisplayArea(menuPosition, menuSize);
-		_menuInput = flatscreenMenuInput;
+		_flatscreenMenuInput = new FlatscreenMenuInput();
+		_menuInput = _flatscreenMenuInput;
 		_menuManager.SetInput(_menuInput);
+
+		_lastWindowSize = Vector2I.Zero;
+		UpdateFlatscreenMenuLayout();
 	}
 
 	public override void _ExitTree()
@@ -922,6 +910,9 @@ void sky() {
 
 	public override void _Process(double delta)
 	{
+		if (!_displayMode.IsVRActive)
+			UpdateFlatscreenMenuLayout();
+
 		// Update menu manager
 		_menuManager?.Update((float)delta);
 
@@ -974,5 +965,36 @@ void sky() {
 		{
 			UpdateMenuPanelRotation();
 		}
+	}
+
+	private void UpdateFlatscreenMenuLayout()
+	{
+		if (_marginBackground is null || _flatscreenMenuTextureRect is null || _flatscreenMenuInput is null)
+			return;
+
+		Vector2I windowSize = DisplayServer.WindowGetSize();
+		if (windowSize == _lastWindowSize || windowSize.X <= 0 || windowSize.Y <= 0)
+			return;
+
+		_lastWindowSize = windowSize;
+		_marginBackground.Size = windowSize;
+
+		(Vector2 menuSize, Vector2 menuPosition) = CalculateAspectFit(windowSize, 4f / 3f);
+		_flatscreenMenuTextureRect.Size = menuSize;
+		_flatscreenMenuTextureRect.Position = menuPosition;
+		_flatscreenMenuInput.SetMenuDisplayArea(menuPosition, menuSize);
+	}
+
+	private static (Vector2 Size, Vector2 Position) CalculateAspectFit(Vector2I windowSize, float aspectRatio)
+	{
+		float windowAspectRatio = (float)windowSize.X / windowSize.Y;
+		if (windowAspectRatio > aspectRatio)
+		{
+			Vector2 size = new(windowSize.Y * aspectRatio, windowSize.Y);
+			return (size, new Vector2((windowSize.X - size.X) / 2f, 0f));
+		}
+
+		Vector2 letterboxedSize = new(windowSize.X, windowSize.X / aspectRatio);
+		return (letterboxedSize, new Vector2(0f, (windowSize.Y - letterboxedSize.Y) / 2f));
 	}
 }

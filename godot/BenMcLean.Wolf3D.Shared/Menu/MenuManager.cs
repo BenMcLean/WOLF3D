@@ -111,16 +111,18 @@ public class MenuManager
 	/// <param name="config">Game configuration</param>
 	public MenuManager(
 		MenuCollection menuCollection,
-		Config config)
+		Config config,
+		LuaScriptEngine luaEngine = null,
+		bool scriptsPrecompiled = false)
 	{
 		_menuCollection = menuCollection ?? throw new ArgumentNullException(nameof(menuCollection));
 		_config = config ?? throw new ArgumentNullException(nameof(config));
 		// Create session state
 		_sessionState = new MenuState();
 		// Create Lua engine with MenuScriptContext support only
-		_luaEngine = new LuaScriptEngine([typeof(MenuScriptContext)]);
-		// Compile all menu functions
-		CompileMenuFunctions();
+		_luaEngine = luaEngine ?? new LuaScriptEngine([typeof(MenuScriptContext)]);
+		if (!scriptsPrecompiled)
+			CompileMenuFunctions();
 		// Create script context (menus don't need RNG/GameClock - not deterministic)
 		_scriptContext = new MenuScriptContext(_sessionState, _config)
 		{
