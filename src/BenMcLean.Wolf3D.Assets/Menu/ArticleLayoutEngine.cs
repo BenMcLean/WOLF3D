@@ -75,7 +75,8 @@ public static class ArticleLayoutEngine
 		Font font,
 		Func<int, string> picNameResolver,
 		Func<int, (int width, int height)?> picSizeResolver = null,
-		byte backColor = BackColor)
+		byte backColor = BackColor,
+		byte pageNumColor = PageNumColor)
 	{
 		if (string.IsNullOrEmpty(rawText))
 			return [];
@@ -86,7 +87,7 @@ public static class ArticleLayoutEngine
 		int pos = 0;
 		for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
 		{
-			ArticlePageLayout page = LayoutPage(rawText, ref pos, font, picNameResolver, picSizeResolver, backColor, pageIndex + 1, totalPages);
+			ArticlePageLayout page = LayoutPage(rawText, ref pos, font, picNameResolver, picSizeResolver, backColor, pageNumColor, pageIndex + 1, totalPages);
 			pages.Add(page);
 		}
 		return [.. pages];
@@ -117,6 +118,7 @@ public static class ArticleLayoutEngine
 		Func<int, string> picNameResolver,
 		Func<int, (int width, int height)?> picSizeResolver,
 		byte backColor,
+		byte pageNumColor,
 		int pageNumber,
 		int totalPages)
 	{
@@ -125,6 +127,7 @@ public static class ArticleLayoutEngine
 			PageNumber = pageNumber,
 			TotalPages = totalPages,
 			BackColor = backColor,
+			PageNumColor = pageNumColor,
 		};
 
 		// Per-row margin arrays (WL_TEXT.C: leftmargin[], rightmargin[])
@@ -194,7 +197,7 @@ public static class ArticleLayoutEngine
 		{
 			X = PageNumX,
 			Y = PageNumY,
-			Color = PageNumColor,
+			Color = page.PageNumColor,
 			Text = $"pg {pageNumber} of {totalPages}",
 		});
 

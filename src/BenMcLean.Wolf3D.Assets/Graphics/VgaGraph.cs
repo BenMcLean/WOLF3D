@@ -273,8 +273,10 @@ public sealed class VgaGraph
 				{
 					file.Seek(head[i], 0);
 					lengths[i] = binaryReader.ReadUInt32();
+					// Non-tile VGAGRAPH chunks store a 4-byte expanded-length prefix followed by
+					// Huffman-compressed payload (ID_CA.C: CAL_ExpandGrChunk source += 4).
 					binaryReader.Read(
-						buffer: split[i] = new byte[size - 2],
+						buffer: split[i] = new byte[size - 4],
 						index: 0,
 						count: split[i].Length);
 				}

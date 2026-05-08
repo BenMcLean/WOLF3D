@@ -137,15 +137,12 @@
 			<Pic Number="120" Name="GOTGATLINGPIC" />
 			<Pic Number="121" Name="PAUSEDPIC" />
 			<Pic Number="122" Name="GETPSYCHEDPIC" />
-			<!--
-		<Pic Number="123" Name="ORDERSCREEN" />
-		<Pic Number="124" Name="ERRORSCREEN" />
-		<Pic Number="125" Name="T_HELPART" />
-		<Pic Number="126" Name="T_DEMO0" />
-		<Pic Number="127" Name="T_DEMO1" />
-		<Pic Number="128" Name="T_DEMO2" />
-		-->
 		</Pics>
+		<!-- WL_TEXT.C/ GFXV_N3D.H: Noah exposes T_HELPART as an embedded text chunk; there are
+		no T_ENDART* chunks in VGAGRAPH.N3D -->
+		<TextChunks>
+			<TextChunk Name="T_HELPART" Number="130" />
+		</TextChunks>
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath" OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage">
 			<Text Id="Episode" X="24" Y="16" Align="Right">1</Text>
 			<Text Id="Floor" X="40" Y="16" Align="Right">1</Text>
@@ -180,6 +177,14 @@
 			<EndString>You know the food&#10;Noah throws is&#10;drugged, right?&#10;Press N to keep&#10;playing or Y to&#10;Just Say No.</EndString>
 			<EndString>Flood almost over?&#10;Press N for more rain.&#10;Press Y to find the&#10;Rainbow Connection.</EndString>
 			<EndString>Press N to calm down&#10;more goats or Y to&#10;let them eat your&#10;sandals.</EndString>
+			<Article Name="ReadThis" ChunkName="T_HELPART" Music="NOAH01_MUS" BackColor="36"
+				PageNumColor="16">
+				<Picture Name="H_TOPWINDOWPIC" X="0" Y="0" />
+				<Picture Name="H_LEFTWINDOWPIC" X="0" Y="8" />
+				<Picture Name="H_RIGHTWINDOWPIC" X="312" Y="8" />
+				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
+				<OnCancel>NavigateToMenu("Main")</OnCancel>
+			</Article>
 			<Menu Name="Title" Music="NOAH02_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
 				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
@@ -208,6 +213,9 @@
 					NavigateToMenu("SaveGame")
 				</MenuItem>
 				<PresentationMenuItem />
+				<MenuItem Text="Read This!">
+					NavigateToArticle("ReadThis")
+				</MenuItem>
 				<MenuItem Text="View Scores">
 					NavigateToMenu("ViewScores")
 				</MenuItem>

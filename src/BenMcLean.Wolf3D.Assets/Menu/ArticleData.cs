@@ -55,6 +55,12 @@ public class ArticleDefinition
 	/// </summary>
 	public byte? BackColor { get; set; }
 	/// <summary>
+	/// VGA palette index for the "pg X of Y" footer text.
+	/// Null = use ArticleLayoutEngine.PageNumColor (0x4F).
+	/// Noah uses 0x10 instead of Wolf's default 0x4F.
+	/// </summary>
+	public byte? PageNumColor { get; set; }
+	/// <summary>
 	/// Fixed pictures rendered on every page (window borders, decorations).
 	/// WL_TEXT.C: H_TOPWINDOWPIC / H_LEFTWINDOWPIC / H_RIGHTWINDOWPIC / H_BOTTOMINFOPIC
 	/// </summary>
@@ -78,6 +84,8 @@ public class ArticleDefinition
 		};
 		if (byte.TryParse(element.Attribute("BackColor")?.Value, out byte bc))
 			def.BackColor = bc;
+		if (byte.TryParse(element.Attribute("PageNumColor")?.Value, out byte pnc))
+			def.PageNumColor = pnc;
 		foreach (XElement picEl in element.Elements("Picture"))
 			def.Pictures.Add(PictureDefinition.FromXElement(picEl));
 		return def;
@@ -137,6 +145,11 @@ public class ArticlePageLayout
 	/// WL_TEXT.C: VWB_Bar(0,0,320,200,BACKCOLOR)
 	/// </summary>
 	public byte BackColor { get; set; }
+	/// <summary>
+	/// VGA palette index for the footer page number text.
+	/// WL_TEXT.C: fontcolor = 0x4f normally, 0x10 in Noah.
+	/// </summary>
+	public byte PageNumColor { get; set; }
 	/// <summary>Text runs in draw order.</summary>
 	public List<ArticleTextRun> TextRuns { get; } = [];
 	/// <summary>Graphics in draw order.</summary>

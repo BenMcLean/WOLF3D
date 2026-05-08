@@ -281,7 +281,8 @@ public class MenuManager
 		try
 		{
 			pages = ArticleLayoutEngine.Layout(rawText, smallFont, picNameResolver, picSizeResolver,
-				backColor: articleDef.BackColor ?? ArticleLayoutEngine.BackColor);
+				backColor: articleDef.BackColor ?? ArticleLayoutEngine.BackColor,
+				pageNumColor: articleDef.PageNumColor ?? ArticleLayoutEngine.PageNumColor);
 		}
 		catch (Exception ex)
 		{
