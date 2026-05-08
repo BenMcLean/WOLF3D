@@ -2,7 +2,33 @@ using BenMcLean.Wolf3D.MusicTool;
 
 if (args.Length == 0 || HasFlag(args, "--help", "-h"))
 {
-	PrintUsage();
+	Console.WriteLine("""
+Usage:
+  BenMcLean.Wolf3D.MusicTool extract-wolf-op2 [options]
+  BenMcLean.Wolf3D.MusicTool export-noah-drums [options]
+
+Commands:
+  extract-wolf-op2
+    Extracts melodic OPL patches from a Wolf3D IMF/WLF song and emits an OP2 bank
+    plus a JSON manifest. The bank auto-assigns the extracted patches to the melodic
+    programs actually used by the target MIDI.
+
+    Options:
+      --game <xml>       Game XML to load (default: games/WL6.xml)
+      --song <name>      IMF song name (default: WONDERIN_MUS)
+      --midi <path>      MIDI used to determine which melodic programs need mapping
+      --out-op2 <path>   Output OP2 file path
+      --out-json <path>  Output JSON manifest path
+
+  export-noah-drums
+    Emits a Noah percussion OP2 approximation bank, an exact drum-usage report, and
+    exact rendered WAV previews generated from the Noah AdLib rhythm-mode playback logic.
+
+    Options:
+      --game <xml>       Game XML to load (default: games/N3D.xml)
+      --out-op2 <path>   Output OP2 file path
+      --out-dir <dir>    Output directory for JSON and WAV previews
+""");
 	return 0;
 }
 
@@ -64,34 +90,3 @@ static string? GetOption(string[] args, string name)
 
 static bool HasFlag(string[] args, params string[] names) =>
 	args.Any(arg => names.Contains(arg, StringComparer.OrdinalIgnoreCase));
-
-static void PrintUsage()
-{
-	Console.WriteLine("""
-Usage:
-  BenMcLean.Wolf3D.MusicTool extract-wolf-op2 [options]
-  BenMcLean.Wolf3D.MusicTool export-noah-drums [options]
-
-Commands:
-  extract-wolf-op2
-    Extracts melodic OPL patches from a Wolf3D IMF/WLF song and emits an OP2 bank
-    plus a JSON manifest. The bank auto-assigns the extracted patches to the melodic
-    programs actually used by the target MIDI.
-
-    Options:
-      --game <xml>       Game XML to load (default: games/WL6.xml)
-      --song <name>      IMF song name (default: WONDERIN_MUS)
-      --midi <path>      MIDI used to determine which melodic programs need mapping
-      --out-op2 <path>   Output OP2 file path
-      --out-json <path>  Output JSON manifest path
-
-  export-noah-drums
-    Emits a Noah percussion OP2 approximation bank, an exact drum-usage report, and
-    exact rendered WAV previews generated from the Noah AdLib rhythm-mode playback logic.
-
-    Options:
-      --game <xml>       Game XML to load (default: games/N3D.xml)
-      --out-op2 <path>   Output OP2 file path
-      --out-dir <dir>    Output directory for JSON and WAV previews
-""");
-}

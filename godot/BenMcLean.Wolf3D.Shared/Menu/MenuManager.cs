@@ -581,22 +581,20 @@ public class MenuManager
 	/// </summary>
 	/// <param name="id">Id attribute of the picture to update</param>
 	/// <param name="picName">Name of the VgaGraph picture to display</param>
-	private void SetPicture(string id, string picName)
+	private bool SetPicture(string id, string picName)
 	{
 		if (string.IsNullOrEmpty(_currentMenuName))
-			return;
+			return false;
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
-			return;
+			return false;
 		PictureDefinition picture = menuDef.Pictures.FirstOrDefault(p => p.Id == id);
 		if (picture is null)
-		{
-			GD.PrintErr($"ERROR: SetPicture: No picture with Id '{id}' in menu '{_currentMenuName}'");
-			return;
-		}
+			return false;
 		// Update the picture definition
 		picture.Name = picName;
 		// Re-render the menu to show the updated picture
 		_renderer.RenderMenu(menuDef, _selectedItemIndex, _currentVisibleItems, _activeModal);
+		return true;
 	}
 	/// <summary>
 	/// Update menu system (called each frame).

@@ -707,7 +707,7 @@ else
 	AddValue("Feed", 25)
 end
 SetValue("FaceGrinTics", 4)
-SetStatusBarPicture("Face", "GOTGATLINGPIC")
+SetPicture("Face", "GOTGATLINGPIC")
 PlaySound("PERCENT100SND")
 ]]>
 				</OnShow>
@@ -729,10 +729,10 @@ ResumeGame()
 AddValue("Health", 4)
 local health = GetValue("Health")
 if health <= 0 then
-	SetStatusBarPicture("Face", "FACE8APIC")
+	SetPicture("Face", "FACE8APIC")
 else
 	local level = math.min(7, math.floor((100 - health) / 16) + 1)
-	SetStatusBarPicture("Face", "FACE" .. level .. "APIC")
+	SetPicture("Face", "FACE" .. level .. "APIC")
 end
 PlaySound("NOBONUSSND")
 ]]>
@@ -2090,7 +2090,7 @@ if grinTics > 0 then
 end
 local health = GetValue("Health")
 if health <= 0 then
-	SetStatusBarPicture("Face", "FACE8APIC")
+	SetPicture("Face", "FACE8APIC")
 	return
 end
 local level = math.min(7, math.floor((100 - health) / 16) + 1)

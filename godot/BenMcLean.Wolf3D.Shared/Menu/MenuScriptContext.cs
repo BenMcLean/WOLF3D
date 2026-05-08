@@ -341,9 +341,15 @@ public class MenuScriptContext(
 	/// <summary>
 	/// Delegate for updating a picture in the current menu by Id.
 	/// Set by MenuManager after context creation.
-	/// Parameters: id (e.g., "DifficultyFace"), picName (e.g., "C_BABYMODEPIC")
+	/// Returns true when the picture was found in the active menu.
 	/// </summary>
-	public Action<string, string> SetPictureAction { get; set; }
+	public Func<string, string, bool> SetPictureAction { get; set; }
+	/// <summary>
+	/// Delegate for updating a named picture in the status bar when the active menu does not
+	/// define a matching picture Id.
+	/// Set by the presentation layer (e.g., MenuRoom) when a StatusBarController is available.
+	/// </summary>
+	public Action<string, string> SetStatusBarFallbackPictureAction { get; set; }
 	/// <summary>
 	/// Get the currently selected menu item index.
 	/// Exposed to Lua. Delegates to MenuManager.
@@ -355,23 +361,17 @@ public class MenuScriptContext(
 	/// Update a picture in the current menu by its Id.
 	/// Used for dynamic picture changes like difficulty faces in NewGame menu.
 	/// Matches original Wolf3D's VWB_DrawPic behavior in DrawNewGameDiff.
+	/// If the current menu does not define the Id, fall back to the live status bar.
 	/// </summary>
 	/// <param name="id">Id attribute of the picture to update (e.g., "DifficultyFace")</param>
 	/// <param name="picName">Name of the VgaGraph picture to display (e.g., "C_BABYMODEPIC")</param>
-	public void SetPicture(string id, string picName) => SetPictureAction?.Invoke(id, picName);
-	/// <summary>
-	/// Delegate for updating a named picture in the status bar.
-	/// Set by the presentation layer (e.g., MenuRoom) when a StatusBarController is available.
-	/// </summary>
-	public Action<string, string> SetStatusBarPictureAction { get; set; }
-	/// <summary>
-	/// Update a named picture in the status bar from a menu script.
-	/// Used by quiz result menus to update the face picture while gameplay is paused.
-	/// Routes to StatusBarState.SetPic via the presentation layer delegate.
-	/// </summary>
-	/// <param name="id">Picture Id as defined in the StatusBar &lt;Picture Id="..."&gt; element</param>
-	/// <param name="picName">New VgaGraph picture name to display (e.g., "FACE1APIC")</param>
-	public void SetStatusBarPicture(string id, string picName) => SetStatusBarPictureAction?.Invoke(id, picName);
+	public void SetPicture(string id, string picName)
+	{
+		if (SetPictureAction?.Invoke(id, picName) == true)
+			return;
+
+		SetStatusBarFallbackPictureAction?.Invoke(id, picName);
+	}
 	#endregion Menu Item Selection and Dynamic Content
 	#region Dynamic Content Updates
 	/// <summary>

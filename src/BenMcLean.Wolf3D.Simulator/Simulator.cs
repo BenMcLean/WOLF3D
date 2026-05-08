@@ -1340,6 +1340,41 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		tileIdx = GetTileIndex(actor.TileX, actor.TileY);
 		actorAtTile[tileIdx] = (short)actorIndex;
 	}
+
+	private void InitializeMovingActor(Actor actor, int actorIndex, Direction facing)
+	{
+		ushort spawnTileX = actor.TileX;
+		ushort spawnTileY = actor.TileY;
+		ushort destTileX = spawnTileX;
+		ushort destTileY = spawnTileY;
+
+		switch (facing)
+		{
+			case Direction.E: destTileX++; break;
+			case Direction.NE: destTileX++; destTileY--; break;
+			case Direction.N: destTileY--; break;
+			case Direction.NW: destTileX--; destTileY--; break;
+			case Direction.W: destTileX--; break;
+			case Direction.SW: destTileX--; destTileY++; break;
+			case Direction.S: destTileY++; break;
+			case Direction.SE: destTileX++; destTileY++; break;
+		}
+
+		if (IsTileNavigable(destTileX, destTileY))
+		{
+			actor.TileX = destTileX;
+			actor.TileY = destTileY;
+			actor.Distance = 0x10000; // TILEGLOBAL
+			int destTileIdx = GetTileIndex(destTileX, destTileY);
+			actorAtTile[destTileIdx] = (short)actorIndex;
+			return;
+		}
+
+		// Keep blocked patrol spawns anchored to their authored tile so their first Think
+		// can choose a valid direction instead of reserving a wall tile.
+		int spawnTileIdx = GetTileIndex(spawnTileX, spawnTileY);
+		actorAtTile[spawnTileIdx] = (short)actorIndex;
+	}
 	/// <summary>
 	/// Transitions an actor to a new state by state name.
 	/// Public wrapper for Lua scripts to call.
@@ -1693,27 +1728,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			bool needsMovementInit = initialState.Speed > 0;
 			if (needsMovementInit)
 			{
-				// WL_ACT2.C:1246-1262 - Initialize actor ready to move
-				int spawnTileIdx = GetTileIndex(actor.TileX, actor.TileY);
-				actorAtTile[spawnTileIdx] = -1; // Clear spawn tile
-												// Move TileX/TileY to destination (adjacent tile in facing direction)
-												// This sets up ob->tilex/tiley to point to the first destination
-				switch (spawn.Facing)
-				{
-					case Direction.E: actor.TileX++; break;
-					case Direction.NE: actor.TileX++; actor.TileY--; break;
-					case Direction.N: actor.TileY--; break;
-					case Direction.NW: actor.TileX--; actor.TileY--; break;
-					case Direction.W: actor.TileX--; break;
-					case Direction.SW: actor.TileX--; actor.TileY++; break;
-					case Direction.S: actor.TileY++; break;
-					case Direction.SE: actor.TileX++; actor.TileY++; break;
-				}
-				// WL_ACT2.C:1242 - Set distance to move one full tile
-				actor.Distance = 0x10000; // TILEGLOBAL
-										  // Claim destination tile
-				int destTileIdx = GetTileIndex(actor.TileX, actor.TileY);
-				actorAtTile[destTileIdx] = (short)actorIndex;
+				InitializeMovingActor(actor, actorIndex, spawn.Facing);
 			}
 			// Note: Stationary actors don't claim spawn tile - they'll be added to actorat
 			// when they first move (via the clear-think-set pattern in UpdateActors)
@@ -1803,25 +1818,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			_collidableActors.Add(actorIndex);
 		// Movement init: same pattern as LoadActorsFromMapAnalysis (WL_ACT2.C:SpawnPatrol)
 		if (initialState.Speed > 0)
-		{
-			int spawnTileIdx = GetTileIndex(actor.TileX, actor.TileY);
-			if (spawnTileIdx >= 0) actorAtTile[spawnTileIdx] = -1;
-			switch (facing)
-			{
-				case Direction.E: actor.TileX++; break;
-				case Direction.NE: actor.TileX++; actor.TileY--; break;
-				case Direction.N: actor.TileY--; break;
-				case Direction.NW: actor.TileX--; actor.TileY--; break;
-				case Direction.W: actor.TileX--; break;
-				case Direction.SW: actor.TileX--; actor.TileY++; break;
-				case Direction.S: actor.TileY++; break;
-				case Direction.SE: actor.TileX++; actor.TileY++; break;
-			}
-			actor.Distance = 0x10000; // TILEGLOBAL
-			int destTileIdx = GetTileIndex(actor.TileX, actor.TileY);
-			if (destTileIdx >= 0 && destTileIdx < actorAtTile.Length)
-				actorAtTile[destTileIdx] = (short)actorIndex;
-		}
+			InitializeMovingActor(actor, actorIndex, facing);
 		// Execute initial Action function (e.g., A_InitBJRun sets ReactionTimer + TriggerVictory)
 		if (!string.IsNullOrEmpty(initialState.Action))
 		{
@@ -4077,9 +4074,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (door.Action == DoorAction.Closed)
 			return false;
 
-		// Super 3-D Noah's Ark restores the original CheckLine threshold:
-		// doors only become sight-transparent once they are open at least 1/4 tile.
-		return door.Position >= 0x4000;
+		// Once a door has begun opening, allow sight through it so actors can react to
+		// players visible in a doorway instead of treating a visibly open door as opaque.
+		return true;
 	}
 
 	/// <summary>
