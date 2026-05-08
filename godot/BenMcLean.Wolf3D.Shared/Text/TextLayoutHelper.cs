@@ -10,6 +10,18 @@ namespace BenMcLean.Wolf3D.Shared.Text;
 /// </summary>
 public static class TextLayoutHelper
 {
+	private static bool IsRightAligned(TextDefinition textDef) =>
+		textDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true;
+	private static bool HasFixedRightAlignedField(TextDefinition textDef) =>
+		IsRightAligned(textDef) && !string.IsNullOrWhiteSpace(textDef.Content);
+	private static float GetRightAlignedFieldWidth(TextDefinition textDef, Font font, int fontSize)
+	{
+		string fieldTemplate = textDef.Content ?? string.Empty;
+		float fieldWidth = font.GetStringSize(fieldTemplate, fontSize: fontSize).X;
+		return fieldWidth > 0
+			? fieldWidth
+			: font.GetStringSize(" ", fontSize: fontSize).X;
+	}
 	public static Label CreateLabel(TextDefinition textDef, Theme theme, string content, Color? textColor = null)
 	{
 		Font font = theme.DefaultFont;
@@ -35,13 +47,9 @@ public static class TextLayoutHelper
 			label.CustomMinimumSize = new Vector2(textDef.MaxWidth.Value, 0);
 		}
 
-		if (textDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true)
+		if (HasFixedRightAlignedField(textDef))
 		{
-			string fieldTemplate = textDef.Content ?? string.Empty;
-			float fieldWidth = font.GetStringSize(fieldTemplate, fontSize: fontSize).X;
-			if (fieldWidth <= 0)
-				fieldWidth = font.GetStringSize(" ", fontSize: fontSize).X;
-
+			float fieldWidth = GetRightAlignedFieldWidth(textDef, font, fontSize);
 			label.Size = new Vector2(fieldWidth, fontSize);
 			label.CustomMinimumSize = new Vector2(
 				x: Math.Max(label.CustomMinimumSize.X, fieldWidth),
@@ -62,10 +70,15 @@ public static class TextLayoutHelper
 		Font font = theme.DefaultFont;
 		int fontSize = theme.DefaultFontSize;
 		Vector2 textSize = font.GetStringSize(content ?? textDef.Content ?? string.Empty, fontSize: fontSize);
+		float x = textDef.CenterX ? (canvasWidth - textSize.X) / 2f
+			: textDef.RightX ? canvasWidth - textSize.X
+			: textDef.XValue;
+		if (IsRightAligned(textDef) && !textDef.CenterX && !textDef.RightX)
+			x -= HasFixedRightAlignedField(textDef)
+				? GetRightAlignedFieldWidth(textDef, font, fontSize)
+				: textSize.X;
 		return new Vector2(
-			x: textDef.CenterX ? (canvasWidth - textSize.X) / 2f
-				: textDef.RightX ? canvasWidth - textSize.X
-				: textDef.XValue,
+			x: x,
 			y: textDef.CenterY ? (canvasHeight - textSize.Y) / 2f
 				: textDef.BottomY ? canvasHeight - textSize.Y
 				: textDef.YValue);

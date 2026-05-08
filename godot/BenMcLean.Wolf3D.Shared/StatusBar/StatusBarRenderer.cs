@@ -19,6 +19,7 @@ public class StatusBarRenderer
 	private readonly StatusBarState _state;
 	private readonly StatusBarDefinition _definition;
 	private readonly Dictionary<string, Label> _textLabels = [];
+	private readonly Dictionary<string, (TextDefinition Definition, Theme Theme)> _textLayout = [];
 	private readonly Dictionary<string, TextureRect> _pictureTextures = [];
 	/// <summary>
 	/// Creates a new StatusBarRenderer with a 320×40 canvas.
@@ -80,12 +81,15 @@ public class StatusBarRenderer
 			},
 			TextContentProvider = textDef => !string.IsNullOrEmpty(textDef.Id) ? _state.GetText(textDef.Id) : textDef.Content,
 			TextColorProvider = textDef => textDef.Color,
-			AfterAddText = (textDef, label, _, _) =>
+			AfterAddText = (textDef, label, theme, _) =>
 			{
 				label.ZIndex = 10;
 				label.PivotOffset = Vector2.Zero;
 				if (!string.IsNullOrEmpty(textDef.Id))
+				{
 					_textLabels[textDef.Id] = label;
+					_textLayout[textDef.Id] = (textDef, theme);
+				}
 			}
 		});
 	}
@@ -97,6 +101,7 @@ public class StatusBarRenderer
 		foreach (Node child in _canvas.GetChildren())
 			child.QueueFree();
 		_textLabels.Clear();
+		_textLayout.Clear();
 		_pictureTextures.Clear();
 	}
 	/// <summary>
@@ -106,7 +111,16 @@ public class StatusBarRenderer
 	private void UpdateText(string id, string content)
 	{
 		if (_textLabels.TryGetValue(id, out Label label))
+		{
 			label.Text = content;
+			if (_textLayout.TryGetValue(id, out var layout) && layout.Theme is not null)
+				label.Position = TextLayoutHelper.GetPosition(
+					layout.Definition,
+					layout.Theme,
+					content,
+					320,
+					40);
+		}
 	}
 	/// <summary>
 	/// Updates a named picture texture to a new VgaGraph pic.

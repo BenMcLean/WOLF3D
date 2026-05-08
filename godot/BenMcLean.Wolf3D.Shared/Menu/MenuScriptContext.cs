@@ -765,6 +765,40 @@ public class MenuScriptContext(
 	/// <param name="index">Zero-based entry index (0-6)</param>
 	public int GetHighScoreEpisode(int index) => (int)config.Scores[index].Episode;
 	/// <summary>
+	/// Get the display string for a high score entry's completed level.
+	/// Noah's Ark stores and displays progression differently from Wolf3D, so this
+	/// resolves through the current game's map metadata when possible.
+	/// </summary>
+	/// <param name="index">Zero-based entry index (0-6)</param>
+	public string GetHighScoreDisplayLevel(int index)
+	{
+		Config.HighScoreEntry entry = config.Scores[index];
+		return FormatHighScoreDisplayLevel((int)entry.Episode, (int)entry.Completed);
+	}
+	private static string FormatHighScoreDisplayLevel(int episodeZeroBased, int completed)
+	{
+		var maps = SharedAssetManager.CurrentGame?.XML?.Element("Maps")?.Elements("Map");
+		int episodeOneBased = episodeZeroBased + 1;
+		var map = maps?.FirstOrDefault(m =>
+				int.TryParse(m.Attribute("Episode")?.Value, out int ep) && ep == episodeOneBased
+				&& int.TryParse(m.Attribute("Number")?.Value, out int number) && number == completed)
+			?? maps?.FirstOrDefault(m =>
+				int.TryParse(m.Attribute("Episode")?.Value, out int ep) && ep == episodeOneBased
+				&& int.TryParse(m.Attribute("Level")?.Value, out int level) && level == completed)
+			?? maps?.FirstOrDefault(m =>
+				int.TryParse(m.Attribute("Episode")?.Value, out int ep) && ep == episodeOneBased
+				&& int.TryParse(m.Attribute("Level")?.Value, out int level) && level == completed + 1)
+			?? maps?.FirstOrDefault(m =>
+				int.TryParse(m.Attribute("Number")?.Value, out int number) && number == completed)
+			?? maps?.FirstOrDefault(m =>
+				int.TryParse(m.Attribute("Number")?.Value, out int number) && number == completed - 1);
+		if (map is not null
+			&& int.TryParse(map.Attribute("Episode")?.Value, out int episode)
+			&& int.TryParse(map.Attribute("Level")?.Value, out int level))
+			return $"{episode}-{level}";
+		return $"{episodeOneBased}-{Math.Max(1, completed)}";
+	}
+	/// <summary>
 	/// Get the score from the pending high score data, or 0 if none.
 	/// </summary>
 	public int GetPendingScore() => sessionState.PendingHighScore?.Score ?? 0;

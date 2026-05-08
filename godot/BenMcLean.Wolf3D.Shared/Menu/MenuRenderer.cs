@@ -23,6 +23,7 @@ public class MenuRenderer
 	private readonly List<Rect2> _menuItemBounds = [];
 	private readonly List<ClickablePictureBounds> _clickablePictureBounds = [];
 	private readonly Dictionary<string, Label> _namedTextLabels = [];
+	private readonly Dictionary<string, (TextDefinition Definition, Theme Theme)> _namedTextLayout = [];
 	private readonly Dictionary<string, string> _textOverrides = [];
 	private readonly Dictionary<string, Label> _tickerLabels = [];
 	private readonly List<AnimatedPictureState> _animatedPictures = [];
@@ -105,6 +106,7 @@ public class MenuRenderer
 		_clickablePictureBounds.Clear();
 		// Clear named text and ticker tracking
 		_namedTextLabels.Clear();
+		_namedTextLayout.Clear();
 		_tickerLabels.Clear();
 		_animatedPictures.Clear();
 		_actorAnimations.Clear();
@@ -199,7 +201,11 @@ public class MenuRenderer
 				if (!string.IsNullOrEmpty(textDef.Id))
 				{
 					_namedTextLabels[textDef.Id] = label;
-					if (_textOverrides.ContainsKey(textDef.Id) && textDef.CenterX)
+					_namedTextLayout[textDef.Id] = (textDef, theme);
+					if (_textOverrides.ContainsKey(textDef.Id)
+						&& (textDef.CenterX
+							|| textDef.RightX
+							|| textDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true))
 						label.Position = TextLayoutHelper.GetPosition(
 							textDef,
 							theme,
@@ -572,7 +578,16 @@ public class MenuRenderer
 	{
 		_textOverrides[name] = value;
 		if (_namedTextLabels.TryGetValue(name, out Label label))
+		{
 			label.Text = value;
+			if (_namedTextLayout.TryGetValue(name, out var layout))
+				label.Position = TextLayoutHelper.GetPosition(
+					layout.Definition,
+					layout.Theme,
+					value,
+					Constants.MenuScreenWidth,
+					Constants.MenuScreenHeight);
+		}
 	}
 	/// <summary>
 	/// Updates a ticker label's displayed value.
