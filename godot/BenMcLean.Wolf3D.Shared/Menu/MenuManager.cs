@@ -16,6 +16,14 @@ namespace BenMcLean.Wolf3D.Shared.Menu;
 /// </summary>
 public class MenuManager
 {
+	private static string GetMenuFunctionScriptId(string functionName) => $"menu-function:{functionName}";
+	private static string GetMenuOnShowScriptId(string menuName) => $"menu:{menuName}:on-show";
+	private static string GetMenuOnCancelScriptId(string menuName) => $"menu:{menuName}:on-cancel";
+	private static string GetMenuOnSelectionChangedScriptId(string menuName) => $"menu:{menuName}:on-selection-changed";
+	private static string GetMenuPauseScriptId(string menuName, int pauseIndex) => $"menu:{menuName}:pause:{pauseIndex}";
+	private static string GetMenuItemScriptId(string menuName, int itemIndex) => $"menu:{menuName}:item:{itemIndex}";
+	private static string GetMenuPictureScriptId(string menuName, int pictureIndex) => $"menu:{menuName}:picture:{pictureIndex}";
+	private static string GetArticleOnCancelScriptId(string articleName) => $"article:{articleName}:on-cancel";
 	#region Data
 	private readonly MenuCollection _menuCollection;
 	private readonly MenuState _sessionState;
@@ -188,11 +196,44 @@ public class MenuManager
 				try
 				{
 					_luaEngine.CompileActionFunction(function.Name, function.Code);
+					_luaEngine.CompileScript(GetMenuFunctionScriptId(function.Name), function.Code, LuaEngineMode.Permissive);
 				}
 				catch (Exception ex)
 				{
 					GD.PrintErr($"ERROR: Failed to compile menu function '{function.Name}': {ex.Message}");
 				}
+		foreach (MenuDefinition menuDef in _menuCollection.Menus.Values)
+			CompileMenuDefinitionScripts(menuDef);
+		foreach (ArticleDefinition articleDef in _menuCollection.Articles.Values)
+			CompileMenuScript(articleDef.OnCancel, GetArticleOnCancelScriptId(articleDef.Name));
+	}
+
+	private void CompileMenuScript(string script, string scriptId)
+	{
+		if (string.IsNullOrEmpty(script))
+			return;
+		try
+		{
+			_luaEngine.CompileScript(scriptId, script, LuaEngineMode.Permissive);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to compile script '{scriptId}': {ex.Message}");
+		}
+	}
+
+	private void CompileMenuDefinitionScripts(MenuDefinition menuDef)
+	{
+		CompileMenuScript(menuDef.OnShow, GetMenuOnShowScriptId(menuDef.Name));
+		CompileMenuScript(menuDef.OnCancel, GetMenuOnCancelScriptId(menuDef.Name));
+		CompileMenuScript(menuDef.OnSelectionChanged, GetMenuOnSelectionChangedScriptId(menuDef.Name));
+		if (menuDef.Pauses is not null)
+			for (int i = 0; i < menuDef.Pauses.Count; i++)
+				CompileMenuScript(menuDef.Pauses[i].Script, GetMenuPauseScriptId(menuDef.Name, i));
+		for (int i = 0; i < menuDef.Items.Count; i++)
+			CompileMenuScript(menuDef.Items[i].Script, GetMenuItemScriptId(menuDef.Name, i));
+		for (int i = 0; i < menuDef.Pictures.Count; i++)
+			CompileMenuScript(menuDef.Pictures[i].Script, GetMenuPictureScriptId(menuDef.Name, i));
 	}
 	private const string PresentationMenuReservedName = "__PresentationMenu__";
 	/// <summary>
@@ -208,6 +249,7 @@ public class MenuManager
 		menuDef.Name = PresentationMenuReservedName;
 		_menuCollection.ApplyDefaultsTo(menuDef);
 		_menuCollection.Menus[PresentationMenuReservedName] = menuDef;
+		CompileMenuDefinitionScripts(menuDef);
 		_scriptContext.GetPresentationMenuItemLabelFunc = () => label;
 		_scriptContext.OpenPresentationMenuAction = () => NavigateToMenu(PresentationMenuReservedName);
 	}
@@ -309,11 +351,12 @@ public class MenuManager
 	private void ExitArticle()
 	{
 		string onCancel = _currentArticle?.OnCancel;
+		string articleName = _currentArticle?.Name;
 		_currentArticle = null;
 		_articlePages = null;
 		_articlePageIndex = 0;
 		if (!string.IsNullOrEmpty(onCancel))
-			_luaEngine.DoString(onCancel, _scriptContext);
+			_luaEngine.ExecuteCompiledScript(GetArticleOnCancelScriptId(articleName), _scriptContext);
 	}
 	/// <summary>
 	/// Apply music for the given menu.
@@ -364,17 +407,17 @@ public class MenuManager
 		_scriptContext.ActiveSequence = null;
 		// Queue Pause elements after OnShow steps (tickers/delays run first, then pauses)
 		if (menuDef.Pauses is not null)
-			foreach (MenuPauseDefinition pauseDef in menuDef.Pauses)
+			for (int pauseIndex = 0; pauseIndex < menuDef.Pauses.Count; pauseIndex++)
 			{
-				// Capture pauseDef for the closure
-				MenuPauseDefinition captured = pauseDef;
+				MenuPauseDefinition captured = menuDef.Pauses[pauseIndex];
+				int capturedPauseIndex = pauseIndex;
 				float? duration = captured.Duration.HasValue
 					? (float)captured.Duration.Value.TotalSeconds
 					: null;
 				sequence.Enqueue(new PauseSequenceStep(duration, () =>
 				{
 					if (!string.IsNullOrEmpty(captured.Script))
-						ExecutePauseScript(captured.Script);
+						ExecutePauseScript(GetMenuPauseScriptId(menuDef.Name, capturedPauseIndex));
 				}));
 			}
 		// Activate the sequence if it has steps, otherwise discard
@@ -395,7 +438,7 @@ public class MenuManager
 			return;
 		try
 		{
-			_luaEngine.DoString(menuDef.OnCancel, _scriptContext);
+			_luaEngine.ExecuteCompiledScript(GetMenuOnCancelScriptId(menuDef.Name), _scriptContext);
 		}
 		catch (Exception ex)
 		{
@@ -488,7 +531,7 @@ public class MenuManager
 			return;
 		try
 		{
-			_luaEngine.DoString(menuDef.OnSelectionChanged, _scriptContext);
+			_luaEngine.ExecuteCompiledScript(GetMenuOnSelectionChangedScriptId(menuDef.Name), _scriptContext);
 		}
 		catch (Exception ex)
 		{
@@ -507,7 +550,7 @@ public class MenuManager
 			return;
 		try
 		{
-			_luaEngine.DoString(menuDef.OnShow, _scriptContext);
+			_luaEngine.ExecuteCompiledScript(GetMenuOnShowScriptId(menuDef.Name), _scriptContext);
 		}
 		catch (Exception ex)
 		{
@@ -518,12 +561,12 @@ public class MenuManager
 	/// Execute a Pause element's Lua script.
 	/// Called when a PauseSequenceStep completes (button pressed or timeout).
 	/// </summary>
-	/// <param name="script">Lua script to execute</param>
-	private void ExecutePauseScript(string script)
+	/// <param name="scriptId">ID of the precompiled Lua script to execute</param>
+	private void ExecutePauseScript(string scriptId)
 	{
 		try
 		{
-			_luaEngine.DoString(script, _scriptContext);
+			_luaEngine.ExecuteCompiledScript(scriptId, _scriptContext);
 		}
 		catch (Exception ex)
 		{
@@ -799,15 +842,15 @@ public class MenuManager
 		return -1;
 	}
 	/// <summary>
-	/// Execute a menu item's inline Lua script.
-	/// Uses DoString to execute script directly (not pre-cached as bytecode).
+	/// Execute a menu item's precompiled Lua script.
 	/// </summary>
 	/// <param name="item">Menu item to execute</param>
 	private void ExecuteMenuItemAction(MenuItemDefinition item)
 	{
+		_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition currentMenu);
 		// Play selection sound: item-level overrides menu-level (which already inherits collection default)
 		string selectSound = item.SelectSound;
-		if (selectSound is null && _menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition currentMenu))
+		if (selectSound is null && currentMenu is not null)
 			selectSound = currentMenu.SelectSound;
 		if (!string.IsNullOrEmpty(selectSound))
 			PlaySoundImpl(selectSound);
@@ -817,11 +860,14 @@ public class MenuManager
 			_scriptContext.OpenPresentationMenuAction?.Invoke();
 			return;
 		}
+		if (currentMenu is null)
+			return;
 		if (string.IsNullOrEmpty(item.Script))
 			return;
 		try
 		{
-			_luaEngine.DoString(item.Script, _scriptContext);
+			int itemIndex = currentMenu.Items.IndexOf(item);
+			_luaEngine.ExecuteCompiledScript(GetMenuItemScriptId(_currentMenuName, itemIndex), _scriptContext);
 		}
 		catch (Exception ex)
 		{
@@ -841,8 +887,7 @@ public class MenuManager
 		return -1;
 	}
 	/// <summary>
-	/// Execute a picture's inline Lua script.
-	/// Uses DoString to execute script directly (same pattern as ExecuteMenuItemAction).
+	/// Execute a picture's precompiled Lua script.
 	/// </summary>
 	/// <param name="pictureDef">Picture definition containing the script</param>
 	private void ExecutePictureScript(PictureDefinition pictureDef)
@@ -851,7 +896,8 @@ public class MenuManager
 			return;
 		try
 		{
-			_luaEngine.DoString(pictureDef.Script, _scriptContext);
+			int pictureIndex = _menuCollection.Menus[_currentMenuName].Pictures.IndexOf(pictureDef);
+			_luaEngine.ExecuteCompiledScript(GetMenuPictureScriptId(_currentMenuName, pictureIndex), _scriptContext);
 		}
 		catch (Exception ex)
 		{

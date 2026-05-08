@@ -192,7 +192,7 @@ public class PictureDefinition
 	public float FrameInterval { get; set; } = 0.5f;
 	/// <summary>
 	/// Inline Lua script to execute when this picture is clicked.
-	/// Stored as element content in XML, executed via DoString (not pre-cached).
+	/// Stored as element content in XML and precompiled before execution.
 	/// If null or empty, the picture is not clickable.
 	/// </summary>
 	public string Script { get; set; }
@@ -457,7 +457,7 @@ public class MenuItemDefinition
 	public string Text { get; set; }
 	/// <summary>
 	/// Inline Lua script to execute when this item is selected.
-	/// Stored as element content in XML, executed via DoString (not pre-cached).
+	/// Stored as element content in XML and precompiled before execution.
 	/// </summary>
 	public string Script { get; set; }
 	/// <summary>

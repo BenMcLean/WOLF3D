@@ -223,6 +223,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private Dictionary<string, string> bonusScripts = [];
 	// Map from bonus number (byte) to script name for lookup
 	private Dictionary<byte, string> bonusNumberToScript = [];
+	private static string GetDoorScriptId(ushort tileNumber) => $"door:{tileNumber}";
+	private static string GetElevatorScriptId(ushort tileNumber) => $"elevator:{tileNumber}";
+	private static string GetActorScriptId(string actorName) => $"actor:{actorName}";
 	/// <summary>
 	/// Noah's Ark question index persisted in CONFIG.N3D.
 	/// Managed by quiz-related Lua helpers so quiz scrolls can cycle deterministically.
@@ -417,6 +420,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		stateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
 		stateCollection.ValidateFunctionReferences();
 		luaScriptEngine.CompileAllActionFunctions(stateCollection);
+		foreach (ActorDefinition actorDefinition in stateCollection.ActorDefinitions.Values)
+			if (!string.IsNullOrWhiteSpace(actorDefinition.Script))
+				luaScriptEngine.CompileScript(GetActorScriptId(actorDefinition.Name), actorDefinition.Script);
 		// Wire Inventory.ValueChanged to PlayerStateChanged and auto-text StatusBar updates.
 		// Auto-text: if the inventory key matches a StatusBar Text Id, emit StatusBarTextChanged
 		// with the value right-justified to the field width defined by the initial XML content length.
@@ -646,7 +652,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		try
 		{
 			// Execute the door script
-			MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(doorInfo.Script, context);
+			MoonSharp.Interpreter.DynValue result = luaScriptEngine.ExecuteCompiledScript(
+				GetDoorScriptId(doorInfo.TileNumber),
+				context);
 
 			// Script returns true if door can open, false if locked
 			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
@@ -1227,7 +1235,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				AudioT = audioT,
 				NavigateToMenuAction = menuName => NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName })
 			};
-			luaScriptEngine.DoString(elevatorConfig.Script, ctx);
+			luaScriptEngine.ExecuteCompiledScript(GetElevatorScriptId(elevatorConfig.Tile), ctx);
 		}
 	}
 	#endregion
@@ -1436,6 +1444,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		// Store MapAnalyzer for looking up door sounds when emitting events
 		this.mapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
+		foreach (DoorInfo doorInfo in this.mapAnalyzer.Doors.Values)
+			if (!string.IsNullOrWhiteSpace(doorInfo.Script))
+				luaScriptEngine.CompileScript(GetDoorScriptId(doorInfo.TileNumber), doorInfo.Script);
+		foreach (ElevatorConfig elevatorConfig in this.mapAnalyzer.Elevators.Values)
+			if (!string.IsNullOrWhiteSpace(elevatorConfig.Script))
+				luaScriptEngine.CompileScript(GetElevatorScriptId(elevatorConfig.Tile), elevatorConfig.Script);
 
 		// Initialize spatial index arrays and map dimensions
 		// Must be done before loading any entities (doors, pushwalls, actors)
@@ -1585,6 +1599,22 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			return true;
 		}
 		return false;
+	}
+
+	private void ExecuteActorScript(int actorIndex, Actor actor, ActorDefinition actorDef)
+	{
+		if (actorDef is null || string.IsNullOrWhiteSpace(actorDef.Script))
+			return;
+
+		Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
+		try
+		{
+			luaScriptEngine.ExecuteCompiledScript(GetActorScriptId(actorDef.Name), context);
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing inline actor script for actor {ActorIndex} ({ActorType})", actorIndex, actor.ActorType);
+		}
 	}
 	/// <summary>
 	/// Initialize actors from MapAnalyzer data - creates Actor instances and fires ActorSpawnedEvent for each.
@@ -2122,6 +2152,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (actor.HitPoints <= 0)
 		{
 			actor.HitPoints = 0;
+			ExecuteActorScript(actorIndex, actor, actorDef);
 			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 			{
 				TransitionActorStateByName(actorIndex, actorDef.DeathState);
@@ -2855,6 +2886,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			// WL_STATE.C:DamageActor - actor killed
 			actor.HitPoints = 0;
+			ExecuteActorScript(actorIndex, actor, actorDef);
 
 			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 			{
@@ -3202,6 +3234,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		foreach ((string name, string code) in DefaultScriptLoader.LoadBonusScripts())
 			if (!bonusScripts.ContainsKey(name))
 				bonusScripts[name] = code;
+		foreach ((string name, string code) in bonusScripts)
+			luaScriptEngine.CompileScript(name, code);
 		bonusNumberToScript = bonusNumberToScriptMap ?? [];
 	}
 
@@ -3327,7 +3361,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		try
 		{
 			// Execute the item script
-			MoonSharp.Interpreter.DynValue result = luaScriptEngine.DoString(script, context);
+			MoonSharp.Interpreter.DynValue result = luaScriptEngine.ExecuteCompiledScript(scriptName, context);
 			navigationTriggered = navLocal || transitionLocal;
 
 			// Script returns true to consume, false to leave
@@ -4043,6 +4077,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
 		&& def.FullVision;
 
+	private static bool IsDoorTransparentForSight(Door door)
+	{
+		if (door.Action == DoorAction.Closed)
+			return false;
+
+		// Super 3-D Noah's Ark restores the original CheckLine threshold:
+		// doors only become sight-transparent once they are open at least 1/4 tile.
+		return door.Position >= 0x4000;
+	}
+
 	/// <summary>
 	/// Returns the maximum hit points for an actor type at the current difficulty.
 	/// Used by ActorScriptContext.Heal() to clamp healing.
@@ -4122,14 +4166,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// 2. Check for pushwalls - they block sight
 		if (pushWallAtTile[tileIdx] >= 0)
 			return false;
-		// 3. Check for closed doors - they block sight
-		// Only fully closed doors block line of sight
+		// 3. Check doors using the original Wolf3D / Noah partial-open threshold.
 		if (doorAtTile[tileIdx] >= 0)
 		{
 			Door door = doors[doorAtTile[tileIdx]];
-			// A door in the Closed state blocks sight
-			// Opening, Open, and Closing states can be seen (and shot) through
-			if (door.Action == DoorAction.Closed)
+			if (!IsDoorTransparentForSight(door))
 				return false;
 		}
 		return true;

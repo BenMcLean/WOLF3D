@@ -477,7 +477,9 @@ public partial class Root : Node3D
 			},
 		};
 		LuaScriptEngine startupEngine = new([typeof(Shared.Menu.MenuScriptContext)]);
-		startupEngine.DoString(onStartupCode, startupCtx);
+		const string onStartupScriptId = "startup:on-startup";
+		startupEngine.CompileScript(onStartupScriptId, onStartupCode, BenMcLean.Wolf3D.Simulator.Lua.LuaEngineMode.Permissive);
+		startupEngine.ExecuteCompiledScript(onStartupScriptId, startupCtx);
 	}
 	/// <summary>
 	/// Suspends the current game and transitions to the main menu.

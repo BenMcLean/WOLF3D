@@ -16,6 +16,7 @@ public class LuaScriptEngine
 	private readonly Script luaScript;
 	private readonly Dictionary<string, DynValue> cachedFunctions = [];
 	private readonly Dictionary<string, DynValue> compiledActionFunctions = [];
+	private readonly Dictionary<string, DynValue> compiledScripts = [];
 	private readonly ILogger logger;
 	private readonly Type[] contextTypes;
 	private Table baseEnvironment;
@@ -144,6 +145,30 @@ public class LuaScriptEngine
 		foreach (KeyValuePair<string, DynValue> kvp in compiledActionFunctions)
 			if (kvp.Value.Type != DataType.Nil)
 				baseEnvironment[kvp.Key] = kvp.Value;
+	}
+
+	private DynValue CompileLuaChunk(
+		string scriptId,
+		string luaCode,
+		LuaEngineMode mode,
+		bool validateUpvalues)
+	{
+		Table environment = mode == LuaEngineMode.Strict ? proxyEnvironment : baseEnvironment;
+		DynValue compiled = luaScript.LoadString(luaCode, environment, scriptId);
+		if (validateUpvalues && compiled.Type == DataType.Function)
+		{
+			Closure closure = compiled.Function;
+			Closure.UpvaluesType upvaluesType = closure.GetUpvaluesType();
+			if (upvaluesType == Closure.UpvaluesType.Closure)
+			{
+				int upvalueCount = closure.GetUpvaluesCount();
+				throw new InvalidOperationException(
+					$"Script '{scriptId}' captures {upvalueCount} local variable(s) as upvalues. " +
+					"This creates persistent state across executions, breaking determinism. " +
+					"Remove top-level 'local' variables - all state must come from C# via the context API.");
+			}
+		}
+		return compiled;
 	}
 	/// <summary>
 	/// Creates a read-only proxy for a standard library table.
@@ -311,8 +336,7 @@ public class LuaScriptEngine
 	{
 		try
 		{
-			DynValue result = luaScript.DoString(luaCode);
-			cachedFunctions[scriptId] = result;
+			cachedFunctions[scriptId] = CompileLuaChunk(scriptId, luaCode, LuaEngineMode.Permissive, validateUpvalues: false);
 		}
 		catch (Exception ex)
 		{
@@ -324,10 +348,11 @@ public class LuaScriptEngine
 	/// </summary>
 	public DynValue CallFunction(string scriptId, string functionName, params object[] args)
 	{
-		if (!cachedFunctions.ContainsKey(scriptId))
+		if (!cachedFunctions.TryGetValue(scriptId, out DynValue compiled))
 			throw new InvalidOperationException($"Script '{scriptId}' not loaded");
 		try
 		{
+			luaScript.Call(compiled);
 			DynValue func = luaScript.Globals.Get(functionName);
 			if (func.Type != DataType.Function)
 				throw new InvalidOperationException($"Function '{functionName}' not found in script '{scriptId}'");
@@ -368,24 +393,9 @@ public class LuaScriptEngine
 		}
 		try
 		{
-			// Compile with read-only proxy environment
-			// Proxy allows reads from baseEnvironment but forbids writes (throws error)
-			DynValue compiled = luaScript.LoadString(luaCode, proxyEnvironment, functionName);
-			// Validate that the function has no upvalues (persistent state)
-			if (compiled.Type == DataType.Function)
-			{
-				Closure closure = compiled.Function;
-				Closure.UpvaluesType upvaluesType = closure.GetUpvaluesType();
-				if (upvaluesType == Closure.UpvaluesType.Closure)
-				{
-					int upvalueCount = closure.GetUpvaluesCount();
-					throw new InvalidOperationException(
-						$"State function '{functionName}' captures {upvalueCount} local variable(s) as upvalues. " +
-						"This creates persistent state across executions, breaking determinism. " +
-						"Remove top-level 'local' variables - all state must come from C# via the context API.");
-				}
-			}
+			DynValue compiled = CompileLuaChunk(functionName, luaCode, LuaEngineMode.Strict, validateUpvalues: true);
 			compiledActionFunctions[functionName] = compiled;
+			baseEnvironment[functionName] = compiled;
 		}
 		catch (Exception ex)
 		{
@@ -393,34 +403,26 @@ public class LuaScriptEngine
 		}
 	}
 	/// <summary>
-	/// Execute Lua code directly without pre-compiling (for menu scripts).
-	/// Uses baseEnvironment (not the read-only proxy) since menu scripts don't require determinism.
-	/// Performance: Slower than ExecuteActionFunction due to parsing overhead.
-	/// Use case: Menu actions where code is simple and executed infrequently.
+	/// Compiles a script chunk and stores it by ID.
 	/// </summary>
-	/// <param name="luaCode">Lua code to execute</param>
-	/// <param name="context">Execution context providing state access</param>
-	/// <returns>The result of the Lua script execution</returns>
-	public DynValue DoString(string luaCode, IScriptContext context)
+	public void CompileScript(string scriptId, string luaCode, LuaEngineMode mode = LuaEngineMode.Strict)
 	{
 		if (string.IsNullOrWhiteSpace(luaCode))
-			return DynValue.Nil;
+		{
+			compiledScripts[scriptId] = DynValue.Nil;
+			return;
+		}
 		try
 		{
-			// Set context for this execution
-			IScriptContext previousContext = CurrentContext;
-			CurrentContext = context;
-			// Load and execute with base environment directly
-			// Menu scripts don't need the read-only proxy restrictions that action scripts use
-			DynValue compiled = luaScript.LoadString(luaCode, baseEnvironment);
-			DynValue result = luaScript.Call(compiled);
-			// Restore previous context
-			CurrentContext = previousContext;
-			return result;
+			compiledScripts[scriptId] = CompileLuaChunk(
+				scriptId,
+				luaCode,
+				mode,
+				validateUpvalues: mode == LuaEngineMode.Strict);
 		}
 		catch (Exception ex)
 		{
-			throw new InvalidOperationException($"Error executing Lua code: {ex.Message}", ex);
+			throw new InvalidOperationException($"Failed to compile script '{scriptId}': {ex.Message}", ex);
 		}
 	}
 	/// <summary>
@@ -459,6 +461,31 @@ public class LuaScriptEngine
 		catch (Exception ex)
 		{
 			throw new InvalidOperationException($"Error executing state function '{functionName}': {ex.Message}", ex);
+		}
+	}
+
+	/// <summary>
+	/// Executes a previously compiled script chunk with the given context.
+	/// </summary>
+	public DynValue ExecuteCompiledScript(string scriptId, IScriptContext context, params object[] args)
+	{
+		if (!compiledScripts.TryGetValue(scriptId, out DynValue compiled))
+			throw new InvalidOperationException($"Script '{scriptId}' not compiled.");
+		if (compiled.Type == DataType.Nil)
+			return DynValue.Nil;
+		try
+		{
+			IScriptContext previousContext = CurrentContext;
+			CurrentContext = context;
+			DynValue result = args is { Length: > 0 }
+				? luaScript.Call(compiled, args)
+				: luaScript.Call(compiled);
+			CurrentContext = previousContext;
+			return result;
+		}
+		catch (Exception ex)
+		{
+			throw new InvalidOperationException($"Error executing compiled script '{scriptId}': {ex.Message}", ex);
 		}
 	}
 }

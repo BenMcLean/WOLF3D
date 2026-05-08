@@ -216,6 +216,11 @@ public class ActorDefinition
 	/// </summary>
 	public string Name { get; set; }
 	/// <summary>
+	/// Optional inline Lua script for actor-specific behavior such as score awards and item drops.
+	/// Executed with ActorScriptContext.
+	/// </summary>
+	public string Script { get; set; }
+	/// <summary>
 	/// State name to transition to when actor dies (e.g., "s_grddie1").
 	/// </summary>
 	public string DeathState { get; set; }
@@ -314,6 +319,7 @@ public class ActorDefinition
 		return new ActorDefinition
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Actor element must have a Name attribute"),
+			Script = element.Element("Script")?.Value?.Trim(),
 			DeathState = element.Attribute("Death")?.Value,
 			ChaseState = element.Attribute("Chase")?.Value,
 			AttackState = element.Attribute("Attack")?.Value,
