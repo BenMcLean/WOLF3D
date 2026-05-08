@@ -569,6 +569,12 @@ public class MenuScriptContext(
 	/// <returns>Floor number</returns>
 	public int GetFloor() => CompletionStats?.FloorNumber ?? 0;
 	/// <summary>
+	/// Returns true if the completed level was reached via an alternate elevator / secret exit.
+	/// Exposed to Lua so game-specific intermission screens can mirror the original title art.
+	/// </summary>
+	/// <returns>True when the current completion stats are for a secret level</returns>
+	public bool IsSecretLevel() => CompletionStats?.IsSecretLevel ?? false;
+	/// <summary>
 	/// Returns true when the current loaded game is one of the Spear campaign XMLs.
 	/// Exposed to Lua for game-specific menu presentation differences.
 	/// </summary>

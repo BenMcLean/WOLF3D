@@ -738,49 +738,39 @@ ResumeGame()
 ]]>
 				</Pause>
 			</Menu>
-			<Menu Name="LevelComplete" Font="L" BordColor="127" Music="NOAH05_MUS"
+			<Menu Name="LevelComplete" Font="L" TextColor="15" BordColor="218" Music="NOAH05_MUS"
 				X="112" Y="168" Indent="0" Spacing="13">
 				<!-- WL_INTER.C: "Still in split screen mode with the status bar" -->
 				<StatusBar X="0" Y="160" />
-				<!-- BJ breathing picture: VWB_DrawPic(0,16,L_GUYPIC) -->
-				<Picture Name="L_GUYPIC" X="0" Y="16" Frames="L_GUYPIC,L_GUY2PIC"
+				<!-- S3DNA path in WL_INTER.C: DrawEndLevelScreen(), VIEWCOLOR + W_*PIC title cards -->
+				<Picture Name="L_GUYPIC" X="8" Y="8" Frames="L_GUYPIC,L_GUY2PIC"
 					FrameInterval="0.5" />
-				<!-- WL_INTER.C:Write(14,2,"floor\ncompleted") = pixel (112,16) -->
-				<Text X="112" Y="16" Font="L">
-					FLOOR
-					COMPLETED
-				</Text>
-				<!-- Floor number displayed by Lua SetText -->
-				<Text Id="FloorNumber" X="208" Y="16" Font="L"> </Text>
-				<!-- WL_INTER.C:Write(14,7,"bonus     0") = pixel (112,56) -->
-				<Text X="112" Y="56" Font="L">BONUS</Text>
-				<Text Id="BonusValue" X="208" Y="56" Font="L">0</Text>
-				<!-- WL_INTER.C:Write(16,10,"time") = pixel (128,80) -->
-				<Text X="128" Y="80" Font="L">TIME</Text>
-				<Text Id="TimeValue" X="208" Y="80" Font="L">0:00</Text>
-				<!-- WL_INTER.C:Write(16,12," par") = pixel (128,96) -->
-				<Text X="128" Y="96" Font="L"> PAR</Text>
-				<Text Id="ParValue" X="208" Y="96" Font="L">0:00</Text>
-				<!-- WL_INTER.C:Write(9,14,"kill ratio    %") = pixel (72,112) -->
-				<Text X="72" Y="112" Font="L">KILL RATIO    %</Text>
-				<!-- WL_INTER.C:Write(5,16,"secret ratio    %") = pixel (40,128) -->
-				<Text X="40" Y="128" Font="L">SECRET RATIO    %</Text>
-				<!-- WL_INTER.C:Write(1,18,"treasure ratio    %") = pixel (8,144) -->
-				<Text X="8" Y="144" Font="L">TREASURE RATIO    %</Text>
-				<!-- Ticker values: RATIOXX=37 → pixel 296, right-aligned -->
-				<Ticker Name="KillRatio" X="296" Y="112" Font="L" Align="Right"
-					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
-					NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="SecretRatio" X="296" Y="128" Font="L" Align="Right"
-					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
-					NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Ticker Name="TreasureRatio" X="296" Y="144" Font="L" Align="Right"
-					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
-					NoBonusSound="NOBONUSSND" TickInterval="10" />
-				<Pause>ContinueToNextLevel()</Pause>
+				<Picture Id="TitleTop" Name="W_LEVELPIC" X="104" Y="8" />
+				<Picture Id="TitleMiddle" Name="W_FLOORPIC" X="104" Y="24" />
+				<Picture Name="W_FINISHPIC" X="104" Y="40" />
+				<Text Id="EpisodeNumber" X="184" Y="8" Font="L"> </Text>
+				<Text Id="FloorNumber" X="184" Y="24" Font="L"> </Text>
+				<Picture Name="W_BONUSPIC" X="104" Y="72" />
+				<Text Id="BonusValue" X="288" Y="72" Font="Y" Align="Right">0000000</Text>
+				<Picture Name="W_PARPIC" X="96" Y="112" />
+				<Text Id="ParValue" X="152" Y="112" Font="L">0:00:00</Text>
+				<Picture Name="W_TIMEPIC" X="88" Y="128" />
+				<Text Id="TimeValue" X="152" Y="128" Font="L">0:00:00</Text>
+				<Pause>NavigateToMenuImmediate("LevelCompleteRatios")</Pause>
 				<OnShow>
 					<![CDATA[
 local floor = GetFloor()
+local secretLevel = IsSecretLevel()
+local secretBonus = secretLevel and 15000 or 0
+if IsSecretLevel() then
+	SetPicture("TitleTop", "W_SECRETPIC")
+	SetPicture("TitleMiddle", "W_LEVELPIC")
+	SetText("EpisodeNumber", "")
+else
+	SetPicture("TitleTop", "W_LEVELPIC")
+	SetPicture("TitleMiddle", "W_FLOORPIC")
+	SetText("EpisodeNumber", tostring(GetEpisode()))
+end
 SetText("FloorNumber", tostring(floor))
 SetText("ParValue", FormatTime(GetParTime()))
 SetText("TimeValue", FormatTime(GetLevelTime()))
@@ -798,21 +788,132 @@ if parSec > 0 and levelSec < parSec then
 	timeBonus = math.floor((parSec - levelSec) * 500)
 end
 
--- Calculate total bonus
-local bonus = timeBonus
+SetText("BonusValue", tostring(secretBonus + timeBonus))
+]]>
+				</OnShow>
+			</Menu>
+			<Menu Name="LevelCompleteRatios" Font="L" TextColor="15" BordColor="218" Music="NOAH05_MUS"
+				X="112" Y="168" Indent="0" Spacing="13">
+				<StatusBar X="0" Y="160" />
+				<Picture Name="L_GUYPIC" X="8" Y="8" Frames="L_GUYPIC,L_GUY2PIC"
+					FrameInterval="0.5" />
+				<Picture Id="RatioTitleTop" Name="W_LEVELPIC" X="104" Y="8" />
+				<Picture Id="RatioTitleMiddle" Name="W_FLOORPIC" X="104" Y="24" />
+				<Picture Name="W_FINISHPIC" X="104" Y="40" />
+				<Text Id="RatioEpisodeNumber" X="184" Y="8" Font="L"> </Text>
+				<Text Id="RatioFloorNumber" X="184" Y="24" Font="L"> </Text>
+				<Picture Name="W_BONUSPIC" X="104" Y="72" />
+				<Text Id="RatioBonusValue" X="288" Y="72" Font="Y" Align="Right">0000000</Text>
+				<Picture Name="W_KILLSPIC" X="80" Y="104" />
+				<Text X="264" Y="104" Font="L">%</Text>
+				<Picture Name="W_TREASURESPIC" X="104" Y="120" />
+				<Text X="264" Y="120" Font="L">%</Text>
+				<Picture Name="W_SECRETSPIC" X="72" Y="136" />
+				<Text X="264" Y="136" Font="L">%</Text>
+				<Ticker Name="KillRatio" X="248" Y="104" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="TreasureRatio" X="248" Y="120" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="SecretRatio" X="248" Y="136" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Pause>
+					<![CDATA[
+local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal()) or 0
+local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
+local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
+if kr == 100 and sr == 100 and tr == 100 then
+	NavigateToMenuImmediate("LevelCompletePerfect")
+else
+	ContinueToNextLevel()
+end
+]]>
+				</Pause>
+				<OnShow>
+					<![CDATA[
+local floor = GetFloor()
+local secretLevel = IsSecretLevel()
+local secretBonus = secretLevel and 15000 or 0
+if secretLevel then
+	SetPicture("RatioTitleTop", "W_SECRETPIC")
+	SetPicture("RatioTitleMiddle", "W_LEVELPIC")
+	SetText("RatioEpisodeNumber", "")
+else
+	SetPicture("RatioTitleTop", "W_LEVELPIC")
+	SetPicture("RatioTitleMiddle", "W_FLOORPIC")
+	SetText("RatioEpisodeNumber", tostring(GetEpisode()))
+end
+SetText("RatioFloorNumber", tostring(floor))
+
+local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal()) or 0
+local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
+local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
+local parSec = GetParTime()
+local levelSec = GetLevelTime()
+local timeBonus = 0
+if parSec > 0 and levelSec < parSec then
+	timeBonus = math.floor((parSec - levelSec) * 500)
+end
+local bonus = secretBonus + timeBonus
 if kr == 100 then bonus = bonus + 10000 end
 if sr == 100 then bonus = bonus + 10000 end
 if tr == 100 then bonus = bonus + 10000 end
-SetText("BonusValue", tostring(bonus))
+SetText("RatioBonusValue", tostring(bonus))
 GivePoints(bonus)
 
--- Queue intermission sequence (WL_INTER.C flow)
--- Tickers count up one at a time, top to bottom
--- Pressing any button during counting skips to final values
-QueueDelay(2)                      -- Pause before counting (~2*TickBase)
-StartTicker("KillRatio", kr)       -- Kill ratio counts up
-StartTicker("SecretRatio", sr)     -- Then secret ratio
-StartTicker("TreasureRatio", tr)   -- Then treasure ratio
+QueueDelay(2)
+StartTicker("KillRatio", kr)
+StartTicker("TreasureRatio", tr)
+StartTicker("SecretRatio", sr)
+]]>
+				</OnShow>
+			</Menu>
+			<Menu Name="LevelCompletePerfect" Font="L" TextColor="15" BordColor="218" Music="NOAH05_MUS"
+				X="112" Y="168" Indent="0" Spacing="13">
+				<StatusBar X="0" Y="160" />
+				<Picture Name="L_GUYPIC" X="8" Y="8" Frames="L_GUYPIC,L_GUY2PIC"
+					FrameInterval="0.5" />
+				<Picture Id="PerfectTitleTop" Name="W_LEVELPIC" X="104" Y="8" />
+				<Picture Id="PerfectTitleMiddle" Name="W_FLOORPIC" X="104" Y="24" />
+				<Picture Name="W_FINISHPIC" X="104" Y="40" />
+				<Text Id="PerfectEpisodeNumber" X="184" Y="8" Font="L"> </Text>
+				<Text Id="PerfectFloorNumber" X="184" Y="24" Font="L"> </Text>
+				<Picture Name="W_BONUSPIC" X="104" Y="72" />
+				<Text Id="PerfectBonusValue" X="288" Y="72" Font="Y" Align="Right">0000000</Text>
+				<Picture Name="W_PERFECTPIC" X="96" Y="120" />
+				<Pause>ContinueToNextLevel()</Pause>
+				<OnShow>
+					<![CDATA[
+local floor = GetFloor()
+local secretLevel = IsSecretLevel()
+local secretBonus = secretLevel and 15000 or 0
+if secretLevel then
+	SetPicture("PerfectTitleTop", "W_SECRETPIC")
+	SetPicture("PerfectTitleMiddle", "W_LEVELPIC")
+	SetText("PerfectEpisodeNumber", "")
+else
+	SetPicture("PerfectTitleTop", "W_LEVELPIC")
+	SetPicture("PerfectTitleMiddle", "W_FLOORPIC")
+	SetText("PerfectEpisodeNumber", tostring(GetEpisode()))
+end
+SetText("PerfectFloorNumber", tostring(floor))
+
+local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal()) or 0
+local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
+local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
+local parSec = GetParTime()
+local levelSec = GetLevelTime()
+local timeBonus = 0
+if parSec > 0 and levelSec < parSec then
+	timeBonus = math.floor((parSec - levelSec) * 500)
+end
+local bonus = secretBonus + timeBonus
+if kr == 100 then bonus = bonus + 10000 end
+if sr == 100 then bonus = bonus + 10000 end
+if tr == 100 then bonus = bonus + 10000 end
+SetText("PerfectBonusValue", tostring(bonus))
 ]]>
 				</OnShow>
 			</Menu>
