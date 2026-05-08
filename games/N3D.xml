@@ -1691,6 +1691,7 @@ return true
 -- GiveAmmo(25) if ammo < maxammo
 if GetValue("Feed") < GetMax("Feed") then
 	AddValue("Feed", 25)
+	PlaySound("D_BONUSSND")
 	FlashScreen(0xFFFF00)
 	return true
 end
