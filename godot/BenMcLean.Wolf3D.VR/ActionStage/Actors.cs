@@ -37,6 +37,7 @@ public partial class Actors : Node3D
 	private readonly ushort[] _snoozePages;
 	// Simulator reference for event subscription
 	private Simulator.Simulator _simulator;
+	private long _lastProcessedSimTic;
 	/// <summary>
 	/// Actor rendering state (position, sprite info, facing).
 	/// </summary>
@@ -318,6 +319,26 @@ public partial class Actors : Node3D
 	{
 		float billboardRotation = _getCameraYRotation();
 		Vector3 viewerPosition = _getViewerPosition();
+		if (_simulator is not null)
+		{
+			long currentSimTic = _simulator.CurrentTic;
+			long deltaTics = currentSimTic - _lastProcessedSimTic;
+			if (deltaTics > 0)
+			{
+				int[] actorIndices = [.. _actorData.Keys];
+				foreach (int actorIndex in actorIndices)
+				{
+					ActorRenderData data = _actorData[actorIndex];
+					if (!data.IsSleeping)
+						continue;
+
+					data.SnoozeCounter = unchecked((byte)(data.SnoozeCounter + (3 * deltaTics)));
+					_actorData[actorIndex] = data;
+				}
+				_lastProcessedSimTic = currentSimTic;
+			}
+		}
+
 		foreach (KeyValuePair<int, MeshInstance3D> kvp in _actorNodes)
 		{
 			int actorIndex = kvp.Key;
@@ -352,6 +373,7 @@ public partial class Actors : Node3D
 		_simulator.ActorMoved += OnActorMoved;
 		_simulator.ActorSpriteChanged += OnActorSpriteChanged;
 		_simulator.ActorPlaySound += OnActorPlaySound;
+		_lastProcessedSimTic = _simulator.CurrentTic;
 	}
 	/// <summary>
 	/// Unsubscribes from simulator events.
