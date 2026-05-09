@@ -159,7 +159,8 @@
 		</Pics>
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath"
 			OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage"
-			OnInventoryChange="OnInventoryChange"
+			OnInventoryChange="OnInventoryChange" OnWeaponSlotChange="OnWeaponSlotChange"
+			OnWeaponFire="OnWeaponFire"
 			FizzleFadeColor="4">
 			<Text Id="Floor" X="32" Y="16" Align="Right"> 1</Text>
 			<Text Id="Score" X="96" Y="16" Align="Right">     0</Text>
@@ -1870,6 +1871,18 @@ elseif name == "StatusBarWeapon" then
 	}
 	SetPicture("WeaponPic", pics[value] or "GUNPIC")
 end
+]]>
+			</Function>
+			<Function Name="OnWeaponSlotChange">
+				<![CDATA[
+local slotIndex, weaponNumber, weaponType = ...
+SetValue("StatusBarWeapon", weaponNumber)
+]]>
+			</Function>
+			<Function Name="OnWeaponFire">
+				<![CDATA[
+local slotIndex, weaponNumber, weaponType = ...
+SetValue("StatusBarWeapon", weaponNumber)
 ]]>
 			</Function>
 			<!-- WL_ACT2.C:SpawnBJVictory - BJ Blazkowicz victory animation (shareware ending) -->

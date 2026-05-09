@@ -54,6 +54,16 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 	/// </summary>
 	public string OnInventoryChange { get; set; }
 	/// <summary>
+	/// Optional ActionFunction to call whenever a weapon slot changes to a different weapon.
+	/// The slot index, weapon number, and weapon type name are passed as Lua varargs.
+	/// </summary>
+	public string OnWeaponSlotChange { get; set; }
+	/// <summary>
+	/// Optional ActionFunction to call whenever a weapon successfully fires.
+	/// The slot index, weapon number, and weapon type name are passed as Lua varargs.
+	/// </summary>
+	public string OnWeaponFire { get; set; }
+	/// <summary>
 	/// VGA palette color index for the death fizzle-fade effect, or null to skip the fizzle.
 	/// ID_VH.C:FizzleFade — pseudo-random pixel reveal over 70 tics.
 	/// WL_GAME.C:Died — VW_Bar fills the view with this color, then FizzleFade reveals it.
@@ -76,6 +86,8 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 			OnMapStart = element.Attribute("OnMapStart")?.Value,
 			OnTakeDamage = element.Attribute("OnTakeDamage")?.Value,
 			OnInventoryChange = element.Attribute("OnInventoryChange")?.Value,
+			OnWeaponSlotChange = element.Attribute("OnWeaponSlotChange")?.Value,
+			OnWeaponFire = element.Attribute("OnWeaponFire")?.Value,
 			FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
 		};
 

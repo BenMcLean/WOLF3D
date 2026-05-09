@@ -160,6 +160,13 @@ public class ActionScriptContext(
 	/// <param name="picName">New VgaGraph picture name to display (e.g., "FACE1APIC")</param>
 	public void SetPicture(string id, string picName) =>
 		simulator.EmitStatusBarPicChanged(id, picName);
+	/// <summary>
+	/// Check whether the active status bar defines a picture with the given Id.
+	/// Useful for mods that want to drive optional HUD elements conditionally.
+	/// </summary>
+	/// <param name="id">Picture Id as defined in the StatusBar &lt;Picture Id="..."&gt; element</param>
+	/// <returns>True if that picture Id exists in the current status bar definition</returns>
+	public bool HasPicture(string id) => simulator.HasStatusBarPicture(id);
 	#endregion
 	#region Text API (exposed to Lua)
 	/// <summary>

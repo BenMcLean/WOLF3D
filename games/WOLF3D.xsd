@@ -415,6 +415,22 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="OnWeaponSlotChange" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Optional ActionFunction to call whenever a weapon slot changes to a different weapon.
+						The slot index, weapon number, and weapon type name are passed as Lua varargs.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="OnWeaponFire" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Optional ActionFunction to call whenever a weapon successfully fires.
+						The slot index, weapon number, and weapon type name are passed as Lua varargs.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="FizzleFadeColor" type="xs:unsignedByte">
 				<xs:annotation>
 					<xs:documentation>

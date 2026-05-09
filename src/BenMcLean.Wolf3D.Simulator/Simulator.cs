@@ -93,6 +93,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private string onTakeDamageFunctionName;
 	// Optional ActionFunction name from StatusBar definition to react to inventory changes.
 	private string onInventoryChangeFunctionName;
+	// Optional ActionFunction name from StatusBar definition to react when a weapon slot changes.
+	private string onWeaponSlotChangeFunctionName;
+	// Optional ActionFunction name from StatusBar definition to react when a weapon successfully fires.
+	private string onWeaponFireFunctionName;
 	// OnFace ActionFunction name from StatusBar definition (WL_AGENT.C:UpdateFace)
 	private string onFaceFunctionName;
 	// Maps StatusBar Text Id → display field width (from initial XML content length).
@@ -104,6 +108,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// Tracks the last-emitted pic name per StatusBar picture Id.
 	// Used by SyncStatusBarState() to replay current pic values to a newly created status bar.
 	private readonly Dictionary<string, string> _currentStatusBarPics = [];
+	// Tracks which picture Ids exist in the active status bar definition.
+	private readonly HashSet<string> _statusBarPictureIds = [];
 	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
 	private FaceController faceController;
 	// Map analyzer for accessing door metadata (sounds, etc.)
@@ -1450,6 +1456,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		onMapStartFunctionName = statusBar.OnMapStart;
 		onTakeDamageFunctionName = statusBar.OnTakeDamage;
 		onInventoryChangeFunctionName = statusBar.OnInventoryChange;
+		onWeaponSlotChangeFunctionName = statusBar.OnWeaponSlotChange;
+		onWeaponFireFunctionName = statusBar.OnWeaponFire;
 		onFaceFunctionName = statusBar.OnFace;
 		// Build auto-text map: StatusBar Text Id → field width from initial XML content length.
 		// When SetValue fires for a matching key, the value is right-justified to this width.
@@ -1457,6 +1465,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		foreach (TextDefinition text in statusBar.Texts)
 			if (!string.IsNullOrEmpty(text.Id))
 				_statusBarTextWidths[text.Id] = (text.Content ?? string.Empty).Length;
+		_statusBarPictureIds.Clear();
+		foreach (PictureDefinition picture in statusBar.Pictures)
+			if (!string.IsNullOrEmpty(picture.Id))
+				_statusBarPictureIds.Add(picture.Id);
 		faceController = !string.IsNullOrEmpty(onFaceFunctionName)
 			? new FaceController(rng, luaScriptEngine, onFaceFunctionName, statusBar.FaceTics)
 			: null;
@@ -2241,10 +2253,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		slot.AttackFrame = 0;
 		slot.Flags = WeaponSlotFlags.Ready;
 
-		// Track selected weapon per slot and update status bar weapon in inventory
-		// Inventory is the single source of truth for the presentation layer
 		Inventory.SetValue($"SelectedWeapon{slotIndex}", weaponInfo.Number);
-		Inventory.SetValue("StatusBarWeapon", weaponInfo.Number);
+		ExecuteOnWeaponSlotChangeScript(slotIndex, weaponInfo.Number, weaponType);
 
 		WeaponEquipped?.Invoke(new WeaponEquippedEvent
 		{
@@ -2611,6 +2621,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (!TryConsumeAmmo(weaponInfo))
 			return;
 
+		ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, slot.WeaponType);
+
 		// Perform hit detection via presentation layer callback
 		int? hitActorIndex = HitDetection?.Invoke(slotIndex);
 
@@ -2642,6 +2654,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (!TryConsumeAmmo(weaponInfo, ammoKey))
 			return;
 
+		ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, slot.WeaponType);
+
 		SpawnPlayerProjectile(slotIndex, projectileType);
 
 		WeaponFired?.Invoke(new WeaponFiredEvent
@@ -2667,6 +2681,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	private void ExecuteKnifeAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
 	{
+		ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, slot.WeaponType);
+
 		// WL_AGENT.C:KnifeAttack - position-based melee, no raycast needed
 		int? hitActorIndex = null;
 		int closestDist = int.MaxValue;
@@ -3052,6 +3068,46 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 	}
 
+	private void ExecuteOnWeaponSlotChangeScript(int slotIndex, int weaponNumber, string weaponType)
+	{
+		if (string.IsNullOrEmpty(onWeaponSlotChangeFunctionName))
+			return;
+
+		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+		{
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			AudioT = audioT
+		};
+		try
+		{
+			luaScriptEngine.ExecuteActionFunction(onWeaponSlotChangeFunctionName, context, slotIndex, weaponNumber, weaponType);
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing OnWeaponSlotChange function '{FunctionName}'", onWeaponSlotChangeFunctionName);
+		}
+	}
+
+	private void ExecuteOnWeaponFireScript(int slotIndex, int weaponNumber, string weaponType)
+	{
+		if (string.IsNullOrEmpty(onWeaponFireFunctionName))
+			return;
+
+		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+		{
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			AudioT = audioT
+		};
+		try
+		{
+			luaScriptEngine.ExecuteActionFunction(onWeaponFireFunctionName, context, slotIndex, weaponNumber, weaponType);
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing OnWeaponFire function '{FunctionName}'", onWeaponFireFunctionName);
+		}
+	}
+
 	/// <summary>
 	/// Emit a generic PlayerStateChanged event for listeners that want to know
 	/// some player inventory-derived state changed.
@@ -3101,6 +3157,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			PicName = picName
 		});
 	}
+
+	public bool HasStatusBarPicture(string id) => _statusBarPictureIds.Contains(id);
 
 	/// <summary>
 	/// Emit a StatusBarTextChanged event to update a named status bar text label.
