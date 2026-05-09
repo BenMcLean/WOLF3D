@@ -1921,11 +1921,11 @@ return true
 			<ObjectType Number="54" ObClass="block" Page="103" Name="Column 2" />
 			<!-- bo_flamethrower/bo_gascan/bo_launcher/bo_missiles → tile 80 -->
 			<ObjectType Number="55" ObClass="bonus" Page="104" Script="slingshot_4" AutomapTile="80"
-				Name="Slingshot 4" />
+				Name="Cantaloupe Launcher" />
 			<ObjectType Number="56" ObClass="bonus" Page="105" Script="gascan" AutomapTile="80"
-				Name="Cantaloupe" />
+				Name="Cantaloupes" />
 			<ObjectType Number="57" ObClass="bonus" Page="106" Script="slingshot_5" AutomapTile="80"
-				Name="Slingshot 5" />
+				Name="Watermelon Launcher" />
 			<ObjectType Number="58" ObClass="bonus" Page="107" Script="missiles_ammo"
 				AutomapTile="80" Name="Watermelons" />
 			<!-- bo_map → no automap tile (WL_MAP.C default: tile=0, skip) -->
@@ -3258,10 +3258,10 @@ end
 			<Sprite Page="426" Name="SPR_WATERATK2" />
 			<Sprite Page="427" Name="SPR_WATERATK3" />
 			<Sprite Page="428" Name="SPR_WATERATK4" />
-			<Sprite Page="429" Name="SPR_WATERMELON" />
-			<Sprite Page="430" Name="SPR_WATERMELONEXP" />
-			<Sprite Page="433" Name="SPR_CANTALOUPE" />
-			<Sprite Page="434" Name="SPR_CANTALOUPEEXP" />
+			<Sprite Page="113" Name="SPR_WATERMELON" />
+			<Sprite Page="114" Name="SPR_WATERMELONEXP" />
+			<Sprite Page="117" Name="SPR_CANTALOUPE" />
+			<Sprite Page="118" Name="SPR_CANTALOUPEEXP" />
 		</Sprites>
 		<DigiSounds>
 			<DigiSound Number="0" Name="D_ANTLPESND" />
