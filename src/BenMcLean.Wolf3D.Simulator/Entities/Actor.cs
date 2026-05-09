@@ -113,6 +113,13 @@ public class Actor : ISnapshot<ActorSnapshot>
 	public short ReactionTimer { get; set; }
 
 	/// <summary>
+	/// Noah-only snooze animation counter.
+	/// Mirrors the original objstruct.snore 2.6 fixed-point value: upper bits select
+	/// the visible Z frame while the low bits accumulate time between frame changes.
+	/// </summary>
+	public byte SnoozeCounter { get; set; }
+
+	/// <summary>
 	/// Creates a new Actor instance.
 	/// </summary>
 	/// <param name="actorType">Actor type identifier (e.g., "guard", "ss")</param>
@@ -167,6 +174,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 		Flags = (int)Flags,
 		Distance = Distance,
 		ReactionTimer = ReactionTimer,
+		SnoozeCounter = SnoozeCounter,
 	};
 
 	/// <summary>
@@ -189,6 +197,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 		Flags = (ActorFlags)state.Flags;
 		Distance = state.Distance;
 		ReactionTimer = state.ReactionTimer;
+		SnoozeCounter = state.SnoozeCounter;
 	}
 }
 

@@ -139,6 +139,11 @@ public struct ActorSpawnedEvent
 	public required ushort Shape { get; init; }
 	// True = 8-directional sprite group, False = single sprite from all angles
 	public required bool IsRotated { get; init; }
+	// True when the actor has been "killed" and is in Noah-style sleeping mode.
+	// Presentation layers can use this to render non-gameplay overlays like snooze Zs.
+	public required bool IsSleeping { get; init; }
+	// Noah-style snooze animation counter (original objstruct.snore format).
+	public required byte SnoozeCounter { get; init; }
 }
 /// <summary>
 /// An actor moved to a new position.
@@ -167,6 +172,10 @@ public struct ActorSpriteChangedEvent
 	public required ushort Shape { get; init; }
 	// True = 8-directional sprite group, False = single sprite from all angles
 	public required bool IsRotated { get; init; }
+	// True when the actor has been "killed" and is in Noah-style sleeping mode.
+	public required bool IsSleeping { get; init; }
+	// Noah-style snooze animation counter (original objstruct.snore format).
+	public required byte SnoozeCounter { get; init; }
 }
 /// <summary>
 /// An actor was removed from the world (died, despawned).

@@ -317,7 +317,8 @@ void sky() {
 				VRAssetManager.SpriteMaterials,
 				Shared.SharedAssetManager.DigiSounds,      // Digi sounds for actor alert sounds
 				() => _displayMode.ViewerPosition,         // Viewer position for directional sprites
-				() => _displayMode.ViewerYRotation);       // Camera Y rotation for billboard effect
+				() => _displayMode.ViewerYRotation,        // Camera Y rotation for billboard effect
+				Shared.SharedAssetManager.CurrentGame?.VSwap?.SpritesByName);
 			AddChild(_actors);
 
 			// Create projectiles (in-flight rockets, needles, fireballs, etc.) for the current level

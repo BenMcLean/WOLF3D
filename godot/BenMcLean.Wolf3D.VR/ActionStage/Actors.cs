@@ -16,8 +16,11 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// </summary>
 public partial class Actors : Node3D
 {
+	private const float SnoozeOverlayDepthOffset = 0.001f;
 	// Maps ActorIndex -> MeshInstance3D node
 	private readonly Dictionary<int, MeshInstance3D> _actorNodes = [];
+	// Optional Noah-style snooze overlay billboards, one per sleeping actor.
+	private readonly Dictionary<int, MeshInstance3D> _snoozeNodes = [];
 	// Maps ActorIndex -> AudioStreamPlayer3D for spatial sound
 	private readonly Dictionary<int, AudioStreamPlayer3D> _actorSpeakers = [];
 	// Maps ActorIndex -> actor rendering state
@@ -30,6 +33,8 @@ public partial class Actors : Node3D
 	private readonly Func<Vector3> _getViewerPosition;
 	// Camera Y rotation delegate for billboard effect
 	private readonly Func<float> _getCameraYRotation;
+	// Absolute VSWAP pages for SPR_SNOOZE_1..3, if the current game defines them.
+	private readonly ushort[] _snoozePages;
 	// Simulator reference for event subscription
 	private Simulator.Simulator _simulator;
 	/// <summary>
@@ -41,6 +46,8 @@ public partial class Actors : Node3D
 		public Direction? Facing;       // Actor's facing direction (for rotated sprites, 8-way)
 		public ushort BaseShape;                 // Base sprite page
 		public bool IsRotated;                   // True = 8-directional, False = single sprite
+		public bool IsSleeping;                  // True while Noah-style snooze overlay should animate
+		public byte SnoozeCounter;               // Original Noah uses a wrapping 2.6 fixed-point snore counter
 	}
 	/// <summary>
 	/// Creates actor sprite rendering system.
@@ -54,18 +61,24 @@ public partial class Actors : Node3D
 		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
 		IReadOnlyDictionary<string, AudioStreamWav> digiSounds,
 		Func<Vector3> getViewerPosition,
-		Func<float> getCameraYRotation)
+		Func<float> getCameraYRotation,
+		IReadOnlyDictionary<string, ushort> spritePagesByName = null)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		_digiSounds = digiSounds ?? throw new ArgumentNullException(nameof(digiSounds));
 		_getViewerPosition = getViewerPosition ?? throw new ArgumentNullException(nameof(getViewerPosition));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
+		if (spritePagesByName is not null
+			&& spritePagesByName.TryGetValue("SPR_SNOOZE_1", out ushort snooze1)
+			&& spritePagesByName.TryGetValue("SPR_SNOOZE_2", out ushort snooze2)
+			&& spritePagesByName.TryGetValue("SPR_SNOOZE_3", out ushort snooze3))
+			_snoozePages = [snooze1, snooze2, snooze3];
 	}
 	/// <summary>
 	/// Shows a newly spawned actor.
 	/// Called from event handler when ActorSpawnedEvent fires.
 	/// </summary>
-	private void ShowActor(int actorIndex, ushort shape, bool isRotated, ushort tileX, ushort tileY, Direction? facing)
+	private void ShowActor(int actorIndex, ushort shape, bool isRotated, bool isSleeping, byte snoozeCounter, ushort tileX, ushort tileY, Direction? facing)
 	{
 		// If actor already has a node (e.g., re-emitting after LoadState), remove old one
 		if (_actorNodes.TryGetValue(actorIndex, out MeshInstance3D existingNode))
@@ -75,6 +88,12 @@ public partial class Actors : Node3D
 			_actorNodes.Remove(actorIndex);
 			_actorSpeakers.Remove(actorIndex);
 			_actorData.Remove(actorIndex);
+		}
+		if (_snoozeNodes.TryGetValue(actorIndex, out MeshInstance3D existingSnoozeNode))
+		{
+			RemoveChild(existingSnoozeNode);
+			existingSnoozeNode.QueueFree();
+			_snoozeNodes.Remove(actorIndex);
 		}
 		// Calculate world position at tile center
 		Vector3 position = new(
@@ -124,13 +143,29 @@ public partial class Actors : Node3D
 		AddChild(node);
 		_actorNodes[actorIndex] = node;
 		_actorSpeakers[actorIndex] = speaker;
+		if (_snoozePages is not null)
+		{
+			MeshInstance3D snoozeNode = new()
+			{
+				Mesh = Constants.WallMesh,
+				Name = $"ActorSnooze_{actorIndex}",
+				Position = position,
+				Rotation = new Vector3(0, _getCameraYRotation(), 0),
+				Visible = false
+			};
+			AddChild(snoozeNode);
+			_snoozeNodes[actorIndex] = snoozeNode;
+		}
 		_actorData[actorIndex] = new ActorRenderData
 		{
 			Position = position,
 			Facing = facing,
 			BaseShape = shape,
 			IsRotated = isRotated,
+			IsSleeping = isSleeping,
+			SnoozeCounter = snoozeCounter,
 		};
+		UpdateSnoozeNode(actorIndex, _actorData[actorIndex], _getViewerPosition());
 	}
 	/// <summary>
 	/// Moves an actor to a new position.
@@ -152,6 +187,7 @@ public partial class Actors : Node3D
 		{
 			data.Position = newPosition;
 			_actorData[actorIndex] = data;
+			UpdateSnoozeNode(actorIndex, data, _getViewerPosition());
 		}
 	}
 	/// <summary>
@@ -159,7 +195,7 @@ public partial class Actors : Node3D
 	/// Called from event handler when ActorSpriteChangedEvent fires.
 	/// This fires VERY frequently - optimized for performance.
 	/// </summary>
-	private void ChangeActorSprite(int actorIndex, ushort newShape, bool isRotated)
+	private void ChangeActorSprite(int actorIndex, ushort newShape, bool isRotated, bool isSleeping, byte snoozeCounter)
 	{
 		if (!_actorNodes.TryGetValue(actorIndex, out MeshInstance3D node))
 			return;
@@ -168,6 +204,8 @@ public partial class Actors : Node3D
 		// Update actor data with new sprite info
 		data.BaseShape = newShape;
 		data.IsRotated = isRotated;
+		data.IsSleeping = isSleeping;
+		data.SnoozeCounter = isSleeping ? snoozeCounter : (byte)0;
 		_actorData[actorIndex] = data;
 		// Update material
 		if (!isRotated)
@@ -184,6 +222,7 @@ public partial class Actors : Node3D
 			if (_spriteMaterials.TryGetValue(directionalSprite, out StandardMaterial3D material))
 				node.MaterialOverride = material;
 		}
+		UpdateSnoozeNode(actorIndex, data, _getViewerPosition());
 	}
 	/// <summary>
 	/// Hides an actor (death, despawn).
@@ -196,8 +235,50 @@ public partial class Actors : Node3D
 			node.QueueFree();  // Remove from scene tree (will also free child speaker)
 			_actorNodes.Remove(actorIndex);
 		}
+		if (_snoozeNodes.TryGetValue(actorIndex, out MeshInstance3D snoozeNode))
+		{
+			snoozeNode.QueueFree();
+			_snoozeNodes.Remove(actorIndex);
+		}
 		_actorSpeakers.Remove(actorIndex);  // Remove speaker reference
 		_actorData.Remove(actorIndex);
+	}
+
+	private void UpdateSnoozeNode(int actorIndex, ActorRenderData data, Vector3 viewerPosition)
+	{
+		if (_snoozePages is null || !_snoozeNodes.TryGetValue(actorIndex, out MeshInstance3D snoozeNode))
+			return;
+
+		if (!data.IsSleeping)
+		{
+			snoozeNode.Visible = false;
+			return;
+		}
+
+		int snoozeFrame = data.SnoozeCounter >> 6;
+		if (snoozeFrame < 1 || snoozeFrame > 3)
+		{
+			snoozeNode.Visible = false;
+			return;
+		}
+
+		ushort page = _snoozePages[snoozeFrame - 1];
+		if (!_spriteMaterials.TryGetValue(page, out StandardMaterial3D material))
+		{
+			snoozeNode.Visible = false;
+			return;
+		}
+
+		Vector3 towardsViewer = viewerPosition - data.Position;
+		if (towardsViewer.LengthSquared() > 0f)
+			towardsViewer = towardsViewer.Normalized() * SnoozeOverlayDepthOffset;
+		else
+			towardsViewer = Vector3.Zero;
+
+		snoozeNode.MaterialOverride = material;
+		snoozeNode.Position = data.Position + towardsViewer;
+		snoozeNode.Rotation = new Vector3(0, _getCameraYRotation(), 0);
+		snoozeNode.Visible = true;
 	}
 	/// <summary>
 	/// Calculates which of 8 directional sprites to show based on viewing angle.
@@ -244,11 +325,15 @@ public partial class Actors : Node3D
 			// Always update billboard rotation
 			node.Rotation = new Vector3(0, billboardRotation, 0);
 			// Update directional sprite if this is a rotated sprite
-			if (_actorData.TryGetValue(actorIndex, out ActorRenderData data) && data.IsRotated)
+			if (_actorData.TryGetValue(actorIndex, out ActorRenderData data))
 			{
-				ushort directionalSprite = CalculateDirectionalSprite(
-					data.Position, data.BaseShape, viewerPosition, data.Facing);
-				node.MaterialOverride = _spriteMaterials[directionalSprite];
+				if (data.IsRotated)
+				{
+					ushort directionalSprite = CalculateDirectionalSprite(
+						data.Position, data.BaseShape, viewerPosition, data.Facing);
+					node.MaterialOverride = _spriteMaterials[directionalSprite];
+				}
+				UpdateSnoozeNode(actorIndex, data, viewerPosition);
 			}
 		}
 	}
@@ -284,7 +369,7 @@ public partial class Actors : Node3D
 	/// <summary>
 	/// Handles ActorSpawnedEvent - shows a newly spawned actor.
 	/// </summary>
-	private void OnActorSpawned(Simulator.ActorSpawnedEvent evt) => ShowActor(evt.ActorIndex, evt.Shape, evt.IsRotated, evt.TileX, evt.TileY, evt.Facing);
+	private void OnActorSpawned(Simulator.ActorSpawnedEvent evt) => ShowActor(evt.ActorIndex, evt.Shape, evt.IsRotated, evt.IsSleeping, evt.SnoozeCounter, evt.TileX, evt.TileY, evt.Facing);
 	/// <summary>
 	/// Handles ActorMovedEvent - moves an actor to new position.
 	/// </summary>
@@ -302,7 +387,7 @@ public partial class Actors : Node3D
 	/// Handles ActorSpriteChangedEvent - changes actor's visible sprite.
 	/// </summary>
 	private void OnActorSpriteChanged(Simulator.ActorSpriteChangedEvent evt) =>
-		ChangeActorSprite(evt.ActorIndex, evt.Shape, evt.IsRotated);
+		ChangeActorSprite(evt.ActorIndex, evt.Shape, evt.IsRotated, evt.IsSleeping, evt.SnoozeCounter);
 	/// <summary>
 	/// Handles ActorDespawnedEvent - hides a despawned actor.
 	/// </summary>

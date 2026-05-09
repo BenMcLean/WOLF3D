@@ -96,4 +96,10 @@ public record ActorSnapshot
 	/// Counts down tics before actor reacts to seeing player.
 	/// </summary>
 	public short ReactionTimer { get; init; }
+
+	/// <summary>
+	/// Noah-style snooze animation counter.
+	/// Preserves the phase of the sleeping-Z overlay across save/load.
+	/// </summary>
+	public byte SnoozeCounter { get; init; }
 }

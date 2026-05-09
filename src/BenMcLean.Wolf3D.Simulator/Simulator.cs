@@ -1267,6 +1267,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void UpdateActor(int actorIndex)
 	{
 		Actor actor = actors[actorIndex];
+		if (actor.HitPoints <= 0)
+			actor.SnoozeCounter = unchecked((byte)(actor.SnoozeCounter + 3));
+		else
+			actor.SnoozeCounter = 0;
 
 		// WL_PLAY.C:DoActor - Clear actorat before executing Think
 		// This implements the clear-think-set pattern from original Wolf3D
@@ -1422,7 +1426,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			ActorIndex = actorIndex,
 			Shape = (ushort)actor.ShapeNum,
-			IsRotated = nextState.Rotate
+			IsRotated = nextState.Rotate,
+			IsSleeping = actor.HitPoints <= 0,
+			SnoozeCounter = actor.SnoozeCounter
 		});
 	}
 	#endregion
@@ -1754,7 +1760,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				TileY = spawn.Y,
 				Facing = spawn.Facing,
 				Shape = (ushort)actor.ShapeNum,
-				IsRotated = initialState.Rotate
+				IsRotated = initialState.Rotate,
+				IsSleeping = actor.HitPoints <= 0,
+				SnoozeCounter = actor.SnoozeCounter
 			});
 			actorIndex++;
 		}
@@ -1839,7 +1847,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			TileY = tileY,
 			Facing = facing,
 			Shape = (ushort)actor.ShapeNum,
-			IsRotated = initialState.Rotate
+			IsRotated = initialState.Rotate,
+			IsSleeping = actor.HitPoints <= 0,
+			SnoozeCounter = actor.SnoozeCounter
 		});
 		return actorIndex;
 	}
@@ -3610,7 +3620,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				TileY = actor.TileY,
 				Facing = actor.Facing,
 				Shape = (ushort)actor.ShapeNum,
-				IsRotated = actor.CurrentState?.Rotate ?? false
+				IsRotated = actor.CurrentState?.Rotate ?? false,
+				IsSleeping = actor.HitPoints <= 0,
+				SnoozeCounter = actor.SnoozeCounter
 			});
 
 			// Emit precise 16.16 fixed-point position
@@ -3629,7 +3641,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				ActorIndex = i,
 				Shape = (ushort)actor.ShapeNum,
-				IsRotated = actor.CurrentState?.Rotate ?? false
+				IsRotated = actor.CurrentState?.Rotate ?? false,
+				IsSleeping = actor.HitPoints <= 0,
+				SnoozeCounter = actor.SnoozeCounter
 			});
 		}
 
