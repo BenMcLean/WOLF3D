@@ -1942,9 +1942,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			proj.TicCount--;
 			if (proj.TicCount <= 0)
 			{
-				if (proj.CurrentState.Next is null)
+				if (proj.CurrentState.Next is null
+					|| (proj.IsExploding && ReferenceEquals(proj.CurrentState.Next, proj.CurrentState)))
 				{
-					// End of state chain (explosion finished) - despawn
+					// End of state chain (explosion finished) - despawn.
+					// XML states with no Next currently load as self-loops, so treat
+					// a self-looping explosion frame as terminal for transient projectiles.
 					DespawnProjectile(index);
 					return;
 				}
