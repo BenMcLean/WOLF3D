@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
@@ -7,7 +8,6 @@ using BenMcLean.Wolf3D.Shared.Menu;
 using BenMcLean.Wolf3D.Shared.Menu.Input;
 using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator;
-using BenMcLean.Wolf3D.VR.ActionStage;
 using BenMcLean.Wolf3D.VR.VR;
 using Godot;
 
@@ -274,9 +274,8 @@ public partial class MenuRoom : Node3D, IRoom
 				PendingResumeGame = true;
 		};
 
-		// Wire player name for high score entries ("VR Player 2026-02-18 3:45 PM")
-		_menuManager.ScriptContext.GetPlayerNameFunc = () =>
-			"VR " + DateTime.Now.ToString("yyyy-MM-dd");
+		// Resolve a short display name for local high score entries.
+		_menuManager.ScriptContext.GetPlayerNameFunc = ResolveHighScorePlayerName;
 
 		// Pass pending high score data to session state
 		if (PendingHighScoreScore.HasValue)
@@ -829,6 +828,36 @@ void sky() {
 
 		_lastWindowSize = Vector2I.Zero;
 		UpdateFlatscreenMenuLayout();
+	}
+
+	private static string ResolveHighScorePlayerName()
+	{
+		foreach (string candidate in new[]
+		{
+			OS.GetEnvironment("USERNAME") ?? string.Empty,
+			OS.GetEnvironment("USER") ?? string.Empty,
+			System.Environment.UserName,
+		})
+		{
+			string sanitized = SanitizeHighScorePlayerName(candidate);
+			if (!string.IsNullOrWhiteSpace(sanitized))
+				return sanitized;
+		}
+		return "VR Player";
+	}
+
+	private static string SanitizeHighScorePlayerName(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return string.Empty;
+		string sanitized = new(
+			[.. value
+				.Trim()
+				.Where(c => !char.IsControl(c))
+				.Take(Assets.Gameplay.Config.HighScoreEntry.MaxHighName)]);
+		return string.IsNullOrWhiteSpace(sanitized)
+			? string.Empty
+			: sanitized;
 	}
 
 	public override void _ExitTree()

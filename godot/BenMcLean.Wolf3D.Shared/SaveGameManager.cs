@@ -79,14 +79,13 @@ public static class SaveGameManager
 		}
 
 		DateTime utcNow = DateTime.UtcNow;
-		string displayName = FormatDisplayName(mapName, utcNow);
 
 		SaveGameFile saveFile = new()
 		{
 			Snapshot = snapshot,
 			MapName = mapName,
 			SavedAt = utcNow.ToString("o"), // ISO 8601
-			DisplayName = displayName,
+			DisplayName = mapName,
 		};
 
 		try
@@ -120,25 +119,5 @@ public static class SaveGameManager
 			GD.PrintErr($"ERROR: Failed to load save slot {slot}: {ex.Message}");
 			return null;
 		}
-	}
-
-	/// <summary>
-	/// Formats the display name for a save slot.
-	/// Format: "{mapName} {localTime:yyyy-MM-dd h:mm tt} {timeZoneAbbr}"
-	/// </summary>
-	private static string FormatDisplayName(string mapName, DateTime utcTime) => $"{mapName} {utcTime.ToLocalTime():yyyy-MM-dd h:mm tt} {GetTimeZoneAbbreviation()}";
-	/// <summary>
-	/// Gets a short time zone abbreviation from the local time zone.
-	/// Extracts capital letters from the display name (e.g., "Eastern Standard Time" → "EST").
-	/// </summary>
-	private static string GetTimeZoneAbbreviation()
-	{
-		string displayName = TimeZoneInfo.Local.StandardName;
-		System.Text.StringBuilder abbr = new();
-		foreach (char c in displayName)
-			if (char.IsUpper(c))
-				abbr.Append(c);
-		string result = abbr.ToString();
-		return result.Length >= 2 ? result : TimeZoneInfo.Local.StandardName;
 	}
 }
