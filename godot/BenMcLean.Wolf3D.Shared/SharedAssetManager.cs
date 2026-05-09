@@ -804,7 +804,7 @@ public static class SharedAssetManager
 
 		foreach (MenuFunction function in CurrentGame.MenuCollection.Functions.Values)
 			if (!string.IsNullOrWhiteSpace(function.Code))
-				MenuLuaEngine.CompileActionFunction(function.Name, function.Code);
+				MenuLuaEngine.CompileScript($"menu-function:{function.Name}", function.Code, LuaEngineMode.Permissive);
 
 		foreach (MenuDefinition menuDef in CurrentGame.MenuCollection.Menus.Values)
 		{

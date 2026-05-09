@@ -59,6 +59,10 @@ public class MenuManager
 	/// Gets the currently active menu name, or null while showing an article / no menu.
 	/// </summary>
 	public string CurrentMenuName => _currentMenuName;
+	/// <summary>
+	/// Fired immediately when the active menu changes, or null when leaving menu mode.
+	/// </summary>
+	public event Action<string> CurrentMenuChanged;
 	#region Flags
 	/// <summary>
 	/// Set when the user confirmed the quit dialog.
@@ -134,6 +138,7 @@ public class MenuManager
 			NavigateToMenuAction = NavigateToMenu,
 			NavigateToMenuImmediateAction = NavigateToMenuImmediate,
 			NavigateToArticleAction = NavigateToArticle,
+			CallMenuFunctionAction = ExecuteMenuFunction,
 			CloseAllMenusAction = CloseAllMenus,
 			// IsGameInProgressFunc is wired up by MenuRoom after construction
 			ShowConfirmFunc = ShowConfirm,
@@ -201,7 +206,6 @@ public class MenuManager
 			if (!string.IsNullOrEmpty(function.Code))
 				try
 				{
-					_luaEngine.CompileActionFunction(function.Name, function.Code);
 					_luaEngine.CompileScript(GetMenuFunctionScriptId(function.Name), function.Code, LuaEngineMode.Permissive);
 				}
 				catch (Exception ex)
@@ -212,6 +216,20 @@ public class MenuManager
 			CompileMenuDefinitionScripts(menuDef);
 		foreach (ArticleDefinition articleDef in _menuCollection.Articles.Values)
 			CompileMenuScript(articleDef.OnCancel, GetArticleOnCancelScriptId(articleDef.Name));
+	}
+
+	private void ExecuteMenuFunction(string functionName)
+	{
+		if (string.IsNullOrWhiteSpace(functionName))
+			return;
+		try
+		{
+			_luaEngine.ExecuteCompiledScript(GetMenuFunctionScriptId(functionName), _scriptContext);
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"ERROR: Failed to execute menu function '{functionName}': {ex.Message}");
+		}
 	}
 
 	private void CompileMenuScript(string script, string scriptId)
@@ -346,6 +364,7 @@ public class MenuManager
 		_articlePages = pages;
 		_articlePageIndex = 0;
 		_currentMenuName = null; // suspend menu mode
+		CurrentMenuChanged?.Invoke(_currentMenuName);
 		if (!string.IsNullOrEmpty(articleDef.Music))
 			_scriptContext.PlayMusic(articleDef.Music);
 		_renderer.RenderArticle(_currentArticle, _articlePages[_articlePageIndex]);
@@ -399,6 +418,7 @@ public class MenuManager
 		_renderer.ClearTextOverrides();
 		// Set new current menu
 		_currentMenuName = menuName;
+		CurrentMenuChanged?.Invoke(_currentMenuName);
 		// WL_MENU.H:CP_iteminfo:curpos — use configured initial selection, defaulting to 0
 		_selectedItemIndex = menuDef.CurPos ?? 0;
 		ApplyMenuMusic(menuDef);
@@ -457,6 +477,7 @@ public class MenuManager
 	public void CloseAllMenus()
 	{
 		_currentMenuName = null;
+		CurrentMenuChanged?.Invoke(_currentMenuName);
 		_currentArticle = null;
 		_articlePages = null;
 		_articlePageIndex = 0;

@@ -270,6 +270,7 @@ public partial class MenuRoom : Node3D, IRoom
 			SharedAssetManager.Config,
 			usingSharedPrecompiledLua ? SharedAssetManager.MenuLuaEngine : null,
 			scriptsPrecompiled: usingSharedPrecompiledLua);
+		_menuManager.CurrentMenuChanged += OnCurrentMenuChanged;
 		_menuManager.SessionState.VRMode = InitialVRMode;
 		_menuManager.SessionState.DebugMarkersEnabled = InitialDebugMarkersEnabled;
 		_menuManager.SessionState.CheatModeEnabled = InitialCheatModeEnabled;
@@ -905,6 +906,8 @@ void sky() {
 
 	public override void _ExitTree()
 	{
+		if (_menuManager is not null)
+			_menuManager.CurrentMenuChanged -= OnCurrentMenuChanged;
 		// Unsubscribe from display mode events so stale delegates cannot fire against
 		// freed scenes. Without this, freed MenuRoom instances keep receiving
 		// HandButtonPressed signals and call ResetPositionFacing(), which teleports
@@ -990,7 +993,6 @@ void sky() {
 
 		// Update menu manager
 		_menuManager?.Update((float)delta);
-		SyncMenuStatusBar();
 
 		// If a game selection was made, Root is already handling the transition.
 		// Skip all other menu processing to avoid spurious state changes.
@@ -1077,6 +1079,11 @@ void sky() {
 		}
 
 		_statusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
+	}
+
+	private void OnCurrentMenuChanged(string _)
+	{
+		SyncMenuStatusBar();
 	}
 
 	private void UpdateFlatscreenMenuLayout()

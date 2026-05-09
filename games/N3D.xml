@@ -185,23 +185,44 @@
 				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
 				<OnCancel>NavigateToMenu("Main")</OnCancel>
 			</Article>
+			<MenuFunction Name="ContinueOrShowNextMission">
+				<![CDATA[
+if IsSecretLevel()
+	ContinueToNextLevel()
+elseif GetEpisode() == 1 and GetFloor() == 3 then
+	NavigateToMenu("Mission2")
+elseif GetEpisode() == 2 and GetFloor() == 4 then
+	NavigateToMenu("Mission3")
+elseif GetEpisode() == 3 and GetFloor() == 5 then
+	NavigateToMenu("Mission4")
+elseif GetEpisode() == 4 and GetFloor() == 5 then
+	NavigateToMenu("Mission5")
+elseif GetEpisode() == 5 and GetFloor() == 6 then
+	NavigateToMenu("Mission6")
+else
+	ContinueToNextLevel()
+end
+]]>
+			</MenuFunction>
 			<!-- WL_INTER.C:Briefing() episode intro text screens use STARTFONT+1 with a plain text
 			window, so represent them directly as non-interactive menu screens in XML. -->
 			<Menu Name="Mission1" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">You'll be out of the ark in six
-days, Noah. Unfortunately, the
-animals are a tad bit restless and
-want to get out now. Good thing
-you brought all that food with
-you. You'll need it to put the
-busy ones to sleep.
+				<Text X="8" Y="8">
+					You'll be out of the ark in six
+					days, Noah. Unfortunately, the
+					animals are a tad bit restless and
+					want to get out now. Good thing
+					you brought all that food with
+					you. You'll need it to put the
+					busy ones to sleep.
 
-At the end of the first day, be
-prepared to deal with Carl the
-Camel. He's been real cranky lately
-and is a bit out of control.
+					At the end of the first day, be
+					prepared to deal with Carl the
+					Camel. He's been real cranky lately
+					and is a bit out of control.
 
-Good luck and be careful...</Text>
+					Good luck and be careful...
+				</Text>
 				<Pause>
 					<![CDATA[
 if GetFloor() > 0 then
@@ -213,20 +234,22 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission2" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">Wow, Noah! Carl sure was hard to
-calm down. But remember, you
-were chosen to guide this ark to
-safety because you know how to
-get the job done.
+				<Text X="8" Y="8">
+					Wow, Noah! Carl sure was hard to
+					calm down. But remember, you
+					were chosen to guide this ark to
+					safety because you know how to
+					get the job done.
 
-The closing of day two ends with
-irritable Ginny the Giraffe. She
-may be tall and quick, but give
-her enough food and it's off to
-sleep.
+					The closing of day two ends with
+					irritable Ginny the Giraffe. She
+					may be tall and quick, but give
+					her enough food and it's off to
+					sleep.
 
-Oh, and Noah, remember to keep
-an eye out for hidden rooms...</Text>
+					Oh, and Noah, remember to keep
+					an eye out for hidden rooms...
+				</Text>
 				<Pause>
 					<![CDATA[
 if GetFloor() > 0 then
@@ -238,18 +261,20 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission3" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">ZZZZZ... Great job, Noah!. Ginny is
-snoring away.
+				<Text X="8" Y="8">
+					ZZZZZ... Great job, Noah!. Ginny is
+					snoring away.
 
-Boy, it seems the animals never
-seem to stay asleep very long.
+					Boy, it seems the animals never
+					seem to stay asleep very long.
 
-Keep your eye out for Melvin the
-Monkey. He can be pretty tricky
-and may try distracting you with
-coconuts, but it's your job to get
-him settled down for the rest of
-your time aboard the ark.</Text>
+					Keep your eye out for Melvin the
+					Monkey. He can be pretty tricky
+					and may try distracting you with
+					coconuts, but it's your job to get
+					him settled down for the rest of
+					your time aboard the ark.
+				</Text>
 				<Pause>
 					<![CDATA[
 if GetFloor() > 0 then
@@ -261,19 +286,21 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission4" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">You're doing a great job, Noah!
-You took care of that Melvin like
-a real pro.
+				<Text X="8" Y="8">
+					You're doing a great job, Noah!
+					You took care of that Melvin like
+					a real pro.
 
-I hope you haven't worn yourself
-out yet, because more challenges
-are ahead.
+					I hope you haven't worn yourself
+					out yet, because more challenges
+					are ahead.
 
-Kerry the Kangaroo awaits you,
-and she doesn't look the least
-bit tired. Are you ready for her?
-She needs to rest like the other
-animals.</Text>
+					Kerry the Kangaroo awaits you,
+					and she doesn't look the least
+					bit tired. Are you ready for her?
+					She needs to rest like the other
+					animals.
+				</Text>
 				<Pause>
 					<![CDATA[
 if GetFloor() > 0 then
@@ -285,15 +312,17 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission5" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">Wow! Kerry was no challenge for
-you! Can you keep up the pace
-when faced with Ernie the
-Elephant?
+				<Text X="8" Y="8">
+					Wow! Kerry was no challenge for
+					you! Can you keep up the pace
+					when faced with Ernie the
+					Elephant?
 
-Don't worry. Very soon you will
-be on dry land, and you won't
-have to chase the animals around
-the ark anymore.</Text>
+					Don't worry. Very soon you will
+					be on dry land, and you won't
+					have to chase the animals around
+					the ark anymore.
+				</Text>
 				<Pause>
 					<![CDATA[
 if GetFloor() > 0 then
@@ -305,18 +334,20 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission6" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">You are almost there! If you can
-get through one more day, you
-will be out of here for good!
+				<Text X="8" Y="8">
+					You are almost there! If you can
+					get through one more day, you
+					will be out of here for good!
 
-Rumor has it one of the bears
-does not want to be found. In
-fact he may try to hide from
-you. Be on the alert for Burt
-the Bear.
+					Rumor has it one of the bears
+					does not want to be found. In
+					fact he may try to hide from
+					you. Be on the alert for Burt
+					the Bear.
 
-Get him to sleep and your work
-is done!</Text>
+					Get him to sleep and your work
+					is done!
+				</Text>
 				<Pause>
 					<![CDATA[
 if GetFloor() > 0 then
@@ -981,19 +1012,9 @@ local kr = GetKillTotal() > 0 and math.floor(GetKillCount() * 100 / GetKillTotal
 local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecretTotal()) or 0
 local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
 if kr == 100 and sr == 100 and tr == 100 then
-	NavigateToMenu("LevelCompletePerfect")
-elseif not IsSecretLevel() and GetEpisode() == 1 and GetFloor() == 3 then
-	NavigateToMenu("Mission2")
-elseif not IsSecretLevel() and GetEpisode() == 2 and GetFloor() == 4 then
-	NavigateToMenu("Mission3")
-elseif not IsSecretLevel() and GetEpisode() == 3 and GetFloor() == 5 then
-	NavigateToMenu("Mission4")
-elseif not IsSecretLevel() and GetEpisode() == 4 and GetFloor() == 5 then
-	NavigateToMenu("Mission5")
-elseif not IsSecretLevel() and GetEpisode() == 5 and GetFloor() == 6 then
-	NavigateToMenu("Mission6")
+	NavigateToMenuImmediate("LevelCompletePerfect")
 else
-	ContinueToNextLevel()
+	CallMenuFunction("ContinueOrShowNextMission")
 end
 ]]>
 				</Pause>
@@ -1051,19 +1072,7 @@ StartTicker("SecretRatio", sr)
 				<Picture Name="W_PERFECTPIC" X="96" Y="120" />
 				<Pause>
 					<![CDATA[
-if not IsSecretLevel() and GetEpisode() == 1 and GetFloor() == 3 then
-	NavigateToMenuImmediate("Mission2")
-elseif not IsSecretLevel() and GetEpisode() == 2 and GetFloor() == 4 then
-	NavigateToMenuImmediate("Mission3")
-elseif not IsSecretLevel() and GetEpisode() == 3 and GetFloor() == 5 then
-	NavigateToMenuImmediate("Mission4")
-elseif not IsSecretLevel() and GetEpisode() == 4 and GetFloor() == 5 then
-	NavigateToMenuImmediate("Mission5")
-elseif not IsSecretLevel() and GetEpisode() == 5 and GetFloor() == 6 then
-	NavigateToMenuImmediate("Mission6")
-else
-	ContinueToNextLevel()
-end
+CallMenuFunction("ContinueOrShowNextMission")
 ]]>
 				</Pause>
 				<OnShow>

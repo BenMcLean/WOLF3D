@@ -170,6 +170,15 @@ public class MenuScriptContext(
 	/// <returns>Episode number (1-6)</returns>
 	public int GetEpisode() => sessionState.SelectedEpisode;
 	/// <summary>
+	/// Delegate for invoking a named menu helper function compiled from XML MenuFunction entries.
+	/// </summary>
+	public Action<string> CallMenuFunctionAction { get; set; }
+	/// <summary>
+	/// Call a named menu helper function.
+	/// </summary>
+	/// <param name="functionName">MenuFunction Name from XML.</param>
+	public void CallMenuFunction(string functionName) => CallMenuFunctionAction?.Invoke(functionName);
+	/// <summary>
 	/// Set the selected episode number.
 	/// </summary>
 	/// <param name="episode">Episode number (1-6)</param>
