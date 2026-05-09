@@ -343,7 +343,9 @@ public class ActorScriptContext(
 			}
 			// If we moved diagonally, check both intermediate corner tiles.
 			// Original Wolf3D CheckLine uses two separate DDA sweeps which naturally check both.
-			if (movedX && movedY)
+			// When the diagonal step lands directly on the player's tile, do not reject sight based
+			// on the adjacent doorframe walls flanking that destination doorway tile.
+			if (movedX && movedY && (x != playerTileX || y != playerTileY))
 			{
 				if (!simulator.IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
 					return false;

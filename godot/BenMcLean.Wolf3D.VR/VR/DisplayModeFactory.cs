@@ -10,12 +10,12 @@ namespace BenMcLean.Wolf3D.VR.VR;
 ///
 /// Supports command-line arguments to override behavior:
 ///   --flatscreen or --no-vr : Force flatscreen mode (skip OpenXR initialization)
-///   --5dof                  : Force VR mode, lock camera height to HalfTileHeight (default for VR)
-///   --roomscale             : Force VR mode, allow real-world head height
+///   --5dof                  : Force VR mode with fixed eye height
+///   --roomscale             : Force VR mode with real-world head height (default for VR)
 ///
 /// Also checks environment variable WOLF3D_VR_PLAY_MODE:
-///   5dof      : Force VR mode with 5DOF play (default)
-///   roomscale : Force VR mode with roomscale play
+///   5dof      : Force VR mode with 5DOF play
+///   roomscale : Force VR mode with roomscale play (default)
 /// </summary>
 public static class DisplayModeFactory
 {
@@ -27,11 +27,11 @@ public static class DisplayModeFactory
 	public static IDisplayMode Create()
 	{
 		// Check command-line arguments first (highest priority)
-		string[] args = OS.GetCmdlineArgs();
+		string[] args = RuntimeOptions.GetAllCommandLineArgs();
 		bool forceFlatscreen = args.Contains("--flatscreen") || args.Contains("--no-vr");
 
-		// Determine VR play mode from args, then env var, then default to 5DOF
-		VRPlayMode playMode = VRPlayMode.FiveDOF;
+		// Determine VR play mode from args, then env var, then default to roomscale
+		VRPlayMode playMode = VRPlayMode.Roomscale;
 		bool forceVR = false;
 		if (args.Contains("--roomscale"))
 		{

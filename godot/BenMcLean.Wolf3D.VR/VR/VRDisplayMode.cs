@@ -27,7 +27,7 @@ public enum VRPlayMode
 /// Creates XROrigin3D with XRCamera3D and controller nodes.
 /// Hand 0 = right controller, hand 1 = left controller.
 /// </summary>
-public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.FiveDOF) : IDisplayMode
+public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDisplayMode
 {
 	private XROrigin3D _origin;
 	private XRCamera3D _camera;

@@ -7,20 +7,20 @@ using BenMcLean.Wolf3D.Shared;
 namespace BenMcLean.Wolf3D.VR.ActionStage;
 
 /// <summary>
-/// Manages player weapon rendering at bottom of screen (like original Wolf3D HUD).
-/// For initial implementation, shows weapon sprite as 2D overlay on camera.
-/// Later can be enhanced for VR hand tracking.
+/// Manages player weapon presentation state and weapon fire audio.
+/// In flatscreen mode, the weapon is rendered as a HUD overlay.
+/// In VR, controller-attached weapon visuals are handled elsewhere.
 /// </summary>
 public partial class Weapons : Node3D
 {
-	// Weapon sprite display (attached to camera) - uses MeshInstance3D like actors
-	private MeshInstance3D weaponSprite;
-	// Sprite materials from VRAssetManager
-	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials;
-	// Camera reference for positioning weapon sprite
-	private readonly Node3D camera;
-	// When true, skips creating the camera-attached sprite (VR uses WeaponHandMesh on controllers instead)
-	private readonly bool disableVisual;
+	private static readonly Vector2 HudWeaponBoxSize = new(192f, 120f);
+	private static readonly Vector2 HudWeaponBoxPosition = new(-96f, -240f);
+
+	// Sprite textures used by the flatscreen HUD representation.
+	private readonly IReadOnlyDictionary<ushort, Texture2D> spriteTextures;
+	private TextureRect hudWeaponSprite;
+	private Control hudCanvas;
+	private ushort? currentShape;
 	// Current weapon slot being displayed (0 = primary/left, 1 = right)
 	private int currentSlot = 0;
 	// Simulator reference for event subscription
@@ -29,44 +29,39 @@ public partial class Weapons : Node3D
 	/// <summary>
 	/// Creates weapon rendering system.
 	/// </summary>
-	/// <param name="spriteMaterials">Dictionary of sprite materials from VRAssetManager.SpriteMaterials</param>
-	/// <param name="camera">Camera node to attach weapon sprite to</param>
-	/// <param name="disableVisual">
-	/// When true, skips creating the camera-attached sprite.
-	/// Use in VR mode where WeaponHandMesh on controllers provides the visual.
-	/// Sound (WeaponFired) is still handled regardless.
-	/// </param>
-	public Weapons(
-		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
-		Node3D camera,
-		bool disableVisual = false)
-	{
-		this.spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
-		this.camera = camera ?? throw new ArgumentNullException(nameof(camera));
-		this.disableVisual = disableVisual;
-	}
+	/// <param name="spriteTextures">Dictionary of sprite textures from VRAssetManager.SpriteTextures.</param>
+	public Weapons(IReadOnlyDictionary<ushort, Texture2D> spriteTextures) =>
+		this.spriteTextures = spriteTextures ?? throw new ArgumentNullException(nameof(spriteTextures));
 
-	public override void _Ready()
+	/// <summary>
+	/// Attaches the flatscreen weapon display to the HUD canvas.
+	/// Safe to call after weapon events have already started arriving.
+	/// </summary>
+	public void AttachHud(Control canvas)
 	{
-		if (disableVisual)
-			return;
-
-		// Create weapon sprite node using MeshInstance3D (same as actors)
-		// Position it at bottom-center of camera view (like original Wolf3D)
-		weaponSprite = new MeshInstance3D
+		hudCanvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
+		if (hudWeaponSprite is null)
 		{
-			Name = "WeaponSprite",
-			Mesh = Constants.WallMesh,  // Same quad mesh as actors use
-			Visible = false,  // Start hidden until weapon equipped
-		};
+			hudWeaponSprite = new TextureRect
+			{
+				Name = "HudWeaponSprite",
+				AnchorLeft = 0.5f,
+				AnchorRight = 0.5f,
+				AnchorTop = 1.0f,
+				AnchorBottom = 1.0f,
+				Position = HudWeaponBoxPosition,
+				Size = HudWeaponBoxSize,
+				StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+				ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+				TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+				Visible = false,
+				ZIndex = 20,
+			};
+			hudCanvas.AddChild(hudWeaponSprite);
+		}
 
-		// Attach to camera so it moves with view
-		camera.AddChild(weaponSprite);
-
-		// Position relative to camera - bottom center of view like original Wolf3D
-		weaponSprite.Position = new Vector3(0f, 0f, -2f);
-
-		// No rotation needed - quad faces correct direction by default
+		if (currentShape.HasValue)
+			UpdateWeaponSprite(currentShape.Value);
 	}
 
 	/// <summary>
@@ -140,16 +135,17 @@ public partial class Weapons : Node3D
 	/// <param name="shape">Sprite page number</param>
 	private void UpdateWeaponSprite(ushort shape)
 	{
-		if (weaponSprite is null)
+		currentShape = shape;
+		if (hudWeaponSprite is null)
 			return;
-		// Get material for this sprite (same as actors do)
-		if (spriteMaterials.TryGetValue(shape, out StandardMaterial3D material))
+
+		if (spriteTextures.TryGetValue(shape, out Texture2D texture))
 		{
-			weaponSprite.MaterialOverride = material;
-			weaponSprite.Visible = true;
+			hudWeaponSprite.Texture = texture;
+			hudWeaponSprite.Visible = true;
 		}
 		else
-			weaponSprite.Visible = false;
+			hudWeaponSprite.Visible = false;
 	}
 
 	public override void _ExitTree()

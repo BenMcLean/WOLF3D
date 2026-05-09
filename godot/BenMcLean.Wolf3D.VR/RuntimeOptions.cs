@@ -12,6 +12,17 @@ public static class RuntimeOptions
 	public static readonly Vector2I SpectatorResolution = new(1920, 1080);
 
 	/// <summary>
+	/// Returns command-line arguments from both Godot's normal argument list and the
+	/// user-argument list that appears after `--`.
+	/// This allows project-specific options to coexist with engine options such as
+	/// MovieWriter flags.
+	/// </summary>
+	public static string[] GetAllCommandLineArgs() =>
+		OS.GetCmdlineArgs()
+			.Concat(OS.GetCmdlineUserArgs())
+			.ToArray();
+
+	/// <summary>
 	/// Returns true when the desktop spectator view should replace the default VR mirror.
 	/// Disabled by default because it adds an extra 3D render pass.
 	/// Enable with --spectator or WOLF3D_VR_SPECTATOR=1/true/yes/on.
@@ -20,7 +31,7 @@ public static class RuntimeOptions
 	{
 		get
 		{
-			string[] args = OS.GetCmdlineArgs();
+			string[] args = GetAllCommandLineArgs();
 			if (args.Contains("--spectator"))
 				return true;
 			if (args.Contains("--no-spectator"))

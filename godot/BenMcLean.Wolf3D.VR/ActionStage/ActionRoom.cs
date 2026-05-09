@@ -329,10 +329,8 @@ void sky() {
 
 			// Create weapons: flatscreen shows a camera-attached sprite; VR uses WeaponHandMesh on controllers.
 			// Weapons still subscribes for WeaponFired sound in both modes.
-			_weapons = new Weapons(
-				VRAssetManager.SpriteMaterials,
-				_displayMode.Camera,
-				disableVisual: _displayMode.IsVRActive);
+			// In flatscreen, the visual is attached later to the status bar HUD.
+			_weapons = new Weapons(VRAssetManager.SpriteTextures);
 			AddChild(_weapons);
 
 			// Create doors for the current level and add to scene
@@ -622,6 +620,23 @@ void sky() {
 						TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 					};
 					_statusBarCanvas.AddChild(statusBarDisplay);
+
+					Control weaponHudOverlay = new()
+					{
+						Name = "WeaponHudOverlay",
+						AnchorLeft = 0.5f,
+						AnchorRight = 0.5f,
+						AnchorTop = 1.0f,
+						AnchorBottom = 1.0f,
+						OffsetLeft = -480,
+						OffsetRight = 480,
+						OffsetTop = -220,
+						OffsetBottom = 0,
+						MouseFilter = Control.MouseFilterEnum.Ignore,
+						ZIndex = 20,
+					};
+					_statusBarCanvas.AddChild(weaponHudOverlay);
+					_weapons.AttachHud(weaponHudOverlay);
 				}
 
 				SubViewport automapVP = new()
