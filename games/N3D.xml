@@ -2798,6 +2798,104 @@ AddValue("Score", 5000)
 -- No-op. Active projectile movement/collision is simulated in C#.
 ]]>
 			</Function>
+			<Function Name="T_Shoot">
+				<![CDATA[
+-- WL_ACT2.C:T_Shoot (lines 4150-4218)
+-- Attempt to shoot the player based on line of sight and distance
+
+if not CheckLine() then
+	return
+end
+
+local dx = GetPlayerTileX() - GetTileX()
+local dy = GetPlayerTileY() - GetTileY()
+if dx < 0 then dx = -dx end
+if dy < 0 then dy = -dy end
+local dist = dx
+if dy > dx then dist = dy end
+
+if HasAimBonus() then
+	dist = (dist * 2) / 3
+end
+
+-- VR intentionally always uses the "running player" formula (160 base) so
+-- teleport locomotion does not leave nausea-sensitive players unfairly easier
+-- to hit than players who can continuously strafe.
+local hitchance = 160 - (dist * 16)
+
+if US_RndT() < hitchance then
+	local damage = 0
+	if dist < 2 then
+		damage = US_RndT() / 4
+	elseif dist < 4 then
+		damage = US_RndT() / 8
+	else
+		damage = US_RndT() / 16
+	end
+
+	DamagePlayer(damage)
+end
+
+local shootSound = GetShootSound()
+if shootSound ~= nil and shootSound ~= "" then
+	if shootSound == "NAZIFIRESND" or shootSound == "SSFIRESND" or shootSound == "BOSSFIRESND" then
+		shootSound = ResolveSound(shootSound, "D_SPITSND")
+	elseif shootSound == "MISSILEFIRESND" or shootSound == "SCHABBSTHROWSND" then
+		shootSound = ResolveSound(shootSound, "D_COCTHRSND")
+	end
+	PlayLocalSound(shootSound)
+else
+	PlayLocalSound(ResolveSound("NAZIFIRESND", "D_SPITSND"))
+end
+]]>
+			</Function>
+			<Function Name="T_UShoot">
+				<![CDATA[
+-- WL_ACT2.C:T_UShoot - Ubermutant uses the normal boss hitscan plus point-blank impact damage.
+
+if CheckLine() then
+	local dx = GetPlayerTileX() - GetTileX()
+	local dy = GetPlayerTileY() - GetTileY()
+	if dx < 0 then dx = -dx end
+	if dy < 0 then dy = -dy end
+	local dist = dx
+	if dy > dx then dist = dy end
+
+	-- VR intentionally always uses the "running player" formula (160 base) so
+	-- teleport locomotion does not leave nausea-sensitive players unfairly easier
+	-- to hit than players who can continuously strafe.
+	local hitchance = 160 - (dist * 16)
+	if US_RndT() < hitchance then
+		local damage = 0
+		if dist < 2 then
+			damage = US_RndT() / 4
+		elseif dist < 4 then
+			damage = US_RndT() / 8
+		else
+			damage = US_RndT() / 16
+		end
+
+		DamagePlayer(damage)
+	end
+end
+
+local shootSound = GetShootSound()
+if shootSound ~= nil and shootSound ~= "" then
+	if shootSound == "NAZIFIRESND" or shootSound == "SSFIRESND" or shootSound == "BOSSFIRESND" then
+		shootSound = ResolveSound(shootSound, "D_SPITSND")
+	elseif shootSound == "MISSILEFIRESND" or shootSound == "SCHABBSTHROWSND" then
+		shootSound = ResolveSound(shootSound, "D_COCTHRSND")
+	end
+	PlayLocalSound(shootSound)
+else
+	PlayLocalSound(ResolveSound("NAZIFIRESND", "D_SPITSND"))
+end
+
+if CalculateDistanceToPlayer() <= 1 then
+	DamagePlayer(10)
+end
+]]>
+			</Function>
 			<!-- N3D weapon attack sound overrides.
 			     AUDION3D.H aliases: ATKKNIFESND=D_KNIFESND, ATKPISTOLSND=D_GUNSHTSND,
 			     ATKMACHINEGUNSND=ATKGATLINGSND=D_GATLINSND -->
