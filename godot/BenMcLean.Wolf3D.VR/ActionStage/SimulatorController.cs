@@ -392,7 +392,7 @@ public partial class SimulatorController : Node3D
 
 	/// <summary>
 	/// Player switches to a different weapon in specified slot.
-	/// Call this from player input handling (e.g., number keys 1-4).
+	/// Call this from player input handling (e.g., number keys mapped to XML weapon numbers).
 	/// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 	/// </summary>
 	/// <param name="slotIndex">Weapon slot index (0 = primary/left, 1 = secondary/right)</param>

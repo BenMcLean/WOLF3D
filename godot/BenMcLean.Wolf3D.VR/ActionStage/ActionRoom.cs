@@ -725,7 +725,7 @@ void sky() {
 				return;
 			}
 
-			// Weapon switching - number keys map to weapon numbers from XML
+			// Weapon switching - number keys map directly to weapon numbers from XML
 			// Based on WL_AGENT.C weapon selection (bt_readyknife, bt_readypistol, etc.)
 			int weaponNumber = keyEvent.Keycode switch
 			{
@@ -733,6 +733,12 @@ void sky() {
 				Key.Key2 => 1,
 				Key.Key3 => 2,
 				Key.Key4 => 3,
+				Key.Key5 => 4,
+				Key.Key6 => 5,
+				Key.Key7 => 6,
+				Key.Key8 => 7,
+				Key.Key9 => 8,
+				Key.Key0 => 9,
 				_ => -1
 			};
 			if (weaponNumber >= 0
