@@ -61,6 +61,11 @@ public class MenuState
 	/// </summary>
 	public bool DebugMarkersEnabled { get; set; } = false;
 	/// <summary>
+	/// Whether cheat shortcuts are enabled.
+	/// Stored alongside other presentation/runtime-only menu settings.
+	/// </summary>
+	public bool CheatModeEnabled { get; set; } = false;
+	/// <summary>
 	/// Accumulated bonus points from the intermission screen.
 	/// Set by Lua GivePoints(), consumed by Root.cs when transitioning to next level.
 	/// </summary>

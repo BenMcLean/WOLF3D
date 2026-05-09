@@ -69,6 +69,7 @@ public partial class Root : Node3D
 	/// </summary>
 	public IDisplayMode DisplayMode { get; private set; }
 	private bool _debugMarkersEnabled = false;
+	private bool _cheatModeEnabled = false;
 
 	public override void _Ready()
 	{
@@ -205,6 +206,7 @@ public partial class Root : Node3D
 						MenuWeaponSprite = "SPR_PISTOLREADY",
 						InitialVRMode = CurrentVRMode(),
 						InitialDebugMarkersEnabled = _debugMarkersEnabled,
+						InitialCheatModeEnabled = _cheatModeEnabled,
 					};
 					TransitionTo(selectionRoom);
 				}
@@ -233,6 +235,7 @@ public partial class Root : Node3D
 		if (_currentScene is MenuRoom menuRoom)
 		{
 			_debugMarkersEnabled = menuRoom.DebugMarkersEnabled;
+			_cheatModeEnabled = menuRoom.CheatModeEnabled;
 
 			// Game selected from the procedural game selection menu
 			if (menuRoom.SelectedGameXmlPath is not null)
@@ -264,6 +267,7 @@ public partial class Root : Node3D
 					savedInventory: intermissionRequest.SavedInventory,
 					savedLevelStats: intermissionRequest.AllLevelStats,
 					debugMarkersEnabled: _debugMarkersEnabled,
+					cheatModeEnabled: _cheatModeEnabled,
 					statusBarController: GetOrCreateStatusBarController());
 				TransitionTo(newStage);
 			}
@@ -273,10 +277,10 @@ public partial class Root : Node3D
 				_suspendedGame = null;
 				// Get selected episode and difficulty from menu
 				int selectedEpisode = menuRoom.SelectedEpisode;
-				ushort episode = (ushort)(selectedEpisode >= 1 ? selectedEpisode : selectedEpisode + 1);
+				ushort episode = (ushort)selectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
 				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
-				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController());
+				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController());
 				TransitionTo(actionStage);
 			}
 		}
@@ -310,6 +314,7 @@ public partial class Root : Node3D
 							difficulty: difficulty,
 							savedInventory: savedInventory,
 							debugMarkersEnabled: _debugMarkersEnabled,
+							cheatModeEnabled: _cheatModeEnabled,
 							statusBarController: GetOrCreateStatusBarController());
 						_currentScene = newStage;
 						_pendingScene = null;
@@ -332,6 +337,7 @@ public partial class Root : Node3D
 							PendingHighScoreCompleted = completedLevel,
 							PendingHighScoreEpisode = episode,
 							MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
+							InitialCheatModeEnabled = _cheatModeEnabled,
 						};
 						_currentScene = gameOverRoom;
 						_pendingScene = null;
@@ -360,6 +366,7 @@ public partial class Root : Node3D
 						savedInventory: request.SavedInventory,
 						savedLevelStats: request.AllLevelStats,
 						debugMarkersEnabled: _debugMarkersEnabled,
+						cheatModeEnabled: _cheatModeEnabled,
 						playerXOverride: request.PlayerXOverride,
 						playerYOverride: request.PlayerYOverride,
 						playerAngleOverride: request.PlayerAngleOverride,
@@ -376,6 +383,7 @@ public partial class Root : Node3D
 						MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 						InitialVRMode = CurrentVRMode(),
 						InitialDebugMarkersEnabled = _debugMarkersEnabled,
+						InitialCheatModeEnabled = _cheatModeEnabled,
 					};
 					// For Victory (episode complete), pass final score for high score check
 					if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
@@ -486,7 +494,7 @@ public partial class Root : Node3D
 					throw new InvalidOperationException(
 						$"StartLevel({mapIndex}): index out of range (0\u2013{analyses.Length - 1}).");
 				_suspendedGame = null;
-				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController()));
+				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController()));
 			},
 		};
 		(SharedAssetManager.MenuLuaEngine
@@ -519,6 +527,7 @@ public partial class Root : Node3D
 			LevelTransition = actionStage.PendingLevelTransitionForMenu,
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
+			InitialCheatModeEnabled = _cheatModeEnabled,
 			StatusBarController = _statusBarController,
 		};
 		_pendingScene = menuRoom;
@@ -554,6 +563,7 @@ public partial class Root : Node3D
 			DisplayMode,
 			state.Simulator,
 			debugMarkersEnabled: _debugMarkersEnabled,
+			cheatModeEnabled: _cheatModeEnabled,
 			statusBarController: _statusBarController);
 
 		_suspendedGame = null;
@@ -579,7 +589,7 @@ public partial class Root : Node3D
 
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
-		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, statusBarController: GetOrCreateStatusBarController());
+		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController());
 		TransitionTo(actionStage);
 	}
 
@@ -591,6 +601,7 @@ public partial class Root : Node3D
 			MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
+			InitialCheatModeEnabled = _cheatModeEnabled,
 		};
 	}
 

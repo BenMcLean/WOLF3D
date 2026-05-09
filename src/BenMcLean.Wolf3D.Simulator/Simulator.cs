@@ -93,6 +93,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private string onTakeDamageFunctionName;
 	// Optional ActionFunction name from StatusBar definition to react to inventory changes.
 	private string onInventoryChangeFunctionName;
+	// Optional ActionFunction name from StatusBar definition to run when the player uses the refill/reveal cheat.
+	private string onCheatFunctionName;
 	// Optional ActionFunction name from StatusBar definition to react when a weapon slot changes.
 	private string onWeaponSlotChangeFunctionName;
 	// Optional ActionFunction name from StatusBar definition to react when a weapon successfully fires.
@@ -1456,6 +1458,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		onMapStartFunctionName = statusBar.OnMapStart;
 		onTakeDamageFunctionName = statusBar.OnTakeDamage;
 		onInventoryChangeFunctionName = statusBar.OnInventoryChange;
+		onCheatFunctionName = statusBar.OnCheat;
 		onWeaponSlotChangeFunctionName = statusBar.OnWeaponSlotChange;
 		onWeaponFireFunctionName = statusBar.OnWeaponFire;
 		onFaceFunctionName = statusBar.OnFace;
@@ -3065,6 +3068,30 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		catch (Exception ex)
 		{
 			logger?.LogError(ex, "Error executing OnInventoryChange function '{FunctionName}' for inventory key '{InventoryKey}'", onInventoryChangeFunctionName, inventoryKey);
+		}
+	}
+
+	/// <summary>
+	/// Execute the optional OnCheat action function.
+	/// Missing is valid and treated as a no-op.
+	/// </summary>
+	public void ExecuteOnCheatScript()
+	{
+		if (string.IsNullOrEmpty(onCheatFunctionName))
+			return;
+
+		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
+		{
+			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+			AudioT = audioT
+		};
+		try
+		{
+			luaScriptEngine.ExecuteActionFunction(onCheatFunctionName, context);
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing OnCheat function '{FunctionName}'", onCheatFunctionName);
 		}
 	}
 

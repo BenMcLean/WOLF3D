@@ -171,7 +171,7 @@ this file. -->
 		</Pics>
 		<StatusBar Pic="STATUSBARPIC" Font="N" OnFace="UpdateFace" OnDeath="OnDeath"
 			OnNewGame="OnNewGame" OnMapStart="OnMapStart" OnTakeDamage="OnTakeDamage"
-			OnInventoryChange="OnInventoryChange" OnWeaponSlotChange="OnWeaponSlotChange"
+			OnInventoryChange="OnInventoryChange" OnCheat="OnCheat" OnWeaponSlotChange="OnWeaponSlotChange"
 			OnWeaponFire="OnWeaponFire"
 			FizzleFadeColor="4">
 			<Text Id="Floor" X="32" Y="16" Align="Right"> 1</Text>
@@ -2681,6 +2681,18 @@ elseif name == "StatusBarWeapon" then
 	}
 	SetPicture("WeaponPic", pics[value] or "GUNPIC")
 end
+]]>
+			</Function>
+			<Function Name="OnCheat">
+				<![CDATA[
+SetValue("Health", GetMax("Health"))
+SetValue("bullets", GetMax("bullets"))
+SetValue("Weapon0", GetMax("Weapon0"))
+SetValue("Weapon1", GetMax("Weapon1"))
+SetValue("Weapon2", GetMax("Weapon2"))
+SetValue("Weapon3", GetMax("Weapon3"))
+RevealEntireMap()
+PlaySound("LEVELDONESND")
 ]]>
 			</Function>
 			<Function Name="OnWeaponSlotChange">

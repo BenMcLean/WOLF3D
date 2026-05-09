@@ -177,6 +177,7 @@ void sky() {
 	private readonly IDisplayMode _displayMode;
 	private readonly int _difficulty;
 	private readonly bool _debugMarkersEnabled;
+	private readonly bool _cheatModeEnabled;
 	private readonly InventorySnapshot _savedInventory;
 	private readonly IReadOnlyList<LevelCompletionStats> _savedLevelStats;
 	private readonly int? _playerXOverride;
@@ -203,6 +204,14 @@ void sky() {
 	private CanvasLayer _statusBarCanvas;
 	private AutomapController _automapController;
 	private WristwatchDisplay _wristwatchDisplay;
+	private bool _rightAxPressed;
+	private bool _rightByPressed;
+	private bool _leftAxPressed;
+	private bool _leftByPressed;
+	private int _rightPendingCycleDirection;
+	private int _leftPendingCycleDirection;
+	private bool _rightComboTriggered;
+	private bool _leftComboTriggered;
 
 	/// <summary>
 	/// Creates a new ActionStage with the specified display mode.
@@ -211,7 +220,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
@@ -219,6 +228,7 @@ void sky() {
 			? savedDifficulty
 			: difficulty;
 		_debugMarkersEnabled = debugMarkersEnabled;
+		_cheatModeEnabled = cheatModeEnabled;
 		_savedInventory = savedInventory;
 		_savedLevelStats = savedLevelStats;
 		_playerXOverride = playerXOverride;
@@ -234,12 +244,13 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, StatusBarController statusBarController = null)
+	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
 		_initialLevelIndex = existingSimulator.Inventory.GetValue("MapOn");
 		_debugMarkersEnabled = debugMarkersEnabled;
+		_cheatModeEnabled = cheatModeEnabled;
 		_statusBarController = statusBarController;
 	}
 
@@ -250,11 +261,12 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="snapshot">The saved simulator state to restore.</param>
-	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, StatusBarController statusBarController = null)
+	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 		_debugMarkersEnabled = debugMarkersEnabled;
+		_cheatModeEnabled = cheatModeEnabled;
 		// Level index and difficulty are stored in the snapshot's inventory
 		_initialLevelIndex = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
@@ -706,24 +718,21 @@ void sky() {
 				return;
 			}
 
-			// Cheat: N skips to next level (like activating the elevator)
-			if (keyEvent.Keycode == Key.N)
+			if (_cheatModeEnabled)
 			{
-				InventorySnapshot savedInventory = _simulatorController?.Simulator?.Inventory?.Save();
-				byte destinationLevel = MapAnalysis.ElevatorTo;
-				LevelCompletionStats stats = _simulatorController?.Simulator?.GetCompletionStats(
-					_initialLevelIndex + 1, false, MapAnalysis.Par);
-				_simulatorController?.Simulator?.AddCompletionStats(stats);
-				PendingTransition = new LevelTransitionRequest(
-					destinationLevel, savedInventory, stats,
-					menuName: GetLevelCompleteMenuName(stats),
-					allLevelStats: _simulatorController?.Simulator?.LevelRatios,
-					floorColor: MapAnalysis.Floor,
-					ceilingColor: MapAnalysis.Ceiling,
-					floorTilePage: MapAnalysis.FloorTile,
-					ceilingTilePage: MapAnalysis.CeilingTile,
-					equippedWeaponShapes: GetEquippedWeaponShapes());
-				return;
+				// Cheat: N skips to the next level (like activating the elevator).
+				if (keyEvent.Keycode == Key.N)
+				{
+					TriggerNextLevelCheat();
+					return;
+				}
+
+				// Cheat: M refills all ammo types and health to max.
+				if (keyEvent.Keycode == Key.M)
+				{
+					TriggerMaxResourcesCheat();
+					return;
+				}
 			}
 
 			// Weapon switching - number keys map directly to weapon numbers from XML
@@ -762,6 +771,8 @@ void sky() {
 	/// </summary>
 	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
+		UpdateCheatButtonState(handIndex, buttonName, pressed: true);
+
 		if (buttonName == "trigger_click")
 			FireWeapon(handIndex);
 		else if (buttonName == "grip_click")
@@ -772,9 +783,21 @@ void sky() {
 				UseObjectPlayerIsFacing();
 		}
 		else if (buttonName == "ax_button")
+		{
+			if (HandleVrFaceButtonPress(handIndex, -1))
+				return;
+			if (TryTriggerVrCheatCombo(handIndex))
+				return;
 			CycleWeapon(handIndex, -1);
+		}
 		else if (buttonName == "by_button")
+		{
+			if (HandleVrFaceButtonPress(handIndex, +1))
+				return;
+			if (TryTriggerVrCheatCombo(handIndex))
+				return;
 			CycleWeapon(handIndex, +1);
+		}
 		else if (buttonName == "menu_button" && handIndex == 1)
 		{
 			// Blocked during BJ victory animation
@@ -804,8 +827,143 @@ void sky() {
 	/// </summary>
 	private void OnHandButtonReleased(int handIndex, string buttonName)
 	{
+		UpdateCheatButtonState(handIndex, buttonName, pressed: false);
+
+		if (HandleVrFaceButtonRelease(handIndex, buttonName))
+			return;
+
 		if (buttonName == "trigger_click")
 			ReleaseWeaponTrigger(handIndex);
+	}
+
+	private void UpdateCheatButtonState(int handIndex, string buttonName, bool pressed)
+	{
+		if (handIndex == 0)
+		{
+			if (buttonName == "ax_button")
+				_rightAxPressed = pressed;
+			else if (buttonName == "by_button")
+				_rightByPressed = pressed;
+		}
+		else if (handIndex == 1)
+		{
+			if (buttonName == "ax_button")
+				_leftAxPressed = pressed;
+			else if (buttonName == "by_button")
+				_leftByPressed = pressed;
+		}
+	}
+
+	private bool TryTriggerVrCheatCombo(int handIndex)
+	{
+		if (!_displayMode.IsVRActive || !_cheatModeEnabled)
+			return false;
+
+		if (handIndex == 0 && _rightAxPressed && _rightByPressed)
+		{
+			TriggerNextLevelCheat();
+			return true;
+		}
+
+		if (handIndex == 1 && _leftAxPressed && _leftByPressed)
+		{
+			TriggerMaxResourcesCheat();
+			return true;
+		}
+
+		return false;
+	}
+
+	private bool HandleVrFaceButtonPress(int handIndex, int direction)
+	{
+		if (!_displayMode.IsVRActive || !_cheatModeEnabled)
+			return false;
+
+		ref int pendingDirection = ref handIndex == 0
+			? ref _rightPendingCycleDirection
+			: ref _leftPendingCycleDirection;
+		ref bool comboTriggered = ref handIndex == 0
+			? ref _rightComboTriggered
+			: ref _leftComboTriggered;
+
+		pendingDirection = direction;
+		if (TryTriggerVrCheatCombo(handIndex))
+		{
+			comboTriggered = true;
+			pendingDirection = 0;
+		}
+
+		return true;
+	}
+
+	private bool HandleVrFaceButtonRelease(int handIndex, string buttonName)
+	{
+		if (!_displayMode.IsVRActive || !_cheatModeEnabled || (buttonName != "ax_button" && buttonName != "by_button"))
+			return false;
+
+		ref int pendingDirection = ref handIndex == 0
+			? ref _rightPendingCycleDirection
+			: ref _leftPendingCycleDirection;
+		ref bool comboTriggered = ref handIndex == 0
+			? ref _rightComboTriggered
+			: ref _leftComboTriggered;
+		bool otherButtonStillPressed = handIndex == 0
+			? _rightAxPressed || _rightByPressed
+			: _leftAxPressed || _leftByPressed;
+
+		if (comboTriggered)
+		{
+			if (!otherButtonStillPressed)
+				comboTriggered = false;
+			pendingDirection = 0;
+			return true;
+		}
+
+		int releasedDirection = buttonName == "ax_button" ? -1 : +1;
+		if (pendingDirection == releasedDirection)
+		{
+			CycleWeapon(handIndex, pendingDirection);
+			pendingDirection = 0;
+			return true;
+		}
+
+		return false;
+	}
+
+	private void ApplyCheatPenalty()
+	{
+		_simulatorController?.Simulator?.Inventory?.SetValue("Score", 0);
+	}
+
+	private void TriggerNextLevelCheat()
+	{
+		if (_simulatorController?.Simulator is not Simulator.Simulator sim)
+			return;
+
+		ApplyCheatPenalty();
+
+		InventorySnapshot savedInventory = sim.Inventory.Save();
+		byte destinationLevel = MapAnalysis.ElevatorTo;
+		LevelCompletionStats stats = sim.GetCompletionStats(_initialLevelIndex + 1, false, MapAnalysis.Par);
+		sim.AddCompletionStats(stats);
+		PendingTransition = new LevelTransitionRequest(
+			destinationLevel, savedInventory, stats,
+			menuName: GetLevelCompleteMenuName(stats),
+			allLevelStats: sim.LevelRatios,
+			floorColor: MapAnalysis.Floor,
+			ceilingColor: MapAnalysis.Ceiling,
+			floorTilePage: MapAnalysis.FloorTile,
+			ceilingTilePage: MapAnalysis.CeilingTile,
+			equippedWeaponShapes: GetEquippedWeaponShapes());
+	}
+
+	private void TriggerMaxResourcesCheat()
+	{
+		if (_simulatorController?.Simulator is not Simulator.Simulator sim)
+			return;
+
+		ApplyCheatPenalty();
+		sim.ExecuteOnCheatScript();
 	}
 
 	/// <summary>

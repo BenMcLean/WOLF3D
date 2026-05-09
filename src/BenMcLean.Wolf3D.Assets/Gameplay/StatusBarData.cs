@@ -54,6 +54,11 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 	/// </summary>
 	public string OnInventoryChange { get; set; }
 	/// <summary>
+	/// Optional ActionFunction to call when the player uses the refill/reveal cheat.
+	/// Game data owns the exact effect so each title can decide what to restore.
+	/// </summary>
+	public string OnCheat { get; set; }
+	/// <summary>
 	/// Optional ActionFunction to call whenever a weapon slot changes to a different weapon.
 	/// The slot index, weapon number, and weapon type name are passed as Lua varargs.
 	/// </summary>
@@ -86,6 +91,7 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 			OnMapStart = element.Attribute("OnMapStart")?.Value,
 			OnTakeDamage = element.Attribute("OnTakeDamage")?.Value,
 			OnInventoryChange = element.Attribute("OnInventoryChange")?.Value,
+			OnCheat = element.Attribute("OnCheat")?.Value,
 			OnWeaponSlotChange = element.Attribute("OnWeaponSlotChange")?.Value,
 			OnWeaponFire = element.Attribute("OnWeaponFire")?.Value,
 			FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,

@@ -331,6 +331,15 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <param name="enabled">True to show debug markers</param>
 	public void SetDebugMarkersEnabled(bool enabled) => sessionState.DebugMarkersEnabled = enabled;
+	/// <summary>
+	/// Get whether cheat mode is enabled.
+	/// </summary>
+	public bool GetCheatModeEnabled() => sessionState.CheatModeEnabled;
+	/// <summary>
+	/// Enable or disable cheat mode.
+	/// </summary>
+	/// <param name="enabled">True to enable cheat shortcuts</param>
+	public void SetCheatModeEnabled(bool enabled) => sessionState.CheatModeEnabled = enabled;
 	#endregion VR Settings
 	#region Menu Item Selection and Dynamic Content
 	/// <summary>

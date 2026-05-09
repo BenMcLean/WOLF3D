@@ -215,6 +215,7 @@ public static class GameCheckerLogic
 			if (CheckAttr(el, "OnDeath", functions, "function") is { } i4) yield return i4;
 			if (CheckAttr(el, "OnNewGame", functions, "function") is { } i5) yield return i5;
 			if (CheckAttr(el, "OnMapStart", functions, "function") is { } i6) yield return i6;
+			if (CheckAttr(el, "OnCheat", functions, "function") is { } i7) yield return i7;
 			foreach (XElement pic in el.Elements("Picture"))
 				if (CheckAttr(pic, "Name", pics, "pic") is { } i) yield return i;
 		}

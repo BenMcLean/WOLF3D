@@ -415,6 +415,14 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="OnCheat" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Optional ActionFunction to call when the player uses the refill/reveal cheat.
+						Game data owns the exact effect so each title can decide what to restore.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="OnWeaponSlotChange" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>

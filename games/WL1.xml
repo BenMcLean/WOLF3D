@@ -299,7 +299,7 @@
 				pictures) -->
 				<!-- WL_MENU.C:295-296: Episode 1 active=1 for shareware -->
 				<MenuItem Text="Episode 1&#10;Escape from Wolfenstein">
-					SetEpisode(0)
+					SetEpisode(1)
 					NavigateToMenu("NewGame")
 				</MenuItem>
 				<!-- WL_MENU.C:314-327: Episodes 2-6 with active=0 for WL1 shareware -->

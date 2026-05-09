@@ -158,6 +158,11 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Passed in by Root so the presentation menu reflects the current runtime state.
 	/// </summary>
 	public bool InitialDebugMarkersEnabled { get; set; }
+	/// <summary>
+	/// Initial cheat mode state to seed the menu session with.
+	/// Passed in by Root so the presentation menu reflects the current runtime state.
+	/// </summary>
+	public bool InitialCheatModeEnabled { get; set; }
 
 	/// <summary>
 	/// Equipped weapon shapes from the ActionRoom to display on VR controllers.
@@ -193,6 +198,11 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Polled by Root and applied to newly created gameplay rooms.
 	/// </summary>
 	public bool DebugMarkersEnabled => _menuManager?.SessionState?.DebugMarkersEnabled ?? InitialDebugMarkersEnabled;
+	/// <summary>
+	/// Current cheat mode state from the menu session state.
+	/// Polled by Root and applied to newly created gameplay rooms.
+	/// </summary>
+	public bool CheatModeEnabled => _menuManager?.SessionState?.CheatModeEnabled ?? InitialCheatModeEnabled;
 
 	/// <summary>
 	/// Menu render texture for direct spectator-window capture.
@@ -262,6 +272,7 @@ public partial class MenuRoom : Node3D, IRoom
 			scriptsPrecompiled: usingSharedPrecompiledLua);
 		_menuManager.SessionState.VRMode = InitialVRMode;
 		_menuManager.SessionState.DebugMarkersEnabled = InitialDebugMarkersEnabled;
+		_menuManager.SessionState.CheatModeEnabled = InitialCheatModeEnabled;
 		// Wire up game selection (used when MenuCollectionOverride is the procedural game list)
 		_menuManager.ScriptContext.SelectGameAction = path => SelectedGameXmlPath = path;
 		// Wire up in-game state so menu items with InGame conditions show/hide correctly
@@ -298,9 +309,8 @@ public partial class MenuRoom : Node3D, IRoom
 			return $"Level {levelIndex + 1}";
 		};
 
-		// Register the VR-specific presentation menu.
-		if (_displayMode.IsVRActive)
-			RegisterVRModeMenu();
+		// Register the presentation menu in both VR and flatscreen modes.
+		RegisterVRModeMenu();
 
 		// Wire sprite texture provider for actor animations (boss death cam etc.)
 		// Must be set before NavigateToMenu so the first RenderMenu call can use it.
@@ -367,8 +377,8 @@ public partial class MenuRoom : Node3D, IRoom
 
 	/// <summary>
 	/// Registers the VR presentation sub-menu with the menu manager.
-	/// The &lt;PresentationMenuItem&gt; slot in the game XML will show as "Presentation"
-	/// and open this sub-menu. Items let the player change VR mode and debug marker visibility.
+	/// The &lt;PresentationMenuItem&gt; slot in the game XML will show as "VR Options"
+	/// and open this sub-menu. Items let the player change VR mode, debug mode, and cheat mode.
 	/// </summary>
 	private void RegisterVRModeMenu()
 	{
@@ -395,27 +405,43 @@ end
 
 local debugMarkersEnabled = GetDebugMarkersEnabled()
 if debugMarkersEnabled then
-	SetPicture('VRDebugMarkersOn', 'C_SELECTEDPIC')
-	SetPicture('VRDebugMarkersOff', 'C_NOTSELECTEDPIC')
+	SetPicture('VRDebugModeOn', 'C_SELECTEDPIC')
+	SetPicture('VRDebugModeOff', 'C_NOTSELECTEDPIC')
 else
-	SetPicture('VRDebugMarkersOn', 'C_NOTSELECTEDPIC')
-	SetPicture('VRDebugMarkersOff', 'C_SELECTEDPIC')
+	SetPicture('VRDebugModeOn', 'C_NOTSELECTEDPIC')
+	SetPicture('VRDebugModeOff', 'C_SELECTEDPIC')
+end
+
+local cheatModeEnabled = GetCheatModeEnabled()
+if cheatModeEnabled then
+	SetPicture('VRCheatModeOn', 'C_SELECTEDPIC')
+	SetPicture('VRCheatModeOff', 'C_NOTSELECTEDPIC')
+else
+	SetPicture('VRCheatModeOn', 'C_NOTSELECTEDPIC')
+	SetPicture('VRCheatModeOff', 'C_SELECTEDPIC')
 end
 """ : null,
 		};
 		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 17, W = 250, H = 32 });
 		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 82, W = 250, H = 32 });
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 147, W = 250, H = 32 });
 		vrModeMenu.Texts.Add(new TextDefinition
 		{
-			Content = "View Mode",
+			Content = "VR Mode",
 			X = "Center",
 			Y = "0",
 		});
 		vrModeMenu.Texts.Add(new TextDefinition
 		{
-			Content = "Debug Markers",
+			Content = "Debug Mode",
 			X = "Center",
 			Y = "65",
+		});
+		vrModeMenu.Texts.Add(new TextDefinition
+		{
+			Content = "Cheat Mode",
+			X = "Center",
+			Y = "130",
 		});
 		if (hasTogglePictures)
 		{
@@ -438,7 +464,7 @@ end
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
 			{
-				Id = "VRDebugMarkersOn",
+				Id = "VRDebugModeOn",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
 				Y = "87",
@@ -446,10 +472,26 @@ end
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
 			{
-				Id = "VRDebugMarkersOff",
+				Id = "VRDebugModeOff",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
 				Y = "100",
+				ZIndex = 9,
+			});
+			vrModeMenu.Pictures.Add(new PictureDefinition
+			{
+				Id = "VRCheatModeOn",
+				Name = "C_NOTSELECTEDPIC",
+				X = "72",
+				Y = "152",
+				ZIndex = 9,
+			});
+			vrModeMenu.Pictures.Add(new PictureDefinition
+			{
+				Id = "VRCheatModeOff",
+				Name = "C_NOTSELECTEDPIC",
+				X = "72",
+				Y = "165",
 				ZIndex = 9,
 			});
 		}
@@ -465,14 +507,25 @@ end
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
-			Text = "Debug Markers On",
+			Text = "On",
 			Script = "SetDebugMarkersEnabled(true) RefreshMenu()",
 			CustomProperties = { ["ExtraSpacing"] = "39" },
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
-			Text = "Debug Markers Off",
+			Text = "Off",
 			Script = "SetDebugMarkersEnabled(false) RefreshMenu()",
+		});
+		vrModeMenu.Items.Add(new MenuItemDefinition
+		{
+			Text = "On",
+			Script = "SetCheatModeEnabled(true) RefreshMenu()",
+			CustomProperties = { ["ExtraSpacing"] = "39" },
+		});
+		vrModeMenu.Items.Add(new MenuItemDefinition
+		{
+			Text = "Off",
+			Script = "SetCheatModeEnabled(false) RefreshMenu()",
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
@@ -480,7 +533,7 @@ end
 			Script = "NavigateToMenu(\"Main\")",
 			CustomProperties = { ["ExtraSpacing"] = "39" },
 		});
-		_menuManager.RegisterPresentationMenu("Presentation", vrModeMenu);
+		_menuManager.RegisterPresentationMenu("VR Options", vrModeMenu);
 	}
 	/// <summary>
 	/// Sets up the menu as a floating 3D panel for VR.
