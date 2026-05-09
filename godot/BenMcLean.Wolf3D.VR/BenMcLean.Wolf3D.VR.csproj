@@ -17,4 +17,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\VOXELS.W3D" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
 </Project>

@@ -2944,12 +2944,56 @@ end
 				MinDamage="16" MaxDamage="64" Speed="12288" ActorCollisionSize="32768" />
 		</Projectiles>
 		<Sprites>
-			<Sprite Page="63" Name="Ground" />
-			<Sprite Page="64" Name="Ceiling" />
 			<Sprite Page="71" Name="SPR_DEMO" />
+			<Sprite Page="72" Name="SPR_STAT_0" />
+			<Sprite Page="73" Name="SPR_STAT_1" />
+			<Sprite Page="74" Name="SPR_STAT_2" />
+			<Sprite Page="75" Name="SPR_STAT_3" />
+			<Sprite Page="76" Name="SPR_STAT_4" />
+			<Sprite Page="77" Name="SPR_STAT_5" />
+			<Sprite Page="78" Name="SPR_STAT_6" />
+			<Sprite Page="79" Name="SPR_STAT_7" />
+			<Sprite Page="80" Name="SPR_STAT_8" />
+			<Sprite Page="81" Name="SPR_STAT_9" />
+			<Sprite Page="82" Name="SPR_STAT_10" />
+			<Sprite Page="83" Name="SPR_STAT_11" />
+			<Sprite Page="84" Name="SPR_STAT_12" />
+			<Sprite Page="85" Name="SPR_STAT_13" />
+			<Sprite Page="86" Name="SPR_STAT_14" />
+			<Sprite Page="87" Name="SPR_STAT_15" />
 			<Sprite Page="88" Name="SPR_STAT_16" />
+			<Sprite Page="89" Name="SPR_STAT_17" />
+			<Sprite Page="90" Name="SPR_STAT_18" />
+			<Sprite Page="91" Name="SPR_STAT_19" />
+			<Sprite Page="92" Name="SPR_STAT_20" />
+			<Sprite Page="93" Name="SPR_STAT_21" />
 			<Sprite Page="94" Name="SPR_STAT_22" />
 			<Sprite Page="95" Name="SPR_STAT_23" />
+			<Sprite Page="96" Name="SPR_STAT_24" />
+			<Sprite Page="97" Name="SPR_STAT_25" />
+			<Sprite Page="98" Name="SPR_STAT_26" />
+			<Sprite Page="99" Name="SPR_STAT_27" />
+			<Sprite Page="100" Name="SPR_STAT_28" />
+			<Sprite Page="101" Name="SPR_STAT_29" />
+			<Sprite Page="102" Name="SPR_STAT_30" />
+			<Sprite Page="103" Name="SPR_STAT_31" />
+			<Sprite Page="104" Name="SPR_STAT_32" />
+			<Sprite Page="105" Name="SPR_STAT_33" />
+			<Sprite Page="106" Name="SPR_STAT_34" />
+			<Sprite Page="107" Name="SPR_STAT_35" />
+			<Sprite Page="108" Name="SPR_STAT_36" />
+			<Sprite Page="109" Name="SPR_SNOOZE_1" />
+			<Sprite Page="110" Name="SPR_SNOOZE_2" />
+			<Sprite Page="111" Name="SPR_SNOOZE_3" />
+			<Sprite Page="112" Name="SPR_QUIZ" />
+			<Sprite Page="113" Name="SPR_WATERMELON" />
+			<Sprite Page="114" Name="SPR_WATERMELONEXP" />
+			<Sprite Page="115" Name="SPR_GAMEOVER" />
+			<Sprite Page="116" Name="SPR_ANIMALPROJ" />
+			<Sprite Page="117" Name="SPR_CANTALOUPE" />
+			<Sprite Page="118" Name="SPR_CANTALOUPEEXP" />
+			<Sprite Page="119" Name="SPR_ANIMALPROJEXP" />
+			<Sprite Page="120" Name="SPR_YOUWIN" />
 			<Sprite Page="121" Name="SPR_GRD_W1_1" />
 			<Sprite Page="122" Name="SPR_GRD_W1_2" />
 			<Sprite Page="123" Name="SPR_GRD_W1_3" />
@@ -3258,10 +3302,6 @@ end
 			<Sprite Page="426" Name="SPR_WATERATK2" />
 			<Sprite Page="427" Name="SPR_WATERATK3" />
 			<Sprite Page="428" Name="SPR_WATERATK4" />
-			<Sprite Page="113" Name="SPR_WATERMELON" />
-			<Sprite Page="114" Name="SPR_WATERMELONEXP" />
-			<Sprite Page="117" Name="SPR_CANTALOUPE" />
-			<Sprite Page="118" Name="SPR_CANTALOUPEEXP" />
 		</Sprites>
 		<DigiSounds>
 			<DigiSound Number="0" Name="D_ANTLPESND" />
