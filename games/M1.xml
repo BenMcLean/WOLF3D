@@ -257,9 +257,6 @@ this file. -->
 				<MenuItem Text="Back to Game" InGame="true">
 					ResumeGame()
 				</MenuItem>
-				<MenuItem Text="End Game" InGame="true">
-					RequestEndGame()
-				</MenuItem>
 				<MenuItem Text="Quit">
 					RequestQuit()
 				</MenuItem>

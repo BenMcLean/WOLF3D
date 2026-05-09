@@ -347,20 +347,10 @@ public partial class MenuRoom : Node3D, IRoom
 			_menuManager.NavigateToMenu(StartMenuOverride);
 		}
 
-		// If the initial menu declares StatusBar="true", inject the live status bar at y=160.
-		// Matches original Wolf3D: quiz menus left the status bar row (y=160..200) untouched.
-		if (StatusBarController is not null && !string.IsNullOrEmpty(StartMenuOverride))
-		{
-			MenuCollection collection = MenuCollectionOverride
-				?? SharedAssetManager.CurrentGame?.MenuCollection;
-			MenuStatusBarDefinition statusBarDef = collection?.GetMenu(StartMenuOverride)?.StatusBar;
-			if (statusBarDef is not null)
-			{
-				_statusBarRenderer = new StatusBarRenderer(StatusBarController.State);
-				_statusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
-				_menuManager.Renderer.Viewport.AddChild(_statusBarRenderer.Canvas);
-			}
-		}
+		// Keep the live status bar synchronized with the menu currently being shown.
+		// This matters for flows like LevelComplete -> Mission2 where the first menu has a
+		// status bar and the next one intentionally does not.
+		SyncMenuStatusBar();
 		// Wire up status bar picture updates from menu scripts (e.g., quiz result face changes).
 		if (StatusBarController is not null)
 			_menuManager.ScriptContext.SetStatusBarFallbackPictureAction =
@@ -926,6 +916,9 @@ void sky() {
 		}
 		// StatusBarRenderer subscribes to state events in its constructor; Dispose() removes them
 		// so they cannot fire against freed Godot nodes after the MenuRoom exits the tree.
+		if (_statusBarRenderer?.Canvas.GetParent() is Node parent)
+			parent.RemoveChild(_statusBarRenderer.Canvas);
+		_statusBarRenderer?.Canvas.QueueFree();
 		_statusBarRenderer?.Dispose();
 	}
 
@@ -997,6 +990,7 @@ void sky() {
 
 		// Update menu manager
 		_menuManager?.Update((float)delta);
+		SyncMenuStatusBar();
 
 		// If a game selection was made, Root is already handling the transition.
 		// Skip all other menu processing to avoid spurious state changes.
@@ -1047,6 +1041,42 @@ void sky() {
 		{
 			UpdateMenuPanelRotation();
 		}
+	}
+
+	/// <summary>
+	/// Ensure the live status bar matches the currently active menu.
+	/// </summary>
+	private void SyncMenuStatusBar()
+	{
+		if (StatusBarController is null || _menuManager is null)
+			return;
+
+		MenuCollection collection = MenuCollectionOverride
+			?? SharedAssetManager.CurrentGame?.MenuCollection;
+		MenuStatusBarDefinition statusBarDef = !string.IsNullOrEmpty(_menuManager.CurrentMenuName)
+			? collection?.GetMenu(_menuManager.CurrentMenuName)?.StatusBar
+			: null;
+
+		if (statusBarDef is null)
+		{
+			if (_statusBarRenderer is not null)
+			{
+				if (_statusBarRenderer.Canvas.GetParent() is Node parent)
+					parent.RemoveChild(_statusBarRenderer.Canvas);
+				_statusBarRenderer.Canvas.QueueFree();
+				_statusBarRenderer.Dispose();
+				_statusBarRenderer = null;
+			}
+			return;
+		}
+
+		if (_statusBarRenderer is null)
+		{
+			_statusBarRenderer = new StatusBarRenderer(StatusBarController.State);
+			_menuManager.Renderer.Viewport.AddChild(_statusBarRenderer.Canvas);
+		}
+
+		_statusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
 	}
 
 	private void UpdateFlatscreenMenuLayout()

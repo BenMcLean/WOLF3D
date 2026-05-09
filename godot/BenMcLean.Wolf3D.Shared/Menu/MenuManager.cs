@@ -55,6 +55,10 @@ public class MenuManager
 	/// Gets the script context for setting intermission data.
 	/// </summary>
 	public MenuScriptContext ScriptContext => _scriptContext;
+	/// <summary>
+	/// Gets the currently active menu name, or null while showing an article / no menu.
+	/// </summary>
+	public string CurrentMenuName => _currentMenuName;
 	#region Flags
 	/// <summary>
 	/// Set when the user confirmed the quit dialog.
