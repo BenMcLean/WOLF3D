@@ -2944,7 +2944,7 @@ AddValue("Score", 5000)
 			<State Name="s_chaingun_2" Rotate="false" Shape="SPR_CHAINATK2" Tics="6"
 				Action="A_ChainGunAttack" Next="s_chaingun_3" />
 			<State Name="s_chaingun_3" Rotate="false" Shape="SPR_CHAINATK3" Tics="6"
-				Action="A_ChainGunRapidFire" Next="s_chaingun_4" />
+				Action="A_RapidFire" Next="s_chaingun_4" />
 			<State Name="s_chaingun_4" Rotate="false" Shape="SPR_CHAINATK4" Tics="6"
 				Action="A_WeaponReady" Next="s_chaingun" />
 			<!-- Player projectile states (WL_ACT2.C #ifdef GAMEVER_NOAH3D) -->
@@ -3145,7 +3145,8 @@ RequestHitScan({
 if GetValue("Gas") < 1 then return end
 PlaySound("D_COCTHRSND")
 AddValue("Gas", -1)
-SpawnProjectile("cantaloupe")
+RequestProjectile("cantaloupe")
+PropagateNoise()
 ]]>
 			</Function>
 			<Function Name="A_CantaloupeReady">
@@ -3160,7 +3161,8 @@ end
 if GetValue("Missile") < 1 then return end
 PlaySound("D_WATTHRSND")
 AddValue("Missile", -1)
-SpawnProjectile("watermelon")
+RequestProjectile("watermelon")
+PropagateNoise()
 ]]>
 			</Function>
 			<Function Name="A_WatermelonReady">

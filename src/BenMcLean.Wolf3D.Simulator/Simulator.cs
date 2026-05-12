@@ -2435,72 +2435,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		slot.ShapeNum = nextState.Shape;
 		slot.AttackFrame++;  // Increment attack frame counter
 
-		// Execute Action function if present (optional Lua support)
-		// TODO: Full Lua script execution for weapon actions
-		// For now, handle weapon actions directly in C#
 		if (!string.IsNullOrEmpty(nextState.Action)
 			&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
 		{
-			switch (nextState.Action)
+			Lua.WeaponScriptContext weaponContext = new(this, slot, slotIndex, weaponInfo, rng, gameClock, logger)
 			{
-				// WL_AGENT.C:KnifeAttack - melee attack action
-				case "A_KnifeAttack":
-					ExecuteKnifeAttack(slotIndex, slot, weaponInfo);
-					break;
-
-				// WL_AGENT.C:GunAttack - hitscan attack actions
-				// Each performs raycast via HitDetection callback, consumes ammo, applies damage
-				case "A_PistolAttack":
-				case "A_MachineGunAttack":
-				case "A_ChainGunAttack":
-					ExecuteGunAttack(slotIndex, slot, weaponInfo);
-					break;
-
-				case "A_CantaloupeAttack":
-					ExecuteProjectileWeaponAttack(slotIndex, slot, weaponInfo, "Gas", "cantaloupe");
-					break;
-
-				case "A_WatermelonAttack":
-					ExecuteProjectileWeaponAttack(slotIndex, slot, weaponInfo, "Missile", "watermelon");
-					break;
-
-				// WL_AGENT.C:T_Attack case 3 - loop back to fire state if trigger held, no fire
-				case "A_RapidFire":
-					if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
-					{
-						if (HasAmmo(weaponInfo))
-						{
-							string fireFrameState = weaponInfo.FireState;
-							if (fireFrameState is not null && stateCollection.States.TryGetValue(fireFrameState, out State fireState))
-							{
-								slot.CurrentState = fireState;
-								slot.TicCount = fireState.Tics;
-								slot.ShapeNum = fireState.Shape;
-								slot.AttackFrame = 1;
-							}
-						}
-					}
-					break;
-
-				// WL_AGENT.C:T_Attack case 4 - fires (falls through to case 1) AND loops back if trigger held
-				// Chain gun fires on this frame unlike machine gun which only loops (case 3)
-				case "A_ChainGunRapidFire":
-					if (HasAmmo(weaponInfo))
-					{
-						if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
-						{
-							string fireFrameState = weaponInfo.FireState;
-							if (fireFrameState is not null && stateCollection.States.TryGetValue(fireFrameState, out State rapidFireState))
-							{
-								slot.CurrentState = rapidFireState;
-								slot.TicCount = rapidFireState.Tics;
-								slot.ShapeNum = rapidFireState.Shape;
-								slot.AttackFrame = 1;
-							}
-						}
-						ExecuteGunAttack(slotIndex, slot, weaponInfo);
-					}
-					break;
+				AudioT = audioT
+			};
+			try
+			{
+				luaScriptEngine.ExecuteActionFunction(nextState.Action, weaponContext);
+			}
+			catch (Exception ex)
+			{
+				logger?.LogError(ex, "Error executing weapon action '{Action}'", nextState.Action);
+			}
+			string nextStateOverrideName = weaponContext.GetNextStateOverride();
+			if (nextStateOverrideName is not null
+				&& stateCollection.States.TryGetValue(nextStateOverrideName, out State overrideState))
+			{
+				slot.CurrentState = overrideState;
+				slot.TicCount = overrideState.Tics;
+				slot.ShapeNum = overrideState.Shape;
+				slot.AttackFrame = 1;
 			}
 		}
 
@@ -2633,122 +2590,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		slot.Flags &= ~WeaponSlotFlags.TriggerHeld;
 	}
 
-	/// <summary>
-	/// Execute a gun attack action (A_PistolAttack, A_MachineGunAttack, A_ChainGunAttack).
-	/// Consumes ammo, performs hit detection via callback, applies damage, emits event.
-	/// Based on WL_AGENT.C:GunAttack - called on the fire frame of every weapon.
-	/// </summary>
-	private void ExecuteGunAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
-	{
-		// Check and consume ammo
-		if (!TryConsumeAmmo(weaponInfo))
-			return;
-
-		ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, slot.WeaponType);
-
-		// Perform hit detection via presentation layer callback
-		int? hitActorIndex = HitDetection?.Invoke(slotIndex);
-
-		// Apply damage if hit
-		if (hitActorIndex.HasValue)
-			ApplyWeaponDamage(hitActorIndex.Value, weaponInfo);
-
-		// Emit weapon fired event (for sound, muzzle flash)
-		WeaponFired?.Invoke(new WeaponFiredEvent
-		{
-			SlotIndex = slotIndex,
-			WeaponType = slot.WeaponType,
-			SoundName = weaponInfo.FireSound ?? string.Empty,
-			DidHit = hitActorIndex.HasValue,
-			HitActorIndex = hitActorIndex
-		});
-
-		// WL_AGENT.C:GunAttack - madenoise = true
-		PropagateNoise();
-	}
-
-	/// <summary>
-	/// Execute a player projectile weapon attack using presentation-provided muzzle pose data.
-	/// Keeps 3D/controller math in the presentation layer while the simulator owns ammo,
-	/// state transitions, projectile creation, and gameplay events.
-	/// </summary>
-	private void ExecuteProjectileWeaponAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo, string ammoKey, string projectileType)
-	{
-		if (!TryConsumeAmmo(weaponInfo, ammoKey))
-			return;
-
-		ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, slot.WeaponType);
-
-		SpawnPlayerProjectile(slotIndex, projectileType);
-
-		WeaponFired?.Invoke(new WeaponFiredEvent
-		{
-			SlotIndex = slotIndex,
-			WeaponType = slot.WeaponType,
-			SoundName = weaponInfo.FireSound ?? string.Empty,
-			DidHit = false,
-			HitActorIndex = null
-		});
-
-		PropagateNoise();
-
-		if (GetAmmoCount(ammoKey) <= 0)
-			QueueWeaponFallback(slotIndex, slot);
-	}
-
-	/// <summary>
-	/// Execute a knife attack action (A_KnifeAttack).
-	/// Performs hit detection via callback, applies melee damage.
-	/// No ammo consumed. No noise propagation (knife is silent).
-	/// Based on WL_AGENT.C:KnifeAttack.
-	/// </summary>
-	private void ExecuteKnifeAttack(int slotIndex, WeaponSlot slot, WeaponInfo weaponInfo)
-	{
-		ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, slot.WeaponType);
-
-		// WL_AGENT.C:KnifeAttack - position-based melee, no raycast needed
-		int? hitActorIndex = null;
-		int closestDist = int.MaxValue;
-
-		for (int i = 0; i < actors.Count; i++)
-		{
-			Actor actor = actors[i];
-			if (!actor.Flags.HasFlag(ActorFlags.Shootable)) continue;
-
-			int dx = Math.Abs(PlayerTileX - actor.TileX);
-			int dy = Math.Abs(PlayerTileY - actor.TileY);
-			int chebyshev = Math.Max(dx, dy); // Chebyshev distance
-
-			// WL_AGENT.C:KnifeAttack - range check (0x18000 ≈ 1.5 tiles)
-			if (chebyshev > 1) continue;
-
-			// Line of sight check (replaces FL_VISABLE + shootdelta from original)
-			if (!HasLineOfSight(PlayerTileX, PlayerTileY, actor.TileX, actor.TileY))
-				continue;
-
-			if (chebyshev < closestDist)
-			{
-				closestDist = chebyshev;
-				hitActorIndex = i;
-			}
-		}
-
-		// Apply damage if hit
-		if (hitActorIndex.HasValue)
-			ApplyWeaponDamage(hitActorIndex.Value, weaponInfo);
-
-		// Emit weapon fired event (for sound, animation)
-		WeaponFired?.Invoke(new WeaponFiredEvent
-		{
-			SlotIndex = slotIndex,
-			WeaponType = slot.WeaponType,
-			SoundName = weaponInfo.FireSound ?? string.Empty,
-			DidHit = hitActorIndex.HasValue,
-			HitActorIndex = hitActorIndex
-		});
-
-		// No PropagateNoise() - knife is silent (WL_AGENT.C:KnifeAttack doesn't set madenoise)
-	}
 
 	private int GetAmmoCount(string ammoKey) =>
 		string.IsNullOrEmpty(ammoKey) ? 0 : Inventory.GetValue(ammoKey);
@@ -2807,7 +2648,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// WL_STATE.C:SightPlayer checks madenoise to alert non-ambush enemies in connected areas
 	/// Instead of a per-tic flag, we immediately alert on the fire frame.
 	/// </summary>
-	private void PropagateNoise()
+	internal void PropagateNoise()
 	{
 		if (mapAnalysis is null) return;
 
@@ -2876,7 +2717,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	/// <param name="actorIndex">Index of actor to damage</param>
 	/// <param name="weaponInfo">Weapon used for the attack</param>
-	private void ApplyWeaponDamage(int actorIndex, WeaponInfo weaponInfo)
+	internal void ApplyWeaponDamage(int actorIndex, WeaponInfo weaponInfo)
 	{
 		if (actorIndex < 0 || actorIndex >= actors.Count)
 			return;
@@ -3135,7 +2976,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 	}
 
-	private void ExecuteOnWeaponFireScript(int slotIndex, int weaponNumber, string weaponType)
+	internal void ExecuteOnWeaponFireScript(int slotIndex, int weaponNumber, string weaponType)
 	{
 		if (string.IsNullOrEmpty(onWeaponFireFunctionName))
 			return;
@@ -3178,6 +3019,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			SoundName = soundName
 		});
 	}
+
+	internal void EmitWeaponFired(WeaponFiredEvent e) => WeaponFired?.Invoke(e);
 
 	/// <summary>
 	/// Emit a PlayGlobalSound event for non-positional audio.

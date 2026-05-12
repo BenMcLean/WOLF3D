@@ -1,3 +1,4 @@
+using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Entities;
 using Microsoft.Extensions.Logging;
@@ -76,46 +77,6 @@ public class WeaponScriptContext(
 			PlaySound(weaponInfo.FireSound);
 	}
 	#endregion Sound Playback
-	#region Ammo Management
-	/// <summary>
-	/// Check if player has enough ammo for this weapon.
-	/// WL_AGENT.C ammo check equivalent.
-	/// Uses generic inventory API with the weapon's configured AmmoType key.
-	/// </summary>
-	/// <param name="amount">Amount of ammo required (default: weapon's AmmoPerShot)</param>
-	/// <returns>True if enough ammo available (or weapon doesn't require ammo)</returns>
-	public bool HasAmmo(int? amount = null)
-	{
-		int required = amount ?? weaponInfo.AmmoPerShot;
-		string ammoKey = weaponInfo.AmmoType;
-		// Weapons that don't require ammo always return true
-		return required <= 0 ||
-			string.IsNullOrEmpty(ammoKey) ||
-			GetValue(ammoKey) >= required;
-	}
-	/// <summary>
-	/// Consume ammo for this weapon.
-	/// WL_AGENT.C:gamestate.ammo-- equivalent.
-	/// Uses generic inventory API with the weapon's configured AmmoType key.
-	/// </summary>
-	/// <param name="amount">Amount of ammo to consume (default: weapon's AmmoPerShot)</param>
-	public void ConsumeAmmo(int? amount = null)
-	{
-		int toConsume = amount ?? weaponInfo.AmmoPerShot;
-		string ammoKey = weaponInfo.AmmoType;
-		if (toConsume <= 0 || string.IsNullOrEmpty(ammoKey))
-			return;
-		AddValue(ammoKey, -toConsume);
-		_logger?.LogDebug("WeaponScriptContext: ConsumeAmmo({amount}) for {weaponType}, remaining: {remaining}",
-			toConsume, weaponSlot.WeaponType, GetValue(ammoKey));
-	}
-	/// <summary>
-	/// Get current ammo count for this weapon's ammo type.
-	/// Uses generic inventory API with the weapon's configured AmmoType key.
-	/// </summary>
-	/// <returns>Current ammo count (0 if weapon doesn't use ammo)</returns>
-	public int GetAmmoCount() => string.IsNullOrEmpty(weaponInfo.AmmoType) ? 0 : GetValue(weaponInfo.AmmoType);
-	#endregion Ammo Management
 	#region Input State
 	/// <summary>
 	/// Check if attack button is currently held down.
@@ -159,32 +120,90 @@ public class WeaponScriptContext(
 	/// </summary>
 	public void ClearNextStateOverride() => nextStateOverride = null;
 	#endregion State Flow Control
+	#region Noise
+	/// <summary>
+	/// Propagate noise from weapon fire to alert nearby enemies.
+	/// WL_AGENT.C:madenoise equivalent. Called by Lua for noisy weapons (guns, projectiles).
+	/// NOT called for silent weapons (knife).
+	/// </summary>
+	public void PropagateNoise() => simulator.PropagateNoise();
+	#endregion Noise
 	#region Attack Requests
 	/// <summary>
-	/// Request a hitscan attack (raycast).
-	/// Presentation layer will perform raycasting and return hit results to simulator.
-	/// WL_AGENT.C:GunAttack equivalent.
+	/// Hitscan attack: raycast via HitDetection callback, applies damage, emits WeaponFired, propagates noise.
+	/// WL_AGENT.C:GunAttack equivalent. Sound is played by the Lua script before calling this.
 	/// </summary>
-	/// <param name="parameters">Attack parameters (range, spread, damage, etc.)</param>
+	/// <param name="parameters">Attack parameters (range, spread, damage, etc.) — reserved for future data-driven damage</param>
 	public void RequestHitScan(object parameters)
 	{
-		// TODO: Parse parameters table and emit attack request event
-		// For now, log the request
-		_logger?.LogDebug("WeaponScriptContext: RequestHitScan() for {weaponType} (not yet implemented)",
-			weaponSlot.WeaponType);
+		simulator.ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, weaponSlot.WeaponType);
+		int? hitActorIndex = simulator.HitDetection?.Invoke(slotIndex);
+		if (hitActorIndex.HasValue)
+			simulator.ApplyWeaponDamage(hitActorIndex.Value, weaponInfo);
+		simulator.EmitWeaponFired(new WeaponFiredEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = weaponSlot.WeaponType,
+			SoundName = string.Empty,
+			DidHit = hitActorIndex.HasValue,
+			HitActorIndex = hitActorIndex
+		});
 	}
 	/// <summary>
-	/// Request a melee attack (close range).
-	/// Presentation layer will check for nearby enemies and return hit results.
-	/// WL_AGENT.C:KnifeAttack equivalent.
+	/// Melee attack: Chebyshev range check across all actors, applies damage to closest, emits WeaponFired.
+	/// WL_AGENT.C:KnifeAttack equivalent. No noise propagation (knife is silent).
 	/// </summary>
-	/// <param name="parameters">Attack parameters (range, arc, damage, etc.)</param>
+	/// <param name="parameters">Attack parameters (range, arc, damage, etc.) — reserved for future data-driven damage</param>
 	public void RequestMelee(object parameters)
 	{
-		// TODO: Parse parameters table and emit attack request event
-		// For now, log the request
-		_logger?.LogDebug("WeaponScriptContext: RequestMelee() for {weaponType} (not yet implemented)",
-			weaponSlot.WeaponType);
+		simulator.ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, weaponSlot.WeaponType);
+		int? hitActorIndex = null;
+		int closestDist = int.MaxValue;
+		for (int i = 0; i < simulator.Actors.Count; i++)
+		{
+			Actor actor = simulator.Actors[i];
+			if (!actor.Flags.HasFlag(ActorFlags.Shootable)) continue;
+			int dx = Math.Abs(simulator.PlayerTileX - actor.TileX);
+			int dy = Math.Abs(simulator.PlayerTileY - actor.TileY);
+			int chebyshev = Math.Max(dx, dy);
+			// WL_AGENT.C:KnifeAttack - range check (0x18000 ≈ 1.5 tiles)
+			if (chebyshev > 1) continue;
+			if (!simulator.HasLineOfSight(simulator.PlayerTileX, simulator.PlayerTileY, actor.TileX, actor.TileY)) continue;
+			if (chebyshev < closestDist)
+			{
+				closestDist = chebyshev;
+				hitActorIndex = i;
+			}
+		}
+		if (hitActorIndex.HasValue)
+			simulator.ApplyWeaponDamage(hitActorIndex.Value, weaponInfo);
+		simulator.EmitWeaponFired(new WeaponFiredEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = weaponSlot.WeaponType,
+			SoundName = string.Empty,
+			DidHit = hitActorIndex.HasValue,
+			HitActorIndex = hitActorIndex
+		});
+		// No PropagateNoise - knife is silent (WL_AGENT.C:KnifeAttack doesn't set madenoise)
+	}
+	/// <summary>
+	/// Projectile weapon attack: spawns projectile, emits WeaponFired, propagates noise.
+	/// WL_AGENT.C:MissileAttack/FlameAttack equivalent. Sound played by Lua script before calling this.
+	/// </summary>
+	/// <param name="projectileType">Projectile type name (must match a Projectile XML element)</param>
+	public void RequestProjectile(string projectileType)
+	{
+		simulator.ExecuteOnWeaponFireScript(slotIndex, weaponInfo.Number, weaponSlot.WeaponType);
+		simulator.SpawnPlayerProjectile(slotIndex, projectileType);
+		simulator.EmitWeaponFired(new WeaponFiredEvent
+		{
+			SlotIndex = slotIndex,
+			WeaponType = weaponSlot.WeaponType,
+			SoundName = string.Empty,
+			DidHit = false,
+			HitActorIndex = null
+		});
 	}
 	#endregion Attack Requests
 	#region Projectile Spawning

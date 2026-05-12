@@ -1,7 +1,8 @@
 -- Machine gun attack - single hitscan shot
-if not HasAmmo(1) then return end
+local ammoType = GetWeaponProperty("AmmoType")
+if ammoType and GetValue(ammoType) < 1 then return end
 PlaySound(ResolveSound("ATKMACHINEGUNSND", "D_GATLINSND"))
-ConsumeAmmo(1)
+if ammoType then AddValue(ammoType, -1) end
 RequestHitScan({
 	maxRange = 100,
 	spread = 0,
@@ -9,3 +10,4 @@ RequestHitScan({
 	damageRandom = 10,
 	damageRangeModifier = true
 })
+PropagateNoise()
