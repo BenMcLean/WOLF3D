@@ -2054,8 +2054,11 @@ return true
 			<ObjectType Number="25" ObClass="block" Page="74" Name="Table" />
 			<ObjectType Number="26" ObClass="block" Page="75" Name="Barrel" />
 			<ObjectType Number="27" ObClass="dressing" Page="76" Walk="true" Name="Debris" />
-			<ObjectType Number="28" ObClass="bonus" Page="77" Script="quiz_scroll" AutomapTile="82"
+			<ObjectType Number="28" ObClass="bonus" Page="112" Script="quiz_scroll" AutomapTile="82"
 				Name="Quiz Scroll" />
+			<!-- Page 77 (SPR_STAT_5 slot) has bread art in N3D VSWAP but is unused as a pickup in the PC game.
+			     SNES S3DNA used S_DOG_FOOD (+4 health) at this tile; PC N3D replaced it with the quiz scroll.
+			     See: NOAH3D/SOURCE/SPRITES.H S_DOG_FOOD, PLSTUFF.C HealSelf(4) -->
 			<ObjectType Number="29" ObClass="block" Page="78" Name="Feed bucket" />
 			<ObjectType Number="30" ObClass="block" Page="79" Name="Column 1" />
 			<ObjectType Number="31" ObClass="block" Page="80" Name="Slender column" />
