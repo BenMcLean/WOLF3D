@@ -2784,7 +2784,7 @@ return false
 			<State Name="s_chaingun_2" Rotate="false" Shape="SPR_CHAINATK2" Tics="6"
 				Action="A_ChainGunAttack" Next="s_chaingun_3" />
 			<State Name="s_chaingun_3" Rotate="false" Shape="SPR_CHAINATK3" Tics="6"
-				Action="A_RapidFire" Next="s_chaingun_4" />
+				Action="A_ChainGunRapidFire" Next="s_chaingun_4" />
 			<State Name="s_chaingun_4" Rotate="false" Shape="SPR_CHAINATK4" Tics="6"
 				Action="A_WeaponReady" Next="s_chaingun" />
 			<!-- StatusBar ActionFunctions -->

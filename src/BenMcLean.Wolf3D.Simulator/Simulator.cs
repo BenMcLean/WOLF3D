@@ -2464,7 +2464,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					ExecuteProjectileWeaponAttack(slotIndex, slot, weaponInfo, "Missile", "watermelon");
 					break;
 
-				// WL_AGENT.C:T_Attack cases 3 & 4 - loop back to fire state if trigger held
+				// WL_AGENT.C:T_Attack case 3 - loop back to fire state if trigger held, no fire
 				case "A_RapidFire":
 					if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
 					{
@@ -2479,6 +2479,26 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 								slot.AttackFrame = 1;
 							}
 						}
+					}
+					break;
+
+				// WL_AGENT.C:T_Attack case 4 - fires (falls through to case 1) AND loops back if trigger held
+				// Chain gun fires on this frame unlike machine gun which only loops (case 3)
+				case "A_ChainGunRapidFire":
+					if (HasAmmo(weaponInfo))
+					{
+						if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
+						{
+							string fireFrameState = weaponInfo.FireState;
+							if (fireFrameState is not null && stateCollection.States.TryGetValue(fireFrameState, out State rapidFireState))
+							{
+								slot.CurrentState = rapidFireState;
+								slot.TicCount = rapidFireState.Tics;
+								slot.ShapeNum = rapidFireState.Shape;
+								slot.AttackFrame = 1;
+							}
+						}
+						ExecuteGunAttack(slotIndex, slot, weaponInfo);
 					}
 					break;
 			}
