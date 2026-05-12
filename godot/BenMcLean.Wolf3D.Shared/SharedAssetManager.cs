@@ -508,7 +508,7 @@ public static class SharedAssetManager
 			Godot.AudioStreamWav audioStream = new()
 			{
 				Format = Godot.AudioStreamWav.FormatEnum.Format8Bits,
-				MixRate = 7042, // Adam Biser said 7042 Hz is the correct frequency
+				MixRate = CurrentGame.VSwap.DigiSoundSampleRate,
 				Stereo = false,
 				Data = pcmData,
 			};

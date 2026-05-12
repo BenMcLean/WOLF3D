@@ -3602,7 +3602,7 @@ end
 			<Sprite Page="427" Name="SPR_WATERATK3" />
 			<Sprite Page="428" Name="SPR_WATERATK4" />
 		</Sprites>
-		<DigiSounds>
+		<DigiSounds SampleRate="11111">
 			<DigiSound Number="0" Name="D_ANTLPESND" />
 			<DigiSound Number="1" Name="D_BEARSND" />
 			<DigiSound Number="2" Name="D_BONUSSND" />

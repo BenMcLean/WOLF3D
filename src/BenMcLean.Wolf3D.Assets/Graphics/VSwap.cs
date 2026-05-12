@@ -39,6 +39,9 @@ public sealed class VSwap
 	public byte[][] Pages { get; private init; }
 	public byte[][] DigiSounds { get; private init; }
 	public Dictionary<string, byte[]> DigiSoundsByName { get; private init; }
+	// ID_SD.C:SDL_StartSB — SoundBlaster DAC time constant: actual rate = 1000000 / (256 - floor(1000000 / nominalHz))
+	// Wolf3D nominal 7 KHz → 7042 Hz; N3D nominal 11 KHz → 11111 Hz
+	public int DigiSoundSampleRate { get; private init; } = 7042;
 	public Dictionary<string, ushort> SpritesByName { get; private init; }
 	public BitArray[] Masks { get; private init; }
 	public ushort SpritePage { get; private init; }
@@ -189,7 +192,8 @@ public sealed class VSwap
 			}
 		});
 		DigiSoundsByName = new(StringComparer.OrdinalIgnoreCase);
-		foreach (XElement digiSoundElement in xml.Element("VSwap")?.Element("DigiSounds")?.Elements("DigiSound") ?? [])
+		XElement digiSoundsElement = xml.Element("VSwap")?.Element("DigiSounds");
+		foreach (XElement digiSoundElement in digiSoundsElement?.Elements("DigiSound") ?? [])
 			if (ushort.TryParse(digiSoundElement.Attribute("Number")?.Value, out ushort number)
 				&& number < DigiSounds.Length
 				&& DigiSounds[number] is byte[] bytes)
@@ -198,6 +202,7 @@ public sealed class VSwap
 				if (!string.IsNullOrWhiteSpace(name))
 					DigiSoundsByName[name] = bytes;
 			}
+		DigiSoundSampleRate = int.TryParse(digiSoundsElement?.Attribute("SampleRate")?.Value, out int sampleRate) ? sampleRate : 7042;
 		#endregion read in digisounds
 	}
 	/// <summary>
