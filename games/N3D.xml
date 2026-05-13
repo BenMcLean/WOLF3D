@@ -1962,10 +1962,12 @@ return true
 -- bo_chaingun: WL_AGENT.C #ifdef GAMEVER_NOAH3D
 -- gamestate.chaingun = 1; GiveWeapon(wp_chaingun=3); SD_PlaySound(GETGATLINGSND=D_BONUSSND)
 -- GiveWeapon calls GiveAmmo(6) then switches only if bestweapon < wp_chaingun
+-- StatusDrawPic(19,4,GOTGATLINGPIC); facecount=0; gotgatgun=1
 local isNew = not Has("Weapon3")
 SetValue("Weapon3", 1)
 AddValue("Feed", 6)
 if isNew then SwitchToWeapon("chaingun") end
+SetValue("FaceGrinTics", 4)
 PlaySound("D_BONUSSND")
 return true
 ]]>
@@ -1986,11 +1988,13 @@ return true
 -- bo_flamethrower: WL_AGENT.C #ifdef GAMEVER_NOAH3D
 -- SD_PlaySound(D_BONUSSND); GiveGas(20); GiveWeapon(wp_flamethrower=4)
 -- GiveWeapon also calls GiveAmmo(6) (Feed) then switches only if bestweapon < wp_flamethrower
+-- StatusDrawPic(19,4,GOTGATLINGPIC); facecount=0; gotgatgun=1
 local isNew = not Has("Weapon4")
 AddValue("Gas", 20)
 AddValue("Feed", 6)
 SetValue("Weapon4", 1)
 if isNew then SwitchToWeapon("flamethrower") end
+SetValue("FaceGrinTics", 4)
 PlaySound("D_BONUSSND")
 return true
 ]]>
@@ -2012,11 +2016,13 @@ return true
 -- bo_launcher: WL_AGENT.C #ifdef GAMEVER_NOAH3D
 -- SD_PlaySound(D_BONUSSND); GiveMissile(5); GiveWeapon(wp_missile=5)
 -- GiveWeapon also calls GiveAmmo(6) (Feed) then switches only if bestweapon < wp_missile
+-- StatusDrawPic(19,4,GOTGATLINGPIC); facecount=0; gotgatgun=1
 local isNew = not Has("Weapon5")
 AddValue("Missile", 5)
 AddValue("Feed", 6)
 SetValue("Weapon5", 1)
 if isNew then SwitchToWeapon("missile") end
+SetValue("FaceGrinTics", 4)
 PlaySound("D_BONUSSND")
 return true
 ]]>
