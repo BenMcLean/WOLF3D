@@ -162,6 +162,11 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Passed in by Root so the presentation menu reflects the current runtime state.
 	/// </summary>
 	public bool InitialCheatModeEnabled { get; set; }
+	/// <summary>
+	/// Initial voxel weapon preference to seed the menu session with.
+	/// Passed in by Root so the presentation menu reflects the current runtime state.
+	/// </summary>
+	public bool InitialUseVoxelWeapons { get; set; } = true;
 
 	/// <summary>
 	/// Equipped weapon shapes from the ActionRoom to display on VR controllers.
@@ -203,6 +208,11 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Polled by Root and applied to newly created gameplay rooms.
 	/// </summary>
 	public bool CheatModeEnabled => _menuManager?.SessionState?.CheatModeEnabled ?? InitialCheatModeEnabled;
+	/// <summary>
+	/// Current voxel weapon preference from the menu session state.
+	/// Polled by Root and applied to newly created gameplay rooms.
+	/// </summary>
+	public bool UseVoxelWeapons => _menuManager?.SessionState?.UseVoxelWeapons ?? InitialUseVoxelWeapons;
 
 	/// <summary>
 	/// Menu render texture for direct spectator-window capture.
@@ -274,6 +284,7 @@ public partial class MenuRoom : Node3D, IRoom
 		_menuManager.SessionState.VRMode = InitialVRMode;
 		_menuManager.SessionState.DebugMarkersEnabled = InitialDebugMarkersEnabled;
 		_menuManager.SessionState.CheatModeEnabled = InitialCheatModeEnabled;
+		_menuManager.SessionState.UseVoxelWeapons = InitialUseVoxelWeapons && VRAssetManager.HasVoxelWeapons;
 		// Wire up game selection (used when MenuCollectionOverride is the procedural game list)
 		_menuManager.ScriptContext.SelectGameAction = path => SelectedGameXmlPath = path;
 		// Wire up in-game state so menu items with InGame conditions show/hide correctly
@@ -375,16 +386,13 @@ public partial class MenuRoom : Node3D, IRoom
 	{
 		bool hasTogglePictures = (SharedAssetManager.VgaGraph?.ContainsKey("C_NOTSELECTEDPIC") ?? false)
 			&& SharedAssetManager.VgaGraph.ContainsKey("C_SELECTEDPIC");
-		MenuDefinition vrModeMenu = new()
+		bool showVoxelWeaponsOption = VRAssetManager.HasVoxelWeapons;
+		string onSelectionChanged = null;
+		if (hasTogglePictures)
 		{
-			// Layout mirrors the Sound menu style with wide section boxes and inherited game styling.
-			X = 48,
-			Y = 20,
-			Indent = hasTogglePictures ? 52 : 24,
-			Spacing = 13,
-			OnCancel = "NavigateToMenu(\"Main\")",
-			// WL_MENU.C:CP_Sound pattern: update indicator lights to reflect the active settings.
-			OnSelectionChanged = hasTogglePictures ? """
+			List<string> selectionScriptParts =
+			[
+				"""
 local vrMode = GetVRMode()
 if vrMode == "Roomscale" then
 	SetPicture('VRRoomscale', 'C_SELECTEDPIC')
@@ -393,7 +401,8 @@ else
 	SetPicture('VRRoomscale', 'C_NOTSELECTEDPIC')
 	SetPicture('VRFiveDOF', 'C_SELECTEDPIC')
 end
-
+""",
+				"""
 local debugMarkersEnabled = GetDebugMarkersEnabled()
 if debugMarkersEnabled then
 	SetPicture('VRDebugModeOn', 'C_SELECTEDPIC')
@@ -402,7 +411,8 @@ else
 	SetPicture('VRDebugModeOn', 'C_NOTSELECTEDPIC')
 	SetPicture('VRDebugModeOff', 'C_SELECTEDPIC')
 end
-
+""",
+				"""
 local cheatModeEnabled = GetCheatModeEnabled()
 if cheatModeEnabled then
 	SetPicture('VRCheatModeOn', 'C_SELECTEDPIC')
@@ -411,11 +421,43 @@ else
 	SetPicture('VRCheatModeOn', 'C_NOTSELECTEDPIC')
 	SetPicture('VRCheatModeOff', 'C_SELECTEDPIC')
 end
-""" : null,
+"""
+			];
+			if (showVoxelWeaponsOption)
+				selectionScriptParts.Add("""
+local voxelWeaponsEnabled = GetUseVoxelWeapons()
+if voxelWeaponsEnabled then
+	SetPicture('VRVoxelWeaponsOn', 'C_SELECTEDPIC')
+	SetPicture('VRVoxelWeaponsOff', 'C_NOTSELECTEDPIC')
+else
+	SetPicture('VRVoxelWeaponsOn', 'C_NOTSELECTEDPIC')
+	SetPicture('VRVoxelWeaponsOff', 'C_SELECTEDPIC')
+end
+""");
+			onSelectionChanged = string.Join("\n", selectionScriptParts);
+		}
+		MenuDefinition vrModeMenu = new()
+		{
+			// Compact layout keeps four toggle groups visible within the original 320x200 menu viewport.
+			X = 48,
+			Y = 16,
+			Indent = hasTogglePictures ? 52 : 24,
+			Spacing = 11,
+			OnCancel = "NavigateToMenu(\"Main\")",
+			// WL_MENU.C:CP_Sound pattern: update indicator lights to reflect the active settings.
+			OnSelectionChanged = onSelectionChanged,
 		};
-		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 17, W = 250, H = 32 });
-		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 82, W = 250, H = 32 });
-		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 147, W = 250, H = 32 });
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 13, W = 250, H = 28 });
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 57, W = 250, H = 28 });
+		vrModeMenu.Boxes.Add(new MenuBoxDefinition
+		{
+			X = 40,
+			Y = 101,
+			W = 250,
+			H = showVoxelWeaponsOption ? 28 : 39
+		});
+		if (showVoxelWeaponsOption)
+			vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 145, W = 250, H = 39 });
 		vrModeMenu.Texts.Add(new TextDefinition
 		{
 			Content = "VR Mode",
@@ -426,23 +468,30 @@ end
 		{
 			Content = "Debug Mode",
 			X = "Center",
-			Y = "65",
+			Y = "44",
 		});
 		vrModeMenu.Texts.Add(new TextDefinition
 		{
 			Content = "Cheat Mode",
 			X = "Center",
-			Y = "130",
+			Y = "88",
 		});
+		if (showVoxelWeaponsOption)
+			vrModeMenu.Texts.Add(new TextDefinition
+			{
+				Content = "Voxel Weapons",
+				X = "Center",
+				Y = "132",
+			});
 		if (hasTogglePictures)
 		{
-			// Indicator lights align to the same positions the Sound menu uses: (X+24, Y+i*13+2).
+			// Indicator lights align to the left edge of each compact two-row section.
 			vrModeMenu.Pictures.Add(new PictureDefinition
 			{
 				Id = "VRRoomscale",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
-				Y = "22",
+				Y = "18",
 				ZIndex = 9,
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
@@ -450,7 +499,7 @@ end
 				Id = "VRFiveDOF",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
-				Y = "35",
+				Y = "29",
 				ZIndex = 9,
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
@@ -458,7 +507,7 @@ end
 				Id = "VRDebugModeOn",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
-				Y = "87",
+				Y = "62",
 				ZIndex = 9,
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
@@ -466,7 +515,7 @@ end
 				Id = "VRDebugModeOff",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
-				Y = "100",
+				Y = "73",
 				ZIndex = 9,
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
@@ -474,7 +523,7 @@ end
 				Id = "VRCheatModeOn",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
-				Y = "152",
+				Y = "106",
 				ZIndex = 9,
 			});
 			vrModeMenu.Pictures.Add(new PictureDefinition
@@ -482,9 +531,28 @@ end
 				Id = "VRCheatModeOff",
 				Name = "C_NOTSELECTEDPIC",
 				X = "72",
-				Y = "165",
+				Y = "117",
 				ZIndex = 9,
 			});
+			if (showVoxelWeaponsOption)
+			{
+				vrModeMenu.Pictures.Add(new PictureDefinition
+				{
+					Id = "VRVoxelWeaponsOn",
+					Name = "C_NOTSELECTEDPIC",
+					X = "72",
+					Y = "150",
+					ZIndex = 9,
+				});
+				vrModeMenu.Pictures.Add(new PictureDefinition
+				{
+					Id = "VRVoxelWeaponsOff",
+					Name = "C_NOTSELECTEDPIC",
+					X = "72",
+					Y = "161",
+					ZIndex = 9,
+				});
+			}
 		}
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
@@ -500,7 +568,7 @@ end
 		{
 			Text = "On",
 			Script = "SetDebugMarkersEnabled(true) RefreshMenu()",
-			CustomProperties = { ["ExtraSpacing"] = "39" },
+			CustomProperties = { ["ExtraSpacing"] = "22" },
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
@@ -511,18 +579,31 @@ end
 		{
 			Text = "On",
 			Script = "SetCheatModeEnabled(true) RefreshMenu()",
-			CustomProperties = { ["ExtraSpacing"] = "39" },
+			CustomProperties = { ["ExtraSpacing"] = "22" },
 		});
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Off",
 			Script = "SetCheatModeEnabled(false) RefreshMenu()",
 		});
+		if (showVoxelWeaponsOption)
+		{
+			vrModeMenu.Items.Add(new MenuItemDefinition
+			{
+				Text = "On",
+				Script = "SetUseVoxelWeapons(true) RefreshMenu()",
+				CustomProperties = { ["ExtraSpacing"] = "22" },
+			});
+			vrModeMenu.Items.Add(new MenuItemDefinition
+			{
+				Text = "Off",
+				Script = "SetUseVoxelWeapons(false) RefreshMenu()",
+			});
+		}
 		vrModeMenu.Items.Add(new MenuItemDefinition
 		{
 			Text = "Back",
 			Script = "NavigateToMenu(\"Main\")",
-			CustomProperties = { ["ExtraSpacing"] = "39" },
 		});
 		_menuManager.RegisterPresentationMenu("VR Options", vrModeMenu);
 	}
@@ -641,7 +722,7 @@ end
 			if (pageNum is null)
 				continue;
 
-			if (VRAssetManager.VoxelAtlas is not null)
+			if (VRAssetManager.HasVoxelWeapons && UseVoxelWeapons && VRAssetManager.VoxelAtlas is not null)
 			{
 				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand))
 				{ Name = $"MenuVoxelWeapon{hand}" };

@@ -983,6 +983,11 @@
 					<xs:documentation>VGA palette index for background fill and viewport border. Default 0x11 (17, dark blue). WL_TEXT.C: BACKCOLOR.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="PageNumColor" type="xs:nonNegativeInteger">
+				<xs:annotation>
+					<xs:documentation>VGA palette index for the article page number, used when it should be a different color from the default page number color.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

@@ -66,6 +66,11 @@ public class MenuState
 	/// </summary>
 	public bool CheatModeEnabled { get; set; } = false;
 	/// <summary>
+	/// Whether VR should render built-in voxel weapon models when the current game provides them.
+	/// Stored alongside other presentation/runtime-only menu settings.
+	/// </summary>
+	public bool UseVoxelWeapons { get; set; } = true;
+	/// <summary>
 	/// Accumulated bonus points from the intermission screen.
 	/// Set by Lua GivePoints(), consumed by Root.cs when transitioning to next level.
 	/// </summary>

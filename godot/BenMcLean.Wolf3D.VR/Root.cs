@@ -71,6 +71,7 @@ public partial class Root : Node3D
 	public IDisplayMode DisplayMode { get; private set; }
 	private bool _debugMarkersEnabled = false;
 	private bool _cheatModeEnabled = false;
+	private bool _useVoxelWeapons = true;
 
 	public override void _Ready()
 	{
@@ -208,6 +209,7 @@ public partial class Root : Node3D
 						InitialVRMode = CurrentVRMode(),
 						InitialDebugMarkersEnabled = _debugMarkersEnabled,
 						InitialCheatModeEnabled = _cheatModeEnabled,
+						InitialUseVoxelWeapons = _useVoxelWeapons,
 					};
 					TransitionTo(selectionRoom);
 				}
@@ -237,6 +239,7 @@ public partial class Root : Node3D
 		{
 			_debugMarkersEnabled = menuRoom.DebugMarkersEnabled;
 			_cheatModeEnabled = menuRoom.CheatModeEnabled;
+			_useVoxelWeapons = menuRoom.UseVoxelWeapons;
 
 			// Game selected from the procedural game selection menu
 			if (menuRoom.SelectedGameXmlPath is not null)
@@ -269,6 +272,7 @@ public partial class Root : Node3D
 					savedLevelStats: intermissionRequest.AllLevelStats,
 					debugMarkersEnabled: _debugMarkersEnabled,
 					cheatModeEnabled: _cheatModeEnabled,
+					useVoxelWeapons: _useVoxelWeapons,
 					statusBarController: GetOrCreateStatusBarController(),
 					statusBarRenderer: GetOrCreateStatusBarRenderer());
 				TransitionTo(newStage);
@@ -282,7 +286,7 @@ public partial class Root : Node3D
 				ushort episode = (ushort)selectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
 				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
-				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
+				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, useVoxelWeapons: _useVoxelWeapons, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
 				TransitionTo(actionStage);
 			}
 		}
@@ -317,6 +321,7 @@ public partial class Root : Node3D
 							savedInventory: savedInventory,
 							debugMarkersEnabled: _debugMarkersEnabled,
 							cheatModeEnabled: _cheatModeEnabled,
+							useVoxelWeapons: _useVoxelWeapons,
 							statusBarController: GetOrCreateStatusBarController(),
 							statusBarRenderer: GetOrCreateStatusBarRenderer());
 						_currentScene = newStage;
@@ -341,6 +346,7 @@ public partial class Root : Node3D
 							PendingHighScoreEpisode = episode,
 							MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 							InitialCheatModeEnabled = _cheatModeEnabled,
+							InitialUseVoxelWeapons = _useVoxelWeapons,
 						};
 						_currentScene = gameOverRoom;
 						_pendingScene = null;
@@ -370,6 +376,7 @@ public partial class Root : Node3D
 						savedLevelStats: request.AllLevelStats,
 						debugMarkersEnabled: _debugMarkersEnabled,
 						cheatModeEnabled: _cheatModeEnabled,
+						useVoxelWeapons: _useVoxelWeapons,
 						playerXOverride: request.PlayerXOverride,
 						playerYOverride: request.PlayerYOverride,
 						playerAngleOverride: request.PlayerAngleOverride,
@@ -388,6 +395,7 @@ public partial class Root : Node3D
 						InitialVRMode = CurrentVRMode(),
 						InitialDebugMarkersEnabled = _debugMarkersEnabled,
 						InitialCheatModeEnabled = _cheatModeEnabled,
+						InitialUseVoxelWeapons = _useVoxelWeapons,
 					};
 					// For Victory (episode complete), pass final score for high score check
 					if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
@@ -517,7 +525,7 @@ public partial class Root : Node3D
 					throw new InvalidOperationException(
 						$"StartLevel({mapIndex}): index out of range (0\u2013{analyses.Length - 1}).");
 				_suspendedGame = null;
-				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer()));
+				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, useVoxelWeapons: _useVoxelWeapons, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer()));
 			},
 		};
 		(SharedAssetManager.MenuLuaEngine
@@ -551,6 +559,7 @@ public partial class Root : Node3D
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
 			InitialCheatModeEnabled = _cheatModeEnabled,
+			InitialUseVoxelWeapons = _useVoxelWeapons,
 			StatusBarRenderer = _statusBarRenderer,
 		};
 		_pendingScene = menuRoom;
@@ -587,6 +596,7 @@ public partial class Root : Node3D
 			state.Simulator,
 			debugMarkersEnabled: _debugMarkersEnabled,
 			cheatModeEnabled: _cheatModeEnabled,
+			useVoxelWeapons: _useVoxelWeapons,
 			statusBarController: _statusBarController,
 			statusBarRenderer: _statusBarRenderer);
 
@@ -613,7 +623,7 @@ public partial class Root : Node3D
 
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
-		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
+		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, useVoxelWeapons: _useVoxelWeapons, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
 		TransitionTo(actionStage);
 	}
 
@@ -626,6 +636,7 @@ public partial class Root : Node3D
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
 			InitialCheatModeEnabled = _cheatModeEnabled,
+			InitialUseVoxelWeapons = _useVoxelWeapons,
 		};
 	}
 

@@ -349,6 +349,15 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <param name="enabled">True to enable cheat shortcuts</param>
 	public void SetCheatModeEnabled(bool enabled) => sessionState.CheatModeEnabled = enabled;
+	/// <summary>
+	/// Get whether voxel weapons should be used when the current game supports them.
+	/// </summary>
+	public bool GetUseVoxelWeapons() => sessionState.UseVoxelWeapons;
+	/// <summary>
+	/// Enable or disable voxel weapons when the current game supports them.
+	/// </summary>
+	/// <param name="enabled">True to use voxel weapon models</param>
+	public void SetUseVoxelWeapons(bool enabled) => sessionState.UseVoxelWeapons = enabled;
 	#endregion VR Settings
 	#region Menu Item Selection and Dynamic Content
 	/// <summary>

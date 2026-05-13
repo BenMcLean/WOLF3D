@@ -40,6 +40,11 @@ public static class VRAssetManager
 	/// </summary>
 	public static VoxelAtlas VoxelAtlas { get; private set; }
 	/// <summary>
+	/// True when the current game's XML explicitly enables voxel weapons.
+	/// Controls whether the runtime is allowed to offer/use voxel weapons at all.
+	/// </summary>
+	public static bool HasVoxelWeapons { get; private set; }
+	/// <summary>
 	/// Crosshair texture (13x11 pixels, white on transparent background).
 	/// </summary>
 	public static ImageTexture CrosshairTexture { get; private set; }
@@ -86,12 +91,12 @@ void fragment() {
 			?? throw new InvalidOperationException("SharedAssetManager.CurrentGame.VSwap is null. Load a game first.");
 		ScaleFactor = scaleFactor;
 		_flippedOpaqueMaterials = [];
-		bool useVoxelWeapons = bool.TryParse(
+		HasVoxelWeapons = bool.TryParse(
 			Shared.SharedAssetManager.CurrentGame.XML
 				.Element("VSwap")?.Attribute("VoxelWeapons")?.Value,
 			out bool xmlVoxelWeapons)
 			&& xmlVoxelWeapons;
-		if (useVoxelWeapons)
+		if (HasVoxelWeapons)
 			using (Stream stream = typeof(VRAssetManager).Assembly.GetManifestResourceStream("BenMcLean.Wolf3D.VR.Resources.VOXELS.W3D")
 				?? throw new InvalidOperationException("Embedded resource VOXELS.W3D not found in assembly."))
 				VoxelAtlas = new VoxelAtlas(stream, _vswap.SpritesByName);
@@ -328,5 +333,6 @@ void fragment() {
 		_vswap = null;
 		VoxelAtlas?.Dispose();
 		VoxelAtlas = null;
+		HasVoxelWeapons = false;
 	}
 }

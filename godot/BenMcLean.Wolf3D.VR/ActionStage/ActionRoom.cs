@@ -178,6 +178,7 @@ void sky() {
 	private readonly int _difficulty;
 	private readonly bool _debugMarkersEnabled;
 	private readonly bool _cheatModeEnabled;
+	private readonly bool _useVoxelWeapons;
 	private readonly InventorySnapshot _savedInventory;
 	private readonly IReadOnlyList<LevelCompletionStats> _savedLevelStats;
 	private readonly int? _playerXOverride;
@@ -220,7 +221,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, bool useVoxelWeapons = true, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
@@ -229,6 +230,7 @@ void sky() {
 			: difficulty;
 		_debugMarkersEnabled = debugMarkersEnabled;
 		_cheatModeEnabled = cheatModeEnabled;
+		_useVoxelWeapons = useVoxelWeapons;
 		_savedInventory = savedInventory;
 		_savedLevelStats = savedLevelStats;
 		_playerXOverride = playerXOverride;
@@ -245,13 +247,14 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
+	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, bool useVoxelWeapons = true, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
 		_initialLevelIndex = existingSimulator.Inventory.GetValue("MapOn");
 		_debugMarkersEnabled = debugMarkersEnabled;
 		_cheatModeEnabled = cheatModeEnabled;
+		_useVoxelWeapons = useVoxelWeapons;
 		_statusBarController = statusBarController;
 		_statusBarRenderer = statusBarRenderer;
 	}
@@ -263,12 +266,13 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="snapshot">The saved simulator state to restore.</param>
-	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
+	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, bool useVoxelWeapons = true, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 		_debugMarkersEnabled = debugMarkersEnabled;
 		_cheatModeEnabled = cheatModeEnabled;
+		_useVoxelWeapons = useVoxelWeapons;
 		// Level index and difficulty are stored in the snapshot's inventory
 		_initialLevelIndex = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("MapOn", out int mapOn) ? mapOn : 0;
@@ -485,7 +489,7 @@ void sky() {
 			if (_displayMode.IsVRActive)
 				for (int hand = 0; hand <= 1; hand++)
 					if (_displayMode.GetHandNode(hand) is Node3D aimNode)
-						if (VRAssetManager.VoxelAtlas is not null)
+						if (VRAssetManager.HasVoxelWeapons && _useVoxelWeapons && VRAssetManager.VoxelAtlas is not null)
 						{
 							VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand)) { Name = $"VoxelWeapon{hand}" };
 							aimNode.AddChild(voxelWeapon);
