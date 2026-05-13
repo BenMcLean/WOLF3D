@@ -1828,6 +1828,8 @@ SetMax("Weapon3", 1)
 -- Inventory values. SetValue auto-updates StatusBar text where Text Id matches inventory key.
 -- Display width comes from the initial XML content length of the matching <Text Id="..."> element.
 -- Note: Difficulty is set by InitializeInventory from the menu selection, not overridden here.
+SetValue("ExtraPoints", 40000)	-- WL_DEF.H:#define EXTRAPOINTS 40000
+SetValue("NextExtra", 40000)
 SetValue("Episode", 1)
 SetValue("Floor", 1)        -- auto-updates "Floor" text (" 1", width 2)
 SetValue("Health", 100)     -- auto-updates "Health" text ("100", width 3)
@@ -1867,6 +1869,13 @@ elseif name == "StatusBarWeapon" then
 		[3] = "GATLINGGUNPIC"
 	}
 	SetPicture("WeaponPic", pics[value] or "GUNPIC")
+elseif name == "Score" then
+	-- WL_AGENT.C:GivePoints — extra life at every ExtraPoints threshold
+	while value >= GetValue("NextExtra") do
+		AddValue("NextExtra", GetValue("ExtraPoints"))
+		AddValue("Lives", 1)
+		PlaySound(ResolveSound("BONUS1UPSND", "D_EXTRASND"))
+	end
 end
 ]]>
 			</Function>

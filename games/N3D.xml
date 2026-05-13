@@ -207,7 +207,7 @@ end
 			<!-- WL_INTER.C:Briefing() episode intro text screens use STARTFONT+1 with a plain text
 			window, so represent them directly as non-interactive menu screens in XML. -->
 			<Menu Name="Mission1" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">
+				<Text X="0" Y="0">
 					You'll be out of the ark in six
 					days, Noah. Unfortunately, the
 					animals are a tad bit restless and
@@ -234,7 +234,7 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission2" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">
+				<Text X="0" Y="0">
 					Wow, Noah! Carl sure was hard to
 					calm down. But remember, you
 					were chosen to guide this ark to
@@ -261,7 +261,7 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission3" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">
+				<Text X="0" Y="0">
 					ZZZZZ... Great job, Noah!. Ginny is
 					snoring away.
 
@@ -286,7 +286,7 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission4" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">
+				<Text X="0" Y="0">
 					You're doing a great job, Noah!
 					You took care of that Melvin like
 					a real pro.
@@ -312,7 +312,7 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission5" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">
+				<Text X="0" Y="0">
 					Wow! Kerry was no challenge for
 					you! Can you keep up the pace
 					when faced with Ernie the
@@ -334,7 +334,7 @@ end
 				</Pause>
 			</Menu>
 			<Menu Name="Mission6" Font="BIG" Music="NOAH09_MUS" TextColor="15">
-				<Text X="8" Y="8">
+				<Text X="0" Y="0">
 					You are almost there! If you can
 					get through one more day, you
 					will be out of here for good!
@@ -801,21 +801,18 @@ end
 				<Box X="14" Y="21" W="292" H="134" />
 				<!-- WL_QUIZ.C: US_CPrint at WindowY=4 (above box); READHCOLOR=15 differs from TextColor default -->
 				<Text Id="QuizHeader" X="Center" Y="4" Color="15">Question #1</Text>
-				<!-- WL_QUIZ.C: US_Print at WindowX=26, WindowY=26 (inside box); WindowW=276 for word wrap -->
+				<!-- WL_QUIZ.C: US_Print at WindowX=26, WindowY=26; on easy US_Print("\n(") + ref + ")" appended -->
 				<Text Id="QuizBody" X="26" Y="26" Color="15" />
-				<!-- Bible reference: below body text, above answers at Y=96 -->
-				<Text Id="QuizRef" X="26" Y="80" Color="15" />
 				<OnShow>
 					<![CDATA[
 if not HasPendingQuiz() then
 	ResumeGame()
 else
 	SetText("QuizHeader", "Question #" .. tostring(GetQuizQuestionIndex() + 1))
-	SetText("QuizBody", GetQuizQuestionText())
 	if ShouldShowQuizReference() then
-		SetText("QuizRef", "(" .. GetQuizReference() .. ")")
+		SetText("QuizBody", GetQuizQuestionText() .. "\n(" .. GetQuizReference() .. ")")
 	else
-		SetText("QuizRef", "")
+		SetText("QuizBody", GetQuizQuestionText())
 	end
 
 	for i = 0, 3 do
@@ -1918,8 +1915,17 @@ return false
 			</BonusScript>
 			<BonusScript Name="fruit">
 				<![CDATA[
-AddValue("Fruit", 1)
-PlaySound("D_BONUSSND")
+-- WL_AGENT.C:GiveTreasure #ifdef GAMEVER_NOAH3D
+-- Counter rolls every 50; extra life on rollover.
+local t = GetValue("Fruit") + 1
+if t >= 50 then
+	t = t - 50
+	AddValue("Lives", 1)
+	PlaySound("D_EXTRASND")
+else
+	PlaySound("D_BONUSSND")
+end
+SetValue("Fruit", t)
 FlashScreen(0xFFFF00)
 return true
 ]]>
@@ -2226,6 +2232,8 @@ SetMax("Weapon3", 1)
 SetMax("Weapon4", 1)
 SetMax("Weapon5", 1)
 
+SetValue("ExtraPoints", 40000)	-- WL_DEF.H:#define EXTRAPOINTS 40000
+SetValue("NextExtra", 40000)
 SetValue("Episode", 1)
 SetValue("Floor", 1)
 SetValue("Score", 0)
@@ -2263,6 +2271,13 @@ if name == "Gold Key" then
 	SetPicture("GoldKey", value > 0 and "GOLDKEYPIC" or "NOKEYPIC")
 elseif name == "Silver Key" then
 	SetPicture("SilverKey", value > 0 and "SILVERKEYPIC" or "NOKEYPIC")
+elseif name == "Score" then
+	-- WL_AGENT.C:GivePoints — extra life at every ExtraPoints threshold
+	while value >= GetValue("NextExtra") do
+		AddValue("NextExtra", GetValue("ExtraPoints"))
+		AddValue("Lives", 1)
+		PlaySound("D_EXTRASND")
+	end
 end
 ]]>
 			</Function>
