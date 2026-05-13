@@ -267,9 +267,7 @@
 				<Picture Name="C_OPTIONSPIC" X="Center" Y="0">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
-				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
-					SetMusicEnabled(not GetMusicEnabled())
-				</Picture>
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<MenuItem Text="New Game">
 					NavigateToMenu("Episodes")
@@ -304,7 +302,9 @@
 			<!-- WL_MENU.C:1612: Episode pictures at (NE_X+32,NE_Y+i*26) for i=0 to 5 -->
 			<!-- WL_MENU.C:95: NewEitems={NE_X,NE_Y,11,0,88} - X=10, Y=23, indent=88 -->
 			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
-				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" >
+					NavigateToMenu("Main")
+				</Picture>
 				<!-- WL_MENU.C:1597: DrawWindow(6,19,308,162) -->
 				<Box X="6" Y="19" W="308" H="162" />
 				<!-- WL_MENU.C:1599-1604: PrintY=2 (2 pixels from screen top), WindowX=0, US_CPrint
@@ -560,6 +560,9 @@ end
 				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
 				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
 				<Picture Name="C_LOADGAMEPIC" X="Center" Y="0" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" >
+					NavigateToMenu("Main")
+				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -611,6 +614,9 @@ end
 				<Box Bevel="false" X="0" Y="32" W="320" H="1" BkgdColor="44" ZIndex="4" />
 				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
 				<Picture Name="C_SAVEGAMEPIC" X="Center" Y="0" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" >
+					NavigateToMenu("Main")
+				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[

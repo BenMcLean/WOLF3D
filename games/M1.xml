@@ -232,7 +232,7 @@ this file. -->
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
-					SetMusicEnabled(not GetMusicEnabled())
+					NavigateToMenu("IdGuys")
 				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
 				<MenuItem Text="New Game">
@@ -261,6 +261,11 @@ this file. -->
 					RequestQuit()
 				</MenuItem>
 				<OnCancel>if IsGameInProgress() then ResumeGame() else RequestQuit() end</OnCancel>
+			</Menu>
+			<Menu Name="IdGuys" BordColor="0" Music="XJAZNAZI_MUS">
+				<Picture Name="IDGUYS1PIC" X="0" Y="0" />
+				<Picture Name="IDGUYS2PIC" X="0" Y="80" />
+				<Pause>NavigateToMenu("Main")</Pause>
 			</Menu>
 			<!-- Spear skips Wolf3D episode selection and goes straight to skill choice. -->
 			<Menu Name="NewGame" X="50" Y="100" Indent="0" Spacing="13" CurPos="2" CursorPic=""
@@ -427,7 +432,9 @@ end
 				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
 				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
 				<Picture Name="C_LOADGAMEPIC" X="60" Y="0" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" >
+					NavigateToMenu("Main")
+				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -479,7 +486,9 @@ end
 				<Box Bevel="false" X="0" Y="10" W="320" H="22" BkgdColor="0" ZIndex="4" />
 				<Box Bevel="false" X="0" Y="33" W="320" H="1" BkgdColor="0" ZIndex="4" />
 				<Picture Name="C_SAVEGAMEPIC" X="60" Y="0" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" />
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184" >
+					NavigateToMenu("Main")
+				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[

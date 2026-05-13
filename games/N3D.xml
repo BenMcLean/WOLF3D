@@ -377,7 +377,7 @@ end
 				<Picture Name="C_OPTIONSPIC" X="Center" Y="0">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
-				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="192">
 					SetMusicEnabled(not GetMusicEnabled())
 				</Picture>
 				<Box X="68" Y="52" W="178" H="136" />
@@ -386,9 +386,6 @@ end
 				</MenuItem>
 				<MenuItem Text="Sound">
 					NavigateToMenu("Sound")
-				</MenuItem>
-				<MenuItem Text="Control">
-					NavigateToMenu("Control")
 				</MenuItem>
 				<MenuItem Text="Load Game">
 					NavigateToMenu("LoadGame")
@@ -415,7 +412,7 @@ end
 				<OnCancel>if IsGameInProgress() then ResumeGame() else RequestQuit() end</OnCancel>
 			</Menu>
 			<Menu Name="Episodes" X="10" Y="23" Indent="88" Spacing="26">
-				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184" >
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="192" >
 					NavigateToMenu("Main")
 				</Picture>
 				<Box X="6" Y="19" W="308" H="162" />
@@ -464,7 +461,7 @@ end
 				<!-- ZIndex=9 to draw ABOVE the box (boxes are ZIndex=7). Original: DrawNewGameDiff
 				called AFTER DrawWindow -->
 				<Picture Id="DifficultyFace" Name="C_BABYMODEPIC" X="235" Y="107" ZIndex="9" />
-				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="192">
 					NavigateToMenu("Main")
 				</Picture>
 				<!-- OnSelectionChanged script: Updates difficulty picture based on selection
@@ -520,7 +517,7 @@ end
 				<Picture Name="C_FXTITLEPIC" X="100" Y="0" />
 				<Picture Name="C_DIGITITLEPIC" X="100" Y="65" />
 				<Picture Name="C_MUSICTITLEPIC" X="100" Y="130" />
-				<Picture Name="C_MOUSELBACKPIC" X="112" Y="184">
+				<Picture Name="C_MOUSELBACKPIC" X="112" Y="192">
 					NavigateToMenu("Main")
 				</Picture>
 
@@ -647,15 +644,9 @@ end
 				</MenuItem>
 			</Menu>
 
-			<Menu Name="Control" X="76" Y="70" Indent="24" Spacing="13" Font="BIG">
-				<OnCancel>NavigateToMenu("Main")</OnCancel>
-				<MenuItem Text="Mouse Enabled">NavigateToMenu("Main")</MenuItem>
-				<MenuItem Text="Joystick Enabled">NavigateToMenu("Main")</MenuItem>
-				<MenuItem Text="Back">NavigateToMenu("Main")</MenuItem>
-			</Menu>
-
 			<Menu Name="LoadGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
 				<Picture Name="C_LOADGAMEPIC" X="Center" Y="0" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="192" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
@@ -704,6 +695,7 @@ end
 
 			<Menu Name="SaveGame" X="76" Y="55" Indent="24" Spacing="13" Font="BIG">
 				<Picture Name="C_SAVEGAMEPIC" X="Center" Y="0" />
+				<Picture Name="C_MOUSELBACKPIC" X="Center" Y="192" />
 				<Box X="68" Y="52" W="178" H="136" />
 				<OnShow>
 					<![CDATA[
