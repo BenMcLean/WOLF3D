@@ -33,7 +33,6 @@ public partial class MenuRoom : Node3D, IRoom
 	private bool _playerOriented;
 	private bool _elevatorMode;
 	private IMenuInput _menuInput;
-	private StatusBarRenderer _statusBarRenderer;
 
 	// Menu panel sizing in VR (in meters)
 	private const float PanelWidth = Constants.TileWidth;                // One tile wide
@@ -188,10 +187,11 @@ public partial class MenuRoom : Node3D, IRoom
 	public PendingQuizData PendingQuiz { private get; init; }
 
 	/// <summary>
-	/// Status bar controller from Root. When set and the initial menu declares StatusBar="true",
-	/// a StatusBarRenderer is created and the live status bar is displayed at y=160 on the menu canvas.
+	/// Status bar renderer from Root. When set and the current menu declares a StatusBar position,
+	/// the renderer's canvas is placed into the menu viewport at the defined coordinates.
+	/// The renderer is owned by Root and lives for the entire game session.
 	/// </summary>
-	public StatusBarController StatusBarController { private get; init; }
+	public StatusBarRenderer StatusBarRenderer { private get; init; }
 
 	/// <summary>
 	/// Current debug marker visibility from the menu session state.
@@ -353,9 +353,9 @@ public partial class MenuRoom : Node3D, IRoom
 		// status bar and the next one intentionally does not.
 		SyncMenuStatusBar();
 		// Wire up status bar picture updates from menu scripts (e.g., quiz result face changes).
-		if (StatusBarController is not null)
+		if (StatusBarRenderer is not null)
 			_menuManager.ScriptContext.SetStatusBarFallbackPictureAction =
-				(id, picName) => StatusBarController.State.SetPic(id, picName);
+				(id, picName) => StatusBarRenderer.State.SetPic(id, picName);
 
 		// Add the menu viewport to the scene tree (required for rendering)
 		AddChild(_menuManager.Renderer.Viewport);
@@ -917,12 +917,10 @@ void sky() {
 			_displayMode.HandButtonPressed -= OnHandButtonPressed;
 			(_menuInput as VRMenuInput)?.Dispose();
 		}
-		// StatusBarRenderer subscribes to state events in its constructor; Dispose() removes them
-		// so they cannot fire against freed Godot nodes after the MenuRoom exits the tree.
-		if (_statusBarRenderer?.Canvas.GetParent() is Node parent)
-			parent.RemoveChild(_statusBarRenderer.Canvas);
-		_statusBarRenderer?.Canvas.QueueFree();
-		_statusBarRenderer?.Dispose();
+		// Remove the status bar canvas from this menu's viewport so it is not freed when the
+		// viewport is destroyed. The renderer is owned by Root and must outlive this room.
+		if (StatusBarRenderer?.Canvas.GetParent() is Node statusBarParent)
+			statusBarParent.RemoveChild(StatusBarRenderer.Canvas);
 	}
 
 	/// <summary>
@@ -1046,11 +1044,13 @@ void sky() {
 	}
 
 	/// <summary>
-	/// Ensure the live status bar matches the currently active menu.
+	/// Ensure the live status bar canvas is placed in (or removed from) the menu viewport
+	/// according to whether the current menu declares a StatusBar position.
+	/// The renderer itself is never created or destroyed here — it is owned by Root.
 	/// </summary>
 	private void SyncMenuStatusBar()
 	{
-		if (StatusBarController is null || _menuManager is null)
+		if (StatusBarRenderer is null || _menuManager is null)
 			return;
 
 		MenuCollection collection = MenuCollectionOverride
@@ -1061,29 +1061,30 @@ void sky() {
 
 		if (statusBarDef is null)
 		{
-			if (_statusBarRenderer is not null)
-			{
-				if (_statusBarRenderer.Canvas.GetParent() is Node parent)
-					parent.RemoveChild(_statusBarRenderer.Canvas);
-				_statusBarRenderer.Canvas.QueueFree();
-				_statusBarRenderer.Dispose();
-				_statusBarRenderer = null;
-			}
+			// This menu has no status bar — remove canvas from the viewport (but don't free it).
+			if (StatusBarRenderer.Canvas.GetParent() is Node parent)
+				parent.RemoveChild(StatusBarRenderer.Canvas);
 			return;
 		}
 
-		if (_statusBarRenderer is null)
+		// Ensure the canvas is in this menu's viewport.
+		if (StatusBarRenderer.Canvas.GetParent() != _menuManager.Renderer.Viewport)
 		{
-			_statusBarRenderer = new StatusBarRenderer(StatusBarController.State);
-			_menuManager.Renderer.Viewport.AddChild(_statusBarRenderer.Canvas);
+			StatusBarRenderer.Canvas.GetParent()?.RemoveChild(StatusBarRenderer.Canvas);
+			_menuManager.Renderer.Viewport.AddChild(StatusBarRenderer.Canvas);
 		}
 
-		_statusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
+		StatusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
 	}
 
-	private void OnCurrentMenuChanged(string _)
+	private void OnCurrentMenuChanged(string menuName)
 	{
-		SyncMenuStatusBar();
+		// Only re-sync when navigating TO a named menu (e.g. LevelComplete → Mission2).
+		// When menus are fully closed (empty name) the MenuRoom is about to be replaced;
+		// leave the canvas in place so it remains visible through the start of the fade.
+		// _ExitTree removes it once the screen is completely black.
+		if (!string.IsNullOrEmpty(menuName))
+			SyncMenuStatusBar();
 	}
 
 	private void UpdateFlatscreenMenuLayout()

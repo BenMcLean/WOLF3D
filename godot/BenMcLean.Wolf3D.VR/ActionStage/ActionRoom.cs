@@ -200,7 +200,7 @@ void sky() {
 	private AimIndicator _aimIndicator;
 	private TeleportationOverlay _teleportOverlay;
 	private readonly StatusBarController _statusBarController;
-	private StatusBarRenderer _statusBarRenderer;
+	private readonly StatusBarRenderer _statusBarRenderer;
 	private CanvasLayer _statusBarCanvas;
 	private AutomapController _automapController;
 	private WristwatchDisplay _wristwatchDisplay;
@@ -220,7 +220,7 @@ void sky() {
 	/// <param name="difficulty">Difficulty level (0-3). Default is 2 ("Bring 'em on!").</param>
 	/// <param name="savedInventory">Optional saved inventory from level transition (null for new game).</param>
 	/// <param name="savedLevelStats">Optional accumulated level stats from previous levels (null for new game).</param>
-	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null)
+	public ActionRoom(IDisplayMode displayMode, int levelIndex = 0, int difficulty = 2, InventorySnapshot savedInventory = null, IReadOnlyList<LevelCompletionStats> savedLevelStats = null, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, int? playerXOverride = null, int? playerYOverride = null, short? playerAngleOverride = null, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_initialLevelIndex = levelIndex;
@@ -235,6 +235,7 @@ void sky() {
 		_playerYOverride = playerYOverride;
 		_playerAngleOverride = playerAngleOverride;
 		_statusBarController = statusBarController;
+		_statusBarRenderer = statusBarRenderer;
 	}
 
 	/// <summary>
@@ -244,7 +245,7 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="existingSimulator">The existing simulator with preserved game state.</param>
-	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null)
+	public ActionRoom(IDisplayMode displayMode, Simulator.Simulator existingSimulator, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_existingSimulator = existingSimulator ?? throw new ArgumentNullException(nameof(existingSimulator));
@@ -252,6 +253,7 @@ void sky() {
 		_debugMarkersEnabled = debugMarkersEnabled;
 		_cheatModeEnabled = cheatModeEnabled;
 		_statusBarController = statusBarController;
+		_statusBarRenderer = statusBarRenderer;
 	}
 
 	/// <summary>
@@ -261,7 +263,7 @@ void sky() {
 	/// </summary>
 	/// <param name="displayMode">The active display mode (VR or flatscreen).</param>
 	/// <param name="snapshot">The saved simulator state to restore.</param>
-	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null)
+	public ActionRoom(IDisplayMode displayMode, SimulatorSnapshot snapshot, bool debugMarkersEnabled = false, bool cheatModeEnabled = false, StatusBarController statusBarController = null, StatusBarRenderer statusBarRenderer = null)
 	{
 		_displayMode = displayMode ?? throw new ArgumentNullException(nameof(displayMode));
 		_loadSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
@@ -273,6 +275,7 @@ void sky() {
 		_difficulty = snapshot.InventoryValues?.Values is not null
 			&& snapshot.InventoryValues.Values.TryGetValue("Difficulty", out int d) ? d : 2;
 		_statusBarController = statusBarController;
+		_statusBarRenderer = statusBarRenderer;
 	}
 
 	public override void _Ready()
@@ -562,13 +565,14 @@ void sky() {
 			// Wire status bar events before OnNewGame script runs.
 			// Script fires StatusBarTextChanged/StatusBarPicChanged to initialize the display.
 			// Both VR (wristwatch) and flatscreen need the renderer and events wired here.
+			// The renderer is owned by Root and lives for the entire game session; we just
+			// re-subscribe the controller to the fresh simulator so state stays current.
 			if (_statusBarController is not null)
 			{
 				// For new/loaded games, subscribe to the fresh simulator and sync initial state.
 				// For resumed games (_existingSimulator != null), the controller is already
 				// subscribed and state is current — Subscribe re-wires and re-syncs safely.
 				_statusBarController.Subscribe(_simulatorController.Simulator);
-				_statusBarRenderer = new StatusBarRenderer(_statusBarController.State);
 			}
 
 			// Execute OnNewGame script for new games (VR and flatscreen).
@@ -607,6 +611,7 @@ void sky() {
 						RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
 					};
 					statusBarVP.AddChild(_statusBarRenderer.Canvas);
+					_statusBarRenderer.Canvas.Position = Vector2.Zero;
 
 					_statusBarCanvas = new CanvasLayer
 					{
@@ -1442,11 +1447,10 @@ void sky() {
 		if (_deathFizzleOverlay is not null)
 			_deathFizzleOverlay.FizzleComplete -= OnDeathFizzleComplete;
 
-		// StatusBarRenderer subscribes UpdateText/UpdatePicture to state events in its constructor;
-		// Dispose() unsubscribes them so they cannot fire against freed Godot Label/TextureRect nodes.
-		// The StatusBarController itself remains subscribed to the simulator (owned by Root)
-		// so the state stays current while a quiz menu is displayed during suspension.
-		_statusBarRenderer?.Dispose();
+		// Remove the status bar canvas from its current viewport so it is not freed when the
+		// CanvasLayer / WristwatchDisplay viewport is destroyed. The renderer itself is owned by
+		// Root and lives for the entire game session; only the canvas placement moves between rooms.
+		_statusBarRenderer?.Canvas.GetParent()?.RemoveChild(_statusBarRenderer.Canvas);
 
 		// Unsubscribe automap from simulator events
 		_automapController?.Unsubscribe();

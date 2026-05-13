@@ -62,6 +62,7 @@ public partial class Root : Node3D
 	private bool _skipFadeIn = false;
 	private SuspendedGameState _suspendedGame;
 	private StatusBarController _statusBarController;
+	private StatusBarRenderer _statusBarRenderer;
 
 	/// <summary>
 	/// The active display mode (VR or flatscreen).
@@ -268,7 +269,8 @@ public partial class Root : Node3D
 					savedLevelStats: intermissionRequest.AllLevelStats,
 					debugMarkersEnabled: _debugMarkersEnabled,
 					cheatModeEnabled: _cheatModeEnabled,
-					statusBarController: GetOrCreateStatusBarController());
+					statusBarController: GetOrCreateStatusBarController(),
+					statusBarRenderer: GetOrCreateStatusBarRenderer());
 				TransitionTo(newStage);
 			}
 			else if (menuRoom.ShouldStartGame)
@@ -280,7 +282,7 @@ public partial class Root : Node3D
 				ushort episode = (ushort)selectedEpisode;
 				int difficulty = menuRoom.SelectedDifficulty;
 				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
-				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController());
+				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
 				TransitionTo(actionStage);
 			}
 		}
@@ -315,7 +317,8 @@ public partial class Root : Node3D
 							savedInventory: savedInventory,
 							debugMarkersEnabled: _debugMarkersEnabled,
 							cheatModeEnabled: _cheatModeEnabled,
-							statusBarController: GetOrCreateStatusBarController());
+							statusBarController: GetOrCreateStatusBarController(),
+							statusBarRenderer: GetOrCreateStatusBarRenderer());
 						_currentScene = newStage;
 						_pendingScene = null;
 						AddChild(newStage);
@@ -370,7 +373,8 @@ public partial class Root : Node3D
 						playerXOverride: request.PlayerXOverride,
 						playerYOverride: request.PlayerYOverride,
 						playerAngleOverride: request.PlayerAngleOverride,
-						statusBarController: GetOrCreateStatusBarController());
+						statusBarController: GetOrCreateStatusBarController(),
+						statusBarRenderer: GetOrCreateStatusBarRenderer());
 					TransitionTo(newStage);
 				}
 				else
@@ -440,6 +444,23 @@ public partial class Root : Node3D
 			.Element("VgaGraph")?.Element("Menus")?.Attribute("WeaponSprite")?.Value;
 
 	/// <summary>
+	/// Returns the current StatusBarRenderer, creating it if needed.
+	/// Creates a fresh renderer each time a new game XML is loaded (controller is reset in InitializeVRAssets).
+	/// Returns null when the current game has no StatusBar defined.
+	/// </summary>
+	private StatusBarRenderer GetOrCreateStatusBarRenderer()
+	{
+		StatusBarController controller = GetOrCreateStatusBarController();
+		if (controller is null)
+		{
+			_statusBarRenderer = null;
+			return null;
+		}
+		_statusBarRenderer ??= new StatusBarRenderer(controller.State);
+		return _statusBarRenderer;
+	}
+
+	/// <summary>
 	/// Initializes VR rendering assets from the currently loaded game.
 	/// Reads the Scale attribute from the VSwap XML element, defaulting to a value
 	/// that produces 512-pixel textures. Called after every game load, including the
@@ -447,8 +468,10 @@ public partial class Root : Node3D
 	/// </summary>
 	private void InitializeVRAssets()
 	{
-		// Reset the status bar controller so GetOrCreateStatusBarController() rebuilds it
+		// Reset the status bar renderer and controller so GetOrCreate* rebuilds them
 		// from the newly loaded game's StatusBarDefinition on next access.
+		_statusBarRenderer?.Dispose();
+		_statusBarRenderer = null;
 		_statusBarController?.Unsubscribe();
 		_statusBarController = null;
 
@@ -494,7 +517,7 @@ public partial class Root : Node3D
 					throw new InvalidOperationException(
 						$"StartLevel({mapIndex}): index out of range (0\u2013{analyses.Length - 1}).");
 				_suspendedGame = null;
-				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController()));
+				TransitionTo(new ActionRoom(DisplayMode, levelIndex: mapIndex, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer()));
 			},
 		};
 		(SharedAssetManager.MenuLuaEngine
@@ -528,7 +551,7 @@ public partial class Root : Node3D
 			InitialVRMode = CurrentVRMode(),
 			InitialDebugMarkersEnabled = _debugMarkersEnabled,
 			InitialCheatModeEnabled = _cheatModeEnabled,
-			StatusBarController = _statusBarController,
+			StatusBarRenderer = _statusBarRenderer,
 		};
 		_pendingScene = menuRoom;
 		StartFade(() =>
@@ -564,7 +587,8 @@ public partial class Root : Node3D
 			state.Simulator,
 			debugMarkersEnabled: _debugMarkersEnabled,
 			cheatModeEnabled: _cheatModeEnabled,
-			statusBarController: _statusBarController);
+			statusBarController: _statusBarController,
+			statusBarRenderer: _statusBarRenderer);
 
 		_suspendedGame = null;
 		TransitionTo(actionStage);
@@ -589,7 +613,7 @@ public partial class Root : Node3D
 
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
-		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController());
+		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
 		TransitionTo(actionStage);
 	}
 

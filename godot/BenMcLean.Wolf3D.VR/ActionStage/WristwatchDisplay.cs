@@ -88,6 +88,14 @@ public partial class WristwatchDisplay : Node3D
 		Rotation = new Vector3(Mathf.DegToRad(-45f), Mathf.DegToRad(180f), Mathf.DegToRad(-90f));
 	}
 
+	public override void _ExitTree()
+	{
+		// Remove the status bar canvas from the HUD viewport before WristwatchDisplay is freed.
+		// The renderer is owned by Root and must outlive this node; only the canvas placement moves.
+		if (_statusBarRenderer?.Canvas.GetParent() is Node parent)
+			parent.RemoveChild(_statusBarRenderer.Canvas);
+	}
+
 	public override void _Process(double delta)
 	{
 		UpdateScreenBillboard();
