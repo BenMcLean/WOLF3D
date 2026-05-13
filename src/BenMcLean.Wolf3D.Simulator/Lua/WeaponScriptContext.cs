@@ -64,8 +64,6 @@ public class WeaponScriptContext(
 	{
 		soundName = ResolveForPlayback(soundName);
 		simulator.EmitGlobalSound(soundName);
-		_logger?.LogDebug("WeaponScriptContext: PlaySound({soundName}) for slot {slotIndex}",
-			soundName, slotIndex);
 	}
 	/// <summary>
 	/// Play the weapon's configured fire sound.
@@ -102,12 +100,7 @@ public class WeaponScriptContext(
 	/// WL_AGENT.C cases 3 & 4 (machine gun, chain gun) equivalent.
 	/// </summary>
 	/// <param name="stateName">State name to transition to (e.g., "s_machinegun_1")</param>
-	public void SetNextState(string stateName)
-	{
-		nextStateOverride = stateName;
-		_logger?.LogDebug("WeaponScriptContext: SetNextState({stateName}) for slot {slotIndex}",
-			stateName, slotIndex);
-	}
+	public void SetNextState(string stateName) => nextStateOverride = stateName;
 	/// <summary>
 	/// Get the overridden next state (if any).
 	/// Called by Simulator after script execution to check if state flow was changed.
@@ -233,16 +226,10 @@ public class WeaponScriptContext(
 		{
 			WeaponInfo lowest = null;
 			foreach (WeaponInfo weapon in weaponCollection.Weapons.Values)
-			{
 				if (lowest is null || weapon.Number < lowest.Number)
 					lowest = weapon;
-			}
 			if (lowest is not null)
-			{
 				simulator.EquipWeapon(slotIndex, lowest.Name);
-				_logger?.LogDebug("WeaponScriptContext: SwitchToLowestWeapon() -> {weaponName} for slot {slotIndex}",
-					lowest.Name, slotIndex);
-			}
 		}
 	}
 	#endregion Weapon Switching
