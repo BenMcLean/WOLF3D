@@ -2632,15 +2632,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 
 	public Entities.Projectile SpawnPlayerProjectile(int slotIndex, string projectileType)
 	{
-		WeaponFirePose firePose = WeaponFirePoseProvider?.Invoke(slotIndex)
-			?? new WeaponFirePose
-			{
-				X = PlayerX,
-				Y = PlayerY,
-				Angle = PlayerAngle
-			};
+		WeaponFirePose? firePose = WeaponFirePoseProvider?.Invoke(slotIndex);
+		if (firePose is null)
+			return null;
 
-		return SpawnProjectile(projectileType, firePose.X, firePose.Y, firePose.Angle, isPlayerOwned: true);
+		return SpawnProjectile(projectileType, firePose.Value.X, firePose.Value.Y, firePose.Value.Angle, isPlayerOwned: true);
 	}
 
 	/// <summary>

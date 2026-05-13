@@ -1011,6 +1011,8 @@ void sky() {
 	/// <returns>Hit actor index, or null if miss</returns>
 	private int? PerformWeaponRaycast(int slotIndex)
 	{
+		if (GetWeaponFirePose(slotIndex) is null)
+			return null;
 		Vector3 cameraForward = -_displayMode.Camera.GlobalTransform.Basis.Z;
 		Vector3 rayOrigin = _displayMode.IsVRActive
 			? _displayMode.GetHandPosition(slotIndex)
