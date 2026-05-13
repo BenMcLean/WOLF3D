@@ -3098,48 +3098,6 @@ RequestMelee({
 })
 ]]>
 			</Function>
-			<Function Name="A_PistolAttack">
-				<![CDATA[
-if not HasAmmo(1) then return end
-PlaySound("D_GUNSHTSND")
-ConsumeAmmo(1)
-RequestHitScan({
-	maxRange = 100,
-	spread = 0,
-	damageBase = 5,
-	damageRandom = 10,
-	damageRangeModifier = true
-})
-]]>
-			</Function>
-			<Function Name="A_MachineGunAttack">
-				<![CDATA[
-if not HasAmmo(1) then return end
-PlaySound("D_GATLINSND")
-ConsumeAmmo(1)
-RequestHitScan({
-	maxRange = 100,
-	spread = 0,
-	damageBase = 5,
-	damageRandom = 10,
-	damageRangeModifier = true
-})
-]]>
-			</Function>
-			<Function Name="A_ChainGunAttack">
-				<![CDATA[
-if not HasAmmo(1) then return end
-PlaySound("D_GATLINSND")
-ConsumeAmmo(1)
-RequestHitScan({
-	maxRange = 100,
-	spread = 0,
-	damageBase = 5,
-	damageRandom = 10,
-	damageRangeModifier = true
-})
-]]>
-			</Function>
 			<Function Name="A_CantaloupeAttack">
 				<![CDATA[
 if GetValue("Gas") < 1 then return end
