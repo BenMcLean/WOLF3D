@@ -3,7 +3,7 @@
 this file. -->
 <Game Name="Spear of Destiny" Path="M1" Extension="SOD" Exe="Spear.exe" HighScores="CONFIG.SOD"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
-	<OnStartup>LoadMenu("PC13Rating")</OnStartup>
+	<OnStartup>LoadMenu("Rating")</OnStartup>
 	<VgaGraph VgaDict="VGADICT.SOD" VgaGraph="VGAGRAPH.SOD" VgaHead="VGAHEAD.SOD"
 		LoadingPic="GETPSYCHEDPIC" Sizes="0">
 		<Fonts Start="1">
@@ -208,18 +208,18 @@ this file. -->
 			<EndString>Sure. Fine. Quit.&#10;See if we care.&#10;Get it over with.&#10;Press Y.</EndString>
 			<!-- WL_INTER.C:PG13 — one-time startup rating screen shown before the title loop.
 				VWB_Bar(0,0,320,200,0x82) + VWB_DrawPic(216,110,PG13PIC) + IN_UserInput(TickBase*7) -->
-			<Menu Name="PC13Rating" BordColor="130" Music="XTOWER2_MUS">
+			<Menu Name="Rating" BordColor="130" Music="XTOWER2_MUS">
 				<Picture Name="PG13PIC" X="216" Y="110" />
-				<Pause Duration="00:00:07">NavigateToMenu("Credits")</Pause>
-			</Menu>
-			<Menu Name="Credits" Music="XTOWER2_MUS">
-				<Picture Name="CREDITSPIC" X="0" Y="0" />
-				<Pause Duration="00:00:10">NavigateToMenu("Title")</Pause>
+				<Pause Duration="00:00:07">NavigateToMenu("Title")</Pause>
 			</Menu>
 			<Menu Name="Title" BordColor="0" Music="XTOWER2_MUS">
 				<Picture Name="TITLE1PIC" X="0" Y="0" />
 				<Picture Name="TITLE2PIC" X="0" Y="80" />
-				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
+				<Pause Duration="00:00:15">NavigateToMenu("Credits")</Pause>
+			</Menu>
+			<Menu Name="Credits" Music="XTOWER2_MUS">
+				<Picture Name="CREDITSPIC" X="0" Y="0" />
+				<Pause Duration="00:00:10">NavigateToMenu("Main")</Pause>
 			</Menu>
 			<!-- Spear control panel uses C_BACKDROPPIC via ClearMScreen(), then DrawStripes(10),
 			then OPTIONS art. -->

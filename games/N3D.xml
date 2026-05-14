@@ -371,6 +371,7 @@ end
 			</Menu>
 			<Menu Name="Title" Music="NOAH02_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
+				<Picture Name="FAMILYAPIC" X="224" Y="112" />
 				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
 			</Menu>
 			<Menu Name="Main">

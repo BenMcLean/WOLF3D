@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Game Name="Wolfenstein 3-D" Path="WL6" Extension="WL6" Exe="WOLF3D.EXE" HighScores="CONFIG.WL6"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="WOLF3D.xsd">
-	<OnStartup>LoadMenu("Credits")</OnStartup>
+	<OnStartup>LoadMenu("Rating")</OnStartup>
 	<VgaGraph VgaDict="VGADICT.WL6" VgaGraph="VGAGRAPH.WL6" VgaHead="VGAHEAD.WL6"
 		LoadingPic="GETPSYCHEDPIC" Sizes="0">
 		<Fonts Start="1">
@@ -247,13 +247,17 @@
 				<Picture Name="H_BOTTOMINFOPIC" X="8" Y="176" />
 				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
 			</Article>
-			<Menu Name="Credits" Music="NAZI_NOR_MUS">
-				<Picture Name="CREDITSPIC" X="0" Y="0" />
-				<Pause Duration="00:00:10">NavigateToMenu("Title")</Pause>
+			<Menu Name="Rating" BordColor="130" Music="NAZI_NOR_MUS">
+				<Picture Name="PG13PIC" X="216" Y="110" />
+				<Pause Duration="00:00:07">NavigateToMenu("Title")</Pause>
 			</Menu>
 			<Menu Name="Title" BordColor="0" Music="NAZI_NOR_MUS">
 				<Picture Name="TITLEPIC" X="0" Y="0" />
-				<Pause Duration="00:00:03">NavigateToMenu("Main")</Pause>
+				<Pause Duration="00:00:15">NavigateToMenu("Credits")</Pause>
+			</Menu>
+			<Menu Name="Credits" Music="NAZI_NOR_MUS">
+				<Picture Name="CREDITSPIC" X="0" Y="0" />
+				<Pause Duration="00:00:10">NavigateToMenu("Main")</Pause>
 			</Menu>
 			<!-- High score table has a pause duration of 9 seconds -->
 			<!-- Main Menu (WL_MENU.H: MENU_X=76, MENU_Y=55, MainItems indent=24)
