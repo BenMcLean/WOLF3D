@@ -1199,7 +1199,8 @@ StartTicker("AvgTreasureRatio", tr)
 		</GameplayWeapons>
 		<Projectiles>
 			<!-- Enemy projectile definitions used by boss Lua attack scripts. -->
-			<Projectile Name="fire" InitialState="s_fire1" MinDamage="1" MaxDamage="128"
+			<!-- WL_FPROJ.C:T_Projectile fireobj: damage = (US_RndT() >>3) → 0-31 -->
+			<Projectile Name="fire" InitialState="s_fire1" MinDamage="0" MaxDamage="31"
 				Speed="4608" />
 			<Projectile Name="needle" InitialState="s_needle1" MinDamage="20" MaxDamage="51"
 				Speed="8192" />
