@@ -33,6 +33,8 @@ public partial class MenuRoom : Node3D, IRoom
 	private bool _playerOriented;
 	private bool _elevatorMode;
 	private IMenuInput _menuInput;
+	private Node3D _elevatorEnvironmentNode;
+	private MeshInstance3D _elevatorSwitchWall;
 
 	// Menu panel sizing in VR (in meters)
 	private const float PanelWidth = Constants.TileWidth;                // One tile wide
@@ -766,22 +768,23 @@ end
 		if (materials is null)
 			return;
 
-		Node3D env = new() { Name = "ElevatorEnvironment" };
-		AddChild(env);
+		_elevatorEnvironmentNode = new Node3D { Name = "ElevatorEnvironment" };
+		AddChild(_elevatorEnvironmentNode);
+		Node3D env = _elevatorEnvironmentNode;
 
 		// Front wall (switch) — parented to the panel so it billboard-rotates with it.
 		// Local Z = -0.005 keeps it exactly 5 mm behind the panel face in the panel's own
 		// frame, so depth testing always wins at every rotation angle without moving the wall.
 		if (materials.TryGetValue(envDef.SwitchPage, out StandardMaterial3D switchMat))
 		{
-			MeshInstance3D switchWall = new()
+			_elevatorSwitchWall = new MeshInstance3D
 			{
 				Name = "ElevatorSwitchWall",
 				Mesh = Constants.WallMesh,
 				MaterialOverride = switchMat,
 				Position = new Vector3(0f, 0f, -0.005f),
 			};
-			_menuPanel.AddChild(switchWall);
+			_menuPanel.AddChild(_elevatorSwitchWall);
 		}
 
 		// Back wall (door) — sits at the mouth of the doorframe alcove (+HalfTileWidth).
@@ -1158,7 +1161,40 @@ void sky() {
 		StatusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
 	}
 
-	private void OnCurrentMenuChanged(string menuName) => SyncMenuStatusBar();
+	/// <summary>
+	/// Clears the VR elevator environment when the current screen no longer defines one.
+	/// Called whenever the active menu or article changes so a missing VRElevatorEnvironment
+	/// element is sufficient to remove the environment set up by a previous screen.
+	/// </summary>
+	private void SyncVRElevatorEnvironment()
+	{
+		if (!_displayMode.IsVRActive || !_elevatorMode)
+			return;
+		MenuCollection collection = MenuCollectionOverride
+			?? SharedAssetManager.CurrentGame?.MenuCollection;
+		VRElevatorEnvironmentDefinition envDef = !string.IsNullOrEmpty(_menuManager?.CurrentMenuName)
+			? collection?.GetMenu(_menuManager.CurrentMenuName)?.VRElevatorEnvironment
+			: null;
+		if (envDef is not null)
+			return;
+		_elevatorEnvironmentNode?.QueueFree();
+		_elevatorEnvironmentNode = null;
+		_elevatorSwitchWall?.QueueFree();
+		_elevatorSwitchWall = null;
+		if (_worldEnvironment is not null)
+		{
+			_worldEnvironment.Environment.BackgroundMode = Godot.Environment.BGMode.Color;
+			_worldEnvironment.Environment.BackgroundColor = _menuManager.Renderer.CurrentBordColor;
+			_worldEnvironment.Environment.Sky = null;
+		}
+		_elevatorMode = false;
+	}
+
+	private void OnCurrentMenuChanged(string menuName)
+	{
+		SyncMenuStatusBar();
+		SyncVRElevatorEnvironment();
+	}
 
 	private void UpdateFlatscreenMenuLayout()
 	{
