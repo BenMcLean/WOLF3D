@@ -1158,15 +1158,7 @@ void sky() {
 		StatusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
 	}
 
-	private void OnCurrentMenuChanged(string menuName)
-	{
-		// Only re-sync when navigating TO a named menu (e.g. LevelComplete → Mission2).
-		// When menus are fully closed (empty name) the MenuRoom is about to be replaced;
-		// leave the canvas in place so it remains visible through the start of the fade.
-		// _ExitTree removes it once the screen is completely black.
-		if (!string.IsNullOrEmpty(menuName))
-			SyncMenuStatusBar();
-	}
+	private void OnCurrentMenuChanged(string menuName) => SyncMenuStatusBar();
 
 	private void UpdateFlatscreenMenuLayout()
 	{

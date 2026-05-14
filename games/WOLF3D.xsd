@@ -807,6 +807,9 @@
 							Allows per-menu positioning so games with differently sized status bars (e.g. Kitchens of Doom)
 							can place it at the correct coordinate. X and Y are in 320×200 canvas space.
 							Matches original Wolf3D behaviour where quiz menus left y=160..200 (the status bar row) untouched.
+							CONSTRAINT: At most one StatusBar element is valid per Menu. Articles must never have
+							a status bar. XSD 1.0 cannot enforce uniqueness within an unbounded choice; this is a
+							logical requirement enforced by the program.
 						</xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
