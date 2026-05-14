@@ -1809,7 +1809,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="tileY">Spawn tile Y</param>
 	/// <param name="facing">Initial facing direction</param>
 	/// <returns>Index of the newly spawned actor, or -1 if spawn failed</returns>
-	public int SpawnActorAtTile(string actorType, ushort tileX, ushort tileY, Direction facing = Direction.N)
+	public int SpawnActorAtTile(string actorType, ushort tileX, ushort tileY, Direction facing = Direction.N, string startingStateName = null)
 	{
 		if (!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition actorDef)
 			|| string.IsNullOrEmpty(actorDef.InitialState))
@@ -1817,9 +1817,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger?.LogError("ERROR: Cannot spawn actor '{ActorType}': no InitialState defined in actor XML definition.", actorType);
 			return -1;
 		}
-		if (!stateCollection.States.TryGetValue(actorDef.InitialState, out State initialState))
+		string resolvedStateName = startingStateName ?? actorDef.InitialState;
+		if (!stateCollection.States.TryGetValue(resolvedStateName, out State initialState))
 		{
-			logger?.LogError("ERROR: Cannot spawn actor '{ActorType}': initial state '{StateName}' not found.", actorType, actorDef.InitialState);
+			logger?.LogError("ERROR: Cannot spawn actor '{ActorType}': initial state '{StateName}' not found.", actorType, resolvedStateName);
 			return -1;
 		}
 		int difficulty = Inventory.GetValue("Difficulty");
@@ -1835,6 +1836,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			hitPoints: hitPoints);
 		if (!string.IsNullOrEmpty(actorDef.DeathState))
 			actor.Flags |= ActorFlags.Shootable;
+		// WL_ACT2.C:A_HitlerMorph: new->flags = ob->flags | FL_SHOOTABLE (includes FL_ATTACKMODE)
+		// Spawning at a non-default state means the actor is already active/aware.
+		if (startingStateName is not null)
+			actor.Flags |= ActorFlags.AttackMode;
 		int actorIndex = actors.Count;
 		actors.Add(actor);
 		if (!string.IsNullOrEmpty(initialState.CollidableScript))

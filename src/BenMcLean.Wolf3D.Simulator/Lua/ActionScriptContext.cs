@@ -139,9 +139,12 @@ public class ActionScriptContext(
 	/// The actor type must have an InitialState defined in its XML Actor element.
 	/// WL_ACT2.C:SpawnNewObj — generic actor allocator used for BJ and mod-driven spawning.
 	/// </summary>
+	/// <param name="startingState">Optional state name override. If provided, actor starts in this state
+	/// with FL_ATTACKMODE set. WL_ACT2.C:A_HitlerMorph uses this to spawn Real Hitler directly at
+	/// s_hitlerchase1 (original: SpawnNewObj(ob->tilex,ob->tiley,&amp;s_hitlerchase1)).</param>
 	/// <returns>Index of the spawned actor, or -1 on failure.</returns>
-	public int SpawnActor(string actorType, int tileX, int tileY, int facing = 2) =>
-		simulator.SpawnActorAtTile(actorType, (ushort)tileX, (ushort)tileY, (Assets.Gameplay.Direction)facing);
+	public int SpawnActor(string actorType, int tileX, int tileY, int facing = 2, string startingState = null) =>
+		simulator.SpawnActorAtTile(actorType, (ushort)tileX, (ushort)tileY, (Assets.Gameplay.Direction)facing, startingState);
 	/// <summary>
 	/// Set VictoryFlag and teleport the player to the viewing tile.
 	/// Called from A_InitBJRun during BJ's spawn action.

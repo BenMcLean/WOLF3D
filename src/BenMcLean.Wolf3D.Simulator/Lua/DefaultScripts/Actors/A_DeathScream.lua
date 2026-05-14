@@ -47,4 +47,25 @@ elseif actorType == "Hans" then
 	PlaceItemType(43, "SPR_STAT_20")  -- bo_key1 (gold key)
 	PlayLocalSound("MUTTISND")
 	-- DeathCam triggered by A_StartDeathCam on s_bossdie4 (after full animation completes)
+
+elseif actorType == "FakeHitler" then
+	-- WL_STATE.C:KillActor - fakeobj
+	AddValue("Score", 2000)
+	-- No item drop
+	-- WL_ACT2.C:A_DeathScream - fakeobj
+	PlayLocalSound("HITLERHASND")
+
+elseif actorType == "MechaHitler" then
+	-- WL_STATE.C:KillActor - mechahitlerobj
+	AddValue("Score", 5000)
+	-- No item drop (Real Hitler spawns via A_HitlerMorph on s_mechadie3)
+	-- WL_ACT2.C:A_DeathScream - mechahitlerobj
+	PlayLocalSound("SCHEISTSND")
+
+elseif actorType == "Hitler" then
+	-- WL_STATE.C:KillActor - realhitlerobj
+	AddValue("Score", 5000)
+	-- No item drop (DeathCam ends the episode)
+	-- WL_ACT2.C:A_DeathScream - realhitlerobj
+	PlayLocalSound("EVASND")
 end
