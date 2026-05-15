@@ -1254,6 +1254,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalyzer, mapAnalysis, logger)
 	{
 		AudioT = audioT,
+		PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
 		NavigateToMenuAction = menuName =>
 		{
 			// WL_ACT2.C:T_BJDone sets playstate = ex_victorious; we clear victoryflag here
@@ -1319,7 +1320,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (actor.CurrentState.Next is null)
 				break; // No next state, stop transitioning
 
-			// TransitionActorState executes the Action function when entering the new state
+			// WL_PLAY.C:DoActor "end of state action" — fire CURRENT state's action BEFORE advancing.
+			// Original: think = ob->state->action; if (think) think(ob); ob->state = ob->state->next;
+			// ChangeState (NewState equivalent) must NOT fire actions — only timer expiry does.
+			if (!string.IsNullOrEmpty(actor.CurrentState.Action))
+			{
+				Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
+				try
+				{
+					luaScriptEngine.ExecuteActionFunction(actor.CurrentState.Action, context);
+				}
+				catch (Exception ex)
+				{
+					logger?.LogError(ex, "Error executing Action function '{ActionFunction}' for actor {ActorIndex}", actor.CurrentState.Action, actorIndex);
+				}
+			}
 			TransitionActorState(actorIndex, actor.CurrentState.Next);
 
 			// WL_PLAY.C:1754-1758 - If new state is non-transitional, set ticcount=0 and execute Think
@@ -1398,7 +1413,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 	/// <summary>
 	/// Transitions an actor to a new state.
-	/// Updates sprite, tics, executes Action function, and fires events.
+	/// Updates state, tics, speed, sprite, and fires ActorSpriteChanged.
+	/// Does NOT execute the new state's Action — that fires on EXIT (see UpdateActor).
 	/// </summary>
 	private void TransitionActorState(int actorIndex, State nextState)
 	{
@@ -1416,19 +1432,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		actor.Speed = nextState.Speed;
 		// Update sprite (may be modified by rotation logic later)
 		actor.ShapeNum = nextState.Shape;
-		// Execute Action function if present
-		if (!string.IsNullOrEmpty(nextState.Action))
-		{
-			Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
-			try
-			{
-				luaScriptEngine.ExecuteActionFunction(nextState.Action, context);
-			}
-			catch (Exception ex)
-			{
-				logger?.LogError(ex, "Error executing Action function '{ActionFunction}' for actor {ActorIndex}", nextState.Action, actorIndex);
-			}
-		}
+		// Action is NOT fired here — it fires on state EXIT in UpdateActor (matching original DoActor).
+		// ChangeState (Lua) and SpawnActorAtTile handle their own action semantics separately.
 		// Always fire sprite changed event to update visual
 		ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
 		{
@@ -2193,8 +2198,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				TransitionActorStateByName(actorIndex, actorDef.ChaseState);
 				actor.Flags |= ActorFlags.AttackMode;
-				if (!string.IsNullOrEmpty(actorDef.AlertSound))
-					EmitActorPlaySound(actorIndex, actorDef.AlertSound);
+				RunActorAlert(actorIndex);
 			}
 			if (actorDef is not null)
 			{
@@ -2703,9 +2707,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				TransitionActorStateByName(i, actorDef.ChaseState);
 				actor.Flags |= ActorFlags.AttackMode;
-
-				if (!string.IsNullOrEmpty(actorDef.AlertSound))
-					EmitActorPlaySound(i, actorDef.AlertSound);
+				RunActorAlert(i);
 			}
 		}
 	}
@@ -2794,9 +2796,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				{
 					TransitionActorStateByName(actorIndex, actorDef.ChaseState);
 					actor.Flags |= ActorFlags.AttackMode;
-
-					if (!string.IsNullOrEmpty(actorDef.AlertSound))
-						EmitActorPlaySound(actorIndex, actorDef.AlertSound);
+					RunActorAlert(actorIndex);
 				}
 			}
 
@@ -3976,14 +3976,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		: null;
 
 	/// <summary>
-	/// Returns the alert sound name for the given actor type.
-	/// WL_STATE.C:FirstSighting plays a sound per obclass when actor spots player.
-	/// Returns null if not configured (caller should skip sound).
+	/// WL_STATE.C:FirstSighting - execute this actor's Alert function (if any).
+	/// Called from C# alert paths (shot-wake, area-alert) and from ActorScriptContext.RunAlert().
 	/// </summary>
-	public string GetActorAlertSound(string actorType) =>
-		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
-		? def.AlertSound
-		: null;
+	internal void RunActorAlert(int actorIndex, Lua.IScriptContext context)
+	{
+		Actor actor = actors[actorIndex];
+		if (!stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out Assets.Gameplay.ActorDefinition def)
+			|| string.IsNullOrEmpty(def.Alert))
+			return;
+		try
+		{
+			luaScriptEngine.ExecuteActionFunction(def.Alert, context);
+		}
+		catch (Exception ex)
+		{
+			logger?.LogError(ex, "Error executing Alert function '{AlertFunction}' for actor {ActorIndex}", def.Alert, actorIndex);
+		}
+	}
+	private void RunActorAlert(int actorIndex)
+	{
+		Actor actor = actors[actorIndex];
+		RunActorAlert(actorIndex, CreateActorScriptContext(actor, actorIndex));
+	}
 
 	/// <summary>
 	/// Computes a reaction time for an actor based on its Reaction range from XML.

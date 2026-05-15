@@ -2115,7 +2115,22 @@ return false
 				State="s_giftstand" />
 		</StatInfo>
 		<Actors>
-			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertSound="HALTSND"
+			<!-- WL_STATE.C:FirstSighting alert functions — one per obclass, named A_Alert* -->
+			<!-- Regular enemies: PlaySoundLocActor (positional) → PlayLocalSound -->
+			<!-- Boss enemies: SD_PlaySound (global) → PlaySound -->
+			<Function Name="A_AlertHalt">PlayLocalSound("HALTSND")</Function>
+			<Function Name="A_AlertSpion">PlayLocalSound("SPIONSND")</Function>
+			<Function Name="A_AlertSchutz">PlayLocalSound("SCHUTZADSND")</Function>
+			<Function Name="A_AlertDogBark">PlayLocalSound("DOGBARKSND")</Function>
+			<Function Name="A_AlertAhhhg">PlayLocalSound("AHHHGSND")</Function>
+			<Function Name="A_AlertGutentag">PlaySound("GUTENTAGSND")</Function>
+			<Function Name="A_AlertSchabbs">PlaySound("SCHABBSHASND")</Function>
+			<Function Name="A_AlertFakeHitler">PlaySound("TOT_HUNDSND")</Function>
+			<Function Name="A_AlertDies">PlaySound("DIESND")</Function>
+			<Function Name="A_AlertKein">PlaySound("KEINSND")</Function>
+			<Function Name="A_AlertEine">PlaySound("EINESND")</Function>
+			<Function Name="A_AlertErlauben">PlaySound("ERLAUBENSND")</Function>
+			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" Alert="A_AlertHalt"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
 				Pain="s_grdpain" Pain1="s_grdpain1" />
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand"
@@ -2158,7 +2173,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4"
 				Alive="false" Mark="false" />
-			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" AlertSound="SPIONSND"
+			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" Alert="A_AlertSpion"
 				Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1"
 				Pain="s_ofcpain" Pain1="s_ofcpain1" />
 			<State Name="s_ofcstand" Rotate="true" Shape="SPR_OFC_S_1" Tics="0" Think="T_Stand"
@@ -2203,7 +2218,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_ofcdie5" Shape="SPR_OFC_DEAD" Tics="0" Speed="0" Next="s_ofcdie5"
 				Alive="false" Mark="false" />
-			<Actor Name="Mutant" HP="45,55,55,65" Reaction="1-43" Stand="s_mutstand"
+			<Actor Name="Mutant" HP="45,55,55,65" Reaction="1-43" Alert="A_AlertAhhhg" Stand="s_mutstand"
 				Chase="s_mutchase1" Attack="s_mutshoot1" Death="s_mutdie1" Pain="s_mutpain"
 				Pain1="s_mutpain1" />
 			<State Name="s_mutstand" Rotate="true" Shape="SPR_MUT_S_1" Tics="0" Think="T_Stand"
@@ -2274,7 +2289,7 @@ return false
 				Next="s_inkychase2" />
 			<State Name="s_inkychase2" Shape="SPR_INKY_W2" Tics="10" Think="T_Ghosts" Speed="1500"
 				Next="s_inkychase1" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertSound="DOGBARKSND"
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Alert="A_AlertDogBark"
 				Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogstand" Rotate="true" Shape="SPR_DOG_W1_1" Tics="0" Think="T_Stand"
 				Speed="0" Next="s_dogstand" />
@@ -2316,7 +2331,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead"
 				Alive="false" Mark="false" />
-			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertSound="SCHUTZADSND"
+			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" Alert="A_AlertSchutz"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
 				Pain="s_sspain" Pain1="s_sspain1" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand"
@@ -2368,7 +2383,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4"
 				Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertSound="GUTENTAGSND"
+			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" Alert="A_AlertGutentag"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
 				Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2409,7 +2424,7 @@ return false
 				Next="s_bosschase1" />
 			<!-- WL_ACT2.C:SpawnSchabbs — Episode 2 boss -->
 			<!-- Corrected HP from starthitpoints[]: Baby=850, DHM=950, BEO=1550, DI=2400 -->
-			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" AlertSound="SCHABBSHASND"
+			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" Alert="A_AlertSchabbs"
 				Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1"
 				Death="s_schabbdie1" Ambush="true" />
 			<State Name="s_schabbstand" Shape="SPR_SCHABB_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2458,7 +2473,7 @@ return false
 			<State Name="s_needle4" Shape="SPR_HYPO4" Tics="6" Think="T_Projectile" Speed="8192"
 				Next="s_needle1" />
 			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 enemy -->
-			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" AlertSound="TOT_HUNDSND"
+			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" Alert="A_AlertFakeHitler"
 				Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1"
 				Ambush="true" />
 			<State Name="s_fakestand" Shape="SPR_FAKE_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2510,9 +2525,8 @@ return false
 				Next="s_fire1" />
 			<!-- WL_ACT2.C:SpawnHitler — Episode 3 boss, Phase 1 (Mecha-Hitler) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=800, DHM=950, BEO=1050, DI=1200 -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case mechahitlerobj →
-			DIESND -->
-			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" AlertSound="DIESND"
+			<!-- WL_STATE.C:FirstSighting case mechahitlerobj → SD_PlaySound(DIESND) (global) -->
+			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" Alert="A_AlertDies"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
 				Death="s_mechadie1" Ambush="true" />
 			<State Name="s_mechastand" Shape="SPR_MECHA_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2556,9 +2570,8 @@ return false
 			<!-- WL_ACT2.C:A_HitlerMorph — Episode 3 boss, Phase 2 (Real Hitler, spawned by
 			A_HitlerMorph) -->
 			<!-- Corrected HP from starthitpoints[]: Baby=200, DHM=300, BEO=400, DI=500 -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case realhitlerobj →
-			DIESND -->
-			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" AlertSound="DIESND"
+			<!-- WL_STATE.C:FirstSighting case realhitlerobj → SD_PlaySound(DIESND) (global) -->
+			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" Alert="A_AlertDies"
 				Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1"
 				Death="s_hitlerdie1" Ambush="true" />
 			<State Name="s_hitlerstand" Shape="SPR_HITLER_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2580,9 +2593,12 @@ return false
 				Next="s_hitlerdie1" />
 			<!-- WL_ACT2.C:s_hitlerdie3 fires A_Slurpie (plays SLURPIESND); s_hitlerdie10 fires
 			A_StartDeathCam -->
+			<!-- s_hitlerdie1 tictime=1: fires A_DeathScream (EVASND) almost instantly on death.
+			s_hitlerdie2 tictime=140: WL_ACT2.C:SpawnHitler sets this at runtime when DigiMode != Off.
+			Hitler holds SPR_HITLER_W1 (standing pose) for ~2s while EVASND plays, then fall animation begins. -->
 			<State Name="s_hitlerdie1" Shape="SPR_HITLER_W1" Tics="1" Action="A_DeathScream"
 				Speed="0" Alive="false" Next="s_hitlerdie2" />
-			<State Name="s_hitlerdie2" Shape="SPR_HITLER_W1" Tics="10" Speed="0" Alive="false"
+			<State Name="s_hitlerdie2" Shape="SPR_HITLER_W1" Tics="140" Speed="0" Alive="false"
 				Mark="false" Next="s_hitlerdie3" />
 			<State Name="s_hitlerdie3" Shape="SPR_HITLER_DIE1" Tics="10" Action="A_Slurpie"
 				Speed="0" Alive="false" Mark="false" Next="s_hitlerdie4" />
@@ -2613,8 +2629,8 @@ return false
 			<State Name="s_hitlershoot6" Shape="SPR_HITLER_SHOOT2" Tics="10" Action="T_Shoot"
 				Speed="0" Next="s_hitlerchase1" />
 			<!-- WL_ACT2.C:SpawnGretel — Episode 4 boss (chaingun, same AI as Hans) -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case gretelobj → KEINSND -->
-			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" AlertSound="KEINSND"
+			<!-- WL_STATE.C:FirstSighting case gretelobj → SD_PlaySound(KEINSND) (global) -->
+			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" Alert="A_AlertKein"
 				Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1"
 				Death="s_greteldie1" Ambush="true" />
 			<State Name="s_gretelstand" Shape="SPR_GRETEL_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2658,8 +2674,8 @@ return false
 				Next="s_gretelchase1" />
 			<!-- WL_ACT2.C:SpawnGift — Episode 5 boss (throws rockets via T_GiftThrow) -->
 			<!-- WL_ACT2.C:T_GiftThrow spawns rocketobj/s_rocket, NOT needles — plan was wrong -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case giftobj → EINESND -->
-			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" AlertSound="EINESND"
+			<!-- WL_STATE.C:FirstSighting case giftobj → SD_PlaySound(EINESND) (global) -->
+			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" Alert="A_AlertEine"
 				Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1"
 				Ambush="true" />
 			<State Name="s_giftstand" Shape="SPR_GIFT_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2711,8 +2727,8 @@ return false
 			<State Name="s_rocket8" Shape="SPR_ROCKET_8" Tics="6" Think="T_Projectile" Speed="8192"
 				Next="s_rocket" />
 			<!-- WL_ACT2.C:SpawnFat — Episode 6 boss (mixed attack: rocket then hitscan) -->
-			<!-- Corrected alert sound from original v1.4 source: A_Alert case fatobj → ERLAUBENSND -->
-			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" AlertSound="ERLAUBENSND"
+			<!-- WL_STATE.C:FirstSighting case fatobj → SD_PlaySound(ERLAUBENSND) (global) -->
+			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" Alert="A_AlertErlauben"
 				Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1"
 				Ambush="true" />
 			<State Name="s_fatstand" Shape="SPR_FAT_W1" Tics="0" Think="T_Stand" Speed="0"

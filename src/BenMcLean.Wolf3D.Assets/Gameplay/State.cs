@@ -233,9 +233,11 @@ public class ActorDefinition
 	/// </summary>
 	public string AttackState { get; set; }
 	/// <summary>
-	/// Alert sound to play when actor spots player (e.g., "HALTSND").
+	/// Name of the alert Function to execute when actor first spots player.
+	/// WL_STATE.C:FirstSighting - each actor class plays a sound via PlaySoundLocActor or SD_PlaySound.
+	/// The function body is defined using the existing Function element inside the Actors block.
 	/// </summary>
-	public string AlertSound { get; set; }
+	public string Alert { get; set; }
 	/// <summary>
 	/// Hit points by difficulty level, parsed from HP="25,25,25,25" attribute.
 	/// Index is 0-based difficulty (e.g., 0=Can I Play Daddy?, 3=Death Incarnate).
@@ -323,7 +325,7 @@ public class ActorDefinition
 			DeathState = element.Attribute("Death")?.Value,
 			ChaseState = element.Attribute("Chase")?.Value,
 			AttackState = element.Attribute("Attack")?.Value,
-			AlertSound = element.Attribute("AlertSound")?.Value,
+			Alert = element.Attribute("Alert")?.Value,
 			HitPointsByDifficulty = hitPoints,
 			PainState = element.Attribute("Pain")?.Value,
 			PainState1 = element.Attribute("Pain1")?.Value,

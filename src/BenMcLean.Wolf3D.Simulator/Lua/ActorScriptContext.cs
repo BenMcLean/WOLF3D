@@ -377,11 +377,11 @@ public class ActorScriptContext(
 	public string GetChaseState() =>
 		simulator.GetActorChaseState(actor.ActorType);
 	/// <summary>
-	/// Get the alert sound name for this actor type. WL_STATE.C:FirstSighting switch(ob->obclass).
-	/// Returns null if not configured (T_Stand/T_Path should skip PlayLocalSound if null).
+	/// WL_STATE.C:FirstSighting - execute this actor's Alert function (if any).
+	/// Regular enemies call PlayLocalSound; bosses call PlaySound (global).
+	/// The function body is defined in the game XML as a Function element.
 	/// </summary>
-	public string GetAlertSound() =>
-		simulator.GetActorAlertSound(actor.ActorType);
+	public void RunAlert() => simulator.RunActorAlert(actorIndex, this);
 	/// <summary>
 	/// Compute reaction time from this actor's Reaction range (XML) and a random value.
 	/// WL_STATE.C:SightPlayer - ob->temp2 = reaction formula varies by obclass.

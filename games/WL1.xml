@@ -1565,7 +1565,12 @@ return false
 			<ObjectType Number="214" ObClass="actor" Actor="Hans" Direction="S" State="s_bossstand" />
 		</StatInfo>
 		<Actors>
-			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" AlertSound="HALTSND"
+			<!-- WL_STATE.C:FirstSighting alert functions for WL1 shareware -->
+			<Function Name="A_AlertHalt">PlayLocalSound("HALTSND")</Function>
+			<Function Name="A_AlertSchutz">PlayLocalSound("SCHUTZADSND")</Function>
+			<Function Name="A_AlertDogBark">PlayLocalSound("DOGBARKSND")</Function>
+			<Function Name="A_AlertGutentag">PlaySound("GUTENTAGSND")</Function>
+			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" Alert="A_AlertHalt"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
 				Pain="s_grdpain" Pain1="s_grdpain1" />
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand"
@@ -1608,7 +1613,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4"
 				Alive="false" Mark="false" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" AlertSound="DOGBARKSND"
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Alert="A_AlertDogBark"
 				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path"
 				Speed="1500" Next="s_dogpath1s" />
@@ -1648,7 +1653,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead"
 				Alive="false" Mark="false" />
-			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" AlertSound="SCHUTZADSND"
+			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" Alert="A_AlertSchutz"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
 				Pain="s_sspain" Pain1="s_sspain1" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand"
@@ -1700,7 +1705,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4"
 				Alive="false" Mark="false" />
-			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" AlertSound="GUTENTAGSND"
+			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" Alert="A_AlertGutentag"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
 				Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0"

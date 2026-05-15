@@ -138,7 +138,7 @@ public static class GameCheckerLogic
 			if (CheckAttr(el, "Death", states, "state") is { } i4) yield return i4;
 			if (CheckAttr(el, "Pain", states, "state") is { } i5) yield return i5;
 			if (CheckAttr(el, "Pain1", states, "state") is { } i6) yield return i6;
-			if (CheckAttr(el, "AlertSound", sounds, "sound") is { } i7) yield return i7;
+			if (CheckAttr(el, "Alert", functions, "function") is { } i7) yield return i7;
 		}
 
 		foreach (XElement el in doc.Descendants("ObjectType"))

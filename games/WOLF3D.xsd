@@ -2211,7 +2211,16 @@
 			<xs:attribute name="HP" type="xs:string"/>
 			<xs:attribute name="Reaction" type="xs:string"/>
 			<xs:attribute name="Speed" type="xs:integer"/>
-			<xs:attribute name="AlertSound" type="xs:string"/>
+			<xs:attribute name="Alert" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Name of the alert Function to execute when the actor first spots the player (WL_STATE.C:FirstSighting).
+						The Function body is defined using the existing Function element inside the Actors block.
+						Regular enemies use PlayLocalSound; bosses use PlaySound (global).
+						Example: Alert="A_AlertHalt" with a Function named A_AlertHalt containing PlayLocalSound("HALTSND").
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Stand" type="xs:string"/>
 			<xs:attribute name="Chase" type="xs:string"/>
 			<xs:attribute name="Attack" type="xs:string"/>
