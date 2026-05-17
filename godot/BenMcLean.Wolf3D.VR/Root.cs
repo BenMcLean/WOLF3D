@@ -333,17 +333,14 @@ public partial class Root : Node3D
 					{
 						// WL_GAME.C:Died() with no lives — game over, show high scores then menu
 						// Extract final score before sim is discarded
-						int finalScore = sim.Inventory.GetValue("Score");
-						ushort completedLevel = (ushort)sim.Inventory.GetValue("MapOn");
-						// Inventory stores episode 1-indexed; HighScoreEntry uses 0-indexed (matches original)
-						ushort episode = (ushort)Math.Max(0, sim.Inventory.GetValue("Episode") - 1);
+						MapAnalyzer.MapAnalysis mapAnalysis = sim.MapAnalysis;
 						MenuRoom gameOverRoom = new(DisplayMode)
 						{
 							StartMenuOverride = !string.IsNullOrEmpty(deathResult) && deathResult != "gameover"
 								? deathResult : null,
-							PendingHighScoreScore = finalScore,
-							PendingHighScoreCompleted = completedLevel,
-							PendingHighScoreEpisode = episode,
+							PendingHighScoreScore = sim.Inventory.GetValue("Score"),
+							PendingHighScoreCompleted = (ushort)mapAnalysis.Floor,
+							PendingHighScoreEpisode = mapAnalysis.Episode,
 							MenuWeaponSprite = CurrentGameMenuWeaponSprite(),
 							InitialCheatModeEnabled = _cheatModeEnabled,
 							InitialUseVoxelWeapons = _useVoxelWeapons,

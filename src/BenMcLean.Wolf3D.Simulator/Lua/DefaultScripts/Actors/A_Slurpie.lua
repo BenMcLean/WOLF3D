@@ -1,3 +1,3 @@
 -- WL_ACT2.C:A_Slurpie - plays grotesque death sound on s_hitlerdie3
--- SD_PlaySound(SLURPIESND) in original (non-positional, global sound)
-PlayLocalSound("SLURPIESND")
+-- WL_ACT2.C:#elif GAMEVER_NOAH3D: SD_PlaySound(D_EDIESND) instead of SLURPIESND
+PlayLocalSound(ResolveSound("SLURPIESND", "D_EDIESND"))

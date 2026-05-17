@@ -115,9 +115,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// FaceController — owns facecount tic logic (WL_AGENT.C:UpdateFace)
 	private FaceController faceController;
 	// Map analyzer for accessing door metadata (sounds, etc.)
-	private MapAnalyzer mapAnalyzer;
+	public MapAnalyzer MapAnalyzer;
 	// Map analysis for line-of-sight calculations and navigation
-	private MapAnalysis mapAnalysis;
+	public MapAnalysis MapAnalysis;
 	// Patrol direction lookup (WL_ACT2.C:SelectPathDir reads from map layer 1)
 	// Key encoding: (Y << 16) | X
 	private Dictionary<uint, Direction> patrolDirectionAtTile;
@@ -639,7 +639,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private bool CanOpenDoor(ushort doorIndex, Door door)
 	{
 		// Look up door info to get script
-		if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) != true)
+		if (MapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) != true)
 			return true; // No door info, allow open
 
 		// If no script defined, door can be opened
@@ -716,7 +716,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				TileY = door.TileY
 			});
 			// Emit door opening sound
-			if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
+			if (MapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) == true
 				&& !string.IsNullOrEmpty(doorInfo.OpenSound))
 				EmitDoorPlaySound(doorIndex, doorInfo.OpenSound);
 		}
@@ -787,7 +787,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			TileY = door.TileY
 		});
 		// Emit door closing sound
-		if (mapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) ?? false
+		if (MapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) ?? false
 			&& !string.IsNullOrEmpty(doorInfo.CloseSound))
 			EmitDoorPlaySound(doorIndex, doorInfo.CloseSound);
 	}
@@ -1177,7 +1177,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		// Find elevator at this position and get its tile number for config lookup
 		MapAnalysis.ElevatorSpawn? elevatorSpawn = null;
-		foreach (var elev in mapAnalysis.Elevators)
+		foreach (var elev in MapAnalysis.Elevators)
 		{
 			if (elev.X == tileX && elev.Y == tileY)
 			{
@@ -1190,7 +1190,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			return; // No elevator at this position
 
 		// Look up elevator configuration by tile number (supports multiple elevator types)
-		if (!mapAnalyzer.Elevators.TryGetValue(elevatorSpawn.Value.Tile, out ElevatorConfig elevatorConfig))
+		if (!MapAnalyzer.Elevators.TryGetValue(elevatorSpawn.Value.Tile, out ElevatorConfig elevatorConfig))
 			return; // No config for this elevator tile type
 
 		// Check if player is facing the correct direction for this elevator
@@ -1251,7 +1251,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	}
 	#endregion
 	#region Actor Update Logic
-	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, mapAnalyzer, mapAnalysis, logger)
+	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, MapAnalyzer, MapAnalysis, logger)
 	{
 		AudioT = audioT,
 		PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
@@ -1507,11 +1507,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
 		// Store MapAnalyzer for looking up door sounds when emitting events
-		this.mapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
+		this.MapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
 
 		// Initialize spatial index arrays and map dimensions
 		// Must be done before loading any entities (doors, pushwalls, actors)
-		this.mapAnalysis = mapAnalysis;
+		this.MapAnalysis = mapAnalysis;
 		mapWidth = mapAnalysis.Width;
 		mapHeight = mapAnalysis.Depth;
 
@@ -2104,7 +2104,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private bool IsProjectileBlockedAt(int x, int y)
 	{
 		// mapAnalysis.IsNavigable already handles out-of-bounds (returns false)
-		if (!mapAnalysis.IsNavigable(x, y))
+		if (!MapAnalysis.IsNavigable(x, y))
 			return true;
 		int tileIdx = GetTileIndex((ushort)x, (ushort)y);
 		if (pushWallAtTile[tileIdx] >= 0)
@@ -2320,7 +2320,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		for (int i = 0; i < lastStatObj; i++)
 		{
 			StatObj stat = StatObjList[i];
-			if (mapAnalyzer.Objects.TryGetValue(stat.ItemNumber, out ObjectInfo objInfo)
+			if (MapAnalyzer.Objects.TryGetValue(stat.ItemNumber, out ObjectInfo objInfo)
 				&& objInfo.IsTreasure)
 			{
 				treasureTotal++;
@@ -2655,9 +2655,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	internal void PropagateNoise()
 	{
-		if (mapAnalysis is null) return;
+		if (MapAnalysis is null) return;
 
-		short playerArea = mapAnalysis.GetAreaNumber(PlayerTileX, PlayerTileY);
+		short playerArea = MapAnalysis.GetAreaNumber(PlayerTileX, PlayerTileY);
 		List<ushort> connectedAreas;
 		if (playerArea >= 0)
 		{
@@ -2684,7 +2684,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (actor.Flags.HasFlag(ActorFlags.AttackMode)) continue;
 			if (actor.Flags.HasFlag(ActorFlags.Ambush)) continue;
 
-			short actorArea = mapAnalysis.GetAreaNumber(actor.TileX, actor.TileY);
+			short actorArea = MapAnalysis.GetAreaNumber(actor.TileX, actor.TileY);
 			if (actorArea >= 0)
 			{
 				if (!connectedAreas.Contains((ushort)actorArea)) continue;
@@ -3884,7 +3884,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			DoorAction a = doors[doorAtTile[idx]].Action;
 			return a == DoorAction.Open || a == DoorAction.Opening;
 		}
-		return mapAnalysis.IsTransparent(x, y);
+		return MapAnalysis.IsTransparent(x, y);
 	}
 	#endregion Fog of War
 
@@ -3942,7 +3942,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private bool IsTilePassableForTeleport(ushort x, ushort y)
 	{
 		// 1. Walls and other static impassable tiles
-		if (!mapAnalysis.IsNavigable(x, y))
+		if (!MapAnalysis.IsNavigable(x, y))
 			return false;
 
 		int tileIdx = GetTileIndex(x, y);
@@ -4133,7 +4133,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public bool IsTileTransparentForSight(ushort x, ushort y)
 	{
 		// 1. Check static map transparency (walls, etc.) from MapAnalysis
-		if (!mapAnalysis.IsTransparent(x, y))
+		if (!MapAnalysis.IsTransparent(x, y))
 			return false;
 		int tileIdx = GetTileIndex(x, y);
 		// 2. Check for pushwalls - they block sight
@@ -4160,7 +4160,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public bool IsTileNavigable(ushort x, ushort y)
 	{
 		// 1. Check static navigability (from MapAnalysis BitArray)
-		if (!mapAnalysis.IsNavigable(x, y))
+		if (!MapAnalysis.IsNavigable(x, y))
 			return false;
 
 		int tileIdx = GetTileIndex(x, y);
@@ -4292,7 +4292,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		ushort y = (ushort)tileY;
 
 		// Check static navigability (from MapAnalysis BitArray)
-		if (!mapAnalysis.IsNavigable(x, y))
+		if (!MapAnalysis.IsNavigable(x, y))
 			return false;
 
 		int tileIdx = GetTileIndex(x, y);
@@ -4687,11 +4687,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	private void RebuildAreaConnect()
 	{
-		if (AreaConnect is null || mapAnalysis is null)
+		if (AreaConnect is null || MapAnalysis is null)
 			return;
 
 		// Reset all connections to zero
-		AreaConnect = new SymmetricMatrix(mapAnalysis.FloorCodeCount);
+		AreaConnect = new SymmetricMatrix(MapAnalysis.FloorCodeCount);
 
 		// Open doors connect their two areas
 		for (int i = 0; i < doors.Count; i++)

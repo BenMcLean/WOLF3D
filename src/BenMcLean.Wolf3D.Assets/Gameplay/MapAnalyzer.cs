@@ -325,12 +325,14 @@ public class MapAnalyzer
 		if (WallCodeMask is not ushort wallCodeMask)
 			return tile;
 
-		// Preserve special wall-plane tiles and known non-wall control ranges. The mask only
-		// applies when interpreting the value as a wall code.
+		// Preserve special wall-plane tiles (doors, elevators, exit tiles) — these are not
+		// wall texture codes and must not be masked. Floor codes ARE masked so that
+		// GetWallPage returns a valid VSWAP page even when a floor code tile appears in the
+		// wall plane (e.g. N3D pushwall over a floor area: original engine applied tile &= 31
+		// unconditionally before any texture lookup).
 		if (Doors.ContainsKey(tile)
 			|| Elevators.ContainsKey(tile)
-			|| ExitTiles.Contains(tile)
-			|| tile >= FloorCodeFirst && tile < FloorCodeFirst + FloorCodes)
+			|| ExitTiles.Contains(tile))
 			return tile;
 
 		return (ushort)(tile & wallCodeMask);
@@ -347,6 +349,9 @@ public class MapAnalyzer
 	// Check if tile number is a wall
 	public bool IsWall(ushort tile)
 	{
+		// Floor codes are never walls regardless of their masked value
+		if (tile >= FloorCodeFirst && tile < FloorCodeFirst + FloorCodes)
+			return false;
 		ushort normalized = NormalizeWallTile(tile);
 		return normalized > 0 && normalized <= MaxWallTiles;
 	}

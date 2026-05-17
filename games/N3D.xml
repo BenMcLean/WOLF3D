@@ -1003,6 +1003,11 @@ local sr = GetSecretTotal() > 0 and math.floor(GetSecretCount() * 100 / GetSecre
 local tr = GetTreasureTotal() > 0 and math.floor(GetTreasureCount() * 100 / GetTreasureTotal()) or 0
 if kr == 100 and sr == 100 and tr == 100 then
 	NavigateToMenuImmediate("LevelCompletePerfect")
+elseif GetValue("MapOn") == 28 then
+	-- WL_GAME.C:ex_victorious → Victory() → CharacterCast() after defeating Real Burt
+	-- Map 28 = E6L6 (Burt the Bear). Use GetValue("MapOn") not GetEpisode()/GetFloor():
+	-- GetEpisode() reflects the player's original episode selection, not the current map.
+	NavigateToMenu("CharacterCast_1")
 else
 	CallMenuFunction("ContinueOrShowNextMission")
 end
@@ -1062,7 +1067,14 @@ StartTicker("SecretRatio", sr)
 				<Picture Name="W_PERFECTPIC" X="96" Y="120" />
 				<Pause>
 					<![CDATA[
-CallMenuFunction("ContinueOrShowNextMission")
+-- WL_GAME.C:ex_victorious → Victory() → CharacterCast() after defeating Real Burt
+-- Map 28 = E6L6 (Burt the Bear). Use GetValue("MapOn") not GetEpisode()/GetFloor():
+-- GetEpisode() reflects the player's original episode selection, not the current map.
+if GetValue("MapOn") == 28 then
+	NavigateToMenu("CharacterCast_1")
+else
+	CallMenuFunction("ContinueOrShowNextMission")
+end
 ]]>
 				</Pause>
 				<OnShow>
@@ -1135,8 +1147,9 @@ SetText("PerfectBonusValue", tostring(bonus))
 				<Text Id="Level6" X="192" Y="172" Font="SMALL" Align="Right"> </Text>
 				<Text Id="Score6" X="288" Y="172" Font="SMALL" Align="Right"> </Text>
 				<!-- WL_HSCOR.C: IN_UserInput(500) ≈ 500/70 ≈ 7 sec; use 9 for comfortable reading -->
-				<Pause Duration="00:00:09">NavigateToMenu("Title")</Pause>
-				<OnCancel>NavigateToMenu("Main")</OnCancel>
+				<!-- EndGame() discards the suspended game session (victory or game-over) before returning to title -->
+				<Pause Duration="00:00:09">EndGame()</Pause>
+				<OnCancel>EndGame()</OnCancel>
 				<OnShow>
 					<![CDATA[
 CheckAndAddHighScore()
@@ -1147,6 +1160,105 @@ for i = 0, GetHighScoreCount() - 1 do
 end
 ]]>
 				</OnShow>
+			</Menu>
+			<!-- N3D boss victory: WL_DRAW.C shows SPR_YOUWIN scaling for 192 tics (~2.7s) while
+			player is in s_deathcam, then ex_victorious → LevelCompleted → Victory/CharacterCast.
+			No "LET'S SEE THAT AGAIN" replay screen in N3D (WL_ACT2.C:#ifdef GAMEVER_NOAH3D). -->
+			<Menu Name="DeathCam_Hitler_See" Font="L" BordColor="0" Music="" KeepWeapons="true">
+				<StaticSprite Name="SPR_YOUWIN" X="160" Y="100" />
+				<Pause Duration="00:00:03">NavigateToMenu("LevelComplete")</Pause>
+			</Menu>
+			<!-- WL_INTER.C:CharacterCast — cycles through all 12 animal types with name and sound.
+			WL_INTER.C:caststate order: dog,guard,ofc,ss,mut,boss,schabb,gretel,gift,fat,mecha,hitler
+			WL_INTER.C:casttext: Goat,Sheep,Ostrich,Antelope,Ox,Carl the Camel,Melvin the Monkey,
+			Ginny the Giraffe,Kerry the Kangaroo,Ernie the Elephant,Hiding Burt,Burt the Bear
+			WL_INTER.C:castsound: D_GOATSND,D_SHEEPSND,D_OSTRCHSND,D_ANTLPESND,D_OXSND,D_CAMELSND,
+			D_MONKEYSND,D_GIRAFESND,D_KANGROSND,D_ELPHNTSND,D_BEARSND,D_BEARSND
+			WL_INTER.C: cycle > 224 ticks (≈ 3.2s) per animal; loops until Escape pressed -->
+			<Menu Name="CharacterCast_1" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_dogchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Goat</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_GOATSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_2")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_2" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_grdchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Sheep</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_SHEEPSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_3")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_3" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_ofcchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Ostrich</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_OSTRCHSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_4")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_4" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_sschase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Antelope</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_ANTLPESND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_5")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_5" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_mutchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Ox</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_OXSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_6")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_6" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_bosschase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Carl the Camel</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_CAMELSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_7")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_7" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_schabbchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Melvin the Monkey</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_MONKEYSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_8")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_8" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_gretelchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Ginny the Giraffe</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_GIRAFESND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_9")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_9" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_giftchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Kerry the Kangaroo</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_KANGROSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_10")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_10" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_fatchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Ernie the Elephant</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_ELPHNTSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_11")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_11" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_mechachase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Hiding Burt</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_BEARSND")</OnShow>
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_12")</Pause>
+			</Menu>
+			<Menu Name="CharacterCast_12" BordColor="218" Music="NOAH02_MUS">
+				<ActorAnimation StartState="s_hitlerchase1" X="160" Y="100" />
+				<Text X="Center" Y="168" Font="BIG">Burt the Bear</Text>
+				<OnCancel>NavigateToMenu("HighScores")</OnCancel>
+				<OnShow>PlaySound("D_BEARSND")</OnShow>
+				<!-- WL_INTER.C: loops back to en=0 (Goat) until Escape pressed -->
+				<Pause Duration="00:00:03">NavigateToMenu("CharacterCast_1")</Pause>
 			</Menu>
 		</Menus>
 		<Questions>
@@ -2987,6 +3099,12 @@ AddValue("Score", 5000)
 			<State Name="s_mexplode1" Shape="SPR_WATERMELONEXP" Tics="6" Next="s_mexplode2" />
 			<State Name="s_mexplode2" Shape="SPR_WATERMELONEXP" Tics="6" Next="s_mexplode3" />
 			<State Name="s_mexplode3" Shape="SPR_WATERMELONEXP" Tics="6" />
+			<!-- Enemy projectile / animal throw (Kerry the Kangaroo, Ernie the Elephant via T_GiftThrow) -->
+			<State Name="s_animalproj" Shape="SPR_ANIMALPROJ" Tics="3" Think="T_Missile" Speed="8192"
+				Next="s_animalproj" />
+			<State Name="s_animalprojexp1" Shape="SPR_ANIMALPROJEXP" Tics="6" Next="s_animalprojexp2" />
+			<State Name="s_animalprojexp2" Shape="SPR_ANIMALPROJEXP" Tics="6" Next="s_animalprojexp3" />
+			<State Name="s_animalprojexp3" Shape="SPR_ANIMALPROJEXP" Tics="6" />
 			<!-- Flamethrower / missile launcher weapon states (WL_AGENT.C attackinfo[4]/[5]) -->
 			<State Name="s_cantaready" Rotate="false" Shape="SPR_CANTAREADY" Tics="0" />
 			<State Name="s_cantaatk1" Rotate="false" Shape="SPR_CANTAATK1" Tics="7"
@@ -3231,6 +3349,9 @@ end
 				MinDamage="1" MaxDamage="16" Speed="12288" ActorCollisionSize="32768" />
 			<Projectile Name="watermelon" InitialState="s_missile" ExplodeState="s_mexplode1"
 				MinDamage="16" MaxDamage="64" Speed="12288" ActorCollisionSize="32768" />
+			<!-- Enemy thrown projectile used by T_GiftThrow (Kerry the Kangaroo, Ernie the Elephant) -->
+			<Projectile Name="rocket" InitialState="s_animalproj" ExplodeState="s_animalprojexp1"
+				MinDamage="30" MaxDamage="61" Speed="8192" />
 		</Projectiles>
 		<Sprites>
 			<Sprite Page="71" Name="SPR_DEMO" />
