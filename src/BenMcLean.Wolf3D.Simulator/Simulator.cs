@@ -233,8 +233,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private Dictionary<byte, string> bonusNumberToScript = [];
 	private static string GetDoorScriptId(ushort tileNumber) => $"door:{tileNumber}";
 	private static string GetElevatorScriptId(ushort tileNumber) => $"elevator:{tileNumber}";
-	private static string GetActorScriptId(string actorName) => $"actor:{actorName}";
-	/// <summary>
+/// <summary>
 	/// Noah's Ark question index persisted in CONFIG.N3D.
 	/// Managed by quiz-related Lua helpers so quiz scrolls can cycle deterministically.
 	/// </summary>
@@ -430,9 +429,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			stateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
 			stateCollection.ValidateFunctionReferences();
 			this.luaScriptEngine.CompileAllActionFunctions(stateCollection);
-			foreach (ActorDefinition actorDefinition in stateCollection.ActorDefinitions.Values)
-				if (!string.IsNullOrWhiteSpace(actorDefinition.Script))
-					this.luaScriptEngine.CompileScript(GetActorScriptId(actorDefinition.Name), actorDefinition.Script);
 		}
 		// Wire Inventory.ValueChanged to PlayerStateChanged and auto-text StatusBar updates.
 		// Auto-text: if the inventory key matches a StatusBar Text Id, emit StatusBarTextChanged
@@ -1659,21 +1655,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		return false;
 	}
 
-	private void ExecuteActorScript(int actorIndex, Actor actor, ActorDefinition actorDef)
-	{
-		if (actorDef is null || string.IsNullOrWhiteSpace(actorDef.Script))
-			return;
-
-		Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
-		try
-		{
-			luaScriptEngine.ExecuteCompiledScript(GetActorScriptId(actorDef.Name), context);
-		}
-		catch (Exception ex)
-		{
-			logger?.LogError(ex, "Error executing inline actor script for actor {ActorIndex} ({ActorType})", actorIndex, actor.ActorType);
-		}
-	}
 	/// <summary>
 	/// Initialize actors from MapAnalyzer data - creates Actor instances and fires ActorSpawnedEvent for each.
 	/// HP and initial state are read from ActorDefinition (parsed from XML).
@@ -2184,7 +2165,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (actor.HitPoints <= 0)
 		{
 			actor.HitPoints = 0;
-			ExecuteActorScript(actorIndex, actor, actorDef);
 			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 			{
 				TransitionActorStateByName(actorIndex, actorDef.DeathState);
@@ -2776,7 +2756,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			// WL_STATE.C:DamageActor - actor killed
 			actor.HitPoints = 0;
-			ExecuteActorScript(actorIndex, actor, actorDef);
 
 			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 			{
@@ -3983,15 +3962,15 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		Actor actor = actors[actorIndex];
 		if (!stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out Assets.Gameplay.ActorDefinition def)
-			|| string.IsNullOrEmpty(def.Alert))
+			|| string.IsNullOrEmpty(def.OnAlert))
 			return;
 		try
 		{
-			luaScriptEngine.ExecuteActionFunction(def.Alert, context);
+			luaScriptEngine.ExecuteActionFunction(def.OnAlert, context);
 		}
 		catch (Exception ex)
 		{
-			logger?.LogError(ex, "Error executing Alert function '{AlertFunction}' for actor {ActorIndex}", def.Alert, actorIndex);
+			logger?.LogError(ex, "Error executing Alert function '{AlertFunction}' for actor {ActorIndex}", def.OnAlert, actorIndex);
 		}
 	}
 	private void RunActorAlert(int actorIndex)

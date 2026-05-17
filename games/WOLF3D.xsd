@@ -2204,14 +2204,11 @@
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:all>
-				<xs:element name="Script" type="xs:string" minOccurs="0"/>
-			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="HP" type="xs:string"/>
 			<xs:attribute name="Reaction" type="xs:string"/>
 			<xs:attribute name="Speed" type="xs:integer"/>
-			<xs:attribute name="Alert" type="xs:string">
+			<xs:attribute name="OnAlert" type="xs:string">
 				<xs:annotation>
 					<xs:documentation>
 						Name of the alert Function to execute when the actor first spots the player (WL_STATE.C:FirstSighting).
@@ -2263,13 +2260,9 @@
 		<xs:annotation>
 			<xs:documentation>
 				State machine state for actor AI.
-				Scripts can extend state behavior.
 			</xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
-			<xs:all>
-				<xs:element name="Script" type="xs:string" minOccurs="0"/>
-			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Rotate" type="xs:boolean"/>
 			<xs:attribute name="Shape" type="xs:string"/>

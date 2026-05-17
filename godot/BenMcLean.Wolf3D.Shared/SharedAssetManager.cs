@@ -761,7 +761,6 @@ public static class SharedAssetManager
 
 	private static string GetDoorScriptId(ushort tileNumber) => $"door:{tileNumber}";
 	private static string GetElevatorScriptId(ushort tileNumber) => $"elevator:{tileNumber}";
-	private static string GetActorScriptId(string actorName) => $"actor:{actorName}";
 	private static string GetMenuOnShowScriptId(string menuName) => $"menu:{menuName}:on-show";
 	private static string GetMenuOnCancelScriptId(string menuName) => $"menu:{menuName}:on-cancel";
 	private static string GetMenuOnSelectionChangedScriptId(string menuName) => $"menu:{menuName}:on-selection-changed";
@@ -782,10 +781,6 @@ public static class SharedAssetManager
 		CurrentGame.StateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
 		CurrentGame.StateCollection.ValidateFunctionReferences();
 		ActionLuaEngine.CompileAllActionFunctions(CurrentGame.StateCollection);
-
-		foreach (ActorDefinition actorDefinition in CurrentGame.StateCollection.ActorDefinitions.Values)
-			if (!string.IsNullOrWhiteSpace(actorDefinition.Script))
-				ActionLuaEngine.CompileScript(GetActorScriptId(actorDefinition.Name), actorDefinition.Script);
 
 		foreach (DoorInfo doorInfo in CurrentGame.MapAnalyzer.Doors.Values.DistinctBy(d => d.TileNumber))
 			if (!string.IsNullOrWhiteSpace(doorInfo.Script))

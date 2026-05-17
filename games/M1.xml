@@ -1961,7 +1961,7 @@ return false
 			<Function Name="A_AlertWilhelm">PlaySound("WILHELMSIGHTSND")</Function>
 			<Function Name="A_AlertKnight">PlaySound("KNIGHTSIGHTSND")</Function>
 			<Function Name="A_AlertAngel">PlaySound("ANGELSIGHTSND")</Function>
-			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" Alert="A_AlertHalt"
+			<Actor Name="Guard" HP="25,25,25,25" Reaction="1-64" OnAlert="A_AlertHalt"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
 				Pain="s_grdpain" Pain1="s_grdpain1" />
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_S_1" Tics="0" Think="T_Stand"
@@ -2004,7 +2004,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_grddie4" Shape="SPR_GRD_DEAD" Tics="0" Speed="0" Next="s_grddie4"
 				Alive="false" Mark="false" />
-			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" Alert="A_AlertSpion"
+			<Actor Name="Officer" HP="50,50,50,50" Reaction="1-43" OnAlert="A_AlertSpion"
 				Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1"
 				Pain="s_ofcpain" Pain1="s_ofcpain1" />
 			<State Name="s_ofcstand" Rotate="true" Shape="SPR_OFC_S_1" Tics="0" Think="T_Stand"
@@ -2096,7 +2096,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_mutdie5" Shape="SPR_MUT_DEAD" Tics="0" Speed="0" Next="s_mutdie5"
 				Alive="false" Mark="false" />
-			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" Alert="A_AlertDogBark"
+			<Actor Name="Dog" HP="1,1,1,1" Reaction="1-32" OnAlert="A_AlertDogBark"
 				Stand="s_dogstand" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" />
 			<State Name="s_dogstand" Rotate="true" Shape="SPR_DOG_W1_1" Tics="0" Think="T_Stand"
 				Speed="0" Next="s_dogstand" />
@@ -2138,7 +2138,7 @@ return false
 				Alive="false" Mark="false" />
 			<State Name="s_dogdead" Shape="SPR_DOG_DEAD" Tics="15" Speed="0" Next="s_dogdead"
 				Alive="false" Mark="false" />
-			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" Alert="A_AlertSchutz"
+			<Actor Name="SS" HP="100,100,100,100" Reaction="1-43" OnAlert="A_AlertSchutz"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
 				Pain="s_sspain" Pain1="s_sspain1" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_S_1" Tics="0" Think="T_Stand"
@@ -2208,7 +2208,7 @@ return false
 			<State Name="s_rocket8" Shape="SPR_ROCKET_8" Tics="6" Think="T_Projectile" Speed="8192"
 				Next="s_rocket" />
 			<!-- Spear of Destiny actor families -->
-			<Actor Name="Spectre" HP="5,10,15,25" Reaction="1" Alert="A_AlertGhost"
+			<Actor Name="Spectre" HP="5,10,15,25" Reaction="1" OnAlert="A_AlertGhost"
 				Stand="s_spectrewait1" Chase="s_spectrechase1" Death="s_spectredie1" Ambush="true" />
 			<State Name="s_spectrewait1" Shape="SPR_SPECTRE_W1" Tics="10" Think="T_Stand" Speed="0"
 				Next="s_spectrewait2" />
@@ -2236,7 +2236,7 @@ return false
 				Mark="false" Next="s_spectrewake" />
 			<State Name="s_spectrewake" Shape="SPR_SPECTRE_F4" Tics="10" Action="A_Dormant"
 				Speed="0" Alive="false" Mark="false" Next="s_spectrewake" />
-			<Actor Name="Trans" HP="850,950,1050,1200" Reaction="1" Alert="A_AlertTrans"
+			<Actor Name="Trans" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertTrans"
 				Stand="s_transstand" Chase="s_transchase1" Attack="s_transshoot1"
 				Death="s_transdie0" Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true" />
 			<State Name="s_transstand" Shape="SPR_TRANS_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2326,7 +2326,7 @@ return false
 				Next="s_ubershoot7" />
 			<State Name="s_ubershoot7" Shape="SPR_UBER_SHOOT1" Tics="12" Speed="0"
 				Next="s_uberchase1" />
-			<Actor Name="Wilhelm" HP="950,1050,1150,1300" Reaction="1" Alert="A_AlertWilhelm"
+			<Actor Name="Wilhelm" HP="950,1050,1150,1300" Reaction="1" OnAlert="A_AlertWilhelm"
 				Stand="s_willstand" Chase="s_willchase1" Attack="s_willshoot1" Death="s_willdie1"
 				Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true" />
 			<State Name="s_willstand" Shape="SPR_WILL_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2367,7 +2367,7 @@ return false
 				Next="s_willshoot6" />
 			<State Name="s_willshoot6" Shape="SPR_WILL_SHOOT4" Tics="10" Action="T_Shoot" Speed="0"
 				Next="s_willchase1" />
-			<Actor Name="Death" HP="1250,1350,1450,1600" Reaction="1" Alert="A_AlertKnight"
+			<Actor Name="Death" HP="1250,1350,1450,1600" Reaction="1" OnAlert="A_AlertKnight"
 				Stand="s_deathstand" Chase="s_deathchase1" Attack="s_deathshoot1"
 				Death="s_deathdie1" Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true" />
 			<State Name="s_deathstand" Shape="SPR_DEATH_W1" Tics="0" Think="T_Stand" Speed="0"
@@ -2412,7 +2412,7 @@ return false
 				Speed="0" Next="s_deathshoot5" />
 			<State Name="s_deathshoot5" Shape="SPR_DEATH_SHOOT4" Tics="10" Action="T_Shoot"
 				Speed="0" Next="s_deathchase1" />
-			<Actor Name="Angel" HP="1450,1550,1650,2000" Reaction="1" Alert="A_AlertAngel"
+			<Actor Name="Angel" HP="1450,1550,1650,2000" Reaction="1" OnAlert="A_AlertAngel"
 				Stand="s_angelstand" Chase="s_angelchase1" Attack="s_angelshoot1"
 				Death="s_angeldie1" Ambush="true" />
 			<State Name="s_angelstand" Shape="SPR_ANGEL_W1" Tics="0" Think="T_Stand" Speed="0"

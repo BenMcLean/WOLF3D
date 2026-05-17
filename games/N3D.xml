@@ -173,9 +173,6 @@
 			<!-- Additional end strings I made up just for fun -->
 			<EndString>For Evolution, press Y.&#10;For more Intelligent&#10;Design, press N.</EndString>
 			<EndString>Press N to feed more&#10;hungry animals.&#10;Press Y to let them&#10;STARVE!</EndString>
-			<EndString>What was your Flood plan?&#10;Press N for Ark.&#10;Press Y for umbrella.</EndString>
-			<EndString>You know the food&#10;Noah throws is&#10;drugged, right?&#10;Press N to keep&#10;playing or Y to&#10;Just Say No.</EndString>
-			<EndString>Flood almost over?&#10;Press N for more rain.&#10;Press Y to find the&#10;Rainbow Connection.</EndString>
 			<EndString>Press N to calm down&#10;more goats or Y to&#10;let them eat your&#10;sandals.</EndString>
 			<Article Name="ReadThis" ChunkName="T_HELPART" Music="NOAH01_MUS" BackColor="36"
 				PageNumColor="16">
@@ -2499,12 +2496,79 @@ return amount
 ]]>
 			</Function>
 			<!-- Overrides DefaultScripts/Actors/A_DeathScream.lua for this game only.
-			     In N3D, WL_ACT2.C:A_DeathScream plays D_EDIESND for all actor types — no per-type
-			     switching. Score and item drops are handled by each actor's own <Script> block
-			     rather than here, unlike the WL6 default which does all three in one function. -->
+			     In N3D, WL_ACT2.C:A_DeathScream plays D_EDIESND for all actor types.
+			     WL_STATE.C:KillActor score and item drop logic is consolidated here,
+			     matching the WL6 pattern where A_DeathScream handles all three effects. -->
 			<Function Name="A_DeathScream">
 				<![CDATA[
+-- WL_ACT2.C:A_DeathScream - N3D plays same sound for all actor types
 PlayLocalSound("D_EDIESND")
+
+-- WL_STATE.C:KillActor - per-actor score and item drop logic
+local actorType = GetActorType()
+
+if actorType == "White ram" then
+	-- guardobj
+	AddValue("Score", 100)
+	-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+	if GetValue("Feed") < GetMax("Feed") then
+		PlaceItemType(45, "SPR_STAT_22")
+	end
+elseif actorType == "Goat" then
+	-- dogobj
+	AddValue("Score", 200)
+	-- No item drop
+elseif actorType == "Ostrich" then
+	-- officerobj
+	AddValue("Score", 400)
+	-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+	if GetValue("Feed") < GetMax("Feed") then
+		PlaceItemType(45, "SPR_STAT_22")
+	end
+elseif actorType == "Ox" then
+	-- mutantobj
+	AddValue("Score", 700)
+	-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
+	if GetValue("Feed") < GetMax("Feed") then
+		PlaceItemType(45, "SPR_STAT_22")
+	end
+elseif actorType == "Antelope" then
+	-- ssobj
+	AddValue("Score", 500)
+	if GetValue("Weapon2") < 1 then
+		PlaceItemType(46, "SPR_STAT_23")  -- bo_machinegun (Slingshot 2)
+	elseif GetValue("Feed") < GetMax("Feed") then
+		PlaceItemType(45, "SPR_STAT_22")
+	end
+elseif actorType == "Carl the Camel" then
+	-- bossobj
+	AddValue("Score", 5000)
+	PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
+elseif actorType == "Ginny the Giraffe" then
+	-- gretelobj
+	AddValue("Score", 5000)
+	PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
+elseif actorType == "Melvin the Monkey" then
+	-- schabbobj
+	AddValue("Score", 5000)
+	PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
+elseif actorType == "Kerry the Kangaroo" then
+	-- giftobj
+	AddValue("Score", 5000)
+	PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
+elseif actorType == "Ernie the Elephant" then
+	-- fatobj
+	AddValue("Score", 5000)
+	PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
+elseif actorType == "Burt the Bear" then
+	-- mechahitlerobj
+	AddValue("Score", 5000)
+	-- No item drop
+elseif actorType == "Hitler" then
+	-- realhitlerobj
+	AddValue("Score", 5000)
+	-- No item drop
+end
 ]]>
 			</Function>
 			<!-- WL_STATE.C:FirstSighting alert functions for N3D animals -->
@@ -2520,20 +2584,9 @@ PlayLocalSound("D_EDIESND")
 			<Function Name="A_AlertKangaroo">PlaySound("D_KANGROSND")</Function>
 			<Function Name="A_AlertElephant">PlaySound("D_ELPHNTSND")</Function>
 			<Function Name="A_AlertBear">PlaySound("D_BEARSND")</Function>
-			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" Alert="A_AlertGoat"
+			<Actor Name="White ram" HP="6,6,6,6" Reaction="1-64" OnAlert="A_AlertGoat"
 				Stand="s_grdstand" Chase="s_grdchase1" Attack="s_grdshoot1" Death="s_grddie1"
-				Pain="s_grdpain" Pain1="s_grdpain1" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - guardobj
-AddValue("Score", 100)
--- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
-if GetValue("Feed") < GetMax("Feed") then
-	PlaceItemType(45, "SPR_STAT_22")
-end
-]]>
-				</Script>
-			</Actor>
+				Pain="s_grdpain" Pain1="s_grdpain1" FullVision="true" />
 			<State Name="s_grdstand" Rotate="true" Shape="SPR_GRD_W1_1" Tics="0" Think="T_Stand"
 				Speed="0" Next="s_grdstand" />
 			<State Name="s_grdpath1" Rotate="true" Shape="SPR_GRD_W1_1" Tics="20" Think="T_Path"
@@ -2576,16 +2629,9 @@ end
 				Alive="false" Mark="false" />
 			<State Name="s_grddead2" Shape="SPR_GRD_DEAD2" Tics="55" Speed="0" Next="s_grddead"
 				Alive="false" Mark="false" />
-			<Actor Name="Goat" HP="1,1,1,1" Reaction="1-32" Alert="A_AlertGoat"
-				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - dogobj
-AddValue("Score", 200)
--- No item drop
-]]>
-				</Script>
-			</Actor>
+			<Actor Name="Goat" HP="1,1,1,1" Reaction="1-32" OnAlert="A_AlertGoat"
+				Stand="s_dogpath1" Chase="s_dogchase1" Attack="s_dogjump1" Death="s_dogdie1"
+				FullVision="true" />
 			<State Name="s_dogpath1" Rotate="true" Shape="SPR_DOG_W1_1" Tics="20" Think="T_Path"
 				Speed="1500" Next="s_dogpath1s" />
 			<State Name="s_dogpath1s" Rotate="true" Shape="SPR_DOG_W1_1" Tics="5" Speed="1500"
@@ -2624,20 +2670,9 @@ AddValue("Score", 200)
 				Alive="false" Mark="false" />
 			<State Name="s_dogdead2" Shape="SPR_DOG_DEAD2" Tics="55" Speed="0" Next="s_dogdead"
 				Alive="false" Mark="false" />
-			<Actor Name="Ostrich" HP="12,12,12,12" Reaction="1-43" Alert="A_AlertOstrich"
+			<Actor Name="Ostrich" HP="12,12,12,12" Reaction="1-43" OnAlert="A_AlertOstrich"
 				Stand="s_ofcstand" Chase="s_ofcchase1" Attack="s_ofcshoot1" Death="s_ofcdie1"
-				Pain="s_ofcpain" Pain1="s_ofcpain1" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - officerobj
-AddValue("Score", 400)
--- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
-if GetValue("Feed") < GetMax("Feed") then
-	PlaceItemType(45, "SPR_STAT_22")
-end
-]]>
-				</Script>
-			</Actor>
+				Pain="s_ofcpain" Pain1="s_ofcpain1" FullVision="true" />
 			<State Name="s_ofcstand" Rotate="true" Shape="SPR_OFC_W1_1" Tics="0" Think="T_Stand"
 				Next="s_ofcstand" />
 			<State Name="s_ofcpath1" Rotate="true" Shape="SPR_OFC_W1_1" Tics="20" Think="T_Path"
@@ -2678,20 +2713,9 @@ end
 				Mark="false" />
 			<State Name="s_ofcdead2" Shape="SPR_OFC_DEAD2" Tics="55" Next="s_ofcdead" Alive="false"
 				Mark="false" />
-			<Actor Name="Ox" HP="18,18,18,18" Reaction="1-43" Alert="A_AlertOx"
+			<Actor Name="Ox" HP="18,18,18,18" Reaction="1-43" OnAlert="A_AlertOx"
 				Stand="s_mutstand" Chase="s_mutchase1" Attack="s_mutshoot1" Death="s_mutdie1"
-				Pain="s_mutpain" Pain1="s_mutpain1" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - mutantobj
-AddValue("Score", 700)
--- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
-if GetValue("Feed") < GetMax("Feed") then
-	PlaceItemType(45, "SPR_STAT_22")
-end
-]]>
-				</Script>
-			</Actor>
+				Pain="s_mutpain" Pain1="s_mutpain1" FullVision="true" />
 			<State Name="s_mutstand" Rotate="true" Shape="SPR_MUT_W1_1" Tics="0" Think="T_Stand"
 				Next="s_mutstand" />
 			<State Name="s_mutpath1" Rotate="true" Shape="SPR_MUT_W1_1" Tics="20" Think="T_Path"
@@ -2733,24 +2757,10 @@ end
 				Mark="false" />
 			<State Name="s_mutdead2" Shape="SPR_MUT_DEAD2" Tics="55" Next="s_mutdead" Alive="false"
 				Mark="false" />
-			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" Alert="A_AlertAntelope"
+			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" OnAlert="A_AlertAntelope"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
-				Pain="s_sspain" Pain1="s_sspain1" ShootSound="D_SPITSND" AimBonus="true" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - ssobj
-AddValue("Score", 500)
-if GetValue("Weapon2") < 1 then
-	PlaceItemType(46, "SPR_STAT_23")  -- bo_machinegun (Slingshot 2)
-else
-	-- N3D: no bo_clip2 pickup handler; use bo_clip (feed) instead
-	if GetValue("Feed") < GetMax("Feed") then
-		PlaceItemType(45, "SPR_STAT_22")
-	end
-end
-]]>
-				</Script>
-			</Actor>
+				Pain="s_sspain" Pain1="s_sspain1" ShootSound="D_SPITSND" AimBonus="true"
+				FullVision="true" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_W1_1" Tics="0" Think="T_Stand"
 				Next="s_ssstand" />
 			<State Name="s_sspath1" Rotate="true" Shape="SPR_SS_W1_1" Tics="20" Think="T_Path"
@@ -2798,17 +2808,9 @@ end
 				Mark="false" />
 			<State Name="s_ssdead2" Shape="SPR_SS_DEAD2" Tics="55" Next="s_ssdead" Alive="false"
 				Mark="false" />
-			<Actor Name="Carl the Camel" HP="150,150,150,150" Reaction="1" Alert="A_AlertCamel"
+			<Actor Name="Carl the Camel" HP="150,150,150,150" Reaction="1" OnAlert="A_AlertCamel"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
-				Ambush="true" ShootSound="D_SPITSND" AimBonus="true" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - bossobj
-AddValue("Score", 5000)
-PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
-]]>
-				</Script>
-			</Actor>
+				Ambush="true" ShootSound="D_SPITSND" AimBonus="true" FullVision="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand"
 				Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="1536"
@@ -2844,16 +2846,8 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_bossshoot8" />
 			<State Name="s_bossshoot8" Shape="SPR_BOSS_SHOOT1" Tics="10" Next="s_bosschase1" />
 			<Actor Name="Ginny the Giraffe" HP="300,300,300,300" Reaction="1-43"
-				Alert="A_AlertGiraffe" Stand="s_gretelstand" Chase="s_gretelchase1"
-				Attack="s_gretelshoot1" Death="s_greteldie1" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - gretelobj
-AddValue("Score", 5000)
-PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
-]]>
-				</Script>
-			</Actor>
+				OnAlert="A_AlertGiraffe" Stand="s_gretelstand" Chase="s_gretelchase1"
+				Attack="s_gretelshoot1" Death="s_greteldie1" FullVision="true" />
 			<State Name="s_gretelstand" Shape="SPR_GRETEL_W1" Tics="0" Think="T_Stand"
 				Next="s_gretelstand" />
 			<State Name="s_gretelchase1" Shape="SPR_GRETEL_W1" Tics="10" Think="T_Chase"
@@ -2889,16 +2883,8 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_gretelshoot8" />
 			<State Name="s_gretelshoot8" Shape="SPR_GRETEL_SHOOT1" Tics="10" Next="s_gretelchase1" />
 			<Actor Name="Melvin the Monkey" HP="350,350,350,350" Reaction="1-43"
-				Alert="A_AlertMonkey" Stand="s_schabbstand" Chase="s_schabbchase1"
-				Attack="s_schabbshoot1" Death="s_schabbdie1" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - schabbobj
-AddValue("Score", 5000)
-PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
-]]>
-				</Script>
-			</Actor>
+				OnAlert="A_AlertMonkey" Stand="s_schabbstand" Chase="s_schabbchase1"
+				Attack="s_schabbshoot1" Death="s_schabbdie1" FullVision="true" />
 			<State Name="s_schabbstand" Shape="SPR_SCHABB_W1" Tics="0" Think="T_Stand"
 				Next="s_schabbstand" />
 			<State Name="s_schabbchase1" Shape="SPR_SCHABB_W1" Tics="10" Think="T_Schabb"
@@ -2924,16 +2910,9 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 			<State Name="s_schabbshoot2" Shape="SPR_SCHABB_SHOOT2" Tics="20" Action="T_SchabbThrow"
 				Next="s_schabbchase1" />
 			<Actor Name="Kerry the Kangaroo" HP="400,400,400,400" Reaction="1-43"
-				Alert="A_AlertKangaroo" Stand="s_giftstand" Chase="s_giftchase1"
-				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="D_COCTHRSND" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - giftobj
-AddValue("Score", 5000)
-PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
-]]>
-				</Script>
-			</Actor>
+				OnAlert="A_AlertKangaroo" Stand="s_giftstand" Chase="s_giftchase1"
+				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="D_COCTHRSND"
+				FullVision="true" />
 			<State Name="s_giftstand" Shape="SPR_GIFT_W1" Tics="0" Think="T_Stand"
 				Next="s_giftstand" />
 			<State Name="s_giftchase1" Shape="SPR_GIFT_W1" Tics="10" Think="T_Gift"
@@ -2958,16 +2937,8 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 			<State Name="s_giftshoot4" Shape="SPR_GIFT_SHOOT4" Tics="10" Action="T_GiftThrow"
 				Next="s_giftchase1" />
 			<Actor Name="Ernie the Elephant" HP="450,450,450,450" Reaction="1-43"
-				Alert="A_AlertElephant" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1"
-				Death="s_fatdie1" ShootSound="D_COCTHRSND" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - fatobj
-AddValue("Score", 5000)
-PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
-]]>
-				</Script>
-			</Actor>
+				OnAlert="A_AlertElephant" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1"
+				Death="s_fatdie1" ShootSound="D_COCTHRSND" FullVision="true" />
 			<State Name="s_fatstand" Shape="SPR_FAT_W1" Tics="0" Think="T_Stand" Next="s_fatstand" />
 			<State Name="s_fatchase1" Shape="SPR_FAT_W1" Tics="10" Think="T_Fat" Next="s_fatchase1s" />
 			<State Name="s_fatchase1s" Shape="SPR_FAT_W1" Tics="3" Next="s_fatchase2" />
@@ -2998,17 +2969,9 @@ PlaceItemType(39, "SPR_STAT_16")  -- bo_key1 (yellow key)
 				Next="s_fatshoot6" />
 			<State Name="s_fatshoot6" Shape="SPR_FAT_SHOOT4" Tics="10" Action="T_Shoot"
 				Next="s_fatchase1" />
-			<Actor Name="Burt the Bear" HP="500,500,500,500" Reaction="1-43" Alert="A_AlertBear"
+			<Actor Name="Burt the Bear" HP="500,500,500,500" Reaction="1-43" OnAlert="A_AlertBear"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
-				Death="s_mechadie1" ShootSound="D_SPITSND" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - mechahitlerobj
-AddValue("Score", 5000)
--- No item drop
-]]>
-				</Script>
-			</Actor>
+				Death="s_mechadie1" ShootSound="D_SPITSND" FullVision="true" />
 			<State Name="s_mechastand" Shape="SPR_MECHA_W1" Tics="0" Think="T_Stand"
 				Next="s_mechastand" />
 			<State Name="s_mechachase1" Shape="SPR_MECHA_W1" Tics="10" Think="T_Chase"
@@ -3044,17 +3007,9 @@ AddValue("Score", 5000)
 			<!-- WL_ACT2.C:A_HitlerMorph — Real Burt phase 2 (realhitlerobj, spawned by A_HitlerMorph) -->
 			<!-- HP from A_HitlerMorph local hitpoints[4]={500,700,800,900} -->
 			<!-- N3D A_Alert realhitlerobj plays EVASND; AUDION3D.H has no EVASND alias so using D_BEARSND -->
-			<Actor Name="Hitler" HP="500,700,800,900" Reaction="1" Alert="A_AlertBear"
+			<Actor Name="Hitler" HP="500,700,800,900" Reaction="1" OnAlert="A_AlertBear"
 				Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1"
-				Death="s_hitlerdie1" Ambush="true" FullVision="true">
-				<Script>
-					<![CDATA[
--- WL_STATE.C:KillActor - realhitlerobj
-AddValue("Score", 5000)
--- No item drop
-]]>
-				</Script>
-			</Actor>
+				Death="s_hitlerdie1" Ambush="true" FullVision="true" />
 			<State Name="s_hitlerstand" Shape="SPR_HITLER_W1" Tics="0" Think="T_Stand"
 				Next="s_hitlerstand" />
 			<State Name="s_hitlerchase1" Shape="SPR_HITLER_W1" Tics="6" Think="T_Chase" Speed="1536"
@@ -4061,3 +4016,4 @@ end
 		</Palette>
 	</Palettes>
 </Game>
+

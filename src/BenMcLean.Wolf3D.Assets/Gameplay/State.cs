@@ -216,11 +216,6 @@ public class ActorDefinition
 	/// </summary>
 	public string Name { get; set; }
 	/// <summary>
-	/// Optional inline Lua script for actor-specific behavior such as score awards and item drops.
-	/// Executed with ActorScriptContext.
-	/// </summary>
-	public string Script { get; set; }
-	/// <summary>
 	/// State name to transition to when actor dies (e.g., "s_grddie1").
 	/// </summary>
 	public string DeathState { get; set; }
@@ -237,7 +232,7 @@ public class ActorDefinition
 	/// WL_STATE.C:FirstSighting - each actor class plays a sound via PlaySoundLocActor or SD_PlaySound.
 	/// The function body is defined using the existing Function element inside the Actors block.
 	/// </summary>
-	public string Alert { get; set; }
+	public string OnAlert { get; set; }
 	/// <summary>
 	/// Hit points by difficulty level, parsed from HP="25,25,25,25" attribute.
 	/// Index is 0-based difficulty (e.g., 0=Can I Play Daddy?, 3=Death Incarnate).
@@ -321,11 +316,10 @@ public class ActorDefinition
 		return new ActorDefinition
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Actor element must have a Name attribute"),
-			Script = element.Element("Script")?.Value?.Trim(),
 			DeathState = element.Attribute("Death")?.Value,
 			ChaseState = element.Attribute("Chase")?.Value,
 			AttackState = element.Attribute("Attack")?.Value,
-			Alert = element.Attribute("Alert")?.Value,
+			OnAlert = element.Attribute("OnAlert")?.Value,
 			HitPointsByDifficulty = hitPoints,
 			PainState = element.Attribute("Pain")?.Value,
 			PainState1 = element.Attribute("Pain1")?.Value,
