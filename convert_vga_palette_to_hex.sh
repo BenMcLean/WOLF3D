@@ -1,8 +1,8 @@
 #!/bin/bash
 # Convert 6-bit VGA palette binary file (like GAMEPAL.BIN) to hex XML format
-# Usage: ./convert_vga_pal_to_hex.sh <input.bin> > output.xml
+# Usage: ./convert_vga_palette_to_hex.sh <input.bin> > output.xml
 #
-# Example: ./convert_vga_pal_to_hex.sh wolf3d/STATIC/WOLF3D/GAMEPAL.BIN > palette.xml
+# Example: ./convert_vga_palette_to_hex.sh wolf3d/STATIC/WOLF3D/GAMEPAL.BIN > palette.xml
 #
 # Reads a 768-byte binary file (256 colors × 3 bytes RGB)
 # VGA palette values are 6-bit (0-63), converted to 8-bit (0-255) by left-shifting 2 bits
