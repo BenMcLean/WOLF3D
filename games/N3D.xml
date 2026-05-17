@@ -1007,7 +1007,7 @@ elseif GetValue("MapOn") == 28 then
 	-- WL_GAME.C:ex_victorious → Victory() → CharacterCast() after defeating Real Burt
 	-- Map 28 = E6L6 (Burt the Bear). Use GetValue("MapOn") not GetEpisode()/GetFloor():
 	-- GetEpisode() reflects the player's original episode selection, not the current map.
-	NavigateToMenu("CharacterCast_1")
+	NavigateToMenu("Victory")
 else
 	CallMenuFunction("ContinueOrShowNextMission")
 end
@@ -1071,7 +1071,7 @@ StartTicker("SecretRatio", sr)
 -- Map 28 = E6L6 (Burt the Bear). Use GetValue("MapOn") not GetEpisode()/GetFloor():
 -- GetEpisode() reflects the player's original episode selection, not the current map.
 if GetValue("MapOn") == 28 then
-	NavigateToMenu("CharacterCast_1")
+	NavigateToMenu("Victory")
 else
 	CallMenuFunction("ContinueOrShowNextMission")
 end
@@ -1107,6 +1107,57 @@ if kr == 100 then bonus = bonus + 10000 end
 if sr == 100 then bonus = bonus + 10000 end
 if tr == 100 then bonus = bonus + 10000 end
 SetText("PerfectBonusValue", tostring(bonus))
+]]>
+				</OnShow>
+			</Menu>
+			<!-- Victory screen: WL_INTER.C:Victory() — overall run stats shown after beating Burt -->
+			<!-- WL_INTER.C: StartCPMusic(NOAH07_MUS); draws L_BJWINSPIC, W_RATINGPIC, W_PARPIC, -->
+			<!-- W_TIMEPIC, W_KILLSPIC, W_TREASURESPIC, W_SECRETSPIC; IN_Ack(); CharacterCast() -->
+			<Menu Name="Victory" Font="L" TextColor="15" BordColor="218" Music="NOAH07_MUS"
+				X="112" Y="168" Indent="0" Spacing="13">
+				<StatusBar X="0" Y="160" />
+				<!-- WL_INTER.C:VWB_DrawPic(8,8,L_BJWINSPIC) -->
+				<Picture Name="L_BJWINSPIC" X="8" Y="8" />
+				<!-- WL_INTER.C:VWB_DrawPic(104,32,W_RATINGPIC) -->
+				<Picture Name="W_RATINGPIC" X="104" Y="32" />
+				<!-- WL_INTER.C:VWB_DrawPic(120,56,W_PARPIC); par value at PARTIMEX=23,PARTIMEY=7 → (184,56) -->
+				<Picture Name="W_PARPIC" X="120" Y="56" />
+				<Text Id="ParTimeValue" X="184" Y="56" Font="L">0:00:00</Text>
+				<!-- WL_INTER.C:VWB_DrawPic(112,72,W_TIMEPIC); time value at TIMEX=23,TIMEY=9 → (184,72) -->
+				<Picture Name="W_TIMEPIC" X="112" Y="72" />
+				<Text Id="TotalTimeValue" X="184" Y="72" Font="L">0:00:00</Text>
+				<!-- WL_INTER.C:VWB_DrawPic(104,96,W_KILLSPIC); Write(33,12,"%") → (264,96) -->
+				<Picture Name="W_KILLSPIC" X="104" Y="96" />
+				<Text X="264" Y="96" Font="L">%</Text>
+				<!-- WL_INTER.C:VWB_DrawPic(128,112,W_TREASURESPIC); Write(33,14,"%") → (264,112) -->
+				<Picture Name="W_TREASURESPIC" X="128" Y="112" />
+				<Text X="264" Y="112" Font="L">%</Text>
+				<!-- WL_INTER.C:VWB_DrawPic(96,128,W_SECRETSPIC); Write(33,16,"%") → (264,128) -->
+				<Picture Name="W_SECRETSPIC" X="96" Y="128" />
+				<Text X="264" Y="128" Font="L">%</Text>
+				<!-- Ticker values right-aligned to x=264 (where "%" signs are) -->
+				<Ticker Name="AvgKillRatio" X="248" Y="96" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgTreasureRatio" X="248" Y="112" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<Ticker Name="AvgSecretRatio" X="248" Y="128" Font="L" Align="Right"
+					TickSound="ENDBONUS1SND" DoneSound="ENDBONUS2SND" PerfectSound="PERCENT100SND"
+					NoBonusSound="NOBONUSSND" TickInterval="10" />
+				<!-- WL_INTER.C: IN_Ack() — wait for button press, then CharacterCast() -->
+				<Pause>NavigateToMenu("CharacterCast_1")</Pause>
+				<OnShow>
+					<![CDATA[
+SetText("ParTimeValue", FormatTimeLong(GetTotalParTime()))
+SetText("TotalTimeValue", FormatTimeLong(GetTotalTime()))
+local kr = GetAverageKillRatio()
+local tr = GetAverageTreasureRatio()
+local sr = GetAverageSecretRatio()
+QueueDelay(2)
+StartTicker("AvgKillRatio", kr)
+StartTicker("AvgTreasureRatio", tr)
+StartTicker("AvgSecretRatio", sr)
 ]]>
 				</OnShow>
 			</Menu>

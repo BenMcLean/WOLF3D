@@ -662,6 +662,20 @@ public class MenuScriptContext(
 		return $"{minutes}:{secs:D2}";
 	}
 	/// <summary>
+	/// Format a time in seconds as "H:MM:SS".
+	/// WL_INTER.C:Victory — Noah3D displays par time and total time with an hours digit.
+	/// </summary>
+	/// <param name="seconds">Time in seconds</param>
+	/// <returns>Formatted string "H:MM:SS"</returns>
+	public static string FormatTimeLong(double seconds)
+	{
+		int totalSeconds = (int)seconds,
+			hours = totalSeconds / 3600,
+			minutes = (totalSeconds % 3600) / 60,
+			secs = totalSeconds % 60;
+		return $"{hours}:{minutes:D2}:{secs:D2}";
+	}
+	/// <summary>
 	/// Start a ticker animating from 0 to the target value.
 	/// If an active sequence exists, queues a TickerSequenceStep for animated counting.
 	/// Otherwise, sets the value immediately.
@@ -763,6 +777,12 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <returns>Total time in seconds</returns>
 	public double GetTotalTime() => GetVictoryStats().Sum(s => s.ElapsedTics) / (double)Constants.TicsPerSecond;
+	/// <summary>
+	/// Get the total par time across all completed levels in seconds.
+	/// WL_INTER.C:Victory — parsec accumulation for Noah3D par time display.
+	/// </summary>
+	/// <returns>Total par time in seconds</returns>
+	public double GetTotalParTime() => GetVictoryStats().Sum(s => s.ParTime.TotalSeconds);
 	#endregion Accumulated Stats
 	#region High Scores
 	/// <summary>
