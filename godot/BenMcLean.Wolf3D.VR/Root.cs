@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
-using BenMcLean.Wolf3D.Simulator.Lua;
 using BenMcLean.Wolf3D.Assets.Graphics;
 using BenMcLean.Wolf3D.Shared;
 using BenMcLean.Wolf3D.Shared.Menu;
-using BenMcLean.Wolf3D.Shared.Setup;
 using BenMcLean.Wolf3D.Shared.StatusBar;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
 using BenMcLean.Wolf3D.VR.MenuStage;
@@ -111,7 +109,7 @@ public partial class Root : Node3D
 			// Boot to SetupRoom which loads the shareware assets and shows the
 			// DosScreen progress log. After completion, _Process() transitions to
 			// the game selection MenuRoom.
-			SetupRoom setupRoom = new(DisplayMode, System.IO.Path.Combine(GetGamesDir(), "WL1.xml"), isInitialLoad: true);
+			SetupRoom setupRoom = new(DisplayMode, System.IO.Path.Combine(RuntimeOptions.Path, "WL1.xml"), isInitialLoad: true);
 			TransitionToImmediate(setupRoom);
 		}
 		catch (Exception ex)
@@ -199,8 +197,7 @@ public partial class Root : Node3D
 				try
 				{
 					InitializeVRAssets();
-					string gamesDir = GetGamesDir();
-					MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(gamesDir);
+					MenuCollection gameSelectMenu = GameSelectionMenuFactory.Build(RuntimeOptions.Path);
 					MenuRoom selectionRoom = new(DisplayMode)
 					{
 						MenuCollectionOverride = gameSelectMenu,
@@ -411,17 +408,6 @@ public partial class Root : Node3D
 			}
 		}
 	}
-
-	/// <summary>
-	/// Returns the directory containing game XML definition files and game data subdirectories.
-	/// On Android (Quest): /sdcard/WOLF3D — user places game data and XML files here.
-	/// On all other platforms: resolved relative to the executable location.
-	/// </summary>
-	private static string GetGamesDir() =>
-		OS.HasFeature("android")
-			? "/sdcard/WOLF3D"
-			: System.IO.Path.GetFullPath(@"..\..\games");
-
 	/// <summary>
 	/// Returns the current StatusBarController, creating it if needed.
 	/// Creates a fresh controller each time a new game XML is loaded so the state
