@@ -13,7 +13,8 @@ config_version=5
 config/name="BenMcLean.Wolf3D.VR"
 run/main_scene="uid://dhd46tw7ig3ak"
 config/features=PackedStringArray("4.5", "C#", "Mobile")
-config/icon="res://icon.svg"
+config/icon="uid://degrqg6flee8t"
+config/windows_native_icon="res://Resources/icon.ico"
 
 [dotnet]
 
@@ -21,8 +22,11 @@ project/assembly_name="BenMcLean.Wolf3D.VR"
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
+textures/default_filters/use_nearest_mipmap_filter=true
+textures/default_filters/anisotropic_filtering_level=0
 
 [xr]
 
