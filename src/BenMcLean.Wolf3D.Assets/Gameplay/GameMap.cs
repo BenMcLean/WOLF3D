@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets.Gameplay;
@@ -133,12 +135,14 @@ public sealed class GameMap
 					Width = gameMapsReader.ReadUInt16(),
 					Depth = gameMapsReader.ReadUInt16(),
 				};
-				char[] name = new char[16];
-				gameMapsReader.Read(name, 0, name.Length);
-				map.Name = new string(name).Replace("\0", string.Empty).Trim();
-				char[] carmackized = new char[4];
-				gameMapsReader.Read(carmackized, 0, carmackized.Length);
-				bool isCarmackized = new string(carmackized).Equals("!ID!");
+				// ID_CA.H:maptype:name — char name[16], null-terminated, may have garbage after null
+				// Read as raw bytes to guarantee exactly 16 bytes consumed regardless of encoding
+				byte[] nameBytes = gameMapsReader.ReadBytes(16);
+				int nameEnd = Array.IndexOf(nameBytes, (byte)0);
+				if (nameEnd < 0)
+					nameEnd = 16;
+				map.Name = Encoding.ASCII.GetString(nameBytes, 0, nameEnd).Trim();
+				bool isCarmackized = Encoding.ASCII.GetString(gameMapsReader.ReadBytes(4)).Equals("!ID!");
 				// "Note that for Wolfenstein 3-D, a 4-byte signature string ("!ID!") will normally be present directly after the level name. The signature does not appear to be used anywhere, but is useful for distinguishing between v1.0 files (the signature string is missing), and files for v1.1 and later (includes the signature string)."
 				// "Note that for Wolfenstein 3-D v1.0, map files are not carmackized, only RLEW compression is applied."
 				// http://www.shikadi.net/moddingwiki/GameMaps_Format#Map_data_.28GAMEMAPS.29
