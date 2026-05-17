@@ -673,6 +673,16 @@ public class MenuManager
 		// If a presentation sequence is active, process it instead of normal menu input
 		if (_activeSequence is not null && !_activeSequence.IsComplete)
 		{
+			// Cancel takes priority over sequence advancement when an OnCancel is defined.
+			// Without this, Cancel would advance the Pause (running its script) instead of
+			// executing OnCancel — causing e.g. CharacterCast menus to loop infinitely.
+			bool cancelPressed = inputState.CancelPressed || primary.CancelPressed || secondary.CancelPressed;
+			if (cancelPressed && !string.IsNullOrEmpty(menuDef.OnCancel))
+			{
+				_activeSequence = null;
+				ExecuteOnCancel(menuDef);
+				return;
+			}
 			_activeSequence.Update(delta, anyButtonPressed);
 			// Sequence callback (e.g., Pause script) may navigate to a new menu,
 			// which replaces _activeSequence. Null-check before accessing.
