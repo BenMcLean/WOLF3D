@@ -555,9 +555,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (IsDead)
 			return;
 		// Process queued player actions
-		foreach (PlayerAction action in pendingActions)
-			ProcessAction(action);
-		pendingActions.Clear();
+		// Snapshot and clear before iterating: event handlers (e.g., OnNavigateToMenu) may call
+		// QueueAction synchronously during ProcessAction, which would corrupt the foreach enumerator.
+		// Actions queued during processing are deferred to the next tic.
+		int actionCount = pendingActions.Count;
+		for (int i = 0; i < actionCount; i++)
+			ProcessAction(pendingActions[i]);
+		pendingActions.RemoveRange(0, actionCount);
 		// WL_ACT1.C:MoveDoors - update all doors
 		for (int i = 0; i < doors.Count; i++)
 			UpdateDoor(i);
