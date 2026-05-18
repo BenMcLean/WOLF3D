@@ -106,6 +106,7 @@ public partial class SimulatorController : Node3D
 		weapons = weaponsNode ?? throw new ArgumentNullException(nameof(weaponsNode));
 		projectiles = projectilesNode ?? throw new ArgumentNullException(nameof(projectilesNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
+		simulator.HeadSize = Constants.HeadXZ.ToFixedPoint();
 
 		// CRITICAL: Subscribe presentation layers to simulator events BEFORE loading data
 		// This ensures they receive spawn events during initialization

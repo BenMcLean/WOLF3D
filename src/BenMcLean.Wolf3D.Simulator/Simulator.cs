@@ -201,6 +201,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// Based on WL_AGENT.C:GunAttack distance check.
 	/// </summary>
 	public bool UseAccuracyFalloff { get; set; } = true;
+	/// <summary>
+	/// Player collision radius in 16.16 fixed-point units.
+	/// Used to expand the door-blocked check beyond the exact door tile so that a door
+	/// cannot begin closing while the player's body overlaps the doorway.
+	/// VR layer sets this to HeadXZ converted to fixed-point; defaults to 0 (tile-exact).
+	/// </summary>
+	public int HeadSize { get; set; } = 0;
 	// Derived player tile coordinates
 	public ushort PlayerTileX => (ushort)(PlayerX >> 16);
 	public ushort PlayerTileY => (ushort)(PlayerY >> 16);
@@ -727,8 +734,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Check if an actor is standing in the doorway (quick check via spatial index)
 		if (actorAtTile[tileIdx] >= 0)
 			return true;
-		// Check if player is in the doorway
-		if (PlayerTileX == door.TileX && PlayerTileY == door.TileY)
+		// Check if player's body overlaps the doorway, expanded by HeadSize for VR collision radius
+		int doorMinX = door.TileX << 16;
+		int doorMaxX = (door.TileX + 1) << 16;
+		int doorMinY = door.TileY << 16;
+		int doorMaxY = (door.TileY + 1) << 16;
+		if (PlayerX >= doorMinX - HeadSize && PlayerX < doorMaxX + HeadSize
+			&& PlayerY >= doorMinY - HeadSize && PlayerY < doorMaxY + HeadSize)
 			return true;
 		// Check if any spawned bonus object is on the door tile
 		// WL_ACT1.C:773 - actorat check includes static objects (values 1-127)
