@@ -1137,11 +1137,16 @@ void sky() {
 		if (StatusBarRenderer is null || _menuManager is null)
 			return;
 
+		// When CurrentMenuName is null the menus are closing (e.g. ResumeGame() was called).
+		// The fade-to-black has not yet started, so removing the canvas here would make the
+		// status bar vanish visibly. Leave it in place: _ExitTree() removes it cleanly once
+		// the screen is fully black and the scene swap is about to happen.
+		if (string.IsNullOrEmpty(_menuManager.CurrentMenuName))
+			return;
+
 		MenuCollection collection = MenuCollectionOverride
 			?? SharedAssetManager.CurrentGame?.MenuCollection;
-		MenuStatusBarDefinition statusBarDef = !string.IsNullOrEmpty(_menuManager.CurrentMenuName)
-			? collection?.GetMenu(_menuManager.CurrentMenuName)?.StatusBar
-			: null;
+		MenuStatusBarDefinition statusBarDef = collection?.GetMenu(_menuManager.CurrentMenuName)?.StatusBar;
 
 		if (statusBarDef is null)
 		{
