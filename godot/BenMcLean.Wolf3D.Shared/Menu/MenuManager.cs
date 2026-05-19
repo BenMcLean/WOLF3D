@@ -60,6 +60,10 @@ public class MenuManager
 	/// </summary>
 	public string CurrentMenuName => _currentMenuName;
 	/// <summary>
+	/// True while an article is being displayed (CurrentMenuName is null but it is not a close).
+	/// </summary>
+	public bool IsShowingArticle => _currentArticle is not null;
+	/// <summary>
 	/// Fired immediately when the active menu changes, or null when leaving menu mode.
 	/// </summary>
 	public event Action<string> CurrentMenuChanged;

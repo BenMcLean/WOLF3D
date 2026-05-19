@@ -390,6 +390,7 @@ public partial class Root : Node3D
 						InitialDebugMarkersEnabled = _debugMarkersEnabled,
 						InitialCheatModeEnabled = _cheatModeEnabled,
 						InitialUseVoxelWeapons = _useVoxelWeapons,
+						StatusBarRenderer = GetOrCreateStatusBarRenderer(),
 					};
 					// For Victory (episode complete), pass final score for high score check
 					if (request.MenuName == "Victory" && request.AllLevelStats?.Count > 0)
