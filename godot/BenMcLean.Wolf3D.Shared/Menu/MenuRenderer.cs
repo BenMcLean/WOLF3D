@@ -366,12 +366,12 @@ public class MenuRenderer
 				currentY += extraSpacing;
 			// WL_MENU.C:DrawMenu - WindowX=PrintX=item_i->x+item_i->indent
 			float itemX = x + indent;
-			// Determine color based on selection
-			// WL_MENU.C:SetTextColor - HIGHLIGHT vs TEXTCOLOR
-			// Use menu-specific colors if defined, otherwise use defaults from WL_MENU.H
-			Color textColor = isSelected
-				? SharedAssetManager.GetPaletteColor(menuDef.Highlight ?? 0x13)
-				: SharedAssetManager.GetPaletteColor(menuDef.TextColor ?? 0x17);
+			// WL_MENU.C:color_norml[active] / color_hlite[active] — per-item color overrides
+			// TextColor and Highlight on the item mirror the Menus-level attributes.
+			byte colorIndex = isSelected
+				? (item.CustomProperties.TryGetValue("Highlight", out string hStr) && byte.TryParse(hStr, out byte h) ? h : (menuDef.Highlight ?? 0x13))
+				: (item.CustomProperties.TryGetValue("TextColor", out string tcStr) && byte.TryParse(tcStr, out byte tc) ? tc : (menuDef.TextColor ?? 0x17));
+			Color textColor = SharedAssetManager.GetPaletteColor(colorIndex);
 			Label label = new()
 			{
 				Text = item.Text,
@@ -718,34 +718,17 @@ public class MenuRenderer
 		}
 		float textHeight = lines.Length * lineHeight;
 
+		bool isMessage = modal.Kind == ModalDialog.ModalKind.Message;
 		// Size and position the message box (contains only text, no buttons inside)
 		const float boxPad = 8f,   // inner padding for message box
 			btnPad = 4f;   // inner padding for Yes/No boxes
 		float msgBoxW = maxLineWidth + boxPad * 2f,
-			msgBoxH = textHeight + boxPad * 2f,
-		// Size the Yes/No button boxes
-			yesW = font.GetStringSize("Yes", fontSize: (int)fontSize).X,
-			noW = font.GetStringSize("No", fontSize: (int)fontSize).X,
-			yesBoxW = yesW + btnPad * 2f,
-			noBoxW = noW + btnPad * 2f,
-			btnBoxH = lineHeight + btnPad * 2f,
-		// Center the whole group (message box + buttons) vertically on 320x200
-		// Buttons sit flush against the bottom of the message box (outside it)
-			totalH = msgBoxH + btnBoxH,
+			msgBoxH = textHeight + boxPad * 2f;
+		// For confirm dialogs, the Yes/No button row sits flush below the message box.
+		// For message-only dialogs, only the message box is shown.
+		float totalH = isMessage ? msgBoxH : msgBoxH + lineHeight + btnPad * 2f,
 			msgBoxY = Mathf.Round((Constants.MenuScreenHeight - totalH) / 2f),
-			msgBoxX = Mathf.Round((Constants.MenuScreenWidth - msgBoxW) / 2f),
-			btnBoxY = msgBoxY + msgBoxH + 1f,
-		// Yes is left-aligned with the message box; No is right-aligned
-			yesBoxX = msgBoxX,
-			noBoxX = msgBoxX + msgBoxW - noBoxW;
-		// Semi-transparent dark overlay to dim the menu behind the dialog
-		_canvas.AddChild(new ColorRect
-		{
-			Color = new Color(0f, 0f, 0f, 0.5f),
-			Position = Vector2.Zero,
-			Size = new Vector2(Constants.MenuScreenWidth, Constants.MenuScreenHeight),
-			ZIndex = 48,
-		});
+			msgBoxX = Mathf.Round((Constants.MenuScreenWidth - msgBoxW) / 2f);
 		// Message box: fill + single PixelRect-style bevel (NWColor top/left, SEColor bottom/right)
 		CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, msgBoxX, msgBoxY, msgBoxW, msgBoxH, bgColor, colorNW, colorSE, 50, 51);
 		// Message text
@@ -763,34 +746,46 @@ public class MenuRenderer
 				FontColor = textColor,
 			}
 		});
-		// "Yes" box — outside/below the message box, left-aligned with it
-		CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, yesBoxX, btnBoxY, yesBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
-		_canvas.AddChild(new Label
+		if (!isMessage)
 		{
-			Text = "Yes",
-			Theme = theme,
-			Position = new Vector2(yesBoxX + btnPad, btnBoxY + btnPad),
-			ZIndex = 60,
-			LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
-		});
-		// "No" box — outside/below the message box, right-aligned with it
-		CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
-		_canvas.AddChild(new Label
-		{
-			Text = "No",
-			Theme = theme,
-			Position = new Vector2(noBoxX + btnPad, btnBoxY + btnPad),
-			ZIndex = 60,
-			LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
-		});
-		// Set button bounds for pointer hit-testing
-		const float hitExtra = 2f;
-		modal.YesButtonBounds = new Rect2(
-			yesBoxX - hitExtra, btnBoxY - hitExtra,
-			yesBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
-		modal.NoButtonBounds = new Rect2(
-			noBoxX - hitExtra, btnBoxY - hitExtra,
-			noBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
+			float btnBoxH = lineHeight + btnPad * 2f,
+				btnBoxY = msgBoxY + msgBoxH + 1f,
+				yesW = font.GetStringSize("Yes", fontSize: (int)fontSize).X,
+				noW = font.GetStringSize("No", fontSize: (int)fontSize).X,
+				yesBoxW = yesW + btnPad * 2f,
+				noBoxW = noW + btnPad * 2f,
+			// Yes is left-aligned with the message box; No is right-aligned
+				yesBoxX = msgBoxX,
+				noBoxX = msgBoxX + msgBoxW - noBoxW;
+			// "Yes" box — outside/below the message box, left-aligned with it
+			CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, yesBoxX, btnBoxY, yesBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
+			_canvas.AddChild(new Label
+			{
+				Text = "Yes",
+				Theme = theme,
+				Position = new Vector2(yesBoxX + btnPad, btnBoxY + btnPad),
+				ZIndex = 60,
+				LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
+			});
+			// "No" box — outside/below the message box, right-aligned with it
+			CanvasLayoutRenderHelper.DrawBevelledBox(_canvas, noBoxX, btnBoxY, noBoxW, btnBoxH, bgColor, colorNW, colorSE, 53, 54);
+			_canvas.AddChild(new Label
+			{
+				Text = "No",
+				Theme = theme,
+				Position = new Vector2(noBoxX + btnPad, btnBoxY + btnPad),
+				ZIndex = 60,
+				LabelSettings = new LabelSettings { Font = font, FontSize = (int)fontSize, FontColor = textColor },
+			});
+			// Set button bounds for pointer hit-testing
+			const float hitExtra = 2f;
+			modal.YesButtonBounds = new Rect2(
+				yesBoxX - hitExtra, btnBoxY - hitExtra,
+				yesBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
+			modal.NoButtonBounds = new Rect2(
+				noBoxX - hitExtra, btnBoxY - hitExtra,
+				noBoxW + hitExtra * 2f, btnBoxH + hitExtra * 2f);
+		}
 	}
 	/// <summary>
 	/// Checks if a position is within the visible screen area.

@@ -1128,12 +1128,14 @@ public class MenuManager
 	}
 	/// <summary>
 	/// Show an informational message.
-	/// Phase 1: Placeholder implementation.
+	/// Displays a message box with no Yes/No buttons; any key or button press dismisses it.
+	/// WL_MENU.C:Message() — draws a box then calls IN_Ack() to wait for any keypress.
 	/// </summary>
 	/// <param name="message">Message to display</param>
 	private void ShowMessage(string message)
 	{
-		// TODO: Implement actual message dialog using ModalDialog
+		_activeModal = new ModalDialog(message, ModalDialog.ModalKind.Message);
+		RefreshMenu();
 	}
 	#endregion UI Dialog Helpers
 }

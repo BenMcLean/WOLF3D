@@ -252,7 +252,8 @@
 				</MenuItem>
 				<PresentationMenuItem />
 				<!-- WL_MENU.C:CP_ReadThis — shows HELPART.WL1 help text, WL1 shareware only -->
-				<MenuItem Text="Read This!">
+				<!-- WL_MENU.C:MainMenu active=2 → color_norml[2]=READCOLOR=0x4a(74), color_hlite[2]=READHCOLOR=0x47(71) -->
+				<MenuItem Text="Read This!" TextColor="74" Highlight="71">
 					NavigateToArticle("ReadThis")
 				</MenuItem>
 				<MenuItem Text="View Scores">
@@ -303,21 +304,22 @@
 					SetEpisode(1)
 					NavigateToMenu("NewGame")
 				</MenuItem>
-				<!-- WL_MENU.C:314-327: Episodes 2-6 with active=0 for WL1 shareware -->
+				<!-- WL_MENU.C:314-327: Episodes 2-6 with active=3 for WL1 shareware -->
+				<!-- WL_MENU.C:color_norml[3]=0x6b(107), color_hlite[3]=0x67(103) — dim "buy me" color -->
 				<!-- WL_MENU.C:1434-1441: When !EpisodeSelect[which/2], show ordering message -->
-				<MenuItem Text="Episode 2&#10;Operation: Eisenfaust" SelectSound="NOWAYSND">
+				<MenuItem Text="Episode 2&#10;Operation: Eisenfaust" SelectSound="NOWAYSND" TextColor="107" Highlight="103">
 					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
 				</MenuItem>
-				<MenuItem Text="Episode 3&#10;Die, Fuhrer, Die!" SelectSound="NOWAYSND">
+				<MenuItem Text="Episode 3&#10;Die, Fuhrer, Die!" SelectSound="NOWAYSND" TextColor="107" Highlight="103">
 					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
 				</MenuItem>
-				<MenuItem Text="Episode 4&#10;A Dark Secret" SelectSound="NOWAYSND">
+				<MenuItem Text="Episode 4&#10;A Dark Secret" SelectSound="NOWAYSND" TextColor="107" Highlight="103">
 					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
 				</MenuItem>
-				<MenuItem Text="Episode 5&#10;Trail of the Madman" SelectSound="NOWAYSND">
+				<MenuItem Text="Episode 5&#10;Trail of the Madman" SelectSound="NOWAYSND" TextColor="107" Highlight="103">
 					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
 				</MenuItem>
-				<MenuItem Text="Episode 6&#10;Confrontation" SelectSound="NOWAYSND">
+				<MenuItem Text="Episode 6&#10;Confrontation" SelectSound="NOWAYSND" TextColor="107" Highlight="103">
 					ShowMessage('Please select "Read This!"\nfrom the Options menu to\nfind out how to order this\nepisode from Apogee.')
 				</MenuItem>
 				<OnCancel>NavigateToMenu("Main")</OnCancel>

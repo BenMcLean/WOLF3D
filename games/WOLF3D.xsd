@@ -1123,6 +1123,24 @@
 							</xs:documentation>
 						</xs:annotation>
 					</xs:attribute>
+					<xs:attribute name="TextColor" type="xs:unsignedByte">
+						<xs:annotation>
+							<xs:documentation>
+								Normal (unselected) text color override for this item. Mirrors the Menus-level TextColor attribute.
+								WL_MENU.C:color_norml[active] — active=3 items use 0x6b (107) instead of TEXTCOLOR (0x17).
+								Absent: inherits menu TextColor.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="Highlight" type="xs:unsignedByte">
+						<xs:annotation>
+							<xs:documentation>
+								Selected/highlighted text color override for this item. Mirrors the Menus-level Highlight attribute.
+								WL_MENU.C:color_hlite[active] — active=3 items use 0x67 (103) instead of HIGHLIGHT (0x13).
+								Absent: inherits menu Highlight.
+							</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
 				</xs:extension>
 			</xs:simpleContent>
 		</xs:complexType>
