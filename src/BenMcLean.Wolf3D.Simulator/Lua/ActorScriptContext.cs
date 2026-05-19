@@ -777,16 +777,6 @@ public class ActorScriptContext(
 	/// Used throughout Wolf3D for reaction times, AI decisions, etc.
 	/// </summary>
 	public int US_RndT() => rng.Next(256);
-	/// <summary>
-	/// Bitwise right shift for Lua (value >> bits).
-	/// Lua doesn't have native bit shift operators, so we provide them here.
-	/// </summary>
-	public int BitShiftRight(int value, int bits) => value >> bits;
-	/// <summary>
-	/// Bitwise left shift for Lua (value << bits).
-	/// Lua doesn't have native bit shift operators, so we provide them here.
-	/// </summary>
-	public int BitShiftLeft(int value, int bits) => value << bits;
 	#endregion Utilities
 	#region Item Drops
 	/// <summary>

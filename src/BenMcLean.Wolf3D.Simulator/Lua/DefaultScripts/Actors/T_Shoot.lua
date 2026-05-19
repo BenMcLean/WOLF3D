@@ -28,11 +28,19 @@ if actorType == "SS" or actorType == "Hans"
 end
 
 -- WL_ACT2.C:4181-4194 - Calculate hit chance based on distance.
--- Original branches on thrustspeed >= RUNSPEED (player running vs. standing).
--- Player speed tracking not yet implemented; use standing-player formula (256 base)
--- which is more dangerous and matches the typical peek-around-corner scenario.
--- TODO: expose player thrust speed and use 160 base when player is running.
-local hitchance = 256 - (dist * 16)
+-- Original branches on two conditions:
+--   thrustspeed >= RUNSPEED: base 160 (running player, harder to hit)
+--   thrustspeed <  RUNSPEED: base 256 (standing player, easier to hit)
+--   ob->flags & FL_VISABLE:  dist*16 penalty (player can see enemy, more dodge room)
+--   not FL_VISABLE:          dist*8  penalty (enemy off-screen, less dodge room)
+--
+-- INTENTIONAL DEVIATION FROM ORIGINAL:
+-- We always use the most player-advantageous branch: base 160 with dist*16 penalty
+-- (running + visible). Rationale: in VR, teleport-locomotion players cannot naturally
+-- benefit from the running dodge bonus, so we apply it unconditionally so that teleport
+-- and smooth-motion players receive equal treatment. The FL_VISABLE distinction is also
+-- dropped for the same reason (VR has no equivalent to a 2.5D sprite visibility check).
+local hitchance = 160 - (dist * 16)
 
 -- WL_ACT2.C:4196-4210 - Roll for hit and calculate damage
 if US_RndT() < hitchance then
