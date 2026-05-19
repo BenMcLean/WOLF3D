@@ -261,16 +261,6 @@ public class ActorDefinition
 	/// </summary>
 	public bool Ambush { get; set; }
 	/// <summary>
-	/// Sound to play when this actor fires. WL_ACT2.C:T_Shoot switch(ob->obclass).
-	/// Defaults to NAZIFIRESND if null.
-	/// </summary>
-	public string ShootSound { get; set; }
-	/// <summary>
-	/// Whether this actor type gets the aim bonus (2/3 distance) in T_Shoot.
-	/// WL_ACT2.C:4177 - only ssobj and bossobj get this bonus.
-	/// </summary>
-	public bool AimBonus { get; set; }
-	/// <summary>
 	/// WL_STATE.C:CheckSight #ifndef GAMEVER_NOAH3D
 	/// When true, skip the facing direction check — actor has 360° vision.
 	/// Used for Noah's Ark (S3DNA) animals where the direction check was
@@ -325,8 +315,6 @@ public class ActorDefinition
 			PainState1 = element.Attribute("Pain1")?.Value,
 			InitialState = element.Attribute("Stand")?.Value,
 			Ambush = element.IsTrue("Ambush"),
-			ShootSound = element.Attribute("ShootSound")?.Value,
-			AimBonus = element.IsTrue("AimBonus"),
 			FullVision = element.IsTrue("FullVision"),
 			ReactionMin = reactionMin,
 			ReactionMax = reactionMax,

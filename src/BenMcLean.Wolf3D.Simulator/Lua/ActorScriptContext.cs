@@ -395,18 +395,6 @@ public class ActorScriptContext(
 	/// </summary>
 	public string GetAttackState() =>
 		simulator.GetActorAttackState(actor.ActorType);
-	/// <summary>
-	/// Get the shoot sound name for this actor type. WL_ACT2.C:T_Shoot switch(ob->obclass).
-	/// Returns null if not configured (T_Shoot.lua should default to NAZIFIRESND).
-	/// </summary>
-	public string GetShootSound() =>
-		simulator.GetActorShootSound(actor.ActorType);
-	/// <summary>
-	/// Whether this actor type gets the aim bonus (2/3 distance) in T_Shoot.
-	/// WL_ACT2.C:4177 - only ssobj and bossobj.
-	/// </summary>
-	public bool HasAimBonus() =>
-		simulator.GetActorHasAimBonus(actor.ActorType);
 	#endregion Line of Sight
 	#region Pathfinding & Navigation
 	/// <summary>

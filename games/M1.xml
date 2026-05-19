@@ -2238,7 +2238,7 @@ return false
 				Speed="0" Alive="false" Mark="false" Next="s_spectrewake" />
 			<Actor Name="Trans" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertTrans"
 				Stand="s_transstand" Chase="s_transchase1" Attack="s_transshoot1"
-				Death="s_transdie0" Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true" />
+				Death="s_transdie0" Ambush="true" />
 			<State Name="s_transstand" Shape="SPR_TRANS_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_transstand" />
 			<State Name="s_transchase1" Shape="SPR_TRANS_W1" Tics="10" Think="T_Chase" Speed="1536"
@@ -2282,8 +2282,7 @@ return false
 			<State Name="s_transshoot8" Shape="SPR_TRANS_SHOOT1" Tics="10" Speed="0"
 				Next="s_transchase1" />
 			<Actor Name="Uber" HP="1050,1150,1250,1400" Reaction="1" Stand="s_uberstand"
-				Chase="s_uberchase1" Attack="s_ubershoot1" Death="s_uberdie0" Ambush="true"
-				ShootSound="BOSSFIRESND" AimBonus="true" />
+				Chase="s_uberchase1" Attack="s_ubershoot1" Death="s_uberdie0" Ambush="true" />
 			<State Name="s_uberstand" Shape="SPR_UBER_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_uberstand" />
 			<State Name="s_uberchase1" Shape="SPR_UBER_W1" Tics="10" Think="T_Chase" Speed="3000"
@@ -2328,7 +2327,7 @@ return false
 				Next="s_uberchase1" />
 			<Actor Name="Wilhelm" HP="950,1050,1150,1300" Reaction="1" OnAlert="A_AlertWilhelm"
 				Stand="s_willstand" Chase="s_willchase1" Attack="s_willshoot1" Death="s_willdie1"
-				Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true" />
+				Ambush="true" />
 			<State Name="s_willstand" Shape="SPR_WILL_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_willstand" />
 			<State Name="s_willchase1" Shape="SPR_WILL_W1" Tics="10" Think="T_Gift" Speed="2048"
@@ -2369,7 +2368,7 @@ return false
 				Next="s_willchase1" />
 			<Actor Name="Death" HP="1250,1350,1450,1600" Reaction="1" OnAlert="A_AlertKnight"
 				Stand="s_deathstand" Chase="s_deathchase1" Attack="s_deathshoot1"
-				Death="s_deathdie1" Ambush="true" ShootSound="BOSSFIRESND" AimBonus="true" />
+				Death="s_deathdie1" Ambush="true" />
 			<State Name="s_deathstand" Shape="SPR_DEATH_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_deathstand" />
 			<State Name="s_deathchase1" Shape="SPR_DEATH_W1" Tics="10" Think="T_Gift" Speed="2048"

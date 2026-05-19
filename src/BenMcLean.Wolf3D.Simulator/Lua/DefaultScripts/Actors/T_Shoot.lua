@@ -19,8 +19,11 @@ local dist = dx
 if dy > dx then dist = dy end
 
 -- WL_ACT2.C:4177-4179 - SS and bosses are better shots (2/3 distance)
--- Controlled by AimBonus="true" on the Actor element in the game XML.
-if HasAimBonus() then
+-- switch(ob->obclass): only ssobj (SS) and bossobj (Hans) get this bonus.
+-- N3D equivalents: Antelope (ssobj), Carl the Camel (bossobj).
+local actorType = GetActorType()
+if actorType == "SS" or actorType == "Hans"
+	or actorType == "Antelope" or actorType == "Carl the Camel" then
 	dist = (dist * 2) / 3
 end
 
@@ -47,16 +50,27 @@ if US_RndT() < hitchance then
 end
 
 -- WL_ACT2.C:4219-4256 - Play appropriate firing sound.
--- Sound name comes from ShootSound attribute on the Actor XML element.
--- Defaults to NAZIFIRESND (guards, officers, mutants, gretelobj).
-local shootSound = GetShootSound()
-if shootSound ~= nil and shootSound ~= "" then
-	if shootSound == "NAZIFIRESND" or shootSound == "SSFIRESND" or shootSound == "BOSSFIRESND" then
-		shootSound = ResolveSound(shootSound, "D_SPITSND")
-	elseif shootSound == "MISSILEFIRESND" or shootSound == "SCHABBSTHROWSND" then
-		shootSound = ResolveSound(shootSound, "D_COCTHRSND")
-	end
-	PlayLocalSound(shootSound)
+-- WL_ACT2.C:switch(ob->obclass) maps enemy class to sound.
+local shootSound
+if actorType == "SS" or actorType == "Antelope" then
+	-- case ssobj
+	shootSound = ResolveSound("SSFIRESND", "D_SPITSND")
+elseif actorType == "Hans" or actorType == "MechaHitler" or actorType == "Hitler"
+	or actorType == "Carl the Camel" or actorType == "Burt the Bear"
+	or actorType == "Trans" or actorType == "Wilhelm" or actorType == "Death" then
+	-- case bossobj / mechahitlerobj / realhitlerobj (+ Spear bosses that fire similarly)
+	shootSound = ResolveSound("BOSSFIRESND", "D_SPITSND")
+elseif actorType == "Schabbs" or actorType == "Kerry the Kangaroo" then
+	-- case schabbobj
+	shootSound = ResolveSound("SCHABBSTHROWSND", "D_COCTHRSND")
+elseif actorType == "FakeHitler" then
+	-- case fakeobj
+	shootSound = ResolveSound("FLAMETHROWERSND", "D_SPITSND")
+elseif actorType == "Giftmacher" or actorType == "FatFace" or actorType == "Ernie the Elephant" then
+	-- case giftobj / fatobj
+	shootSound = ResolveSound("MISSILEFIRESND", "D_COCTHRSND")
 else
-	PlayLocalSound(ResolveSound("NAZIFIRESND", "D_SPITSND"))
+	-- default: guards, officers, mutants, Gretel, etc.
+	shootSound = ResolveSound("NAZIFIRESND", "D_SPITSND")
 end
+PlayLocalSound(shootSound)

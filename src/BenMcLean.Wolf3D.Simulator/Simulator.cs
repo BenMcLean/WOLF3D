@@ -4019,24 +4019,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		: null;
 
 	/// <summary>
-	/// Returns the shoot sound name for the given actor type.
-	/// WL_ACT2.C:T_Shoot switch(ob->obclass) selects sound; this is the data-driven equivalent.
-	/// Returns null if actor type not found (caller should default to NAZIFIRESND).
-	/// </summary>
-	public string GetActorShootSound(string actorType) =>
-		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
-		? def.ShootSound
-		: null;
-
-	/// <summary>
-	/// Returns whether the given actor type gets the aim bonus (2/3 distance) in T_Shoot.
-	/// WL_ACT2.C:4177 - only ssobj and bossobj.
-	/// </summary>
-	public bool GetActorHasAimBonus(string actorType) =>
-		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
-		&& def.AimBonus;
-
-	/// <summary>
 	/// Returns whether the given actor type has 360° vision (skips facing direction check).
 	/// WL_STATE.C:CheckSight #ifndef GAMEVER_NOAH3D — for Noah's Ark, the direction check
 	/// is completely skipped, giving all animals 360° detection.

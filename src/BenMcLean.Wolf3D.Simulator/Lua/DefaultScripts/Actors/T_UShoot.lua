@@ -23,17 +23,16 @@ if CheckLine() then
 	end
 end
 
-local shootSound = GetShootSound()
-if shootSound ~= nil and shootSound ~= "" then
-	if shootSound == "NAZIFIRESND" or shootSound == "SSFIRESND" or shootSound == "BOSSFIRESND" then
-		shootSound = ResolveSound(shootSound, "D_SPITSND")
-	elseif shootSound == "MISSILEFIRESND" or shootSound == "SCHABBSTHROWSND" then
-		shootSound = ResolveSound(shootSound, "D_COCTHRSND")
-	end
-	PlayLocalSound(shootSound)
+-- WL_ACT2.C:switch(ob->obclass): uberobj equivalent fires boss sound.
+local actorType = GetActorType()
+local shootSound
+if actorType == "Uber" then
+	-- uberobj - fires with boss sound
+	shootSound = ResolveSound("BOSSFIRESND", "D_SPITSND")
 else
-	PlayLocalSound(ResolveSound("NAZIFIRESND", "D_SPITSND"))
+	shootSound = ResolveSound("NAZIFIRESND", "D_SPITSND")
 end
+PlayLocalSound(shootSound)
 
 if CalculateDistanceToPlayer() <= 1 then
 	DamagePlayer(10)

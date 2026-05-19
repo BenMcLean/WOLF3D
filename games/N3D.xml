@@ -2759,8 +2759,7 @@ end
 				Mark="false" />
 			<Actor Name="Antelope" HP="25,25,25,25" Reaction="1-43" OnAlert="A_AlertAntelope"
 				Stand="s_ssstand" Chase="s_sschase1" Attack="s_ssshoot1" Death="s_ssdie1"
-				Pain="s_sspain" Pain1="s_sspain1" ShootSound="D_SPITSND" AimBonus="true"
-				FullVision="true" />
+				Pain="s_sspain" Pain1="s_sspain1" FullVision="true" />
 			<State Name="s_ssstand" Rotate="true" Shape="SPR_SS_W1_1" Tics="0" Think="T_Stand"
 				Next="s_ssstand" />
 			<State Name="s_sspath1" Rotate="true" Shape="SPR_SS_W1_1" Tics="20" Think="T_Path"
@@ -2810,7 +2809,7 @@ end
 				Mark="false" />
 			<Actor Name="Carl the Camel" HP="150,150,150,150" Reaction="1" OnAlert="A_AlertCamel"
 				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
-				Ambush="true" ShootSound="D_SPITSND" AimBonus="true" FullVision="true" />
+				Ambush="true" FullVision="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand"
 				Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="1536"
@@ -2911,8 +2910,7 @@ end
 				Next="s_schabbchase1" />
 			<Actor Name="Kerry the Kangaroo" HP="400,400,400,400" Reaction="1-43"
 				OnAlert="A_AlertKangaroo" Stand="s_giftstand" Chase="s_giftchase1"
-				Attack="s_giftshoot1" Death="s_giftdie1" ShootSound="D_COCTHRSND"
-				FullVision="true" />
+				Attack="s_giftshoot1" Death="s_giftdie1" FullVision="true" />
 			<State Name="s_giftstand" Shape="SPR_GIFT_W1" Tics="0" Think="T_Stand"
 				Next="s_giftstand" />
 			<State Name="s_giftchase1" Shape="SPR_GIFT_W1" Tics="10" Think="T_Gift"
@@ -2938,7 +2936,7 @@ end
 				Next="s_giftchase1" />
 			<Actor Name="Ernie the Elephant" HP="450,450,450,450" Reaction="1-43"
 				OnAlert="A_AlertElephant" Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1"
-				Death="s_fatdie1" ShootSound="D_COCTHRSND" FullVision="true" />
+				Death="s_fatdie1" FullVision="true" />
 			<State Name="s_fatstand" Shape="SPR_FAT_W1" Tics="0" Think="T_Stand" Next="s_fatstand" />
 			<State Name="s_fatchase1" Shape="SPR_FAT_W1" Tics="10" Think="T_Fat" Next="s_fatchase1s" />
 			<State Name="s_fatchase1s" Shape="SPR_FAT_W1" Tics="3" Next="s_fatchase2" />
@@ -2971,7 +2969,7 @@ end
 				Next="s_fatchase1" />
 			<Actor Name="Burt the Bear" HP="500,500,500,500" Reaction="1-43" OnAlert="A_AlertBear"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
-				Death="s_mechadie1" ShootSound="D_SPITSND" FullVision="true" />
+				Death="s_mechadie1" FullVision="true" />
 			<State Name="s_mechastand" Shape="SPR_MECHA_W1" Tics="0" Think="T_Stand"
 				Next="s_mechastand" />
 			<State Name="s_mechachase1" Shape="SPR_MECHA_W1" Tics="10" Think="T_Chase"
@@ -3153,7 +3151,8 @@ if dy < 0 then dy = -dy end
 local dist = dx
 if dy > dx then dist = dy end
 
-if HasAimBonus() then
+local actorType = GetActorType()
+if actorType == "Antelope" or actorType == "Carl the Camel" then
 	dist = (dist * 2) / 3
 end
 
@@ -3175,17 +3174,17 @@ if US_RndT() < hitchance then
 	DamagePlayer(damage)
 end
 
-local shootSound = GetShootSound()
-if shootSound ~= nil and shootSound ~= "" then
-	if shootSound == "NAZIFIRESND" or shootSound == "SSFIRESND" or shootSound == "BOSSFIRESND" then
-		shootSound = ResolveSound(shootSound, "D_SPITSND")
-	elseif shootSound == "MISSILEFIRESND" or shootSound == "SCHABBSTHROWSND" then
-		shootSound = ResolveSound(shootSound, "D_COCTHRSND")
-	end
-	PlayLocalSound(shootSound)
+local shootSound
+if actorType == "Antelope" then
+	shootSound = ResolveSound("SSFIRESND", "D_SPITSND")
+elseif actorType == "Carl the Camel" or actorType == "Burt the Bear" then
+	shootSound = ResolveSound("BOSSFIRESND", "D_SPITSND")
+elseif actorType == "Kerry the Kangaroo" or actorType == "Ernie the Elephant" then
+	shootSound = ResolveSound("SCHABBSTHROWSND", "D_COCTHRSND")
 else
-	PlayLocalSound(ResolveSound("NAZIFIRESND", "D_SPITSND"))
+	shootSound = ResolveSound("NAZIFIRESND", "D_SPITSND")
 end
+PlayLocalSound(shootSound)
 ]]>
 			</Function>
 			<Function Name="T_UShoot">
@@ -3218,17 +3217,8 @@ if CheckLine() then
 	end
 end
 
-local shootSound = GetShootSound()
-if shootSound ~= nil and shootSound ~= "" then
-	if shootSound == "NAZIFIRESND" or shootSound == "SSFIRESND" or shootSound == "BOSSFIRESND" then
-		shootSound = ResolveSound(shootSound, "D_SPITSND")
-	elseif shootSound == "MISSILEFIRESND" or shootSound == "SCHABBSTHROWSND" then
-		shootSound = ResolveSound(shootSound, "D_COCTHRSND")
-	end
-	PlayLocalSound(shootSound)
-else
-	PlayLocalSound(ResolveSound("NAZIFIRESND", "D_SPITSND"))
-end
+-- No Ubermutant equivalent in N3D; BOSSFIRESND falls back to D_SPITSND
+PlayLocalSound(ResolveSound("BOSSFIRESND", "D_SPITSND"))
 
 if CalculateDistanceToPlayer() <= 1 then
 	DamagePlayer(10)
