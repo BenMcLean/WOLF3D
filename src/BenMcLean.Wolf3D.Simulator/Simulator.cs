@@ -4162,8 +4162,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				return false;
 		}
 
-		// 5. Check for player - actors cannot move onto tiles the player occupies
-		// WL_STATE.C:TryWalk checks player->tilex, player->tiley
+		// 5. Actors cannot path into the player's tile (player not in actorat; checked separately)
 		if (PlayerTileX == x && PlayerTileY == y)
 			return false;
 

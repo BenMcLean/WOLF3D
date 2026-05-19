@@ -113,7 +113,8 @@ public class ActorScriptContext(
 	/// If TryWalk fails (blocked), sets ob->dir = nodir (null in C#).
 	/// NOTE: This updates actor.TileX/TileY to DESTINATION tile (ob->tilex/tiley).
 	/// </summary>
-	public void SelectPathDir()
+	/// <param name="ignorePlayer">If true, allow movement into the player's tile (BJ victory run only).</param>
+	public void SelectPathDir(bool ignorePlayer = false)
 	{
 		// WL_ACT2.C:4050 - Read patrol arrow at current tile (optional turn marker)
 		if (simulator.TryGetPatrolDirection(actor.TileX, actor.TileY, out Direction direction))
@@ -152,7 +153,12 @@ public class ActorScriptContext(
 				// Keep the destination tile coordinates and direction
 				return;
 			}
-			if (!simulator.IsTileNavigable(actor.TileX, actor.TileY))
+			bool destBlocked = !simulator.IsTileNavigable(actor.TileX, actor.TileY);
+			// ignorePlayer: BJ victory run passes through the player's tile (WL_ACT2.C:SpawnBJVictory)
+			if (destBlocked && ignorePlayer
+				&& simulator.PlayerTileX == actor.TileX && simulator.PlayerTileY == actor.TileY)
+				destBlocked = false;
+			if (destBlocked)
 			{
 				// WL_ACT2.C:4061 - Blocked by wall/actor, revert position and set dir = nodir
 				actor.TileX = oldTileX;

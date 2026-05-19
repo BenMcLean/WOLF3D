@@ -24,8 +24,9 @@ while move > 0 do
 		return
 	end
 
-	-- Advance to next tile (C# SelectPathDir keeps north direction if no patrol arrow)
-	SelectPathDir()
+	-- Advance to next tile; ignorePlayer=true because BJ runs through the player's tile
+	-- WL_ACT2.C:TryWalk uses actorat[] only — player is not in actorat, so this is faithful
+	SelectPathDir(true)
 
 	if not HasDirection() then
 		return  -- Blocked unexpectedly before counter ran out

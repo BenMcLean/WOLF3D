@@ -1,6 +1,11 @@
 -- WL_ACT2.C:SpawnBJVictory - BJ initialization action, runs once at spawn time.
 -- Calculates corridor length for T_BJRun, then fires VictoryStarted to teleport player.
 -- ReactionTimer (ob->temp1) holds tiles remaining; decremented by T_BJRun each tile crossed.
+--
+-- Guard: SpawnActorAtTile fires this at spawn, then UpdateActor fires it again when s_bjstart
+-- expires. By that second call, PlacePlayer has moved the simulator's player position to the
+-- viewing tile, so the runTiles calculation would compute 0 and clobber the correct value.
+if GetReactionTimer() ~= 0 then return end
 
 local playerX = GetPlayerTileX()
 local playerY = GetPlayerTileY()
