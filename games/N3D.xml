@@ -2452,6 +2452,8 @@ SetValue("Weapon2", GetMax("Weapon2"))
 SetValue("Weapon3", GetMax("Weapon3"))
 SetValue("Weapon4", GetMax("Weapon4"))
 SetValue("Weapon5", GetMax("Weapon5"))
+SetValue("Gold Key", 1)
+SetValue("Silver Key", 1)
 RevealEntireMap()
 PlaySound("D_KEYSND")
 ]]>
