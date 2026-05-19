@@ -4005,5 +4005,14 @@ end
 			<Color Hex="#FCFCFC" />
 		</Palette>
 	</Palettes>
+	<DefaultHighScores>
+		<Score Name="Noah"    Score="10000" Completed="1" Episode="0" />
+		<Score Name="Eve"     Score="10000" Completed="1" Episode="0" />
+		<Score Name="Moses"   Score="10000" Completed="1" Episode="0" />
+		<Score Name="Ruth"    Score="10000" Completed="1" Episode="0" />
+		<Score Name="Adam"    Score="10000" Completed="1" Episode="0" />
+		<Score Name="Deborah" Score="10000" Completed="1" Episode="0" />
+		<Score Name="Abraham" Score="10000" Completed="1" Episode="0" />
+	</DefaultHighScores>
 </Game>
 

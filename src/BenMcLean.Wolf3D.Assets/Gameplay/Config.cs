@@ -120,9 +120,8 @@ public sealed class Config
 	public Config(ConfigFormat format = ConfigFormat.Wolf3D)
 	{
 		Format = format;
-		Scores = new HighScoreEntry[MaxScores];
-		for (int i = 0; i < MaxScores; i++)
-			Scores[i] = new HighScoreEntry();
+		// ID_US_1.C:Scores - populate with original default high score table
+		Scores = DefaultWolf3DScores();
 		// Match the classic auto-detected baseline when no CONFIG file exists.
 		SoundMode = SDMode.AdLib;
 		MusicEnabled = true;
@@ -130,6 +129,17 @@ public sealed class Config
 		// Initialize ButtonScan with correct size for format
 		ButtonScan = new short[format == ConfigFormat.NoahsArk ? 10 : 8];
 	}
+	// ID_US_1.C:Scores - Wolf3D v1.4 default high score table
+	private static HighScoreEntry[] DefaultWolf3DScores() =>
+	[
+		new() { Name = "id software-'92", Score = 10000, Completed = 1, Episode = 0 },
+		new() { Name = "Adrian Carmack",  Score = 10000, Completed = 1, Episode = 0 },
+		new() { Name = "John Carmack",    Score = 10000, Completed = 1, Episode = 0 },
+		new() { Name = "Kevin Cloud",     Score = 10000, Completed = 1, Episode = 0 },
+		new() { Name = "Tom Hall",        Score = 10000, Completed = 1, Episode = 0 },
+		new() { Name = "John Romero",     Score = 10000, Completed = 1, Episode = 0 },
+		new() { Name = "Jay Wilbur",      Score = 10000, Completed = 1, Episode = 0 },
+	];
 	/// <summary>
 	/// Loads a complete CONFIG file from a stream.
 	/// </summary>

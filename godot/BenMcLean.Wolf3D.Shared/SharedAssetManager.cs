@@ -649,8 +649,25 @@ public static class SharedAssetManager
 		}
 		else
 		{
-			// Create default config if file doesn't exist
 			Config = new Assets.Gameplay.Config(format);
+			// Override default scores with any defined in the XML
+			System.Xml.Linq.XElement defaultHighScores = CurrentGame.XML.Element("DefaultHighScores");
+			if (defaultHighScores != null)
+			{
+				System.Xml.Linq.XElement[] scoreElements = [.. defaultHighScores.Elements("Score")];
+				for (int i = 0; i < Assets.Gameplay.Config.MaxScores && i < scoreElements.Length; i++)
+				{
+					System.Xml.Linq.XElement el = scoreElements[i];
+					Config.Scores[i] = new Assets.Gameplay.Config.HighScoreEntry
+					{
+						Name = el.Attribute("Name")?.Value ?? string.Empty,
+						Score = int.TryParse(el.Attribute("Score")?.Value, out int s) ? s : 0,
+						Completed = ushort.TryParse(el.Attribute("Completed")?.Value, out ushort c) ? c : (ushort)0,
+						Episode = ushort.TryParse(el.Attribute("Episode")?.Value, out ushort e) ? e : (ushort)0,
+					};
+				}
+			}
+			SaveConfig();
 		}
 	}
 	/// <summary>

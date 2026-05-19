@@ -21,6 +21,7 @@
 				<xs:element ref="Audio" minOccurs="0"/>
 				<xs:element ref="VSwap" minOccurs="0"/>
 				<xs:element ref="Palettes" minOccurs="0"/>
+				<xs:element ref="DefaultHighScores" minOccurs="0"/>
 			</xs:all>
 			<xs:attribute name="Name" type="xs:string" use="required"/>
 			<xs:attribute name="Version" type="xs:string">
@@ -44,6 +45,57 @@
 			<xs:attribute name="Exe" type="xs:string"/>
 			<xs:attribute name="HighScores" type="xs:string"/>
 			<xs:attribute name="Path" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- ============================================ -->
+	<!-- DefaultHighScores Section                    -->
+	<!-- ============================================ -->
+
+	<xs:element name="DefaultHighScores">
+		<xs:annotation>
+			<xs:documentation>
+				Optional default high score table for this game. When the CONFIG file does not
+				exist, these entries are used instead of the hardcoded Wolf3D/Noah's Ark defaults.
+				Exactly MaxScores (7) Score children should be provided; extra entries are ignored
+				and missing entries default to empty name, zero score.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Score" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:attribute name="Name" type="xs:string" use="required">
+							<xs:annotation>
+								<xs:documentation>
+									Player name (max 57 ASCII characters). ID_US.H:HighScore:name
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Score" type="xs:int" use="required">
+							<xs:annotation>
+								<xs:documentation>
+									Score value. ID_US.H:HighScore:score (original: long, 32-bit signed)
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Completed" type="xs:unsignedShort" default="0">
+							<xs:annotation>
+								<xs:documentation>
+									Number of levels completed. ID_US.H:HighScore:completed (original: word)
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Episode" type="xs:unsignedShort" default="0">
+							<xs:annotation>
+								<xs:documentation>
+									Episode number (0-based). ID_US.H:HighScore:episode (original: word)
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 
