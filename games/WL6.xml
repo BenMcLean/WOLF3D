@@ -2384,8 +2384,7 @@ return false
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4"
 				Alive="false" Mark="false" />
 			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertGutentag"
-				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
-				Ambush="true" />
+				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" FullVision="true" Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512"
@@ -2426,7 +2425,7 @@ return false
 			<!-- Corrected HP from starthitpoints[]: Baby=850, DHM=950, BEO=1550, DI=2400 -->
 			<Actor Name="Schabbs" HP="850,950,1550,2400" Reaction="1" OnAlert="A_AlertSchabbs"
 				Stand="s_schabbstand" Chase="s_schabbchase1" Attack="s_schabbshoot1"
-				Death="s_schabbdie1" Ambush="true" />
+				Death="s_schabbdie1" FullVision="true" Ambush="true" />
 			<State Name="s_schabbstand" Shape="SPR_SCHABB_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_schabbstand" />
 			<State Name="s_schabbchase1" Shape="SPR_SCHABB_W1" Tics="10" Think="T_Schabb"
@@ -2474,8 +2473,7 @@ return false
 				Next="s_needle1" />
 			<!-- WL_ACT2.C:SpawnFakeHitler — Episode 3 enemy -->
 			<Actor Name="FakeHitler" HP="200,300,400,500" Reaction="1" OnAlert="A_AlertFakeHitler"
-				Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1"
-				Ambush="true" />
+				Stand="s_fakestand" Chase="s_fakechase1" Attack="s_fakeshoot1" Death="s_fakedie1" FullVision="true" Ambush="true" />
 			<State Name="s_fakestand" Shape="SPR_FAKE_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_fakestand" />
 			<State Name="s_fakechase1" Shape="SPR_FAKE_W1" Tics="10" Think="T_Fake" Speed="512"
@@ -2528,7 +2526,7 @@ return false
 			<!-- WL_STATE.C:FirstSighting case mechahitlerobj → SD_PlaySound(DIESND) (global) -->
 			<Actor Name="MechaHitler" HP="800,950,1050,1200" Reaction="1" OnAlert="A_AlertDies"
 				Stand="s_mechastand" Chase="s_mechachase1" Attack="s_mechashoot1"
-				Death="s_mechadie1" Ambush="true" />
+				Death="s_mechadie1" FullVision="true" Ambush="true" />
 			<State Name="s_mechastand" Shape="SPR_MECHA_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_mechastand" />
 			<!-- WL_ACT2.C:A_MechaSound — plays MECHSTEPSND; fires on chase1 and chase3 (Action, not
@@ -2573,7 +2571,7 @@ return false
 			<!-- WL_STATE.C:FirstSighting case realhitlerobj → SD_PlaySound(DIESND) (global) -->
 			<Actor Name="Hitler" HP="200,300,400,500" Reaction="1" OnAlert="A_AlertDies"
 				Stand="s_hitlerstand" Chase="s_hitlerchase1" Attack="s_hitlershoot1"
-				Death="s_hitlerdie1" Ambush="true" />
+				Death="s_hitlerdie1" FullVision="true" Ambush="true" />
 			<State Name="s_hitlerstand" Shape="SPR_HITLER_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_hitlerstand" />
 			<State Name="s_hitlerchase1" Shape="SPR_HITLER_W1" Tics="6" Think="T_Chase" Speed="1024"
@@ -2632,7 +2630,7 @@ return false
 			<!-- WL_STATE.C:FirstSighting case gretelobj → SD_PlaySound(KEINSND) (global) -->
 			<Actor Name="Gretel" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertKein"
 				Stand="s_gretelstand" Chase="s_gretelchase1" Attack="s_gretelshoot1"
-				Death="s_greteldie1" Ambush="true" />
+				Death="s_greteldie1" FullVision="true" Ambush="true" />
 			<State Name="s_gretelstand" Shape="SPR_GRETEL_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_gretelstand" />
 			<State Name="s_gretelchase1" Shape="SPR_GRETEL_W1" Tics="10" Think="T_Chase" Speed="512"
@@ -2676,8 +2674,7 @@ return false
 			<!-- WL_ACT2.C:T_GiftThrow spawns rocketobj/s_rocket, NOT needles — plan was wrong -->
 			<!-- WL_STATE.C:FirstSighting case giftobj → SD_PlaySound(EINESND) (global) -->
 			<Actor Name="Giftmacher" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertEine"
-				Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1"
-				Ambush="true" />
+				Stand="s_giftstand" Chase="s_giftchase1" Attack="s_giftshoot1" Death="s_giftdie1" FullVision="true" Ambush="true" />
 			<State Name="s_giftstand" Shape="SPR_GIFT_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_giftstand" />
 			<State Name="s_giftchase1" Shape="SPR_GIFT_W1" Tics="10" Think="T_Gift" Speed="512"
@@ -2729,8 +2726,7 @@ return false
 			<!-- WL_ACT2.C:SpawnFat — Episode 6 boss (mixed attack: rocket then hitscan) -->
 			<!-- WL_STATE.C:FirstSighting case fatobj → SD_PlaySound(ERLAUBENSND) (global) -->
 			<Actor Name="FatFace" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertErlauben"
-				Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1"
-				Ambush="true" />
+				Stand="s_fatstand" Chase="s_fatchase1" Attack="s_fatshoot1" Death="s_fatdie1" FullVision="true" Ambush="true" />
 			<State Name="s_fatstand" Shape="SPR_FAT_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_fatstand" />
 			<State Name="s_fatchase1" Shape="SPR_FAT_W1" Tics="10" Think="T_Fat" Speed="512"

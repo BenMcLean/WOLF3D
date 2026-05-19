@@ -2209,7 +2209,7 @@ return false
 				Next="s_rocket" />
 			<!-- Spear of Destiny actor families -->
 			<Actor Name="Spectre" HP="5,10,15,25" Reaction="1" OnAlert="A_AlertGhost"
-				Stand="s_spectrewait1" Chase="s_spectrechase1" Death="s_spectredie1" Ambush="true" />
+				Stand="s_spectrewait1" Chase="s_spectrechase1" Death="s_spectredie1" FullVision="true" Ambush="true" />
 			<State Name="s_spectrewait1" Shape="SPR_SPECTRE_W1" Tics="10" Think="T_Stand" Speed="0"
 				Next="s_spectrewait2" />
 			<State Name="s_spectrewait2" Shape="SPR_SPECTRE_W2" Tics="10" Think="T_Stand" Speed="0"
@@ -2238,7 +2238,7 @@ return false
 				Speed="0" Alive="false" Mark="false" Next="s_spectrewake" />
 			<Actor Name="Trans" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertTrans"
 				Stand="s_transstand" Chase="s_transchase1" Attack="s_transshoot1"
-				Death="s_transdie0" Ambush="true" />
+				Death="s_transdie0" FullVision="true" Ambush="true" />
 			<State Name="s_transstand" Shape="SPR_TRANS_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_transstand" />
 			<State Name="s_transchase1" Shape="SPR_TRANS_W1" Tics="10" Think="T_Chase" Speed="1536"
@@ -2282,7 +2282,7 @@ return false
 			<State Name="s_transshoot8" Shape="SPR_TRANS_SHOOT1" Tics="10" Speed="0"
 				Next="s_transchase1" />
 			<Actor Name="Uber" HP="1050,1150,1250,1400" Reaction="1" Stand="s_uberstand"
-				Chase="s_uberchase1" Attack="s_ubershoot1" Death="s_uberdie0" Ambush="true" />
+				Chase="s_uberchase1" Attack="s_ubershoot1" Death="s_uberdie0" FullVision="true" Ambush="true" />
 			<State Name="s_uberstand" Shape="SPR_UBER_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_uberstand" />
 			<State Name="s_uberchase1" Shape="SPR_UBER_W1" Tics="10" Think="T_Chase" Speed="3000"
@@ -2326,8 +2326,7 @@ return false
 			<State Name="s_ubershoot7" Shape="SPR_UBER_SHOOT1" Tics="12" Speed="0"
 				Next="s_uberchase1" />
 			<Actor Name="Wilhelm" HP="950,1050,1150,1300" Reaction="1" OnAlert="A_AlertWilhelm"
-				Stand="s_willstand" Chase="s_willchase1" Attack="s_willshoot1" Death="s_willdie1"
-				Ambush="true" />
+				Stand="s_willstand" Chase="s_willchase1" Attack="s_willshoot1" Death="s_willdie1" FullVision="true" Ambush="true" />
 			<State Name="s_willstand" Shape="SPR_WILL_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_willstand" />
 			<State Name="s_willchase1" Shape="SPR_WILL_W1" Tics="10" Think="T_Gift" Speed="2048"
@@ -2368,7 +2367,7 @@ return false
 				Next="s_willchase1" />
 			<Actor Name="Death" HP="1250,1350,1450,1600" Reaction="1" OnAlert="A_AlertKnight"
 				Stand="s_deathstand" Chase="s_deathchase1" Attack="s_deathshoot1"
-				Death="s_deathdie1" Ambush="true" />
+				Death="s_deathdie1" FullVision="true" Ambush="true" />
 			<State Name="s_deathstand" Shape="SPR_DEATH_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_deathstand" />
 			<State Name="s_deathchase1" Shape="SPR_DEATH_W1" Tics="10" Think="T_Gift" Speed="2048"
@@ -2413,7 +2412,7 @@ return false
 				Speed="0" Next="s_deathchase1" />
 			<Actor Name="Angel" HP="1450,1550,1650,2000" Reaction="1" OnAlert="A_AlertAngel"
 				Stand="s_angelstand" Chase="s_angelchase1" Attack="s_angelshoot1"
-				Death="s_angeldie1" Ambush="true" />
+				Death="s_angeldie1" FullVision="true" Ambush="true" />
 			<State Name="s_angelstand" Shape="SPR_ANGEL_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_angelstand" />
 			<State Name="s_angelchase1" Shape="SPR_ANGEL_W1" Tics="10" Think="T_Gift" Speed="1536"

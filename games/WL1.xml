@@ -1706,8 +1706,7 @@ return false
 			<State Name="s_ssdie4" Shape="SPR_SS_DEAD" Tics="0" Speed="0" Next="s_ssdie4"
 				Alive="false" Mark="false" />
 			<Actor Name="Hans" HP="850,950,1050,1200" Reaction="1" OnAlert="A_AlertGutentag"
-				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1"
-				Ambush="true" />
+				Stand="s_bossstand" Chase="s_bosschase1" Attack="s_bossshoot1" Death="s_bossdie1" FullVision="true" Ambush="true" />
 			<State Name="s_bossstand" Shape="SPR_BOSS_W1" Tics="0" Think="T_Stand" Speed="0"
 				Next="s_bossstand" />
 			<State Name="s_bosschase1" Shape="SPR_BOSS_W1" Tics="10" Think="T_Chase" Speed="512"
