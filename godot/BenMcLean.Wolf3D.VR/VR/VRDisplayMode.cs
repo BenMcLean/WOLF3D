@@ -101,22 +101,12 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		_parent = parent;
 
-		// Create XR origin (the movable root for VR)
-		_origin = new XROrigin3D
-		{
-			Name = "XROrigin"
-		};
-		parent.AddChild(_origin);
+		// Build XR rig (origin + camera + controllers) before attaching to the scene.
+		_origin = new XROrigin3D { Name = "XROrigin" };
 
-		// Create XR camera (tracks headset)
-		_camera = new XRCamera3D
-		{
-			Name = "XRCamera",
-			Current = true,
-		};
+		_camera = new XRCamera3D { Name = "XRCamera", Current = true };
 		_origin.AddChild(_camera);
 
-		// Create left controller
 		_leftController = new XRController3D
 		{
 			Name = "LeftController",
@@ -125,7 +115,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 		};
 		_origin.AddChild(_leftController);
 
-		// Create right controller
 		_rightController = new XRController3D
 		{
 			Name = "RightController",
@@ -159,13 +148,32 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 		_leftController.ButtonPressed += name => HandButtonPressed?.Invoke(1, name);
 		_leftController.ButtonReleased += name => HandButtonReleased?.Invoke(1, name);
 
-		// Enable XR on the viewport and disable object picking, which is incompatible
-		// with stereo rendering and would trigger a warning every frame otherwise.
-		if (_parent is Node node)
+		// In spectator mode the root viewport must remain UseXR=false so MovieWriter can
+		// capture it (MovieWriter reads the root viewport's render target, which the XR
+		// swapchain bypasses when UseXR=true).  Instead, give XR its own SubViewport with
+		// UseXR=true and OwnWorld3D=false so both the HMD and the spectator camera see the
+		// same scene content.  In normal (non-spectator) play the XR rig attaches directly
+		// to the root viewport as before.
+		Viewport rootVp = parent.GetViewport();
+		rootVp.PhysicsObjectPicking = false;
+
+		if (RuntimeOptions.SpectatorViewEnabled)
 		{
-			Viewport vp = node.GetViewport();
-			vp.UseXR = true;
-			vp.PhysicsObjectPicking = false;
+			SubViewport xrViewport = new SubViewport
+			{
+				Name = "XRViewport",
+				UseXR = true,
+				OwnWorld3D = false,
+				PhysicsObjectPicking = false,
+				RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
+			};
+			parent.AddChild(xrViewport);
+			xrViewport.AddChild(_origin);
+		}
+		else
+		{
+			rootVp.UseXR = true;
+			parent.AddChild(_origin);
 		}
 	}
 

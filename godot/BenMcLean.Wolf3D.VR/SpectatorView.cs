@@ -4,8 +4,9 @@ namespace BenMcLean.Wolf3D.VR;
 
 /// <summary>
 /// Desktop-only spectator compositor for VR gameplay capture.
-/// Renders a separate first-person camera into the desktop window while the HMD
-/// continues using Godot's normal XR rendering path.
+/// Renders a separate first-person camera into the root viewport (desktop window)
+/// while the HMD continues using Godot's normal XR rendering path.
+/// The spectator Camera3D is a direct scene-tree node so MovieWriter captures it.
 /// </summary>
 public partial class SpectatorView : Node
 {
@@ -20,24 +21,19 @@ public partial class SpectatorView : Node
 	private const float PositionSharpness = 10f;
 	private const float DirectionSharpness = 12f;
 
-	private readonly SubViewport _viewport = new()
-	{
-		Name = "SpectatorViewport",
-		TransparentBg = false,
-		HandleInputLocally = false,
-		RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
-		Disable3D = false,
-		Size = new Vector2I(1280, 720),
-	};
-
+	// Placed directly in the scene tree so it renders to the root viewport.
+	// In Godot 4 XR mode, a regular Camera3D with Current=true renders to the
+	// desktop window independently of the XRCamera3D's HMD path, which is what
+	// lets MovieWriter (which attaches to the root viewport) capture spectator output.
 	private readonly Camera3D _camera = new()
 	{
 		Name = "SpectatorCamera",
-		Current = true,
+		Current = false,
 		Near = 0.05f,
 		Fov = DefaultFov,
 	};
 
+	// Used only in DirectTexture mode (menus) to overlay a 2D texture.
 	private readonly CanvasLayer _canvasLayer = new()
 	{
 		Name = "SpectatorCanvas",
@@ -68,7 +64,6 @@ public partial class SpectatorView : Node
 
 	private Camera3D _trackedCamera;
 	private SpectatorMode _mode;
-	private bool _active;
 	private bool _hasPose;
 	private Vector3 _smoothedPosition = Vector3.Zero;
 	private Vector3 _smoothedForward = Vector3.Forward;
@@ -77,43 +72,32 @@ public partial class SpectatorView : Node
 	{
 		ProcessMode = ProcessModeEnum.Always;
 
-		AddChild(_viewport);
-		_viewport.AddChild(_camera);
+		AddChild(_camera);
 
 		AddChild(_canvasLayer);
 		_canvasLayer.AddChild(_background);
 		_canvasLayer.AddChild(_output);
-		_output.Texture = _viewport.GetTexture();
 
-		SetActive(false);
-		SyncViewportSize();
+		SetMode(SpectatorMode.Inactive);
 	}
 
 	public override void _Process(double delta)
 	{
-		SyncViewportSize();
-
-		if (!_active || _mode != SpectatorMode.WorldCamera || _trackedCamera is null || !GodotObject.IsInstanceValid(_trackedCamera))
+		if (_mode != SpectatorMode.WorldCamera || _trackedCamera is null || !GodotObject.IsInstanceValid(_trackedCamera))
 			return;
 
 		UpdateCameraPose((float)delta);
 	}
 
 	/// <summary>
-	/// Shares the source room's 3D world with the spectator viewport and starts
-	/// following the tracked VR camera.
+	/// Starts following the tracked VR camera with the spectator camera.
+	/// The spectator camera renders directly to the root viewport so MovieWriter captures it.
 	/// </summary>
 	public void AttachTo(Node3D roomRoot, Camera3D trackedCamera)
 	{
-		_mode = SpectatorMode.WorldCamera;
 		_trackedCamera = trackedCamera;
 		_hasPose = false;
-
-		Viewport sourceViewport = roomRoot?.GetViewport();
-		_viewport.World3D = sourceViewport?.World3D;
-		_output.Texture = _viewport.GetTexture();
-
-		SetActive(_viewport.World3D is not null && trackedCamera is not null);
+		SetMode(trackedCamera is not null ? SpectatorMode.WorldCamera : SpectatorMode.Inactive);
 	}
 
 	/// <summary>
@@ -122,25 +106,21 @@ public partial class SpectatorView : Node
 	/// </summary>
 	public void AttachTexture(Texture2D texture)
 	{
-		_mode = SpectatorMode.DirectTexture;
 		_trackedCamera = null;
-		_viewport.World3D = null;
 		_hasPose = false;
 		_output.Texture = texture;
-		SetActive(texture is not null);
+		SetMode(texture is not null ? SpectatorMode.DirectTexture : SpectatorMode.Inactive);
 	}
 
 	/// <summary>
-	/// Stops rendering the spectator feed and reveals the normal desktop output.
+	/// Stops rendering the spectator feed.
 	/// </summary>
 	public void Detach()
 	{
-		_mode = SpectatorMode.Inactive;
 		_trackedCamera = null;
-		_viewport.World3D = null;
 		_hasPose = false;
-		_output.Texture = _viewport.GetTexture();
-		SetActive(false);
+		_output.Texture = null;
+		SetMode(SpectatorMode.Inactive);
 	}
 
 	private void UpdateCameraPose(float delta)
@@ -187,22 +167,26 @@ public partial class SpectatorView : Node
 			flatForward.Z * horizontalScale).Normalized();
 	}
 
-	private void SetActive(bool active)
+	private void SetMode(SpectatorMode mode)
 	{
-		_active = active;
-		_canvasLayer.Visible = active;
-		_output.Visible = active;
-		_background.Visible = active;
-	}
-
-	private void SyncViewportSize()
-	{
-		Vector2I windowSize = DisplayServer.WindowGetSize();
-		if (windowSize.X <= 0 || windowSize.Y <= 0)
-			return;
-
-		if (_viewport.Size != windowSize)
-			_viewport.Size = windowSize;
+		_mode = mode;
+		switch (mode)
+		{
+			case SpectatorMode.WorldCamera:
+				_camera.Current = true;
+				_canvasLayer.Visible = false;
+				break;
+			case SpectatorMode.DirectTexture:
+				_camera.Current = false;
+				_canvasLayer.Visible = true;
+				_background.Visible = true;
+				_output.Visible = _output.Texture is not null;
+				break;
+			default:
+				_camera.Current = false;
+				_canvasLayer.Visible = false;
+				break;
+		}
 	}
 
 	private static float ExponentialBlend(float sharpness, float delta) =>
