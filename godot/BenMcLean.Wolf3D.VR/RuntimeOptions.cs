@@ -69,22 +69,6 @@ public static class RuntimeOptions
 			? path
 			: System.IO.Path.GetFullPath(path, System.IO.Path.GetDirectoryName(OS.GetExecutablePath()));
 
-	/// <summary>
-	/// Applies the spectator capture window size when spectator mode is enabled.
-	/// This keeps the main viewport at a stable 1080p for window capture and MovieWriter.
-	/// </summary>
-	public static void ApplyWindowConfiguration()
-	{
-		if (!SpectatorViewEnabled)
-			return;
-
-		DisplayServer.WindowSetSize(SpectatorResolution);
-		DisplayServer.WindowSetMinSize(SpectatorResolution);
-		DisplayServer.WindowSetMaxSize(SpectatorResolution);
-		DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.ResizeDisabled, true);
-		DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.MaximizeDisabled, true);
-	}
-
 	private static string DefaultGamesDir() =>
 		OS.HasFeature("android") ? "/sdcard/WOLF3D"
 		: OS.HasFeature("editor") ? System.IO.Path.GetFullPath(@"..\..\games")

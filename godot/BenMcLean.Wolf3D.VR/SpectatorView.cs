@@ -50,6 +50,21 @@ public partial class SpectatorView : Node
 		AnchorBottom = 1f,
 	};
 
+	// Wolf3D menus are 320×200 but designed for a 4:3 CRT (non-square pixels).
+	// AspectRatioContainer enforces 4:3 display ratio, pillarboxing into the 16:9 viewport.
+	private readonly AspectRatioContainer _menuContainer = new()
+	{
+		Name = "MenuContainer",
+		Ratio = 4f / 3f,
+		StretchMode = AspectRatioContainer.StretchModeEnum.Fit,
+		AlignmentHorizontal = AspectRatioContainer.AlignmentMode.Center,
+		AlignmentVertical = AspectRatioContainer.AlignmentMode.Center,
+		AnchorLeft = 0f,
+		AnchorTop = 0f,
+		AnchorRight = 1f,
+		AnchorBottom = 1f,
+	};
+
 	private readonly TextureRect _output = new()
 	{
 		Name = "SpectatorOutput",
@@ -59,10 +74,11 @@ public partial class SpectatorView : Node
 		AnchorBottom = 1f,
 		ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
 		StretchMode = TextureRect.StretchModeEnum.Scale,
-		TextureFilter = Control.TextureFilterEnum.Linear,
+		TextureFilter = Control.TextureFilterEnum.Nearest,
 	};
 
 	private Camera3D _trackedCamera;
+	private Node3D _vrOrigin;
 	private SpectatorMode _mode;
 	private bool _hasPose;
 	private Vector3 _smoothedPosition = Vector3.Zero;
@@ -76,7 +92,16 @@ public partial class SpectatorView : Node
 
 		AddChild(_canvasLayer);
 		_canvasLayer.AddChild(_background);
-		_canvasLayer.AddChild(_output);
+		_canvasLayer.AddChild(_menuContainer);
+		_menuContainer.AddChild(_output);
+
+		// Render the root viewport at a fixed 1920×1080 regardless of OS window size.
+		// ContentScaleModeEnum.Viewport renders the scene at ContentScaleSize and scales to the
+		// window for display. MovieWriter reads the render target (always 1920×1080), not the OS
+		// window, so recording resolution is stable even if the XR runtime resizes the window.
+		Window root = GetTree().Root;
+		root.ContentScaleMode = Window.ContentScaleModeEnum.Viewport;
+		root.ContentScaleSize = RuntimeOptions.SpectatorResolution;
 
 		SetMode(SpectatorMode.Inactive);
 	}
@@ -92,9 +117,12 @@ public partial class SpectatorView : Node
 	/// <summary>
 	/// Starts following the tracked VR camera with the spectator camera.
 	/// The spectator camera renders directly to the root viewport so MovieWriter captures it.
+	/// vrOrigin is the XROrigin3D; its GlobalBasis is composed with the camera's local Basis
+	/// to correctly compute yaw even when the XR rig lives inside a SubViewport.
 	/// </summary>
-	public void AttachTo(Node3D roomRoot, Camera3D trackedCamera)
+	public void AttachTo(Node3D vrOrigin, Camera3D trackedCamera)
 	{
+		_vrOrigin = vrOrigin;
 		_trackedCamera = trackedCamera;
 		_hasPose = false;
 		SetMode(trackedCamera is not null ? SpectatorMode.WorldCamera : SpectatorMode.Inactive);
@@ -117,6 +145,7 @@ public partial class SpectatorView : Node
 	/// </summary>
 	public void Detach()
 	{
+		_vrOrigin = null;
 		_trackedCamera = null;
 		_hasPose = false;
 		_output.Texture = null;
@@ -125,8 +154,17 @@ public partial class SpectatorView : Node
 
 	private void UpdateCameraPose(float delta)
 	{
-		Vector3 trackedPosition = _trackedCamera.GlobalPosition;
-		Vector3 hmdForward = (-_trackedCamera.GlobalBasis.Z).Normalized();
+		// XRCamera3D lives inside a SubViewport; GlobalBasis doesn't always propagate yaw
+		// across the viewport boundary. Explicitly compose XROrigin's world-space basis with
+		// the camera's local basis to get the true world-space orientation (pitch + yaw, no roll).
+		bool hasOrigin = _vrOrigin is not null && GodotObject.IsInstanceValid(_vrOrigin);
+		Basis worldBasis = hasOrigin
+			? _vrOrigin.GlobalBasis * _trackedCamera.Basis
+			: _trackedCamera.GlobalBasis;
+		Vector3 trackedPosition = hasOrigin
+			? _vrOrigin.GlobalPosition + _vrOrigin.GlobalBasis * _trackedCamera.Position
+			: _trackedCamera.GlobalPosition;
+		Vector3 hmdForward = (-worldBasis.Z).Normalized();
 		Vector3 desiredForward = ComputeStableForward(hmdForward);
 
 		if (!_hasPose)
@@ -175,16 +213,18 @@ public partial class SpectatorView : Node
 			case SpectatorMode.WorldCamera:
 				_camera.Current = true;
 				_canvasLayer.Visible = false;
+				_menuContainer.Visible = false;
 				break;
 			case SpectatorMode.DirectTexture:
 				_camera.Current = false;
 				_canvasLayer.Visible = true;
 				_background.Visible = true;
-				_output.Visible = _output.Texture is not null;
+				_menuContainer.Visible = _output.Texture is not null;
 				break;
 			default:
 				_camera.Current = false;
 				_canvasLayer.Visible = false;
+				_menuContainer.Visible = false;
 				break;
 		}
 	}

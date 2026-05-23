@@ -81,10 +81,6 @@ public partial class Root : Node3D
 
 		try
 		{
-			// Spectator capture uses the main desktop window as its output surface,
-			// so fix that window at 1080p before any rooms create size-dependent UI.
-			RuntimeOptions.ApplyWindowConfiguration();
-
 			// Initialize display mode FIRST (VR or flatscreen)
 			// This must happen before anything else that needs the camera
 			DisplayMode = DisplayModeFactory.Create();
@@ -720,9 +716,9 @@ public partial class Root : Node3D
 		if (_spectatorView is null)
 			return;
 
-		if (_currentScene is ActionRoom actionRoom && DisplayMode.IsVRActive)
+		if (_currentScene is ActionRoom && DisplayMode.IsVRActive)
 		{
-			_spectatorView.AttachTo(actionRoom, DisplayMode.Camera);
+			_spectatorView.AttachTo(DisplayMode.Origin, DisplayMode.Camera);
 		}
 		else if (_currentScene is SetupRoom setupRoom && DisplayMode.IsVRActive)
 		{
