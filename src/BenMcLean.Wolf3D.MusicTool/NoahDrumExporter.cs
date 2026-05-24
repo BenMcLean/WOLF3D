@@ -10,19 +10,18 @@ internal static class NoahDrumExporter
 {
 	private const int SampleRate = 44100;
 
-	public static void Export(string gameXml, string outOp2, string outDir)
+	public static void Export(string gameXml, string outOp2, string outJson, string? previewDir)
 	{
-		AssetManager assets = AssetManager.Load(Path.GetFullPath(gameXml));
-		Directory.CreateDirectory(outDir);
+		AssetManager assets = MusicToolAssetLoader.Load(gameXml);
 
 		Dictionary<string, Dictionary<int, int>> songUsage = BuildSongUsage(assets.AudioT.Songs);
 		NoahDrumKit kit = NoahDrumKit.Create();
 		Op2Bank bank = BuildApproximationBank(kit);
 		bank.Save(outOp2);
 
-		WriteJson(Path.Combine(outDir, "noah-drums.json"), new
+		WriteJson(outJson, new
 		{
-			GameXml = Path.GetFullPath(gameXml),
+			GameXml = PortablePath.ToStoredPath(outJson, gameXml),
 			ExactSource = "Super 3-D Noah's Ark MIDI-to-AdLib rhythm-mode playback",
 			Warning = "The WAV previews are exact to the Noah rhythm-mode code path. The OP2 bank is a best-effort export for IMFCreator-style tooling because OP2 is not a perfect container for Noah's hardcoded rhythm operators.",
 			DrumMappings = kit.DrumMappings.Select(mapping => new
@@ -35,16 +34,22 @@ internal static class NoahDrumExporter
 			SongUsage = songUsage
 		});
 
+		if (string.IsNullOrWhiteSpace(previewDir))
+			return;
+
+		Directory.CreateDirectory(previewDir);
 		foreach (NoahDrumMapping mapping in kit.DrumMappings)
 		{
-			short[] samples = NoahDrumPreviewRenderer.RenderExactPreview(mapping.Drum);
-			WavWriter.WriteMono16(Path.Combine(outDir, $"{mapping.FileSafeName}.wav"), SampleRate, samples);
+			short[] samples = NoahDrumPreviewRenderer.RenderBoostedPreview(mapping.Drum, mapping.Approximation);
+			WavWriter.WriteMono16(Path.Combine(previewDir, $"{mapping.FileSafeName}.wav"), SampleRate, samples);
 		}
 
 		WavWriter.WriteMono16(
-			Path.Combine(outDir, "noah-kit-demo.wav"),
+			Path.Combine(previewDir, "noah-kit-demo.wav"),
 			SampleRate,
-			NoahDrumPreviewRenderer.RenderDemoTrack(kit.DrumMappings.Select(m => m.Drum).ToArray()));
+			AudioPostProcessor.NormalizePeak(
+				NoahDrumPreviewRenderer.RenderDemoTrack(kit.DrumMappings.Select(m => m.Drum).ToArray()),
+				30000));
 	}
 
 	private static Dictionary<string, Dictionary<int, int>> BuildSongUsage(Dictionary<string, AudioT.Music> songs)
@@ -114,13 +119,13 @@ internal sealed class NoahDrumKit
 			modChar: 0x00, carChar: 0x00, modScale: 0x11, carScale: 0x3F,
 			modAttack: 0xFA, carAttack: 0x00, modSustain: 0xB5, carSustain: 0xFF,
 			modWave: 0x00, carWave: 0x00, feedback: 0x00,
-			flags: 0x01, noteNumber: 40);
+			flags: 0x01, noteNumber: 42);
 
 		Op2Patch tomApprox = Op2Patch.FromFullOplRegisters(
-			modChar: 0x15, carChar: 0x00, modScale: 0x00, carScale: 0x3F,
-			modAttack: 0x00, carAttack: 0x00, modSustain: 0x00, carSustain: 0xFF,
-			modWave: 0x00, carWave: 0x00, feedback: 0x01,
-			flags: 0x01, noteNumber: 42);
+			modChar: 0x00, carChar: 0x21, modScale: 0x3F, carScale: 0x04,
+			modAttack: 0x00, carAttack: 0xF2, modSustain: 0xFF, carSustain: 0x38,
+			modWave: 0x00, carWave: 0x00, feedback: 0x00,
+			flags: 0x01, noteNumber: 40);
 
 		return new NoahDrumKit(
 		[
@@ -141,21 +146,21 @@ internal sealed class NoahDrumKit
 				"OP2 export is an approximation because Noah's snare is a rhythm-mode single-operator voice, not a standalone two-operator patch.",
 				snareApprox),
 			new NoahDrumMapping(
-				NoahDrum.HiHat,
-				"Noah Hi-Hat",
-				"noah-hi-hat",
-				[40],
-				"Hi-hat uses the modulator-side rhythm operator configured from instrument[10].",
-				"OP2 export is an approximation because Noah's hi-hat is a rhythm-mode single-operator voice, not a standalone two-operator patch.",
-				hiHatApprox),
-			new NoahDrumMapping(
 				NoahDrum.Tom,
 				"Noah Tom",
 				"noah-tom",
-				[42],
+				[40],
 				"Tom uses the modulator-side rhythm operator configured from instrument[12].",
 				"OP2 export is an approximation because Noah's tom is a rhythm-mode single-operator voice, not a standalone two-operator patch.",
-				tomApprox)
+				tomApprox),
+			new NoahDrumMapping(
+				NoahDrum.HiHat,
+				"Noah Hi-Hat",
+				"noah-hi-hat",
+				[42],
+				"Hi-hat uses the modulator-side rhythm operator configured from instrument[10].",
+				"OP2 export is an approximation because Noah's hi-hat is a rhythm-mode single-operator voice, not a standalone two-operator patch.",
+				hiHatApprox)
 		]);
 	}
 }
@@ -182,6 +187,17 @@ internal enum NoahDrum
 
 internal static class NoahDrumPreviewRenderer
 {
+	public static short[] RenderBoostedPreview(NoahDrum drum, Op2Patch approximation)
+	{
+		short[] exact = RenderExactPreview(drum);
+		if (AudioPostProcessor.GetPeak(exact) == 0)
+			exact = drum == NoahDrum.Tom
+				? RenderSyntheticTomPreview()
+				: RenderApproximationPreview(approximation);
+
+		return AudioPostProcessor.NormalizePeak(exact, 30000);
+	}
+
 	public static short[] RenderExactPreview(NoahDrum drum)
 	{
 		using OplRenderer renderer = new(44100, new WoodyEmulatorOpl(OplType.Opl2));
@@ -190,6 +206,31 @@ internal static class NoahDrumPreviewRenderer
 		renderer.Trigger(drum, on: true);
 		renderer.RenderMilliseconds(160);
 		renderer.Trigger(drum, on: false);
+		renderer.RenderMilliseconds(500);
+		return renderer.ToArray();
+	}
+
+	public static short[] RenderApproximationPreview(Op2Patch patch)
+	{
+		using OplRenderer renderer = new(44100, new WoodyEmulatorOpl(OplType.Opl2));
+		renderer.InitializeMelodicPatch(0, patch);
+		renderer.RenderMilliseconds(40);
+		renderer.TriggerMelodic(0, patch.NoteNumber == 0 ? 60 : patch.NoteNumber, on: true);
+		renderer.RenderMilliseconds(160);
+		renderer.TriggerMelodic(0, patch.NoteNumber == 0 ? 60 : patch.NoteNumber, on: false);
+		renderer.RenderMilliseconds(500);
+		return renderer.ToArray();
+	}
+
+	public static short[] RenderSyntheticTomPreview()
+	{
+		using OplRenderer renderer = new(44100, new WoodyEmulatorOpl(OplType.Opl2));
+		renderer.InitializeNoahKit();
+		renderer.ApplySyntheticTomOperator();
+		renderer.RenderMilliseconds(40);
+		renderer.Trigger(NoahDrum.Tom, on: true);
+		renderer.RenderMilliseconds(160);
+		renderer.Trigger(NoahDrum.Tom, on: false);
 		renderer.RenderMilliseconds(500);
 		return renderer.ToArray();
 	}
@@ -212,6 +253,8 @@ internal static class NoahDrumPreviewRenderer
 
 internal sealed class OplRenderer : IDisposable
 {
+	private static readonly int[] OperatorOffsets = [0, 1, 2, 8, 9, 10, 16, 17, 18];
+	private static readonly int[] CarrierOffsets = [3, 4, 5, 11, 12, 13, 19, 20, 21];
 	private readonly IOpl _opl;
 	private readonly List<short> _samples = [];
 	private byte _drumBits;
@@ -245,14 +288,20 @@ internal sealed class OplRenderer : IDisposable
 		_opl.WriteReg(0xBD, 0x20);
 	}
 
+	public void InitializeMelodicPatch(int channel, Op2Patch patch)
+	{
+		_opl.WriteReg(1, 32);
+		WriteMelodicVoice(channel, patch.Voice1);
+	}
+
 	public void Trigger(NoahDrum drum, bool on)
 	{
 		byte bit = drum switch
 		{
 			NoahDrum.Bass => 0x10,
 			NoahDrum.Snare => 0x08,
-			NoahDrum.HiHat => 0x04,
-			NoahDrum.Tom => 0x01,
+			NoahDrum.Tom => 0x04,
+			NoahDrum.HiHat => 0x01,
 			_ => 0
 		};
 
@@ -262,6 +311,14 @@ internal sealed class OplRenderer : IDisposable
 			_drumBits &= (byte)~bit;
 
 		_opl.WriteReg(0xBD, 0x20 | _drumBits);
+	}
+
+	public void TriggerMelodic(int channel, int midiNote, bool on)
+	{
+		ushort fNumber = NoteTable[midiNote % 12];
+		int octave = ((midiNote / 12) & 7) << 2;
+		_opl.WriteReg(0xA0 + channel, fNumber & 0xFF);
+		_opl.WriteReg(0xB0 + channel, octave + ((fNumber >> 8) & 3) | (on ? 0x20 : 0x00));
 	}
 
 	public void RenderMilliseconds(int milliseconds)
@@ -303,6 +360,15 @@ internal sealed class OplRenderer : IDisposable
 		_opl.WriteReg(0x52, 0x00);
 		_opl.WriteReg(0x72, 0x00);
 		_opl.WriteReg(0x92, 0x00);
+		_opl.WriteReg(0xF2, 0x00);
+	}
+
+	public void ApplySyntheticTomOperator()
+	{
+		_opl.WriteReg(0x32, 0x21);
+		_opl.WriteReg(0x52, 0x04);
+		_opl.WriteReg(0x72, 0xF2);
+		_opl.WriteReg(0x92, 0x38);
 		_opl.WriteReg(0xF2, 0x00);
 	}
 
@@ -367,6 +433,56 @@ internal sealed class OplRenderer : IDisposable
 		_opl.WriteReg(0xE0 + modOffset, modWave);
 		_opl.WriteReg(0xE0 + carOffset, carWave);
 		_opl.WriteReg(0xC0 + channel, feedback);
+	}
+
+	private void WriteMelodicVoice(int channel, Op2Voice voice)
+	{
+		int modOffset = OperatorOffsets[channel];
+		int carOffset = CarrierOffsets[channel];
+		_opl.WriteReg(0x20 + modOffset, voice.ModChar);
+		_opl.WriteReg(0x20 + carOffset, voice.CarChar);
+		_opl.WriteReg(0x40 + modOffset, voice.ModScale | voice.ModLevel);
+		_opl.WriteReg(0x40 + carOffset, voice.CarScale | voice.CarLevel);
+		_opl.WriteReg(0x60 + modOffset, voice.ModAttack);
+		_opl.WriteReg(0x60 + carOffset, voice.CarAttack);
+		_opl.WriteReg(0x80 + modOffset, voice.ModSustain);
+		_opl.WriteReg(0x80 + carOffset, voice.CarSustain);
+		_opl.WriteReg(0xE0 + modOffset, voice.ModWave);
+		_opl.WriteReg(0xE0 + carOffset, voice.CarWave);
+		_opl.WriteReg(0xC0 + channel, voice.Feedback);
+	}
+}
+
+internal static class AudioPostProcessor
+{
+	public static int GetPeak(short[] samples)
+	{
+		int peak = 0;
+		foreach (short sample in samples)
+		{
+			int amplitude = Math.Abs((int)sample);
+			if (amplitude > peak)
+				peak = amplitude;
+		}
+
+		return peak;
+	}
+
+	public static short[] NormalizePeak(short[] samples, int targetPeak)
+	{
+		int peak = GetPeak(samples);
+		if (peak == 0 || peak == targetPeak)
+			return samples;
+
+		double scale = (double)targetPeak / peak;
+		short[] normalized = new short[samples.Length];
+		for (int i = 0; i < samples.Length; i++)
+		{
+			int scaled = (int)Math.Round(samples[i] * scale);
+			normalized[i] = (short)Math.Clamp(scaled, short.MinValue, short.MaxValue);
+		}
+
+		return normalized;
 	}
 }
 

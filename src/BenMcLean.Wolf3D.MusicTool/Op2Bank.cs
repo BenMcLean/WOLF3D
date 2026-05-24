@@ -29,6 +29,22 @@ internal sealed class Op2Bank
 		return bank;
 	}
 
+	public static Op2Bank Load(string path)
+	{
+		using FileStream stream = File.OpenRead(path);
+		using BinaryReader reader = new(stream, Encoding.ASCII, leaveOpen: false);
+		string signature = Encoding.ASCII.GetString(reader.ReadBytes(Signature.Length));
+		if (!string.Equals(signature, Signature, StringComparison.Ordinal))
+			throw new InvalidDataException($"'{path}' is not a valid OP2 file.");
+
+		Op2Bank bank = new();
+		for (int i = 0; i < TotalCount; i++)
+			bank.Patches[i] = Op2Patch.Read(reader);
+		for (int i = 0; i < TotalCount; i++)
+			bank.Names[i] = Encoding.ASCII.GetString(reader.ReadBytes(32)).TrimEnd('\0');
+		return bank;
+	}
+
 	public void Save(string path)
 	{
 		Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -55,6 +71,13 @@ internal sealed class Op2Patch
 	public Op2Voice Voice2 { get; init; } = new();
 
 	public static Op2Patch Silent() => new();
+
+	public bool IsSilent() =>
+		Flags == 0 &&
+		FineTune == 128 &&
+		NoteNumber == 0 &&
+		Voice1.IsSilent() &&
+		Voice2.IsSilent();
 
 	public static Op2Patch FromFullOplRegisters(
 		byte modChar,
@@ -100,6 +123,15 @@ internal sealed class Op2Patch
 		Voice1.Write(writer);
 		Voice2.Write(writer);
 	}
+
+	public static Op2Patch Read(BinaryReader reader) => new()
+	{
+		Flags = reader.ReadUInt16(),
+		FineTune = reader.ReadByte(),
+		NoteNumber = reader.ReadByte(),
+		Voice1 = Op2Voice.Read(reader),
+		Voice2 = Op2Voice.Read(reader)
+	};
 }
 
 internal sealed class Op2Voice
@@ -169,4 +201,40 @@ internal sealed class Op2Voice
 		writer.Write(Reserved);
 		writer.Write(NoteOffset);
 	}
+
+	public bool IsSilent() =>
+		ModChar == 0 &&
+		ModAttack == 0 &&
+		ModSustain == 0 &&
+		ModWave == 0 &&
+		ModScale == 0 &&
+		ModLevel == 0 &&
+		Feedback == 0 &&
+		CarChar == 0 &&
+		CarAttack == 0 &&
+		CarSustain == 0 &&
+		CarWave == 0 &&
+		CarScale == 0 &&
+		CarLevel == 0 &&
+		Reserved == 0 &&
+		NoteOffset == 0;
+
+	public static Op2Voice Read(BinaryReader reader) => new()
+	{
+		ModChar = reader.ReadByte(),
+		ModAttack = reader.ReadByte(),
+		ModSustain = reader.ReadByte(),
+		ModWave = reader.ReadByte(),
+		ModScale = reader.ReadByte(),
+		ModLevel = reader.ReadByte(),
+		Feedback = reader.ReadByte(),
+		CarChar = reader.ReadByte(),
+		CarAttack = reader.ReadByte(),
+		CarSustain = reader.ReadByte(),
+		CarWave = reader.ReadByte(),
+		CarScale = reader.ReadByte(),
+		CarLevel = reader.ReadByte(),
+		Reserved = reader.ReadByte(),
+		NoteOffset = reader.ReadInt16()
+	};
 }

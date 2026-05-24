@@ -1,0 +1,689 @@
+{
+  "GameXml": "..\\..\\games\\WL1.xml",
+  "Song": "WONDERIN_MUS",
+  "InstrumentMap": "..\\..\\src\\ThirdParty\\wolfmidi\\inst.txt",
+  "TotalMappedPatches": 8,
+  "Channels": [
+    {
+      "AdlibChannelZeroBased": 1,
+      "AdlibChannelOneBased": 2,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 133,
+          "NoteOnsObserved": 180,
+          "OriginalRegisters": {
+            "ModChar": 33,
+            "CarChar": 33,
+            "ModScale": 154,
+            "CarScale": 142,
+            "ModAttack": 83,
+            "CarAttack": 160,
+            "ModSustain": 86,
+            "CarSustain": 22,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 14,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 59,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": null,
+            "MinTime": 57,
+            "Kit": null,
+            "Comment": "93 (SEARCHN), 59 (ULTIMATE), 61 (WONDERIN) -- mintime is set to minimize tuning problem on MT-32",
+            "CommentReferences": {
+              "SEARCHN": "93",
+              "ULTIMATE": "59",
+              "WONDERIN": "61"
+            },
+            "ReferencedProgramForSong": "61",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 2,
+      "AdlibChannelOneBased": 3,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 400,
+          "NoteOnsObserved": 128,
+          "OriginalRegisters": {
+            "ModChar": 113,
+            "CarChar": 97,
+            "ModScale": 86,
+            "CarScale": 30,
+            "ModAttack": 81,
+            "CarAttack": 84,
+            "ModSustain": 3,
+            "CarSustain": 23,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 14,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 41,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": null,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "41 (WONDERIN)",
+            "CommentReferences": {
+              "WONDERIN": "41"
+            },
+            "ReferencedProgramForSong": "41",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 3,
+      "AdlibChannelOneBased": 4,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 413,
+          "NoteOnsObserved": 128,
+          "OriginalRegisters": {
+            "ModChar": 113,
+            "CarChar": 97,
+            "ModScale": 86,
+            "CarScale": 30,
+            "ModAttack": 81,
+            "CarAttack": 84,
+            "ModSustain": 3,
+            "CarSustain": 23,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 14,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 41,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": null,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "41 (WONDERIN)",
+            "CommentReferences": {
+              "WONDERIN": "41"
+            },
+            "ReferencedProgramForSong": "41",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 4,
+      "AdlibChannelOneBased": 5,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 426,
+          "NoteOnsObserved": 128,
+          "OriginalRegisters": {
+            "ModChar": 113,
+            "CarChar": 97,
+            "ModScale": 86,
+            "CarScale": 30,
+            "ModAttack": 81,
+            "CarAttack": 84,
+            "ModSustain": 3,
+            "CarSustain": 23,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 14,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 41,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": null,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "41 (WONDERIN)",
+            "CommentReferences": {
+              "WONDERIN": "41"
+            },
+            "ReferencedProgramForSong": "41",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 5,
+      "AdlibChannelOneBased": 6,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 145,
+          "NoteOnsObserved": 80,
+          "OriginalRegisters": {
+            "ModChar": 0,
+            "CarChar": 0,
+            "ModScale": 64,
+            "CarScale": 7,
+            "ModAttack": 9,
+            "CarAttack": 247,
+            "ModSustain": 83,
+            "CarSustain": 148,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 0,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 48,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": -12,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "119 (CORNER), 48 (WONDERIN)",
+            "CommentReferences": {
+              "CORNER": "119",
+              "WONDERIN": "48"
+            },
+            "ReferencedProgramForSong": "48",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 6,
+      "AdlibChannelOneBased": 7,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 159,
+          "NoteOnsObserved": 50,
+          "OriginalRegisters": {
+            "ModChar": 162,
+            "CarChar": 226,
+            "ModScale": 29,
+            "CarScale": 145,
+            "ModAttack": 149,
+            "CarAttack": 96,
+            "ModSustain": 36,
+            "CarSustain": 42,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 2,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 74,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": 12,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "74 (CORNER), 73 (WARMARCH), 44 (WONDERIN)",
+            "CommentReferences": {
+              "CORNER": "74",
+              "WARMARCH": "73",
+              "WONDERIN": "44"
+            },
+            "ReferencedProgramForSong": "44",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 7,
+      "AdlibChannelOneBased": 8,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 382,
+          "NoteOnsObserved": 39,
+          "OriginalRegisters": {
+            "ModChar": 50,
+            "CarChar": 97,
+            "ModScale": 154,
+            "CarScale": 148,
+            "ModAttack": 81,
+            "CarAttack": 96,
+            "ModSustain": 25,
+            "CarSustain": 57,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 12,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 72,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": null,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "72 (CORNER), 83 (WARMARCH), 83 (WONDERIN)",
+            "CommentReferences": {
+              "CORNER": "72",
+              "WARMARCH": "83",
+              "WONDERIN": "83"
+            },
+            "ReferencedProgramForSong": "83",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    },
+    {
+      "AdlibChannelZeroBased": 8,
+      "AdlibChannelOneBased": 9,
+      "Patches": [
+        {
+          "ChannelPatchIndex": 1,
+          "FirstSeenAtEvent": 173,
+          "NoteOnsObserved": 19,
+          "OriginalRegisters": {
+            "ModChar": 97,
+            "CarChar": 225,
+            "ModScale": 167,
+            "CarScale": 176,
+            "ModAttack": 114,
+            "CarAttack": 80,
+            "ModSustain": 142,
+            "CarSustain": 26,
+            "ModWave": 0,
+            "CarWave": 0,
+            "Feedback": 2,
+            "IsSilent": false
+          },
+          "WolfMidiMatch": {
+            "Type": "NO",
+            "Patch": 73,
+            "LowPatch": null,
+            "LowNote": null,
+            "Drum": null,
+            "Transpose": null,
+            "MinTime": null,
+            "Kit": null,
+            "Comment": "73 (ULTIMATE), 53 (WONDERIN)",
+            "CommentReferences": {
+              "ULTIMATE": "73",
+              "WONDERIN": "53"
+            },
+            "ReferencedProgramForSong": "53",
+            "IsManuallyAssigned": false,
+            "MentionsSong": true
+          }
+        }
+      ]
+    }
+  ],
+  "UniqueTimbres": [
+    {
+      "NormalizedRegisters": {
+        "ModChar": 33,
+        "CarChar": 33,
+        "ModScale": 154,
+        "CarScale": 128,
+        "ModAttack": 83,
+        "CarAttack": 160,
+        "ModSustain": 86,
+        "CarSustain": 22,
+        "Feedback": 14,
+        "ModWave": 0,
+        "CarWave": 0
+      },
+      "ChannelsZeroBased": [
+        1
+      ],
+      "ChannelsOneBased": [
+        2
+      ],
+      "ChannelPatchIndices": [
+        "1:1"
+      ],
+      "Match": {
+        "Type": "NO",
+        "Patch": 59,
+        "LowPatch": null,
+        "LowNote": null,
+        "Drum": null,
+        "Transpose": null,
+        "MinTime": 57,
+        "Kit": null,
+        "Comment": "93 (SEARCHN), 59 (ULTIMATE), 61 (WONDERIN) -- mintime is set to minimize tuning problem on MT-32",
+        "CommentReferences": {
+          "SEARCHN": "93",
+          "ULTIMATE": "59",
+          "WONDERIN": "61"
+        },
+        "ReferencedProgramForSong": "61",
+        "IsManuallyAssigned": false,
+        "MentionsSong": true
+      }
+    },
+    {
+      "NormalizedRegisters": {
+        "ModChar": 0,
+        "CarChar": 0,
+        "ModScale": 64,
+        "CarScale": 0,
+        "ModAttack": 9,
+        "CarAttack": 247,
+        "ModSustain": 83,
+        "CarSustain": 148,
+        "Feedback": 0,
+        "ModWave": 0,
+        "CarWave": 0
+      },
+      "ChannelsZeroBased": [
+        5
+      ],
+      "ChannelsOneBased": [
+        6
+      ],
+      "ChannelPatchIndices": [
+        "5:1"
+      ],
+      "Match": {
+        "Type": "NO",
+        "Patch": 48,
+        "LowPatch": null,
+        "LowNote": null,
+        "Drum": null,
+        "Transpose": -12,
+        "MinTime": null,
+        "Kit": null,
+        "Comment": "119 (CORNER), 48 (WONDERIN)",
+        "CommentReferences": {
+          "CORNER": "119",
+          "WONDERIN": "48"
+        },
+        "ReferencedProgramForSong": "48",
+        "IsManuallyAssigned": false,
+        "MentionsSong": true
+      }
+    },
+    {
+      "NormalizedRegisters": {
+        "ModChar": 162,
+        "CarChar": 226,
+        "ModScale": 29,
+        "CarScale": 128,
+        "ModAttack": 149,
+        "CarAttack": 96,
+        "ModSustain": 36,
+        "CarSustain": 42,
+        "Feedback": 2,
+        "ModWave": 0,
+        "CarWave": 0
+      },
+      "ChannelsZeroBased": [
+        6
+      ],
+      "ChannelsOneBased": [
+        7
+      ],
+      "ChannelPatchIndices": [
+        "6:1"
+      ],
+      "Match": {
+        "Type": "NO",
+        "Patch": 74,
+        "LowPatch": null,
+        "LowNote": null,
+        "Drum": null,
+        "Transpose": 12,
+        "MinTime": null,
+        "Kit": null,
+        "Comment": "74 (CORNER), 73 (WARMARCH), 44 (WONDERIN)",
+        "CommentReferences": {
+          "CORNER": "74",
+          "WARMARCH": "73",
+          "WONDERIN": "44"
+        },
+        "ReferencedProgramForSong": "44",
+        "IsManuallyAssigned": false,
+        "MentionsSong": true
+      }
+    },
+    {
+      "NormalizedRegisters": {
+        "ModChar": 97,
+        "CarChar": 225,
+        "ModScale": 167,
+        "CarScale": 128,
+        "ModAttack": 114,
+        "CarAttack": 80,
+        "ModSustain": 142,
+        "CarSustain": 26,
+        "Feedback": 2,
+        "ModWave": 0,
+        "CarWave": 0
+      },
+      "ChannelsZeroBased": [
+        8
+      ],
+      "ChannelsOneBased": [
+        9
+      ],
+      "ChannelPatchIndices": [
+        "8:1"
+      ],
+      "Match": {
+        "Type": "NO",
+        "Patch": 73,
+        "LowPatch": null,
+        "LowNote": null,
+        "Drum": null,
+        "Transpose": null,
+        "MinTime": null,
+        "Kit": null,
+        "Comment": "73 (ULTIMATE), 53 (WONDERIN)",
+        "CommentReferences": {
+          "ULTIMATE": "73",
+          "WONDERIN": "53"
+        },
+        "ReferencedProgramForSong": "53",
+        "IsManuallyAssigned": false,
+        "MentionsSong": true
+      }
+    },
+    {
+      "NormalizedRegisters": {
+        "ModChar": 50,
+        "CarChar": 97,
+        "ModScale": 154,
+        "CarScale": 128,
+        "ModAttack": 81,
+        "CarAttack": 96,
+        "ModSustain": 25,
+        "CarSustain": 57,
+        "Feedback": 12,
+        "ModWave": 0,
+        "CarWave": 0
+      },
+      "ChannelsZeroBased": [
+        7
+      ],
+      "ChannelsOneBased": [
+        8
+      ],
+      "ChannelPatchIndices": [
+        "7:1"
+      ],
+      "Match": {
+        "Type": "NO",
+        "Patch": 72,
+        "LowPatch": null,
+        "LowNote": null,
+        "Drum": null,
+        "Transpose": null,
+        "MinTime": null,
+        "Kit": null,
+        "Comment": "72 (CORNER), 83 (WARMARCH), 83 (WONDERIN)",
+        "CommentReferences": {
+          "CORNER": "72",
+          "WARMARCH": "83",
+          "WONDERIN": "83"
+        },
+        "ReferencedProgramForSong": "83",
+        "IsManuallyAssigned": false,
+        "MentionsSong": true
+      }
+    },
+    {
+      "NormalizedRegisters": {
+        "ModChar": 113,
+        "CarChar": 97,
+        "ModScale": 86,
+        "CarScale": 0,
+        "ModAttack": 81,
+        "CarAttack": 84,
+        "ModSustain": 3,
+        "CarSustain": 23,
+        "Feedback": 14,
+        "ModWave": 0,
+        "CarWave": 0
+      },
+      "ChannelsZeroBased": [
+        2,
+        3,
+        4
+      ],
+      "ChannelsOneBased": [
+        3,
+        4,
+        5
+      ],
+      "ChannelPatchIndices": [
+        "2:1",
+        "3:1",
+        "4:1"
+      ],
+      "Match": {
+        "Type": "NO",
+        "Patch": 41,
+        "LowPatch": null,
+        "LowNote": null,
+        "Drum": null,
+        "Transpose": null,
+        "MinTime": null,
+        "Kit": null,
+        "Comment": "41 (WONDERIN)",
+        "CommentReferences": {
+          "WONDERIN": "41"
+        },
+        "ReferencedProgramForSong": "41",
+        "IsManuallyAssigned": false,
+        "MentionsSong": true
+      }
+    }
+  ],
+  "PatchNames": "..\\..\\src\\ThirdParty\\wolfmidi\\patch.txt",
+  "Op2Bank": "WONDERIN_MUS.wolfmidi.op2",
+  "PercussionOverlay": null,
+  "ImfCreatorRepo": "..\\..\\src\\ThirdParty\\imf-creator",
+  "ImfCreatorRepoUrl": "https://github.com/adambiser/imf-creator",
+  "FlStudioPrograms": [
+    {
+      "Program": 41,
+      "PatchName": "Violin",
+      "AdlibChannels": [
+        3,
+        4,
+        5
+      ],
+      "Transpose": null,
+      "MinTime": null,
+      "WolfMidiPatch": 41,
+      "Comment": "41 (WONDERIN)"
+    },
+    {
+      "Program": 44,
+      "PatchName": "Contrabass",
+      "AdlibChannels": [
+        7
+      ],
+      "Transpose": 12,
+      "MinTime": null,
+      "WolfMidiPatch": 74,
+      "Comment": "74 (CORNER), 73 (WARMARCH), 44 (WONDERIN)"
+    },
+    {
+      "Program": 48,
+      "PatchName": "Timpani",
+      "AdlibChannels": [
+        6
+      ],
+      "Transpose": -12,
+      "MinTime": null,
+      "WolfMidiPatch": 48,
+      "Comment": "119 (CORNER), 48 (WONDERIN)"
+    },
+    {
+      "Program": 53,
+      "PatchName": "Choir Aahs",
+      "AdlibChannels": [
+        9
+      ],
+      "Transpose": null,
+      "MinTime": null,
+      "WolfMidiPatch": 73,
+      "Comment": "73 (ULTIMATE), 53 (WONDERIN)"
+    },
+    {
+      "Program": 61,
+      "PatchName": "French Horn",
+      "AdlibChannels": [
+        2
+      ],
+      "Transpose": null,
+      "MinTime": 57,
+      "WolfMidiPatch": 59,
+      "Comment": "93 (SEARCHN), 59 (ULTIMATE), 61 (WONDERIN) -- mintime is set to minimize tuning problem on MT-32"
+    },
+    {
+      "Program": 83,
+      "PatchName": "Lead 3 (calliope)",
+      "AdlibChannels": [
+        8
+      ],
+      "Transpose": null,
+      "MinTime": null,
+      "WolfMidiPatch": 72,
+      "Comment": "72 (CORNER), 83 (WARMARCH), 83 (WONDERIN)"
+    }
+  ]
+}

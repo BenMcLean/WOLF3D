@@ -1,0 +1,92 @@
+{
+  "GameXml": "..\\..\\games\\N3D.xml",
+  "ExactSource": "Super 3-D Noah\u0027s Ark MIDI-to-AdLib rhythm-mode playback",
+  "Warning": "The WAV previews are exact to the Noah rhythm-mode code path. The OP2 bank is a best-effort export for IMFCreator-style tooling because OP2 is not a perfect container for Noah\u0027s hardcoded rhythm operators.",
+  "DrumMappings": [
+    {
+      "Name": "Noah Bass Drum",
+      "MidiNotes": [
+        35,
+        36
+      ],
+      "ExactOrigin": "Bass drum is exact two-operator channel 6 rhythm voice from instrument[9].",
+      "ApproximationNote": "OP2 export is structurally faithful for the bass drum because Noah uses a full two-operator rhythm voice here."
+    },
+    {
+      "Name": "Noah Snare",
+      "MidiNotes": [
+        38
+      ],
+      "ExactOrigin": "Snare uses the carrier-side rhythm operator configured from instrument[11].",
+      "ApproximationNote": "OP2 export is an approximation because Noah\u0027s snare is a rhythm-mode single-operator voice, not a standalone two-operator patch."
+    },
+    {
+      "Name": "Noah Tom",
+      "MidiNotes": [
+        40
+      ],
+      "ExactOrigin": "Tom uses the modulator-side rhythm operator configured from instrument[12].",
+      "ApproximationNote": "OP2 export is an approximation because Noah\u0027s tom is a rhythm-mode single-operator voice, not a standalone two-operator patch."
+    },
+    {
+      "Name": "Noah Hi-Hat",
+      "MidiNotes": [
+        42
+      ],
+      "ExactOrigin": "Hi-hat uses the modulator-side rhythm operator configured from instrument[10].",
+      "ApproximationNote": "OP2 export is an approximation because Noah\u0027s hi-hat is a rhythm-mode single-operator voice, not a standalone two-operator patch."
+    }
+  ],
+  "SongUsage": {
+    "NOAH01_MUS": {
+      "35": 130,
+      "38": 72
+    },
+    "NOAH02_MUS": {
+      "35": 34,
+      "38": 28,
+      "42": 50
+    },
+    "NOAH03_MUS": {
+      "35": 64,
+      "38": 74
+    },
+    "NOAH04_MUS": {
+      "35": 110,
+      "38": 44
+    },
+    "NOAH05_MUS": {
+      "35": 73,
+      "38": 71,
+      "42": 120
+    },
+    "NOAH06_MUS": {
+      "36": 94,
+      "38": 40
+    },
+    "NOAH07_MUS": {
+      "35": 126,
+      "36": 75,
+      "38": 79
+    },
+    "NOAH08_MUS": {
+      "36": 128,
+      "38": 40
+    },
+    "NOAH09_MUS": {
+      "35": 40,
+      "40": 40,
+      "42": 80
+    },
+    "NOAH10_MUS": {
+      "35": 44,
+      "38": 30,
+      "42": 103
+    },
+    "NOAH11_MUS": {
+      "35": 72,
+      "38": 121,
+      "42": 97
+    }
+  }
+}

@@ -1,0 +1,38 @@
+WONDERIN_MUS FL Studio General MIDI Setup
+
+Configure one MIDI Out per line below using the listed Program number.
+These program numbers match the generated OP2 bank slots one-to-one.
+
+Program 041: Violin
+  AdLib channels: 3, 4, 5
+  wolfmidi base patch: 41
+  note: 41 (WONDERIN)
+
+Program 044: Contrabass
+  AdLib channels: 7
+  wolfmidi base patch: 74
+  transpose: +12
+  note: 74 (CORNER), 73 (WARMARCH), 44 (WONDERIN)
+
+Program 048: Timpani
+  AdLib channels: 6
+  wolfmidi base patch: 48
+  transpose: -12
+  note: 119 (CORNER), 48 (WONDERIN)
+
+Program 053: Choir Aahs
+  AdLib channels: 9
+  wolfmidi base patch: 73
+  note: 73 (ULTIMATE), 53 (WONDERIN)
+
+Program 061: French Horn
+  AdLib channels: 2
+  wolfmidi base patch: 59
+  min note time: 57
+  note: 93 (SEARCHN), 59 (ULTIMATE), 61 (WONDERIN) -- mintime is set to minimize tuning problem on MT-32
+
+Program 083: Lead 3 (calliope)
+  AdLib channels: 8
+  wolfmidi base patch: 72
+  note: 72 (CORNER), 83 (WARMARCH), 83 (WONDERIN)
+

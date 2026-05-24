@@ -9,89 +9,75 @@ internal static class WolfOp2Extractor
 	private static readonly int[] ModulatorOffsets = [0, 1, 2, 8, 9, 10, 16, 17, 18];
 	private static readonly int[] CarrierOffsets = [3, 4, 5, 11, 12, 13, 19, 20, 21];
 
-	public static void Export(string gameXml, string songName, string midiPath, string outOp2, string outJson)
+	public static void Export(string gameXml, string songName, string outOp2, string outJson)
 	{
-		AssetManager assets = AssetManager.Load(Path.GetFullPath(gameXml));
+		AssetManager assets = MusicToolAssetLoader.Load(gameXml);
 		if (!assets.AudioT.Songs.TryGetValue(songName, out AudioT.Music? song) || song.Imf is null)
 			throw new InvalidOperationException($"Song '{songName}' was not found as IMF data in '{gameXml}'.");
-		if (!File.Exists(midiPath))
-			throw new FileNotFoundException("Target MIDI not found.", midiPath);
 
-		List<ExtractedPatch> patches = ExtractPatches(song.Imf);
+		List<ExtractedPatch> patches = ExtractPatches(songName, song.Imf);
 		if (patches.Count == 0)
 			throw new InvalidOperationException($"No melodic patches were detected in '{songName}'.");
-
-		using FileStream midiStream = File.OpenRead(midiPath);
-		Midi midi = Midi.Parse(midiStream);
-		List<byte> usedPrograms = CollectUsedPrograms(midi);
+		if (patches.Count > Op2Bank.MelodicCount)
+			throw new InvalidOperationException(
+				$"Detected {patches.Count} melodic patches in '{songName}', but OP2 only has room for {Op2Bank.MelodicCount} melodic entries.");
 
 		Op2Bank bank = Op2Bank.CreateSilent();
-		Dictionary<byte, int> assignments = new();
-		for (int i = 0; i < usedPrograms.Count; i++)
+		for (int i = 0; i < patches.Count; i++)
 		{
-			byte program = usedPrograms[i];
-			int patchIndex = i % patches.Count;
-			assignments[program] = patchIndex;
-			bank.Patches[program] = patches[patchIndex].ToOp2Patch();
-			bank.Names[program] = $"{songName} Patch {patchIndex + 1:D2}";
+			ExtractedPatch patch = patches[i];
+			bank.Patches[i] = patch.ToOp2Patch();
+			bank.Names[i] = patch.BankName;
 		}
 
 		bank.Save(outOp2);
 
+		IReadOnlyList<object> channelManifest = patches
+			.GroupBy(p => p.FirstSeenChannel)
+			.OrderBy(group => group.Key)
+			.Select(group => new
+			{
+				AdlibChannel = group.Key,
+				Patches = group
+					.OrderBy(p => p.BankIndex)
+					.Select(p => new
+					{
+						p.BankIndex,
+						p.BankName,
+						p.FirstSeenAtEvent,
+						p.NoteOnsObserved,
+						Registers = p.Registers
+					})
+			})
+			.Cast<object>()
+			.ToArray();
+
 		object manifest = new
 		{
-			GameXml = Path.GetFullPath(gameXml),
+			GameXml = PortablePath.ToStoredPath(outJson, gameXml),
 			Song = songName,
-			SourceMidi = Path.GetFullPath(midiPath),
-			ExtractedPatches = patches.Select((patch, index) => new
+			TotalExtractedPatches = patches.Count,
+			BankLayout = patches.Select(patch => new
 			{
-				Index = index,
+				patch.BankIndex,
+				patch.BankName,
 				patch.FirstSeenAtEvent,
 				patch.FirstSeenChannel,
 				patch.NoteOnsObserved,
 				Registers = patch.Registers
 			}),
-			UsedPrograms = usedPrograms.Select(program => new
-			{
-				Program = program,
-				AssignedPatchIndex = assignments[program],
-				AssignedPatchName = bank.Names[program]
-			})
+			Channels = channelManifest
 		};
 
 		WriteJson(outJson, manifest);
 	}
 
-	private static List<byte> CollectUsedPrograms(Midi midi)
-	{
-		byte[] channelPrograms = new byte[16];
-		HashSet<byte> seen = [];
-		List<byte> ordered = [];
-
-		foreach (Midi.MidiEvent midiEvent in midi.Events)
-			switch (midiEvent)
-			{
-				case Midi.ProgramChangeEvent programChange:
-					channelPrograms[programChange.Channel] = programChange.Program;
-					break;
-				case Midi.NoteOnEvent noteOn when noteOn.Channel != 9 && noteOn.Velocity > 0:
-					byte program = channelPrograms[noteOn.Channel];
-					if (seen.Add(program))
-						ordered.Add(program);
-					break;
-			}
-
-		if (ordered.Count == 0)
-			ordered.Add(0);
-
-		return ordered;
-	}
-
-	private static List<ExtractedPatch> ExtractPatches(Imf[] imf)
+	private static List<ExtractedPatch> ExtractPatches(string songName, Imf[] imf)
 	{
 		byte[] state = new byte[256];
-		Dictionary<WolfPatchRegisters, ExtractedPatch> patches = [];
+		Dictionary<(int Channel, WolfPatchRegisters Registers), ExtractedPatch> patches = [];
 		bool rhythmMode = false;
+		int bankIndex = 0;
 
 		for (int eventIndex = 0; eventIndex < imf.Length; eventIndex++)
 		{
@@ -108,22 +94,25 @@ internal static class WolfOp2Extractor
 
 			int channel = step.Register - 0xB0;
 			bool keyOn = (step.Data & 0x20) != 0;
-			if (!keyOn || channel == 0 || (rhythmMode && channel >= 6))
+			if (!keyOn || (rhythmMode && channel >= 6))
 				continue;
 
-			WolfPatchRegisters registers = ReadPatch(state, channel);
+			WolfPatchRegisters registers = ReadPatchFromState(state, channel);
 			if (registers.IsSilent)
 				continue;
 
-			if (!patches.TryGetValue(registers, out ExtractedPatch? patch))
+			var patchKey = (channel, registers);
+			if (!patches.TryGetValue(patchKey, out ExtractedPatch? patch))
 			{
 				patch = new ExtractedPatch
 				{
+					BankIndex = bankIndex++,
+					BankName = $"{songName} Ch{channel + 1:D2} Patch {patches.Count(p => p.Key.Channel == channel) + 1:D2}",
 					Registers = registers,
 					FirstSeenAtEvent = eventIndex,
 					FirstSeenChannel = channel
 				};
-				patches[registers] = patch;
+				patches[patchKey] = patch;
 			}
 
 			patch.NoteOnsObserved++;
@@ -132,7 +121,7 @@ internal static class WolfOp2Extractor
 		return [.. patches.Values.OrderBy(p => p.FirstSeenAtEvent)];
 	}
 
-	private static WolfPatchRegisters ReadPatch(byte[] state, int channel)
+	internal static WolfPatchRegisters ReadPatchFromState(byte[] state, int channel)
 	{
 		int mod = ModulatorOffsets[channel];
 		int car = CarrierOffsets[channel];
@@ -163,6 +152,8 @@ internal static class WolfOp2Extractor
 
 	internal sealed class ExtractedPatch
 	{
+		public required int BankIndex { get; init; }
+		public required string BankName { get; init; }
 		public required WolfPatchRegisters Registers { get; init; }
 		public required int FirstSeenAtEvent { get; init; }
 		public required int FirstSeenChannel { get; init; }

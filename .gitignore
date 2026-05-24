@@ -852,6 +852,10 @@ fabric.properties
 # Exclude all subdirectories under games/
 games/*/
 
+# Tool-managed source clones used by MusicTool
+src/ThirdParty/wolfmidi/
+src/ThirdParty/imf-creator/
+
 # Godot OpenXR Vendors plugin (downloaded separately, not checked in)
 # Required only for Quest standalone builds; PC VR works without it
 godot/BenMcLean.Wolf3D.VR/addons/godotopenxrvendors/
