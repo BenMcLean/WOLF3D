@@ -20,6 +20,7 @@ Usage:
   BenMcLean.Wolf3D.MusicTool extract-wolf-op2 [options]
   BenMcLean.Wolf3D.MusicTool map-wolfmidi-song [options]
   BenMcLean.Wolf3D.MusicTool export-wolfmidi-assets [options]
+  BenMcLean.Wolf3D.MusicTool export-wolf-wav-stems [options]
   BenMcLean.Wolf3D.MusicTool convert-midi-to-wlf [options]
   BenMcLean.Wolf3D.MusicTool export-noah-drums [options]
   BenMcLean.Wolf3D.MusicTool export-cmf-drums [options]
@@ -83,6 +84,16 @@ Commands:
       --imfcreator-repo <dir>  Local adambiser/imf-creator checkout path
       --imfcreator-url <url>   Git URL used if the repo must be cloned later
 
+  export-wolf-wav-stems
+    Replays the original Wolf3D IMF song through the OPL emulator and exports
+    separated WAV stems grouped by the resolved wolfmidi instrument names.
+
+    Options:
+      --game <xml>          Game XML to load (default: games/WL1.xml)
+      --song <name>         IMF song name (default: WONDERIN_MUS)
+      --map-json <path>     wolfmidi JSON from export-wolfmidi-assets (default: promo/remix/WONDERIN_MUS.wolfmidi.json)
+      --out-dir <dir>       Output directory for WAV stems (default: promo/remix/WONDERIN_MUS.stems)
+
   convert-midi-to-wlf
     Converts an exported MIDI file to Wolf3D WLF/IMF using the open-source
     adambiser/imf-creator Python CLI and a prepared OP2 bank. If the target
@@ -142,6 +153,7 @@ try
 		"extract-wolf-op2" => RunExtractWolfOp2(rest),
 		"map-wolfmidi-song" => RunMapWolfMidiSong(rest),
 		"export-wolfmidi-assets" => RunExportWolfMidiAssets(rest),
+		"export-wolf-wav-stems" => RunExportWolfWavStems(rest),
 		"convert-midi-to-wlf" => RunConvertMidiToWlf(rest),
 		"export-noah-drums" => RunExportNoahDrums(rest),
 		"export-cmf-drums" => RunExportCmfDrums(rest),
@@ -258,6 +270,20 @@ static int RunExportWolfMidiAssets(string[] args)
 		imfCreatorRepo,
 		imfCreatorUrl);
 	Console.WriteLine($"Wrote assets to {outDir}");
+	return 0;
+}
+
+static int RunExportWolfWavStems(string[] args)
+{
+	string gameXml = GetOption(args, "--game") ?? DefaultGameXml;
+	string song = GetOption(args, "--song") ?? DefaultSong;
+	string mapJson = GetOption(args, "--map-json")
+		?? Path.Combine(DefaultPromoRemixDir, $"{DefaultSong}.wolfmidi.json");
+	string outDir = GetOption(args, "--out-dir")
+		?? Path.Combine(DefaultPromoRemixDir, $"{DefaultSong}.stems");
+
+	WolfStemExporter.Export(gameXml, song, mapJson, outDir);
+	Console.WriteLine($"Wrote stems to {outDir}");
 	return 0;
 }
 

@@ -484,6 +484,22 @@ internal static class AudioPostProcessor
 
 		return normalized;
 	}
+
+	public static short[] ApplyGainDb(short[] samples, double gainDb)
+	{
+		if (gainDb == 0)
+			return samples;
+
+		double scale = Math.Pow(10.0, gainDb / 20.0);
+		short[] gained = new short[samples.Length];
+		for (int i = 0; i < samples.Length; i++)
+		{
+			int scaled = (int)Math.Round(samples[i] * scale);
+			gained[i] = (short)Math.Clamp(scaled, short.MinValue, short.MaxValue);
+		}
+
+		return gained;
+	}
 }
 
 internal static class WavWriter
