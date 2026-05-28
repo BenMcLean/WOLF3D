@@ -155,14 +155,14 @@ public sealed class Config
 			byte[] nameBytes = reader.ReadBytes(HighScoreEntry.MaxHighName + 1);
 			string name = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
 			int score = reader.ReadInt32();
-			ushort completed = reader.ReadUInt16();
-			ushort episode = reader.ReadUInt16();
+			ushort completed = reader.ReadUInt16(),
+				episode = reader.ReadUInt16();
 			config.Scores[i] = new HighScoreEntry
 			{
 				Name = name,
 				Score = score,
 				Completed = completed,
-				Episode = episode
+				Episode = episode,
 			};
 		}
 		#endregion Read high scores (462 bytes)
@@ -210,8 +210,8 @@ public sealed class Config
 		for (int i = 0; i < MaxScores; i++)
 		{
 			HighScoreEntry entry = Scores[i];
-			byte[] nameBytes = new byte[HighScoreEntry.MaxHighName + 1];
-			byte[] sourceBytes = Encoding.ASCII.GetBytes(entry.Name ?? string.Empty);
+			byte[] nameBytes = new byte[HighScoreEntry.MaxHighName + 1],
+				sourceBytes = Encoding.ASCII.GetBytes(entry.Name ?? string.Empty);
 			int copyLength = Math.Min(sourceBytes.Length, HighScoreEntry.MaxHighName);
 			Array.Copy(sourceBytes, nameBytes, copyLength);
 			writer.Write(nameBytes);

@@ -16,11 +16,11 @@ public struct Imf(BinaryReader binaryReader)
 	/// <summary>
 	/// Sent to register port.
 	/// </summary>
-	public readonly byte Register = binaryReader.ReadByte();
-	/// <summary>
-	/// Sent to data port.
-	/// </summary>
-	public readonly byte Data = binaryReader.ReadByte();
+	public readonly byte Register = binaryReader.ReadByte(),
+		/// <summary>
+		/// Sent to data port.
+		/// </summary>
+		Data = binaryReader.ReadByte();
 	/// <summary>
 	/// How much to wait.
 	/// </summary>

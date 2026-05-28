@@ -40,9 +40,9 @@ public sealed class VgaGraph
 	public static VgaGraph Load(XElement xml, string folder = "")
 	{
 		XElement el = xml.Element("VgaGraph");
-		string head = el?.Attribute("VgaHead")?.Value;
-		string graph = el?.Attribute("VgaGraph")?.Value;
-		string dict = el?.Attribute("VgaDict")?.Value;
+		string head = el?.Attribute("VgaHead")?.Value,
+			graph = el?.Attribute("VgaGraph")?.Value,
+			dict = el?.Attribute("VgaDict")?.Value;
 		if (head is null || graph is null || dict is null)
 			return null;
 		if (!Directory.Exists(folder))

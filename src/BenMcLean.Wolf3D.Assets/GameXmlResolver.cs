@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Xml.Linq;
 
 namespace BenMcLean.Wolf3D.Assets;
@@ -14,7 +13,6 @@ namespace BenMcLean.Wolf3D.Assets;
 public static class GameXmlResolver
 {
 	public const string BaseAttributeName = "Base";
-
 	public static XElement Load(string xmlPath, Func<string, XElement> fallbackBaseXml = null)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(xmlPath);
@@ -23,25 +21,19 @@ public static class GameXmlResolver
 			new HashSet<string>(StringComparer.OrdinalIgnoreCase),
 			fallbackBaseXml);
 	}
-
 	public static XElement Resolve(XElement xml, Func<string, XElement> loadBaseXml)
 	{
 		ArgumentNullException.ThrowIfNull(xml);
 		ArgumentNullException.ThrowIfNull(loadBaseXml);
-
 		string baseReference = xml.Attribute(BaseAttributeName)?.Value;
 		if (string.IsNullOrWhiteSpace(baseReference))
 			return new XElement(xml);
-
 		ValidateDerivedStub(xml);
-
 		XElement merged = new(loadBaseXml(baseReference.Trim()));
 		CopyAttributeIfPresent(xml, merged, "Name");
 		CopyAttributeIfPresent(xml, merged, "Path");
-
 		return merged;
 	}
-
 	private static XElement LoadFromFile(
 		string xmlPath,
 		HashSet<string> visited,
@@ -49,7 +41,6 @@ public static class GameXmlResolver
 	{
 		if (!visited.Add(xmlPath))
 			throw new InvalidDataException($"Circular game XML inheritance detected involving '{xmlPath}'.");
-
 		try
 		{
 			XElement xml = XDocument.Load(xmlPath).Root
@@ -70,7 +61,6 @@ public static class GameXmlResolver
 			visited.Remove(xmlPath);
 		}
 	}
-
 	private static void ValidateDerivedStub(XElement xml)
 	{
 		if (string.IsNullOrWhiteSpace(xml.Attribute("Name")?.Value) ||
@@ -78,7 +68,6 @@ public static class GameXmlResolver
 			throw new InvalidDataException(
 				$"Game XML '{xml.Attribute(BaseAttributeName)?.Value ?? xml.Name.LocalName}' uses Base and must also specify both Name and Path.");
 	}
-
 	private static void CopyAttributeIfPresent(XElement source, XElement target, string attributeName)
 	{
 		XAttribute attribute = source.Attribute(attributeName);

@@ -32,23 +32,22 @@ namespace BenMcLean.Wolf3D.Assets.Menu;
 public static class ArticleLayoutEngine
 {
 	// WL_TEXT.C rendering constants (VGA version)
-	public const int TopMargin = 16;
-	public const int BottomMargin = 32;
-	public const int LeftMargin = 16;
-	public const int RightMargin = 16;
-	public const int FontHeight = 10;
-	public const int TextRows = (200 - TopMargin - BottomMargin) / FontHeight; // 15
-	public const int SpaceWidth = 7;
-	public const int ScreenPixWidth = 320;
-	public const int ScreenMid = 160;
-	public const int PicMargin = 8;
+	public const int TopMargin = 16,
+		BottomMargin = 32,
+		LeftMargin = 16,
+		RightMargin = 16,
+		FontHeight = 10,
+		TextRows = (200 - TopMargin - BottomMargin) / FontHeight, // 15
+		SpaceWidth = 7,
+		ScreenPixWidth = 320,
+		ScreenMid = 160,
+		PicMargin = 8,
+		// WL_TEXT.C: page number drawn at py=183, px=213, fontcolor=0x4F (79)
+		PageNumX = 213,
+		PageNumY = 183;
 	// WL_TEXT.C: BACKCOLOR = 0x11 (VGA palette index 17, dark blue)
-	public const byte BackColor = 0x11;
-	// WL_TEXT.C: page number drawn at py=183, px=213, fontcolor=0x4F (79)
-	public const int PageNumX = 213;
-	public const int PageNumY = 183;
-	public const byte PageNumColor = 0x4F;
-
+	public const byte BackColor = 0x11,
+		PageNumColor = 0x4F;
 	/// <summary>
 	/// Parse and lay out all pages of a Wolf3D text article.
 	/// </summary>
@@ -92,7 +91,6 @@ public static class ArticleLayoutEngine
 		}
 		return [.. pages];
 	}
-
 	/// <summary>
 	/// Pre-scan: count ^P markers to determine total page count.
 	/// WL_TEXT.C: CacheLayoutGraphics() counts numpages.
@@ -105,7 +103,6 @@ public static class ArticleLayoutEngine
 				count++;
 		return count;
 	}
-
 	/// <summary>
 	/// Lay out one page starting at <paramref name="pos"/> in the text stream.
 	/// Advances <paramref name="pos"/> past the page's ^P/^E terminator.
@@ -129,23 +126,20 @@ public static class ArticleLayoutEngine
 			BackColor = backColor,
 			PageNumColor = pageNumColor,
 		};
-
 		// Per-row margin arrays (WL_TEXT.C: leftmargin[], rightmargin[])
-		int[] leftMargin = new int[TextRows];
-		int[] rightMargin = new int[TextRows];
+		int[] leftMargin = new int[TextRows],
+			rightMargin = new int[TextRows];
 		for (int i = 0; i < TextRows; i++)
 		{
 			leftMargin[i] = LeftMargin;
 			rightMargin[i] = ScreenPixWidth - RightMargin;
 		}
-
-		int px = LeftMargin;
-		int py = TopMargin;
-		int rowOn = 0;
+		int px = LeftMargin,
+			py = TopMargin,
+			rowOn = 0;
 		bool layoutDone = false;
 		byte fontColor = 0; // WL_TEXT.C: fontcolor initialized to 0 before PageLayout
-
-		// Advance past whitespace before ^P
+							// Advance past whitespace before ^P
 		while (pos < text.Length && text[pos] <= ' ')
 			pos++;
 		// Consume the opening ^P[newline] — WL_TEXT.C: "Text not headed with ^P"
@@ -156,21 +150,25 @@ public static class ArticleLayoutEngine
 				pos++;
 			if (pos < text.Length) pos++; // consume newline
 		}
-
 		// Main layout loop — WL_TEXT.C: PageLayout do { ch = *text; ... } while (!layoutdone)
 		while (!layoutDone && pos < text.Length)
 		{
 			char ch = text[pos];
-
 			if (ch == '^')
-			{
 				HandleCommand(
-					text, ref pos,
-					ref px, ref py, ref rowOn, ref layoutDone, ref fontColor,
-					leftMargin, rightMargin,
-					font, picNameResolver, picSizeResolver,
-					page);
-			}
+					text: text,
+					pos: ref pos,
+					px: ref px,
+					py: ref py,
+					rowOn: ref rowOn,
+					layoutDone: ref layoutDone,
+					fontColor: ref fontColor,
+					leftMargin: leftMargin,
+					rightMargin: rightMargin,
+					font: font,
+					picNameResolver: picNameResolver,
+					picSizeResolver: picSizeResolver,
+					page: page);
 			else if (ch == '\t') // TAB: align to next 8-pixel boundary
 			{
 				px = (px + 8) & ~7;
@@ -179,19 +177,28 @@ public static class ArticleLayoutEngine
 			else if (ch <= ' ') // WL_TEXT.C: HandleCtrls
 			{
 				if (ch == '\n')
-					NewLine(ref rowOn, ref px, ref py, ref layoutDone, leftMargin);
+					NewLine(
+						rowOn: ref rowOn,
+						px: ref px,
+						py: ref py,
+						layoutDone: ref layoutDone,
+						leftMargin: leftMargin);
 				pos++;
 			}
 			else // WL_TEXT.C: HandleWord
-			{
 				HandleWord(
-					text, ref pos,
-					ref px, ref py, ref rowOn, ref layoutDone,
-					fontColor, leftMargin, rightMargin,
-					font, page);
-			}
+					text: text,
+					pos: ref pos,
+					px: ref px,
+					py: ref py,
+					rowOn: ref rowOn,
+					layoutDone: ref layoutDone,
+					fontColor: fontColor,
+					leftMargin: leftMargin,
+					rightMargin: rightMargin,
+					font: font,
+					page: page);
 		}
-
 		// Page number run — WL_TEXT.C: if (shownumber) { py=183; px=213; fontcolor=0x4F; }
 		page.TextRuns.Add(new ArticleTextRun
 		{
@@ -200,10 +207,8 @@ public static class ArticleLayoutEngine
 			Color = page.PageNumColor,
 			Text = $"pg {pageNumber} of {totalPages}",
 		});
-
 		return page;
 	}
-
 	/// <summary>
 	/// Process a ^ command at the current position.
 	/// WL_TEXT.C: HandleCommand()
@@ -220,102 +225,91 @@ public static class ArticleLayoutEngine
 			return;
 		char cmd = char.ToUpper(text[pos]);
 		pos++; // skip command char
-
 		switch (cmd)
 		{
-		case 'P': // start of next page — stop this page
-		case 'E': // end of file
-			layoutDone = true;
-			pos -= 2; // WL_TEXT.C: "back up to the '^'" so caller can find ^E/^P
-			break;
-
-		case 'C': // ^C<HH> change color (two VGA hex digits)
-		{
-			if (pos >= text.Length) break;
-			int high = HexVal(text[pos++]);
-			int low = pos < text.Length ? HexVal(text[pos++]) : 0;
-			fontColor = (byte)(high * 16 + low);
-			break;
-		}
-
-		case 'G': // ^G<y>,<x>,<picnum>[newline] draw graphic
-		case 'T': // ^T<y>,<x>,<picnum>,<delay>[newline] timed draw (delay ignored)
-		{
-			int picy = ParseNumber(text, ref pos);
-			int picx = ParseNumber(text, ref pos);
-			int picnum = ParseNumber(text, ref pos);
-			if (cmd == 'T')
-				ParseNumber(text, ref pos); // discard delay
-			RipToEOL(text, ref pos);
-
-			string picName = picNameResolver?.Invoke(picnum);
-			int alignedX = picx & ~7; // WL_TEXT.C: VWB_DrawPic(picx&~7, picy, picnum)
-			page.Graphics.Add(new ArticleGraphicItem { X = alignedX, Y = picy, PicName = picName });
-
-			// Adjust per-row margins so text flows around the graphic
-			// WL_TEXT.C: HandleCommand case 'G' margin adjustment
-			(int width, int height)? size = picSizeResolver?.Invoke(picnum);
-			if (size.HasValue)
-			{
-				int picwidth = size.Value.width;
-				int picheight = size.Value.height;
-				// WL_TEXT.C: picmid = picx + picwidth/2; if (picmid > SCREENMID) new right margin else new left margin
-				int picmid = picx + picwidth / 2;
-				int margin = picmid > ScreenMid
-					? picx - PicMargin             // image on right: shrink right margin
-					: picx + picwidth + PicMargin; // image on left: shrink left margin
-				int top = (picy - TopMargin) / FontHeight;
-				if (top < 0) top = 0;
-				int bottom = (picy + picheight - TopMargin) / FontHeight;
-				if (bottom >= TextRows) bottom = TextRows - 1;
-				for (int i = top; i <= bottom; i++)
+			case 'P': // start of next page — stop this page
+			case 'E': // end of file
+				layoutDone = true;
+				pos -= 2; // WL_TEXT.C: "back up to the '^'" so caller can find ^E/^P
+				break;
+			case 'C': // ^C<HH> change color (two VGA hex digits)
 				{
-					if (picmid > ScreenMid)
-						rightMargin[i] = margin;
-					else
-						leftMargin[i] = margin;
+					if (pos >= text.Length) break;
+					int high = HexVal(text[pos++]);
+					int low = pos < text.Length ? HexVal(text[pos++]) : 0;
+					fontColor = (byte)(high * 16 + low);
+					break;
 				}
-				// WL_TEXT.C: if (px < leftmargin[rowon]) px = leftmargin[rowon];
-				if (px < leftMargin[rowOn])
-					px = leftMargin[rowOn];
-			}
-			break;
-		}
-
-		case 'L': // ^L<y>,<x>[newline] locate cursor (y first, then x)
-		{
-			int newPy = ParseNumber(text, ref pos);
-			int newPx = ParseNumber(text, ref pos);
-			RipToEOL(text, ref pos);
-			rowOn = (newPy - TopMargin) / FontHeight;
-			if (rowOn < 0) rowOn = 0;
-			if (rowOn >= TextRows) rowOn = TextRows - 1;
-			py = TopMargin + rowOn * FontHeight;
-			px = newPx;
-			break;
-		}
-
-		case 'B': // ^B<y>,<x>,<w>,<h>[newline] clear bar (no-op: renderer draws background)
-			ParseNumber(text, ref pos);
-			ParseNumber(text, ref pos);
-			ParseNumber(text, ref pos);
-			ParseNumber(text, ref pos);
-			RipToEOL(text, ref pos);
-			break;
-
-		case '>': // ^> center cursor (px = SCREENMID)
-			px = ScreenMid;
-			break;
-
-		case ';': // comment — skip to end of line
-			RipToEOL(text, ref pos);
-			break;
-
-		default:
-			break;
+			case 'G': // ^G<y>,<x>,<picnum>[newline] draw graphic
+			case 'T': // ^T<y>,<x>,<picnum>,<delay>[newline] timed draw (delay ignored)
+				{
+					int picy = ParseNumber(text, ref pos),
+						picx = ParseNumber(text, ref pos),
+						picnum = ParseNumber(text, ref pos);
+					if (cmd == 'T')
+						ParseNumber(text, ref pos); // discard delay
+					RipToEOL(text, ref pos);
+					string picName = picNameResolver?.Invoke(picnum);
+					int alignedX = picx & ~7; // WL_TEXT.C: VWB_DrawPic(picx&~7, picy, picnum)
+					page.Graphics.Add(new ArticleGraphicItem { X = alignedX, Y = picy, PicName = picName });
+					// Adjust per-row margins so text flows around the graphic
+					// WL_TEXT.C: HandleCommand case 'G' margin adjustment
+					(int width, int height)? size = picSizeResolver?.Invoke(picnum);
+					if (size.HasValue)
+					{
+						int picwidth = size.Value.width,
+							picheight = size.Value.height,
+							// WL_TEXT.C: picmid = picx + picwidth/2; if (picmid > SCREENMID) new right margin else new left margin
+							picmid = picx + picwidth / 2,
+							margin = picmid > ScreenMid
+								? picx - PicMargin             // image on right: shrink right margin
+								: picx + picwidth + PicMargin, // image on left: shrink left margin
+							top = (picy - TopMargin) / FontHeight;
+						if (top < 0) top = 0;
+						int bottom = (picy + picheight - TopMargin) / FontHeight;
+						if (bottom >= TextRows) bottom = TextRows - 1;
+						for (int i = top; i <= bottom; i++)
+						{
+							if (picmid > ScreenMid)
+								rightMargin[i] = margin;
+							else
+								leftMargin[i] = margin;
+						}
+						// WL_TEXT.C: if (px < leftmargin[rowon]) px = leftmargin[rowon];
+						if (px < leftMargin[rowOn])
+							px = leftMargin[rowOn];
+					}
+					break;
+				}
+			case 'L': // ^L<y>,<x>[newline] locate cursor (y first, then x)
+				{
+					int newPy = ParseNumber(text, ref pos),
+						newPx = ParseNumber(text, ref pos);
+					RipToEOL(text, ref pos);
+					rowOn = (newPy - TopMargin) / FontHeight;
+					if (rowOn < 0) rowOn = 0;
+					if (rowOn >= TextRows) rowOn = TextRows - 1;
+					py = TopMargin + rowOn * FontHeight;
+					px = newPx;
+					break;
+				}
+			case 'B': // ^B<y>,<x>,<w>,<h>[newline] clear bar (no-op: renderer draws background)
+				ParseNumber(text, ref pos);
+				ParseNumber(text, ref pos);
+				ParseNumber(text, ref pos);
+				ParseNumber(text, ref pos);
+				RipToEOL(text, ref pos);
+				break;
+			case '>': // ^> center cursor (px = SCREENMID)
+				px = ScreenMid;
+				break;
+			case ';': // comment — skip to end of line
+				RipToEOL(text, ref pos);
+				break;
+			default:
+				break;
 		}
 	}
-
 	/// <summary>
 	/// Lay out one word (all chars > 32 until whitespace/control).
 	/// WL_TEXT.C: HandleWord()
@@ -333,10 +327,8 @@ public static class ArticleLayoutEngine
 		if (pos == wordStart)
 			return;
 		string word = text[wordStart..pos];
-
 		// Measure word width using font glyph widths (WL_TEXT.C: VW_MeasurePropString)
 		int wwidth = MeasureString(word, font);
-
 		// Word-wrap: advance to next line while word doesn't fit
 		while (px + wwidth > rightMargin[rowOn])
 		{
@@ -344,7 +336,6 @@ public static class ArticleLayoutEngine
 			if (layoutDone)
 				return;
 		}
-
 		// Emit text run at current position
 		page.TextRuns.Add(new ArticleTextRun
 		{
@@ -354,7 +345,6 @@ public static class ArticleLayoutEngine
 			Text = word,
 		});
 		px += wwidth;
-
 		// Consume trailing spaces (WL_TEXT.C: while (*text == ' ') { px += SPACEWIDTH; text++; })
 		while (pos < text.Length && text[pos] == ' ')
 		{
@@ -362,7 +352,6 @@ public static class ArticleLayoutEngine
 			pos++;
 		}
 	}
-
 	/// <summary>
 	/// Advance to the next text row.
 	/// WL_TEXT.C: NewLine()
@@ -379,7 +368,6 @@ public static class ArticleLayoutEngine
 		py += FontHeight;
 		px = leftMargin[rowOn];
 	}
-
 	/// <summary>
 	/// Measure the pixel width of a string using proportional font glyph widths.
 	/// WL_TEXT.C: VW_MeasurePropString()
@@ -394,7 +382,6 @@ public static class ArticleLayoutEngine
 				width += font.Widths[c];
 		return width;
 	}
-
 	/// <summary>
 	/// Parse a decimal integer from the text stream, stopping at any non-digit.
 	/// WL_TEXT.C: ParseNumber()
@@ -418,7 +405,6 @@ public static class ArticleLayoutEngine
 		}
 		return num;
 	}
-
 	/// <summary>
 	/// Advance position past the end of the current line (past the '\n').
 	/// WL_TEXT.C: RipToEOL()
@@ -429,7 +415,6 @@ public static class ArticleLayoutEngine
 			pos++;
 		if (pos < text.Length) pos++; // consume '\n'
 	}
-
 	/// <summary>
 	/// Convert a single ASCII hex character to its integer value (0–15).
 	/// Returns 0 for invalid characters.

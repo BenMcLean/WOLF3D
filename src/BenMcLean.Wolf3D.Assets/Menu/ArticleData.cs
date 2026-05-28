@@ -25,7 +25,6 @@ public class TextChunkDefinition
 	/// WL_TEXT.C: char helpfilename[13] = "HELPART."
 	/// </summary>
 	public string File { get; set; }
-
 	public static TextChunkDefinition FromXElement(XElement element) => new()
 	{
 		Name = element.Attribute("Name")?.Value
@@ -70,7 +69,6 @@ public class ArticleDefinition
 	/// WL_TEXT.C: ShowArticle exits on sc_Escape.
 	/// </summary>
 	public string OnCancel { get; set; }
-
 	public static ArticleDefinition FromXElement(XElement element)
 	{
 		ArticleDefinition def = new()

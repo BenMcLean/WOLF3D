@@ -107,8 +107,8 @@ public class AssetManager
 		if (openRead is null)
 			return AudioT.Load(xml, folder);
 		XElement el = xml.Element("Audio");
-		string head = el?.Attribute("AudioHead")?.Value;
-		string audioT = el?.Attribute("AudioT")?.Value;
+		string head = el?.Attribute("AudioHead")?.Value,
+			audioT = el?.Attribute("AudioT")?.Value;
 		if (head is null || audioT is null)
 			return null;
 		using Stream audioHeadStream = OpenRead(Path.Combine(folder, head), openRead);
@@ -120,9 +120,9 @@ public class AssetManager
 		if (openRead is null)
 			return VgaGraph.Load(xml, folder);
 		XElement el = xml.Element("VgaGraph");
-		string head = el?.Attribute("VgaHead")?.Value;
-		string graph = el?.Attribute("VgaGraph")?.Value;
-		string dict = el?.Attribute("VgaDict")?.Value;
+		string head = el?.Attribute("VgaHead")?.Value,
+			graph = el?.Attribute("VgaGraph")?.Value,
+			dict = el?.Attribute("VgaDict")?.Value;
 		if (head is null || graph is null || dict is null)
 			return null;
 		using Stream vgaHeadStream = OpenRead(Path.Combine(folder, head), openRead);
@@ -151,8 +151,8 @@ public class AssetManager
 		if (openRead is null)
 			return GameMap.Load(xml, folder);
 		XElement el = xml.Element("Maps");
-		string head = el?.Attribute("MapHead")?.Value;
-		string gameMaps = el?.Attribute("GameMaps")?.Value;
+		string head = el?.Attribute("MapHead")?.Value,
+			gameMaps = el?.Attribute("GameMaps")?.Value;
 		if (head is null || gameMaps is null)
 			return [];
 		using Stream mapHeadStream = OpenRead(Path.Combine(folder, head), openRead);
@@ -170,8 +170,8 @@ public class AssetManager
 			return -1; // Unknown sprite
 		}
 		// Find the Actors element inside VSwap
-		XElement vswapElement = xml.Element("VSwap");
-		XElement actorsElement = vswapElement?.Element("Actors");
+		XElement vswapElement = xml.Element("VSwap"),
+			actorsElement = vswapElement?.Element("Actors");
 		if (actorsElement is null)
 			return stateCollection; // No states defined
 									// Load state functions first
@@ -201,8 +201,8 @@ public class AssetManager
 	{
 		WeaponCollection weaponCollection = new();
 		// Find the GameplayWeapons element inside VSwap
-		XElement vswapElement = xml.Element("VSwap");
-		XElement weaponsElement = vswapElement?.Element("GameplayWeapons");
+		XElement vswapElement = xml.Element("VSwap"),
+			weaponsElement = vswapElement?.Element("GameplayWeapons");
 		if (weaponsElement is null)
 			return weaponCollection; // No weapons defined
 									 // Load weapon definitions
@@ -221,8 +221,8 @@ public class AssetManager
 		XElement vgaGraphElement = xml.Element("VgaGraph");
 		foreach (XElement chunkEl in vgaGraphElement?.Element("TextChunks")?.Elements("TextChunk") ?? [])
 		{
-			string name = chunkEl.Attribute("Name")?.Value;
-			string fileName = chunkEl.Attribute("File")?.Value;
+			string name = chunkEl.Attribute("Name")?.Value,
+				fileName = chunkEl.Attribute("File")?.Value;
 			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(fileName))
 				continue;
 			string filePath = Path.Combine(folder, fileName);

@@ -65,25 +65,22 @@ public class ProjectileDefinition
 	/// <summary>
 	/// Creates a ProjectileDefinition from an XElement.
 	/// </summary>
-	public static ProjectileDefinition FromXElement(XElement element)
+	public static ProjectileDefinition FromXElement(XElement element) => new()
 	{
-		return new ProjectileDefinition
-		{
-			Name = element.Attribute("Name")?.Value
-				?? throw new ArgumentException("Projectile element must have a Name attribute"),
-			InitialState = element.Attribute("InitialState")?.Value
-				?? throw new ArgumentException("Projectile element must have an InitialState attribute"),
-			ExplodeState = element.Attribute("ExplodeState")?.Value,
-			MinDamage = short.TryParse(element.Attribute("MinDamage")?.Value, out short minDmg)
-				? minDmg : (short)0,
-			MaxDamage = short.TryParse(element.Attribute("MaxDamage")?.Value, out short maxDmg)
-				? maxDmg : (short)0,
-			WallCollisionSize = int.TryParse(element.Attribute("WallCollisionSize")?.Value, out int wallSize)
-				? wallSize : 0x2000,
-			ActorCollisionSize = int.TryParse(element.Attribute("ActorCollisionSize")?.Value, out int actorSize)
-				? actorSize : 0xC000,
-			Speed = int.TryParse(element.Attribute("Speed")?.Value, out int speed)
-				? speed : 0x2000,
-		};
-	}
+		Name = element.Attribute("Name")?.Value
+			?? throw new ArgumentException("Projectile element must have a Name attribute"),
+		InitialState = element.Attribute("InitialState")?.Value
+			?? throw new ArgumentException("Projectile element must have an InitialState attribute"),
+		ExplodeState = element.Attribute("ExplodeState")?.Value,
+		MinDamage = short.TryParse(element.Attribute("MinDamage")?.Value, out short minDmg)
+			? minDmg : (short)0,
+		MaxDamage = short.TryParse(element.Attribute("MaxDamage")?.Value, out short maxDmg)
+			? maxDmg : (short)0,
+		WallCollisionSize = int.TryParse(element.Attribute("WallCollisionSize")?.Value, out int wallSize)
+			? wallSize : 0x2000,
+		ActorCollisionSize = int.TryParse(element.Attribute("ActorCollisionSize")?.Value, out int actorSize)
+			? actorSize : 0xC000,
+		Speed = int.TryParse(element.Attribute("Speed")?.Value, out int speed)
+			? speed : 0x2000,
+	};
 }

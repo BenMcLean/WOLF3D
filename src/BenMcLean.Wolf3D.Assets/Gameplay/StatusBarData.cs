@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Menu;
 
@@ -96,11 +94,9 @@ public class StatusBarDefinition : CanvasLayoutDefinition
 			OnWeaponFire = element.Attribute("OnWeaponFire")?.Value,
 			FizzleFadeColor = byte.TryParse(element.Attribute("FizzleFadeColor")?.Value, out byte fizzleColor) ? fizzleColor : null,
 		};
-
 		CanvasLayoutDefinitionParser.PopulateLayout(element, definition);
 		if (int.TryParse(element.Attribute("FaceTics")?.Value, out int faceTics))
 			definition.FaceTics = faceTics;
-
 		return definition;
 	}
 }

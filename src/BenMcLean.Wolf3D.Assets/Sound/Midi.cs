@@ -31,7 +31,6 @@ public class Midi
 	public static Midi Parse(BinaryReader reader)
 	{
 		Midi midi = new();
-
 		// Read MIDI header ("MThd")
 		byte[] header = reader.ReadBytes(4);
 		if (header.Length != 4 || header[0] != 'M' || header[1] != 'T' || header[2] != 'h' || header[3] != 'd')
@@ -173,10 +172,8 @@ public class Midi
 								break; // Exit track parsing loop
 							}
 							else
-							{
 								// Skip unknown meta events
 								reader.ReadBytes((int)metaLength);
-							}
 						}
 						else if (statusByte == 0xF0 || statusByte == 0xF7) // SysEx
 						{

@@ -357,17 +357,17 @@ public sealed class VSwap
 		XElement paletteElement = xml.Element("Palettes")
 			?.Elements("Palette")
 			.FirstOrDefault(p => p.Attribute("Name") is null);
-		if (paletteElement is null)
-			throw new InvalidDataException("No default <Palette> (without a Name attribute) found inside <Palettes> in game XML.");
-		return ParsePaletteElement(paletteElement);
+		return paletteElement is null
+			? throw new InvalidDataException("No default <Palette> (without a Name attribute) found inside <Palettes> in game XML.")
+			: ParsePaletteElement(paletteElement);
 	}
 	public static Dictionary<string, uint[]> LoadNamedPalettes(XElement xml) =>
 		(xml.Element("Palettes")?.Elements("Palette") ?? [])
 		.Where(p => p.Attribute("Name")?.Value is { Length: > 0 })
 		.ToDictionary(
-			p => p.Attribute("Name").Value,
-			p => ParsePaletteElement(p),
-			StringComparer.OrdinalIgnoreCase);
+			keySelector: p => p.Attribute("Name").Value,
+			elementSelector: ParsePaletteElement,
+			comparer: StringComparer.OrdinalIgnoreCase);
 	private static uint[] ParsePaletteElement(XElement paletteElement)
 	{
 		uint[] result = new uint[256];

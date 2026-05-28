@@ -20,12 +20,12 @@ public sealed class AudioT
 	}
 	public static AudioT Load(XElement xml, string folder = "")
 	{
-		XElement el   = xml.Element("Audio");
-		string head   = el?.Attribute("AudioHead")?.Value;
-		string audioT = el?.Attribute("AudioT")?.Value;
+		XElement el = xml.Element("Audio");
+		string head = el?.Attribute("AudioHead")?.Value,
+			audioT = el?.Attribute("AudioT")?.Value;
 		if (head is null || audioT is null)
 			return null;
-		using FileStream audioHead    = new(Path.Combine(folder, head),   FileMode.Open);
+		using FileStream audioHead = new(Path.Combine(folder, head), FileMode.Open);
 		using FileStream audioTStream = new(Path.Combine(folder, audioT), FileMode.Open);
 		return new AudioT(audioHead, audioTStream, el);
 	}
@@ -37,14 +37,12 @@ public sealed class AudioT
 	public Dictionary<string, Music> Songs { get; private init; }
 	public bool HasLogicalSound(string soundName) =>
 		!string.IsNullOrWhiteSpace(soundName) && LogicalSounds.ContainsKey(soundName);
-	public string ResolveLogicalSoundName(string requestedSoundName)
-	{
-		if (string.IsNullOrWhiteSpace(requestedSoundName) || HasLogicalSound(requestedSoundName))
-			return requestedSoundName;
-		return DigiToLogicalSoundName.TryGetValue(requestedSoundName, out string logicalSoundName)
-			? logicalSoundName
-			: requestedSoundName;
-	}
+	public string ResolveLogicalSoundName(string requestedSoundName) =>
+		string.IsNullOrWhiteSpace(requestedSoundName) || HasLogicalSound(requestedSoundName)
+			? requestedSoundName
+			: DigiToLogicalSoundName.TryGetValue(requestedSoundName, out string logicalSoundName)
+				? logicalSoundName
+				: requestedSoundName;
 	public bool HasPlayableSound(string requestedSoundName) =>
 		TryResolvePlayableSoundName(requestedSoundName, out _);
 	public string ResolvePlayableSoundName(string requestedSoundName) =>
@@ -65,10 +63,9 @@ public sealed class AudioT
 	public bool TryGetMappedDigiSoundName(string requestedSoundName, out string digiSoundName)
 	{
 		digiSoundName = null;
-		if (string.IsNullOrWhiteSpace(requestedSoundName))
-			return false;
-		return TryResolvePlayableSoundName(requestedSoundName, out string logicalSoundName) &&
-			LogicalToDigiSoundName.TryGetValue(logicalSoundName, out digiSoundName);
+		return !string.IsNullOrWhiteSpace(requestedSoundName)
+			&& TryResolvePlayableSoundName(requestedSoundName, out string logicalSoundName)
+			&& LogicalToDigiSoundName.TryGetValue(logicalSoundName, out digiSoundName);
 	}
 	public static uint[] ParseHead(Stream stream)
 	{
@@ -121,7 +118,7 @@ public sealed class AudioT
 					{
 						Number = number,
 						Name = name,
-						DigiSoundName = soundElement.Attribute("DigiSound")?.Value
+						DigiSoundName = soundElement.Attribute("DigiSound")?.Value,
 					};
 				})
 				.Where(sound => sound is not null)];

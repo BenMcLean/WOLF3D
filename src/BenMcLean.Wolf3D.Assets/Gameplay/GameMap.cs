@@ -95,7 +95,6 @@ public sealed class GameMap
 				// storing an additional zero terminator. Stop cleanly at EOF in either layout.
 				if (stream.CanSeek && stream.Length - stream.Position < sizeof(uint))
 					break;
-
 				uint offset;
 				try
 				{
@@ -105,7 +104,6 @@ public sealed class GameMap
 				{
 					break;
 				}
-
 				if (offset == 0)
 					break;
 				offsets.Add(offset);

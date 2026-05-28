@@ -18,7 +18,6 @@ public static class CanvasLayoutDefinitionParser
 	{
 		ArgumentNullException.ThrowIfNull(element);
 		ArgumentNullException.ThrowIfNull(layout);
-
 		layout.Font = element.Attribute("Font")?.Value;
 		layout.Boxes = [.. element.Elements("Box").Select(MenuBoxDefinition.FromXElement)];
 		layout.Pictures = [.. element.Elements("Picture").Select(PictureDefinition.FromXElement)];

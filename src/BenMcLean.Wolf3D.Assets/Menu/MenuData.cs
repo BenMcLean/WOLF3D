@@ -37,19 +37,14 @@ public class MenuFunction
 	/// </summary>
 	/// <param name="element">The XElement containing function data (&lt;MenuFunction&gt;)</param>
 	/// <returns>A new MenuFunction instance</returns>
-	public static MenuFunction FromXElement(XElement element)
+	public static MenuFunction FromXElement(XElement element) => new()
 	{
-		string name = element.Attribute("Name")?.Value ?? throw new ArgumentException("MenuFunction element must have a Name attribute");
-		string code = element.Value?.Trim() ?? string.Empty;
-		string description = element.Attribute("Description")?.Value;
-
-		return new MenuFunction
-		{
-			Name = name,
-			Code = code,
-			Description = description
-		};
-	}
+		Name = element.Attribute("Name")?.Value
+			?? throw new ArgumentException("MenuFunction element must have a Name attribute"),
+		Code = element.Value?.Trim()
+			?? string.Empty,
+		Description = element.Attribute("Description")?.Value,
+	};
 }
 
 /// <summary>
@@ -108,9 +103,8 @@ public class MenuBoxDefinition
 			X = int.TryParse(element.Attribute("X")?.Value, out int x) ? x : 0,
 			Y = int.TryParse(element.Attribute("Y")?.Value, out int y) ? y : 0,
 			W = int.TryParse(element.Attribute("W")?.Value, out int w) ? w : 0,
-			H = int.TryParse(element.Attribute("H")?.Value, out int h) ? h : 0
+			H = int.TryParse(element.Attribute("H")?.Value, out int h) ? h : 0,
 		};
-
 		// Parse colors using semantic attribute names from WL_MENU.H
 		if (byte.TryParse(element.Attribute("BkgdColor")?.Value, out byte bgColor))
 			box.BkgdColor = bgColor;
@@ -122,7 +116,6 @@ public class MenuBoxDefinition
 			box.Bevel = bevel;
 		if (int.TryParse(element.Attribute("ZIndex")?.Value, out int zIndex))
 			box.ZIndex = zIndex;
-
 		return box;
 	}
 }
@@ -210,7 +203,7 @@ public class PictureDefinition
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
 			Frames = element.Attribute("Frames")?.Value,
-			Script = element.Value?.Trim()
+			Script = element.Value?.Trim(),
 		};
 		if (int.TryParse(element.Attribute("ZIndex")?.Value, out int zIndex))
 			picture.ZIndex = zIndex;
@@ -303,7 +296,7 @@ public class TextDefinition
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
 			Font = element.Attribute("Font")?.Value,
-			Align = element.Attribute("Align")?.Value
+			Align = element.Attribute("Align")?.Value,
 		};
 		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
 			text.Color = color;
@@ -400,7 +393,7 @@ public class MenuTickerDefinition
 			X = element.Attribute("X")?.Value ?? "0",
 			Y = element.Attribute("Y")?.Value ?? "0",
 			Font = element.Attribute("Font")?.Value,
-			Align = element.Attribute("Align")?.Value
+			Align = element.Attribute("Align")?.Value,
 		};
 		if (byte.TryParse(element.Attribute("Color")?.Value, out byte color))
 			ticker.Color = color;
@@ -501,18 +494,14 @@ public class MenuItemDefinition
 			Condition = element.Attribute("Condition")?.Value ?? element.Attribute("InGame")?.Value,
 			SelectSound = element.Attribute("SelectSound")?.Value,
 		};
-
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())
 		{
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
 			if (attrName is not ("Text" or "Condition" or "InGame" or "SelectSound"))
-			{
 				item.CustomProperties[attrName] = attr.Value;
-			}
 		}
-
 		return item;
 	}
 }
@@ -560,7 +549,6 @@ public class StaticSpriteDefinition
 	public int Y { get; set; }
 	/// <summary>Scale multiplier applied to the sprite's natural pixel size.</summary>
 	public float Scale { get; set; } = 1f;
-
 	public static StaticSpriteDefinition FromXElement(XElement element)
 	{
 		StaticSpriteDefinition def = new()
@@ -595,12 +583,15 @@ public class ActorAnimationDefinition
 			StartState = element.Attribute("StartState")?.Value
 				?? throw new ArgumentException("ActorAnimation element must have a StartState attribute"),
 		};
-		if (int.TryParse(element.Attribute("X")?.Value, out int x)) def.X = x;
-		if (int.TryParse(element.Attribute("Y")?.Value, out int y)) def.Y = y;
+		if (int.TryParse(element.Attribute("X")?.Value, out int x))
+			def.X = x;
+		if (int.TryParse(element.Attribute("Y")?.Value, out int y))
+			def.Y = y;
 		if (float.TryParse(element.Attribute("Scale")?.Value,
 			System.Globalization.NumberStyles.Float,
 			System.Globalization.CultureInfo.InvariantCulture,
-			out float scale)) def.Scale = scale;
+			out float scale))
+			def.Scale = scale;
 		return def;
 	}
 }
@@ -779,11 +770,9 @@ public class MenuDefinition : CanvasLayoutDefinition
 			CursorMoveSound = element.Attribute("CursorMoveSound")?.Value,
 			OnSelectionChanged = element.Element("OnSelectionChanged")?.Value?.Trim(),
 			OnShow = element.Element("OnShow")?.Value?.Trim(),
-			OnCancel = element.Element("OnCancel")?.Value?.Trim()
+			OnCancel = element.Element("OnCancel")?.Value?.Trim(),
 		};
-
 		CanvasLayoutDefinitionParser.PopulateLayout(element, menu);
-
 		// Parse color attributes using semantic names from WL_MENU.H
 		if (byte.TryParse(element.Attribute("BordColor")?.Value, out byte borderColor))
 			menu.BordColor = borderColor;
@@ -791,7 +780,6 @@ public class MenuDefinition : CanvasLayoutDefinition
 			menu.TextColor = textColor;
 		if (byte.TryParse(element.Attribute("Highlight")?.Value, out byte highlight))
 			menu.Highlight = highlight;
-
 		// Parse layout coordinates (X, Y, Indent, Spacing)
 		if (int.TryParse(element.Attribute("X")?.Value, out int x))
 			menu.X = x;
@@ -803,7 +791,6 @@ public class MenuDefinition : CanvasLayoutDefinition
 			menu.Spacing = spacing;
 		if (int.TryParse(element.Attribute("CurPos")?.Value, out int curPos))
 			menu.CurPos = curPos;
-
 		// Parse tickers
 		IEnumerable<XElement> tickerElements = element.Elements("Ticker");
 		if (tickerElements is not null)
@@ -818,25 +805,20 @@ public class MenuDefinition : CanvasLayoutDefinition
 			.Select(e => e.Name.LocalName == "PresentationMenuItem"
 				? MenuItemDefinition.CreatePresentationSlot()
 				: MenuItemDefinition.FromXElement(e))];
-
 		XElement vrEnvElement = element.Element("VRElevatorEnvironment");
 		if (vrEnvElement is not null)
 			menu.VRElevatorEnvironment = VRElevatorEnvironmentDefinition.FromXElement(vrEnvElement);
-
 		if (bool.TryParse(element.Attribute("KeepWeapons")?.Value, out bool keepWeapons))
 			menu.KeepWeapons = keepWeapons;
 		XElement statusBarElement = element.Element("StatusBar");
 		if (statusBarElement is not null)
 			menu.StatusBar = MenuStatusBarDefinition.FromXElement(statusBarElement);
-
 		IEnumerable<XElement> actorAnimElements = element.Elements("ActorAnimation");
 		if (actorAnimElements is not null)
 			menu.ActorAnimations = [.. actorAnimElements.Select(ActorAnimationDefinition.FromXElement)];
-
 		IEnumerable<XElement> staticSpriteElements = element.Elements("StaticSprite");
 		if (staticSpriteElements is not null)
 			menu.StaticSprites = [.. staticSpriteElements.Select(StaticSpriteDefinition.FromXElement)];
-
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())
 		{
@@ -844,11 +826,8 @@ public class MenuDefinition : CanvasLayoutDefinition
 			// Skip standard attributes we've already processed
 			if (attrName is not ("Name" or "BordColor"
 				or "TextColor" or "Highlight" or "Font" or "Music" or "Song" or "X" or "Y" or "Indent" or "Spacing" or "CurPos" or "CursorPic" or "SelectSound" or "CursorMoveSound" or "KeepWeapons"))
-			{
 				menu.CustomProperties[attrName] = attr.Value;
-			}
 		}
-
 		return menu;
 	}
 }
@@ -976,7 +955,6 @@ public class MenuCollection
 		ArgumentNullException.ThrowIfNull(function);
 		if (string.IsNullOrEmpty(function.Name))
 			throw new ArgumentException("MenuFunction must have a non-empty Name");
-
 		Functions[function.Name] = function;
 	}
 	/// <summary>
@@ -988,7 +966,6 @@ public class MenuCollection
 		ArgumentNullException.ThrowIfNull(menu);
 		if (string.IsNullOrEmpty(menu.Name))
 			throw new ArgumentException("MenuDefinition must have a non-empty Name");
-
 		Menus[menu.Name] = menu;
 	}
 	/// <summary>
@@ -999,12 +976,8 @@ public class MenuCollection
 	{
 		if (functionElements is null)
 			return;
-
 		foreach (XElement element in functionElements)
-		{
-			MenuFunction function = MenuFunction.FromXElement(element);
-			AddFunction(function);
-		}
+			AddFunction(MenuFunction.FromXElement(element));
 	}
 	/// <summary>
 	/// Loads menus from XML elements.
@@ -1014,12 +987,8 @@ public class MenuCollection
 	{
 		if (menuElements is null)
 			return;
-
 		foreach (XElement element in menuElements)
-		{
-			MenuDefinition menu = MenuDefinition.FromXElement(element);
-			AddMenu(menu);
-		}
+			AddMenu(MenuDefinition.FromXElement(element));
 	}
 	/// <summary>
 	/// Applies collection-level defaults to a single menu definition.
@@ -1033,7 +1002,6 @@ public class MenuCollection
 		menu.BordColor ??= DefaultBordColor;
 		menu.TextColor ??= DefaultTextColor;
 		menu.Highlight ??= DefaultHighlight;
-
 		// Apply default sound, music, cursor, and font
 		// Note: Empty string ("") won't be replaced - allows explicit "no cursor/sound/music/font"
 		menu.SelectSound ??= DefaultSelectSound;
@@ -1043,7 +1011,6 @@ public class MenuCollection
 		menu.Font ??= DefaultFont;
 		// Apply default spacing
 		menu.Spacing ??= DefaultSpacing;
-
 		// Apply default colors to boxes
 		foreach (MenuBoxDefinition box in menu.Boxes)
 		{
@@ -1071,7 +1038,6 @@ public class MenuCollection
 	{
 		if (menusElement is null)
 			return new MenuCollection(); // Return empty collection if no menus defined
-
 		MenuCollection collection = new()
 		{
 			PauseMenu = menusElement.Attribute("Pause")?.Value,
@@ -1080,9 +1046,8 @@ public class MenuCollection
 			DefaultCursorMoveSound = menusElement.Attribute("CursorMoveSound")?.Value,
 			DefaultMusic = menusElement.Attribute("Music")?.Value,
 			DefaultCursorPic = menusElement.Attribute("CursorPic")?.Value,
-			DefaultFont = menusElement.Attribute("Font")?.Value
+			DefaultFont = menusElement.Attribute("Font")?.Value,
 		};
-
 		// Parse default colors from <Menus> element (WL_MENU.H values)
 		if (byte.TryParse(menusElement.Attribute("TextColor")?.Value, out byte textColor))
 			collection.DefaultTextColor = textColor;
@@ -1104,7 +1069,6 @@ public class MenuCollection
 			collection.DefaultModalHighlight = modalHighlight;
 		if (byte.TryParse(menusElement.Attribute("ModalBord2Color")?.Value, out byte modalBorder2))
 			collection.DefaultModalBord2Color = modalBorder2;
-
 		// Parse default spacing
 		if (int.TryParse(menusElement.Attribute("Spacing")?.Value, out int spacing))
 			collection.DefaultSpacing = spacing;
@@ -1115,21 +1079,17 @@ public class MenuCollection
 		// Load menu functions first
 		IEnumerable<XElement> functionElements = menusElement.Elements("MenuFunction");
 		collection.LoadFunctionsFromXml(functionElements);
-
 		// Load menu definitions
 		IEnumerable<XElement> menuElements = menusElement.Elements("Menu");
 		collection.LoadMenusFromXml(menuElements);
-
 		// Apply defaults to menus that don't have their own colors specified
 		collection.ApplyDefaults();
-
 		// Load article definitions
 		foreach (XElement articleEl in menusElement.Elements("Article"))
 		{
 			ArticleDefinition article = ArticleDefinition.FromXElement(articleEl);
 			collection.Articles[article.Name] = article;
 		}
-
 		return collection;
 	}
 }

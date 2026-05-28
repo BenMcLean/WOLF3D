@@ -35,7 +35,6 @@ public static class WallSpawns
 		using FileStream stream = new(path, FileMode.Open, FileAccess.Read);
 		return LoadAll(stream);
 	}
-
 	/// <summary>
 	/// Loads all levels' wall spawns from a stream.
 	/// </summary>
@@ -54,12 +53,12 @@ public static class WallSpawns
 			MapAnalysis.WallSpawn[] spawns = new MapAnalysis.WallSpawn[count];
 			for (int j = 0; j < count; j++)
 			{
-				ushort x = reader.ReadUInt16();
-				ushort y = reader.ReadUInt16();
-				ushort shape = reader.ReadUInt16();
+				ushort x = reader.ReadUInt16(),
+					y = reader.ReadUInt16(),
+					shape = reader.ReadUInt16();
 				byte flags = reader.ReadByte();
-				bool facesEastWest = (flags & 1) != 0;
-				bool flip = (flags & 2) != 0;
+				bool facesEastWest = (flags & 1) != 0,
+					flip = (flags & 2) != 0;
 				Direction facing = (facesEastWest, flip) switch
 				{
 					(true, false) => Direction.W,

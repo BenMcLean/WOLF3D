@@ -7,6 +7,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using static System.Net.WebRequestMethods;
 
 namespace BenMcLean.Wolf3D.Assets.Gameplay;
 
@@ -92,7 +93,6 @@ public class MapAnalyzer
 		// Accept null spritesByName for games that omit VSwap entirely.
 		Sprites = spritesByName ?? new Dictionary<string, ushort>();
 		_logger = logger ?? NullLogger<MapAnalyzer>.Instance;
-
 		// Parse WallPlane element attributes (optional — games without a VSWAP can omit them).
 		// MaxWallTiles defaults to 0 (no tile-mapped walls; use pre-baked WallSpawns instead).
 		// DoorWall defaults to 0 (no doors).
@@ -116,7 +116,6 @@ public class MapAnalyzer
 		WallCodeMask = ushort.TryParse(wallsElement.Attribute("WallCodeMask")?.Value, out ushort wallCodeMask)
 			? wallCodeMask
 			: null;
-
 		// Parse elevator configurations
 		Elevators = [];
 		foreach (XElement elevElem in wallsElement.Elements("Elevator"))
@@ -130,18 +129,16 @@ public class MapAnalyzer
 			ElevatorFaces faces = Enum.TryParse(elevElem.Attribute("Faces")?.Value, out ElevatorFaces f)
 				? f : ElevatorFaces.All;  // Default: All (for modding flexibility)
 			string script = elevElem.Value?.Trim();
-
 			Elevators[tile] = new ElevatorConfig
 			{
 				Tile = tile,
 				PressedTile = pressedTile,
 				Faces = faces,
-				Script = string.IsNullOrEmpty(script) ? null : script
+				Script = string.IsNullOrEmpty(script) ? null : script,
 			};
 		}
 		// WL_AGENT.C:Cmd_Use else branch: SD_PlaySound(DONOTHINGSND) for Wolf3D, NOWAYSND for N3D
 		UseWallSound = XML.Element("VSwap")?.Element("StatInfo")?.Attribute("UseWallSound")?.Value;
-
 		// Pushwall markers are in the INFO PLANE (StatInfo section), not the wall plane
 		// XSD: <Pushwall Number="N"> where N is the info plane tile value (e.g. PUSHABLETILE=98)
 		PushableTiles = (XML.Element("VSwap")?.Element("StatInfo")?.Elements("Pushwall") ?? Enumerable.Empty<XElement>())
@@ -156,7 +153,7 @@ public class MapAnalyzer
 					// WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D)
 					SoundRepeatTics = e.Attribute("SoundRepeatTics") is XAttribute repeatAttr
 						? (short)ushort.Parse(repeatAttr.Value)
-						: (short?)null,
+						: null,
 				});
 		ExitTiles = [.. wallsElement.Elements("Exit")
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
@@ -170,7 +167,6 @@ public class MapAnalyzer
 		AltElevatorInfoTiles = [.. (XML.Element("VSwap")?.Element("StatInfo")?.Elements("AltElevator") ?? Enumerable.Empty<XElement>())
 			.Select(e => ushort.Parse(e.Attribute("Tile")?.Value
 				?? throw new InvalidDataException("AltElevator element missing Tile attribute")))];
-
 		// Parse door types
 		Doors = [];
 		foreach (XElement doorElem in wallsElement.Elements("Door"))
@@ -187,61 +183,53 @@ public class MapAnalyzer
 					?? throw new InvalidDataException("Door element missing Page attribute")),
 				OpenSound = doorElem.Attribute("OpenSound")?.Value,  // Optional
 				CloseSound = doorElem.Attribute("CloseSound")?.Value,  // Optional
-				LockedSound = doorElem.Attribute("LockedSound")?.Value  // Optional
+				LockedSound = doorElem.Attribute("LockedSound")?.Value,  // Optional
 			};
 			// Store both even (vertical) and odd (horizontal) tile numbers
 			Doors[tileNum] = info;
 			Doors[(ushort)(tileNum + 1)] = info;
 		}
-
 		// Parse states BEFORE objects (needed for state->sprite lookup)
 		States = [];
 		IEnumerable<XElement> stateElements = XML.Element("VSwap")?.Element("Actors")?.Elements("State") ?? [];
 		foreach (XElement state in stateElements)
 		{
-			string name = state.Attribute("Name")?.Value;
-			string shape = state.Attribute("Shape")?.Value;
+			string name = state.Attribute("Name")?.Value,
+				shape = state.Attribute("Shape")?.Value;
 			if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(shape))
 				States[name] = shape;
 		}
 		// Parse named BonusScript elements (script name -> Lua code)
 		IEnumerable<XElement> bonusScriptElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("BonusScript") ?? Enumerable.Empty<XElement>();
-		BonusScripts = new Dictionary<string, string>();
+		BonusScripts = [];
 		foreach (XElement scriptElement in bonusScriptElements)
 		{
-			string scriptName = scriptElement.Attribute("Name")?.Value;
-			string scriptCode = scriptElement.Value;
+			string scriptName = scriptElement.Attribute("Name")?.Value,
+				scriptCode = scriptElement.Value;
 			if (!string.IsNullOrEmpty(scriptName) && !string.IsNullOrEmpty(scriptCode))
 				BonusScripts[scriptName] = scriptCode;
 		}
-
 		// Parse object metadata - unified <ObjectType> elements
 		IEnumerable<XElement> objectElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("ObjectType") ?? [];
 		Objects = [];
-
 		foreach (XElement obj in objectElements)
 		{
 			if (!ushort.TryParse(obj.Attribute("Number")?.Value, out ushort number))
 				continue;
-
 			Direction? facing = null;
 			if (Enum.TryParse(obj.Attribute("Direction")?.Value, out Direction dir))
 				facing = dir;
-
 			// Parse ObClass case-insensitively
 			ObClass? objectClass = null;
 			string obclassStr = obj.Attribute("ObClass")?.Value;
 			if (!string.IsNullOrEmpty(obclassStr) && Enum.TryParse(obclassStr, ignoreCase: true, out ObClass parsedClass))
 				objectClass = parsedClass;
-
 			// Parse sprite page number
 			// Try explicit Page attribute first, then fall back to State->Shape->Page lookup
 			// Default to -2 (invisible trigger) if no page can be determined
 			short page = -2;
 			if (ushort.TryParse(obj.Attribute("Page")?.Value, out ushort parsedPage))
-			{
 				page = (short)parsedPage;
-			}
 			else
 			{
 				// No explicit Page - try looking up from State attribute
@@ -249,17 +237,15 @@ public class MapAnalyzer
 				if (!string.IsNullOrEmpty(stateName)
 					&& States.TryGetValue(stateName, out string shapeName)
 					&& Sprites.TryGetValue(shapeName, out ushort pageFromState))
-				{
 					page = (short)pageFromState;
-				}
 			}
 			// Parse actor type (for ObClass.actor - guard, ss, dog, etc.)
 			string actorType = obj.Attribute("Actor")?.Value,
-			// Parse initial state (for actors - s_grdstand, s_grdpath1, etc.)
+				// Parse initial state (for actors - s_grdstand, s_grdpath1, etc.)
 				initialState = obj.Attribute("State")?.Value,
-			// Parse object name
+				// Parse object name
 				objectName = obj.Attribute("Name")?.Value,
-			// Parse script reference (name of BonusScript to use)
+				// Parse script reference (name of BonusScript to use)
 				scriptRef = obj.Attribute("Script")?.Value;
 			ObjectInfo info = new()
 			{
@@ -277,11 +263,10 @@ public class MapAnalyzer
 				State = initialState,
 				Script = scriptRef,  // Now stores script NAME, not code
 				Difficulty = byte.TryParse(obj.Attribute("Difficulty")?.Value, out byte diff) ? diff : (byte)0,
-				AutomapTile = short.TryParse(obj.Attribute("AutomapTile")?.Value, out short automapTile) ? automapTile : null
+				AutomapTile = short.TryParse(obj.Attribute("AutomapTile")?.Value, out short automapTile) ? automapTile : null,
 			};
 			Objects[number] = info;
 		}
-
 		// Patrol tiles (map layer) - parse from <Turn> elements in StatInfo
 		PatrolTiles = [];
 		IEnumerable<XElement> turnElements = XML.Element("VSwap")?.Element("StatInfo")?.Elements("Turn") ?? [];
@@ -289,7 +274,6 @@ public class MapAnalyzer
 			if (ushort.TryParse(turn.Attribute("Number")?.Value, out ushort tileNum)
 				&& Enum.TryParse(turn.Attribute("Direction")?.Value, out Direction turnDir))
 				PatrolTiles[tileNum] = turnDir;
-
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("WallPlane")?.Attribute("FloorCodeFirst")?.Value, out ushort floorCodeFirst))
 			FloorCodeFirst = floorCodeFirst;
 		if (ushort.TryParse(XML?.Element("VSwap")?.Element("WallPlane")?.Attribute("FloorCodeLast")?.Value, out ushort floorCodeLast))
@@ -313,40 +297,37 @@ public class MapAnalyzer
 			ushort.TryParse(map.Attribute("Episode")?.Value, out ushort e) && e == episode
 			&& ushort.TryParse(map.Attribute("Level")?.Value, out ushort l) && l == level
 		).First().Attribute("Number")?.Value);
-
 	// Wall formula from WL_MAIN.C SetupWalls():
 	// horizwall[i] = (i-1) * 2
 	// vertwall[i] = (i-1) * 2 + 1
 	public static ushort GetWallPagePaired(ushort wall, bool facesEastWest = false) =>
 		(ushort)((wall - 1) * 2 + (facesEastWest ? 1 : 0));
-
-	private ushort NormalizeWallTile(ushort tile)
-	{
-		if (WallCodeMask is not ushort wallCodeMask)
-			return tile;
-
-		// Preserve special wall-plane tiles (doors, elevators, exit tiles) — these are not
-		// wall texture codes and must not be masked. Floor codes ARE masked so that
-		// GetWallPage returns a valid VSWAP page even when a floor code tile appears in the
-		// wall plane (e.g. N3D pushwall over a floor area: original engine applied tile &= 31
-		// unconditionally before any texture lookup).
-		if (Doors.ContainsKey(tile)
+	/// <summary>
+	/// Preserve special wall-plane tiles (doors, elevators, exit tiles) — these are not
+	/// wall texture codes and must not be masked. Floor codes ARE masked so that
+	/// GetWallPage returns a valid VSWAP page even when a floor code tile appears in the
+	/// wall plane (e.g. N3D pushwall over a floor area: original engine applied tile &= 31
+	/// unconditionally before any texture lookup).
+	/// </summary>
+	private ushort NormalizeWallTile(ushort tile) =>
+		WallCodeMask is not ushort wallCodeMask
+			|| Doors.ContainsKey(tile)
 			|| Elevators.ContainsKey(tile)
-			|| ExitTiles.Contains(tile))
-			return tile;
-
-		return (ushort)(tile & wallCodeMask);
-	}
-
-	// Resolves wall tile to VSWAP page, respecting UniformWallTextures.
-	// Uniform: tile maps directly (tile - 1), same on all sides.
-	// Paired (default): Wolf3D light/dark formula.
+			|| ExitTiles.Contains(tile)
+			? tile
+			: (ushort)(tile & wallCodeMask);
+	/// <summary>
+	/// Resolves wall tile to VSWAP page, respecting UniformWallTextures.
+	/// Uniform: tile maps directly (tile - 1), same on all sides.
+	/// Paired (default): Wolf3D light/dark formula.
+	/// </summary>
 	public ushort GetWallPage(ushort wall, bool facesEastWest = false) =>
 		UniformWallTextures
 			? (ushort)(NormalizeWallTile(wall) - 1)
 			: GetWallPagePaired(NormalizeWallTile(wall), facesEastWest);
-
-	// Check if tile number is a wall
+	/// <summary>
+	/// Check if tile number is a wall
+	/// </summary>
 	public bool IsWall(ushort tile)
 	{
 		// Floor codes are never walls regardless of their masked value
@@ -355,16 +336,13 @@ public class MapAnalyzer
 		ushort normalized = NormalizeWallTile(tile);
 		return normalized > 0 && normalized <= MaxWallTiles;
 	}
-
 	public bool IsNavigable(ushort mapData, ushort objectData) =>
 		IsTransparent(mapData, objectData) && (
 			!Objects.TryGetValue(objectData, out ObjectInfo objInfo)
 			|| objInfo.ObjectClass != ObClass.block); // Only blocking objects block navigation
-
 	public bool IsTransparent(ushort mapData, ushort objectData) =>
 		(!IsWall(mapData) || PushableTiles.ContainsKey(objectData))
 		&& !Elevators.ContainsKey(mapData);
-
 	public bool IsMappable(GameMap map, ushort x, ushort y) =>
 		IsTransparent(map.GetMapData(x, y), map.GetObjectData(x, y))
 		|| x > 0 && IsTransparent(map.GetMapData((ushort)(x - 1), y), map.GetObjectData((ushort)(x - 1), y))
@@ -373,7 +351,6 @@ public class MapAnalyzer
 		|| y < map.Depth - 1 && IsTransparent(map.GetMapData(x, (ushort)(y + 1)), map.GetObjectData(x, (ushort)(y + 1)));
 	public ObjectInfo GetObjectInfo(ushort objectCode) =>
 		Objects.TryGetValue(objectCode, out ObjectInfo info) ? info : null;
-
 	/// <summary>
 	/// Build bonus script dictionaries for the Simulator.
 	/// Returns the named BonusScripts dictionary and a mapping from bonus number to script name.
@@ -382,34 +359,28 @@ public class MapAnalyzer
 	public (Dictionary<string, string> Scripts, Dictionary<byte, string> BonusNumberToScript) GetBonusScripts()
 	{
 		Dictionary<byte, string> bonusNumberToScript = [];
-
 		foreach (KeyValuePair<ushort, ObjectInfo> kvp in Objects)
 		{
 			ushort number = kvp.Key;
 			ObjectInfo info = kvp.Value;
-
 			// Map bonus number to script name (if script reference exists)
 			if (number <= byte.MaxValue && !string.IsNullOrEmpty(info.Script))
 				bonusNumberToScript[(byte)number] = info.Script;
 		}
-
 		// Return the BonusScripts dictionary directly (script name -> code)
 		// and the bonus number to script name mapping
 		return (new Dictionary<string, string>(BonusScripts), bonusNumberToScript);
 	}
-
 	// Wolf3D object class categorization (using enum)
 	private static bool IsPlayerStart(ObClass? obclass) => obclass == ObClass.playerobj;
 	private static bool IsStatic(ObClass? obclass) => obclass == ObClass.dressing || obclass == ObClass.block || obclass == ObClass.bonus;
-
 	private static StatType GetStatType(ObClass? obclass) => obclass switch
 	{
 		ObClass.dressing => StatType.dressing,
 		ObClass.block => StatType.block,
 		ObClass.bonus => StatType.bonus,
-		_ => StatType.dressing // default
+		_ => StatType.dressing, // default
 	};
-
 	public MapAnalysis Analyze(GameMap map) => new(this, map, _logger);
 	/// <summary>
 	/// Analyzes a map using pre-baked wall spawns instead of the standard Wolf3D wall scan.
@@ -457,16 +428,13 @@ public class MapAnalyzer
 		public bool IsMappable(int x, int y) =>
 			x >= 0 && y >= 0 && x < Width && y < Depth
 			&& Mappable[y * Width + x];
-
 		// Reference to the underlying GameMap for accessing raw map data
 		private readonly GameMap gameMap;
-
 		// WL_ACT1.C floor code/area number tracking for enemy hearing propagation
 		// Floor codes are special tile numbers in the "other" layer used to identify rooms
 		// Original Wolf3D: AREATILE constant defines first floor code tile number
 		public ushort FloorCodeFirst { get; private init; }  // First floor code tile number (AREATILE)
 		public ushort FloorCodeCount { get; private init; }  // Number of distinct floor codes
-
 		/// <summary>
 		/// Gets the raw floor code tile at the specified position.
 		/// WL_ACT1.C uses mapsegs[0] (wall/structural plane) which contains floor codes for walkable tiles.
@@ -475,7 +443,6 @@ public class MapAnalyzer
 			x >= 0 && y >= 0 && x < Width && y < Depth
 			? gameMap.MapData[y * Width + x]
 			: (ushort)0;
-
 		/// <summary>
 		/// Gets the area number (0-based) at the specified position.
 		/// Converts floor code tile to area index by subtracting FloorCodeFirst (AREATILE).
@@ -485,24 +452,25 @@ public class MapAnalyzer
 		public short GetAreaNumber(int x, int y)
 		{
 			ushort floorCode = GetFloorCode(x, y);
-			if (floorCode >= FloorCodeFirst && floorCode < FloorCodeFirst + FloorCodeCount)
-				return (short)(floorCode - FloorCodeFirst);
-			return -1;
+			return floorCode >= FloorCodeFirst && floorCode < FloorCodeFirst + FloorCodeCount
+				? (short)(floorCode - FloorCodeFirst)
+				: (short)-1;
 		}
-
-		// Spawn data (using X, Y coordinate system for Assets layer)
-		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
+		/// <summary>
+		/// Spawn data (using X, Y coordinate system for Assets layer)
+		/// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
+		/// </summary>
 		public readonly record struct PlayerSpawn(ushort X, ushort Y, Direction Facing);
 		public PlayerSpawn? PlayerStart { get; private set; }
-
-		// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
-		// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
+		/// <summary>
+		/// WL_DEF.H:objstruct:tilex,tiley (original: unsigned = 16-bit)
+		/// WL_DEF.H:objstruct:dir (dirtype), obclass (classtype), flags (byte with FL_AMBUSH)
+		/// </summary>
 		public readonly record struct ActorSpawn(string ActorType, short Page, ushort X, ushort Y, Direction Facing, bool Ambush, bool Patrol, string InitialState, byte Difficulty);
 		public ReadOnlyCollection<ActorSpawn> ActorSpawns { get; private set; }
-
-		// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
 		/// <summary>
 		/// Static object spawn data.
+		/// WL_DEF.H:statstruct:tilex,tiley (original: byte), shapenum (int)
 		/// </summary>
 		/// <param name="StatType">Category for rendering (dressing, block, bonus)</param>
 		/// <param name="Type">Object class enum</param>
@@ -513,17 +481,15 @@ public class MapAnalyzer
 		/// <param name="AutomapTile">Optional VgaGraph tile index for automap display; null = use VSWAP sprite</param>
 		public readonly record struct StaticSpawn(StatType StatType, ObClass Type, ushort ObjectCode, short Shape, ushort X, ushort Y, short? AutomapTile = null);
 		public ReadOnlyCollection<StaticSpawn> StaticSpawns { get; private set; }
-
 		public readonly record struct PatrolPoint(ushort X, ushort Y, Direction Turn);
 		public ReadOnlyCollection<PatrolPoint> PatrolPoints { get; private set; }
-
 		public readonly record struct WallSpawn(ushort Shape, Direction Facing, ushort X, ushort Y);
 		public ReadOnlyCollection<WallSpawn> Walls { get; private set; }
-
-		// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
+		/// <summary>
+		/// Shape uses VSWAP even/odd pairing convention (even=horizontal, odd=vertical)
+		/// </summary>
 		public readonly record struct PushWallSpawn(ushort Shape, ushort X, ushort Y, string DigiSound, string BlockedSound, short? SoundRepeatTics);
 		public ReadOnlyCollection<PushWallSpawn> PushWalls { get; private set; }
-
 		/// <summary>
 		/// Flat array parallel to MapData (Width × Depth), for automap display (WL_MAP.C:DrawMapWalls).
 		/// Each entry is the VSwap page to display for that tile, or ushort.MaxValue for floor/empty.
@@ -533,7 +499,6 @@ public class MapAnalyzer
 		/// Standard path: derived from the wall plane. Pre-baked path (KOD): first face per position.
 		/// </summary>
 		public IReadOnlyList<ushort> AutomapData { get; private set; }
-
 		/// <summary>
 		/// One bit per tile (parallel to AutomapData): true when the tile has a dark-side VSwap page.
 		/// The dim page is always AutomapData[i] + 1 (Wolf3D EW/vertical paired convention).
@@ -556,7 +521,6 @@ public class MapAnalyzer
 		// Cached for VgaGraphTileForWallShape; only meaningful when UsesVgaGraphWallTiles is true.
 		private ushort _wallTileBase;
 		private ushort? _secretWallTile;
-
 		/// <summary>
 		/// When UsesVgaGraphWallTiles is true, converts a VSwap wall page number to the
 		/// corresponding VgaGraph tile index using the WL_MAP.C formula.
@@ -568,11 +532,10 @@ public class MapAnalyzer
 			ushort wallcode = PushWallsHaveDimVariant
 				? (ushort)(shape / 2 + 1)   // paired: NS (even) page → wallcode
 				: (ushort)(shape + 1);        // uniform: page index → wallcode
-			if ((wallcode & 0x1F) == 31 && _secretWallTile is ushort secret)
-				return secret;
-			return (ushort)((wallcode & 0x1F) + _wallTileBase);
+			return (wallcode & 0x1F) == 31 && _secretWallTile is ushort secret
+				? secret
+				: (ushort)((wallcode & 0x1F) + _wallTileBase);
 		}
-
 		/// <summary>
 		/// Elevator switch spawn data. Tile is the wall tile number (e.g., 21) used to
 		/// look up ElevatorConfig from MapAnalyzer.Elevators dictionary.
@@ -581,10 +544,11 @@ public class MapAnalyzer
 		public ReadOnlyCollection<ElevatorSpawn> Elevators { get; private set; }
 		public ReadOnlyCollection<uint> AltElevators { get; private set; }
 		public ReadOnlyCollection<uint> Ambushes { get; private set; }
-
-		// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
-		// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
-		// Area1/Area2: WL_ACT1.C:DoorOpening lines 715-728 - which floor codes this door connects
+		/// <summary>
+		/// WL_DEF.H:doorstruct:tilex,tiley (original: byte), vertical (boolean)
+		/// WL_DEF.H:doorstruct:vertical renamed to FacesEastWest for semantic clarity
+		/// Area1/Area2: WL_ACT1.C:DoorOpening lines 715-728 - which floor codes this door connects
+		/// </summary>
 		public readonly record struct DoorSpawn(
 			ushort Shape,
 			ushort X,
@@ -647,7 +611,6 @@ public class MapAnalyzer
 						|| x < Width - 1 && Transparent[y * Width + x + 1]
 						|| y > 0 && Transparent[(y - 1) * Width + x]
 						|| y < Depth - 1 && Transparent[(y + 1) * Width + x];
-
 			// Initialize floor code data for enemy hearing propagation (WL_ACT1.C:areaconnect)
 			// Floor codes come from the "other" layer (mapsegs[0] in original Wolf3D)
 			FloorCodeFirst = mapAnalyzer.FloorCodeFirst;
@@ -658,7 +621,6 @@ public class MapAnalyzer
 			List<StaticSpawn> statics = [];
 			List<PatrolPoint> patrolPoints = [];
 			PlayerSpawn? playerStart = null;
-
 			// Scan object layer
 			logger.LogInformation("Starting object scan: {TileCount} total tiles", gameMap.ObjectData.Length);
 			for (int i = 0; i < gameMap.ObjectData.Length; i++)
@@ -666,15 +628,12 @@ public class MapAnalyzer
 				ushort objectCode = gameMap.ObjectData[i];
 				if (objectCode == 0)
 					continue;
-
 				ObjectInfo objInfo = mapAnalyzer.GetObjectInfo(objectCode);
 				if (objInfo is null || !objInfo.ObjectClass.HasValue)
 					continue;
-
-				ushort x = gameMap.X(i);
-				ushort y = gameMap.Y(i);
+				ushort x = gameMap.X(i),
+					y = gameMap.Y(i);
 				ObClass objectClass = objInfo.ObjectClass.Value;
-
 				// Player start
 				if (IsPlayerStart(objectClass))
 				{
@@ -694,7 +653,7 @@ public class MapAnalyzer
 							objInfo.Page,
 							x, y,
 							objInfo.Facing.Value,
-							// FL_AMBUSH from ObjectType.Ambush (N3D info-plane tile encoding: tile 126 vs 108)
+						// FL_AMBUSH from ObjectType.Ambush (N3D info-plane tile encoding: tile 126 vs 108)
 						// OR from wall-plane AMBUSHTILE (WL_ACT2.C:SpawnStand checks *map == AMBUSHTILE)
 						objInfo.Ambush || mapAnalyzer.AmbushTiles.Contains(gameMap.GetMapData(x, y)),
 							objInfo.Patrol,
@@ -702,10 +661,8 @@ public class MapAnalyzer
 							objInfo.Difficulty));
 					}
 					else
-					{
 						logger.LogWarning("Skipped actor: Facing={HasFacing}, Actor present={HasActor}",
 							objInfo.Facing.HasValue, !string.IsNullOrEmpty(objInfo.Actor));
-					}
 				}
 				// Static objects (dressing, block, bonus items)
 				else if (IsStatic(objectClass))
@@ -714,21 +671,17 @@ public class MapAnalyzer
 					statics.Add(new StaticSpawn(statType, objectClass, objectCode, objInfo.Page, x, y, objInfo.AutomapTile));
 				}
 			}
-
 			logger.LogInformation("Object scan complete: {ActorCount} actors, {StaticCount} statics", enemies.Count, statics.Count);
 			// Scan object layer for patrol point tiles (Turn markers 90-97)
 			for (int i = 0; i < gameMap.ObjectData.Length; i++)
 			{
 				ushort objectCode = gameMap.ObjectData[i];
-
 				if (mapAnalyzer.PatrolTiles.TryGetValue(objectCode, out Direction turn))
-				{
-					ushort x = gameMap.X(i);
-					ushort y = gameMap.Y(i);
-					patrolPoints.Add(new PatrolPoint(x, y, turn));
-				}
+					patrolPoints.Add(new PatrolPoint(
+						X: gameMap.X(i),
+						Y: gameMap.Y(i),
+						Turn: turn));
 			}
-
 			PlayerStart = playerStart;
 			ActorSpawns = Array.AsReadOnly([.. enemies]);
 			StaticSpawns = Array.AsReadOnly([.. statics]);
@@ -743,25 +696,22 @@ public class MapAnalyzer
 				if (mapAnalyzer.PushableTiles.TryGetValue(gameMap.ObjectData[i], out PushwallConfig pwConfig))
 				{
 					realWalls[i] = mapAnalyzer.FloorCodeFirst;
-					ushort wall = gameMap.MapData[i];
-					ushort page = mapAnalyzer.GetWallPage(wall, false);
+					ushort wall = gameMap.MapData[i],
+						page = mapAnalyzer.GetWallPage(wall, false);
 					// VSWAP even/odd pairing: page (even) for one orientation, page+1 (odd) for perpendicular
 					pushWalls.Add(new PushWallSpawn(page, gameMap.X(i), gameMap.Y(i), pwConfig.DigiSound, pwConfig.BlockedSound, pwConfig.SoundRepeatTics));
 				}
 			ushort GetMapData(ushort x, ushort y) => realWalls[gameMap.GetIndex(x, y)];
-
 			// WL_DRAW.C HitHorizWall/HitVertWall: doorframe page (wall adjacent to a door)
 			// Standard Wolf3D: DOORWALL+2 (horiz), DOORWALL+3 (vert)
 			// N3D: DOORWALL(1)=DoorWall+4 for both — read from DoorFrame attribute (defaults to DoorWall+2)
-			ushort doorFrameHoriz = mapAnalyzer.DoorFrame;
-			ushort doorFrameVert = mapAnalyzer.DoorFrame2;
-
+			ushort doorFrameHoriz = mapAnalyzer.DoorFrame,
+				doorFrameVert = mapAnalyzer.DoorFrame2;
 			List<WallSpawn> walls = [];
 			List<ElevatorSpawn> elevators = [];
 			List<uint> altElevators = [];
 			List<uint> ambushes = [];
 			List<DoorSpawn> doors = [];
-
 			void EastWest(ushort x, ushort y)
 			{
 				ushort wall;
@@ -775,7 +725,6 @@ public class MapAnalyzer
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
 					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, true), Direction.E, (ushort)(x - 1), y));
 			}
-
 			void NorthSouth(ushort x, ushort y)
 			{
 				ushort wall;
@@ -789,18 +738,15 @@ public class MapAnalyzer
 					&& !mapAnalyzer.Doors.ContainsKey(wall))
 					walls.Add(new WallSpawn(mapAnalyzer.GetWallPage(wall, false), Direction.N, x, (ushort)(y + 1)));
 			}
-
 			// Scan wall plane (MapData) for doors, walls, and elevators
 			for (int i = 0; i < gameMap.MapData.Length; i++)
 			{
-				ushort x = gameMap.X(i), y = gameMap.Y(i);
-				ushort tile = GetMapData(x, y);
-
+				ushort x = gameMap.X(i), y = gameMap.Y(i),
+					tile = GetMapData(x, y);
 				// Check if this tile is a door (tiles 90-101 from wall plane)
 				if (mapAnalyzer.Doors.TryGetValue(tile, out DoorInfo doorInfo))
 				{
 					ushort doorPage = (ushort)(mapAnalyzer.DoorWall + doorInfo.Page);
-
 					// Even tile numbers = vertical doors (FacesEastWest=true), odd = horizontal (FacesEastWest=false)
 					if (tile % 2 == 0)  // Vertical door (runs N-S, faces E/W)
 					{
@@ -808,9 +754,15 @@ public class MapAnalyzer
 						walls.Add(new WallSpawn(doorFrameHoriz, Direction.S, x, (ushort)(y - 1)));
 						walls.Add(new WallSpawn(doorFrameHoriz, Direction.N, x, (ushort)(y + 1)));
 						// Calculate area connectivity: FacesEastWest doors connect left (X-1) and right (X+1)
-						short area1 = GetAreaNumber(x - 1, y);
-						short area2 = GetAreaNumber(x + 1, y);
-						doors.Add(new DoorSpawn(doorPage, x, y, true, tile, area1, area2, mapAnalyzer.UniformDoorTextures));
+						doors.Add(new DoorSpawn(
+							Shape: doorPage,
+							X: x,
+							Y: y,
+							FacesEastWest: true,
+							TileNumber: tile,
+							Area1: GetAreaNumber(x - 1, y),
+							Area2: GetAreaNumber(x + 1, y),
+							UniformDoorTextures: mapAnalyzer.UniformDoorTextures));
 					}
 					else  // Horizontal door (runs E-W, faces N/S)
 					{
@@ -818,16 +770,20 @@ public class MapAnalyzer
 						walls.Add(new WallSpawn(doorFrameVert, Direction.E, (ushort)(x - 1), y));
 						walls.Add(new WallSpawn(doorFrameVert, Direction.W, (ushort)(x + 1), y));
 						// Calculate area connectivity: horizontal doors connect above (Y-1) and below (Y+1)
-						short area1 = GetAreaNumber(x, y - 1);
-						short area2 = GetAreaNumber(x, y + 1);
-						doors.Add(new DoorSpawn(doorPage, x, y, false, tile, area1, area2, mapAnalyzer.UniformDoorTextures));
+						doors.Add(new DoorSpawn(
+							Shape: doorPage,
+							X: x,
+							Y: y,
+							FacesEastWest: false,
+							TileNumber: tile,
+							Area1: GetAreaNumber(x, y - 1),
+							Area2: GetAreaNumber(x, y + 1),
+							UniformDoorTextures: mapAnalyzer.UniformDoorTextures));
 					}
 				}
 				else if (mapAnalyzer.Elevators.ContainsKey(tile))
-				{
 					// Elevator tiles are walls - store tile number for config lookup
 					elevators.Add(new ElevatorSpawn(tile, x, y));
-				}
 				else if (!mapAnalyzer.IsWall(tile))
 				{
 					// Track alternate elevator positions — wall-plane tile (WL) or info-plane object (N3D).
@@ -850,7 +806,6 @@ public class MapAnalyzer
 					}
 				}
 			}
-
 			// Build AutomapData: flat array parallel to MapData for WL_MAP.C:DrawMapWalls display.
 			// ushort.MaxValue = floor/empty (not drawn). Doors included with their own page.
 			ushort[] automapData = new ushort[realWalls.Length];
@@ -876,7 +831,6 @@ public class MapAnalyzer
 				Dictionary<int, bool> doorFacesEWByIndex = [];
 				foreach (DoorSpawn d in doors)
 					doorFacesEWByIndex[gameMap.GetIndex(d.X, d.Y)] = d.FacesEastWest;
-
 				for (int i = 0; i < realWalls.Length; i++)
 				{
 					ushort wallcode = realWalls[i];
@@ -894,10 +848,9 @@ public class MapAnalyzer
 					{
 						ushort normalizedWallCode = mapAnalyzer.NormalizeWallTile(wallcode);
 						// Noah's automap masks wall-plane values before converting to tile art.
-						if (normalizedWallCode == 31 && mapAnalyzer.SecretWallTile is ushort secretTile)
-							automapData[i] = secretTile;
-						else
-							automapData[i] = (ushort)(normalizedWallCode + wallTileBase);
+						automapData[i] = normalizedWallCode == 31 && mapAnalyzer.SecretWallTile is ushort secretTile
+							? secretTile
+							: (ushort)(normalizedWallCode + wallTileBase);
 					}
 				}
 				// VgaGraph path: dressing objects not shown (WL_MAP.C DrawMapWalls shows only walls/doors).
@@ -911,7 +864,6 @@ public class MapAnalyzer
 				Dictionary<int, ushort> doorPageByIndex = [];
 				foreach (DoorSpawn d in doors)
 					doorPageByIndex[gameMap.GetIndex(d.X, d.Y)] = d.Shape;
-
 				for (int i = 0; i < realWalls.Length; i++)
 				{
 					ushort tile = realWalls[i];
@@ -948,7 +900,6 @@ public class MapAnalyzer
 			AutomapData = Array.AsReadOnly(automapData);
 			_automapHasDimVariant = hasDimVariant;
 			PushWallsHaveDimVariant = !mapAnalyzer.UniformWallTextures;
-
 			// Use pre-baked spawns when provided; otherwise use the wall scan results.
 			Walls = prebuiltWalls is not null ? Array.AsReadOnly(prebuiltWalls) : Array.AsReadOnly([.. walls]);
 			PushWalls = Array.AsReadOnly([.. pushWalls]);
@@ -1076,7 +1027,7 @@ public enum ObClass
 
 	// Bonus/pickup items (stat_t with bo_ prefix)
 	bonus,       // Pickup items (health, ammo, keys, treasure, etc.)
-	// Active objects (enemies/NPCs) (classtype)
+				 // Active objects (enemies/NPCs) (classtype)
 	actor,       // Enemies and NPCs - specific type defined by Actor attribute
 }
 
@@ -1092,7 +1043,7 @@ public enum StatType : byte
 public record PushwallConfig
 {
 	public string DigiSound { get; init; }     // Sound to play on activation and repeat
-	// WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) - sound when destination blocked (null = no sound)
+											   // WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) - sound when destination blocked (null = no sound)
 	public string BlockedSound { get; init; }
 	// WL_ACT1.C:MovePWalls pwallnoise - tics between repeat sounds (null = no repeat, Wolf3D default)
 	public short? SoundRepeatTics { get; init; }

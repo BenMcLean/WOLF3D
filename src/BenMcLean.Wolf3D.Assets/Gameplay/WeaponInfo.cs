@@ -96,23 +96,20 @@ public class WeaponInfo
 	/// <param name="element">The XML element containing weapon data</param>
 	/// <returns>A new WeaponInfo instance</returns>
 	/// <exception cref="ArgumentException">If required attributes are missing</exception>
-	public static WeaponInfo FromXElement(XElement element)
+	public static WeaponInfo FromXElement(XElement element) => new()
 	{
-		return new WeaponInfo
-		{
-			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Weapon element must have Name attribute"),
-			Number = int.TryParse(element.Attribute("WeaponNumber")?.Value, out int num) ? num : 0,
-			IdleState = element.Attribute("IdleState")?.Value ?? throw new ArgumentException("Weapon element must have IdleState attribute"),
-			FireState = element.Attribute("FireState")?.Value ?? throw new ArgumentException("Weapon element must have FireState attribute"),
-			BaseDamage = short.TryParse(element.Attribute("BaseDamage")?.Value, out short dmg) ? dmg : (short)0,
-			AmmoPerShot = short.TryParse(element.Attribute("AmmoPerShot")?.Value, out short ammo) ? ammo : (short)0,
-			AmmoType = element.Attribute("AmmoType")?.Value,
-			RapidFire = string.Equals(element.Attribute("RapidFire")?.Value, "true", StringComparison.OrdinalIgnoreCase),
-			FireSound = element.Attribute("FireSound")?.Value,
-			NoAmmoSound = element.Attribute("NoAmmoSound")?.Value,
-			StatusBarPic = element.Attribute("StatusBarPic")?.Value
-		};
-	}
+		Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Weapon element must have Name attribute"),
+		Number = int.TryParse(element.Attribute("WeaponNumber")?.Value, out int num) ? num : 0,
+		IdleState = element.Attribute("IdleState")?.Value ?? throw new ArgumentException("Weapon element must have IdleState attribute"),
+		FireState = element.Attribute("FireState")?.Value ?? throw new ArgumentException("Weapon element must have FireState attribute"),
+		BaseDamage = short.TryParse(element.Attribute("BaseDamage")?.Value, out short dmg) ? dmg : (short)0,
+		AmmoPerShot = short.TryParse(element.Attribute("AmmoPerShot")?.Value, out short ammo) ? ammo : (short)0,
+		AmmoType = element.Attribute("AmmoType")?.Value,
+		RapidFire = string.Equals(element.Attribute("RapidFire")?.Value, "true", StringComparison.OrdinalIgnoreCase),
+		FireSound = element.Attribute("FireSound")?.Value,
+		NoAmmoSound = element.Attribute("NoAmmoSound")?.Value,
+		StatusBarPic = element.Attribute("StatusBarPic")?.Value,
+	};
 }
 
 /// <summary>
@@ -124,12 +121,12 @@ public class WeaponCollection
 	/// <summary>
 	/// All weapons, indexed by name for fast lookup.
 	/// </summary>
-	public Dictionary<string, WeaponInfo> Weapons { get; } = new();
+	public Dictionary<string, WeaponInfo> Weapons { get; } = [];
 
 	/// <summary>
 	/// All weapons, indexed by weapon number for keyboard mapping and status bar.
 	/// </summary>
-	private Dictionary<int, WeaponInfo> weaponsByNumber = new();
+	private Dictionary<int, WeaponInfo> weaponsByNumber = [];
 
 	/// <summary>
 	/// Loads weapon definitions from XML elements.
@@ -152,11 +149,8 @@ public class WeaponCollection
 	/// <param name="weaponName">The weapon identifier (e.g., "pistol")</param>
 	/// <param name="weaponInfo">The weapon info if found</param>
 	/// <returns>True if weapon exists, false otherwise</returns>
-	public bool TryGetWeapon(string weaponName, out WeaponInfo weaponInfo)
-	{
-		return Weapons.TryGetValue(weaponName, out weaponInfo);
-	}
-
+	public bool TryGetWeapon(string weaponName, out WeaponInfo weaponInfo) =>
+		Weapons.TryGetValue(weaponName, out weaponInfo);
 	/// <summary>
 	/// Attempts to get weapon info by weapon number.
 	/// Used for keyboard mapping (Key1→weapon 0, Key2→weapon 1, etc.).
@@ -164,11 +158,8 @@ public class WeaponCollection
 	/// <param name="number">The weapon number (e.g., 0 for knife, 1 for pistol)</param>
 	/// <param name="weaponInfo">The weapon info if found</param>
 	/// <returns>True if weapon exists with that number, false otherwise</returns>
-	public bool TryGetWeaponByNumber(int number, out WeaponInfo weaponInfo)
-	{
-		return weaponsByNumber.TryGetValue(number, out weaponInfo);
-	}
-
+	public bool TryGetWeaponByNumber(int number, out WeaponInfo weaponInfo) =>
+		weaponsByNumber.TryGetValue(number, out weaponInfo);
 	/// <summary>
 	/// Gets the inventory key for a weapon number.
 	/// Centralizes the key format used for weapon ownership tracking.

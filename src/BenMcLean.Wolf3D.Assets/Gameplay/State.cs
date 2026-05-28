@@ -112,15 +112,11 @@ public class State
 		if (!string.IsNullOrEmpty(shapeAttr))
 		{
 			if (short.TryParse(shapeAttr, out short shapeNum))
-			{
 				// Direct numeric value
 				state.Shape = shapeNum;
-			}
 			else if (spriteResolver is not null)
-			{
 				// Sprite name - resolve using provided function
 				state.Shape = spriteResolver(shapeAttr);
-			}
 			else
 			{
 				// No resolver provided, store in custom properties
@@ -129,9 +125,7 @@ public class State
 			}
 		}
 		else
-		{
 			state.Shape = -1;
-		}
 
 		// Handle Next attribute - store name for linking phase
 		string nextAttr = element.Attribute("Next")?.Value;
@@ -140,16 +134,12 @@ public class State
 			state.NextStateName = nextAttr;
 			// Phase 1: Set Next to this if it references itself
 			if (nextAttr == state.Name)
-			{
 				state.Next = state;
-			}
 			// Otherwise, Next will be resolved in LinkStates() (phase 2)
 		}
 		else
-		{
 			// No next state specified - loop to self (common pattern in original code)
 			state.Next = state;
-		}
 
 		// Store any additional attributes as custom properties
 		foreach (XAttribute attr in element.Attributes())
@@ -157,11 +147,8 @@ public class State
 			string attrName = attr.Name.LocalName;
 			// Skip standard attributes we've already processed
 			if (attrName is not ("Name" or "Rotate" or "Shape" or "Tics" or "Think" or "Action" or "Speed" or "Next" or "CollidableScript" or "CollidableRadius"))
-			{
 				state.CustomProperties[attrName] = attr.Value;
-			}
 		}
-
 		return state;
 	}
 }
@@ -190,19 +177,12 @@ public class ActionFunction
 	/// </summary>
 	/// <param name="element">The XElement containing function data (either &lt;Function&gt; or &lt;ThinkFunction&gt;/&lt;ActionFunction&gt;)</param>
 	/// <returns>A new ActionFunction instance</returns>
-	public static ActionFunction FromXElement(XElement element)
+	public static ActionFunction FromXElement(XElement element) => new()
 	{
-		string name = element.Attribute("Name")?.Value ?? throw new ArgumentException($"{element.Name.LocalName} element must have a Name attribute");
-		string code = element.Value?.Trim() ?? string.Empty;
-		string description = element.Attribute("Description")?.Value;
-
-		return new ActionFunction
-		{
-			Name = name,
-			Code = code,
-			Description = description
-		};
-	}
+		Name = element.Attribute("Name")?.Value ?? throw new ArgumentException($"{element.Name.LocalName} element must have a Name attribute"),
+		Code = element.Value?.Trim() ?? string.Empty,
+		Description = element.Attribute("Description")?.Value,
+	};
 }
 /// <summary>
 /// Stores actor class metadata loaded from XML Actor elements.
@@ -293,7 +273,6 @@ public class ActorDefinition
 		short[] hitPoints = null;
 		if (!string.IsNullOrEmpty(hpAttr))
 			hitPoints = hpAttr.Split(',').Select(s => short.Parse(s.Trim())).ToArray();
-
 		string reactionAttr = element.Attribute("Reaction")?.Value;
 		short reactionMin = 1, reactionMax = 1;
 		if (!string.IsNullOrEmpty(reactionAttr))
@@ -302,7 +281,6 @@ public class ActorDefinition
 			reactionMin = short.Parse(reactionParts[0]);
 			reactionMax = reactionParts.Length > 1 ? short.Parse(reactionParts[1]) : reactionMin;
 		}
-
 		return new ActorDefinition
 		{
 			Name = element.Attribute("Name")?.Value ?? throw new ArgumentException("Actor element must have a Name attribute"),
@@ -382,9 +360,8 @@ public class StateCollection
 	public void AddStateFromXml(XElement element, Func<string, short> spriteResolver = null)
 	{
 		// Check for inline ThinkFunction and ActionFunction elements
-		XElement thinkFunctionElement = element.Element("ThinkFunction");
-		XElement actionFunctionElement = element.Element("ActionFunction");
-
+		XElement thinkFunctionElement = element.Element("ThinkFunction"),
+			actionFunctionElement = element.Element("ActionFunction");
 		// Register inline functions if they exist
 		if (thinkFunctionElement is not null)
 		{
@@ -396,11 +373,9 @@ public class StateCollection
 			ActionFunction actionFunc = ActionFunction.FromXElement(actionFunctionElement);
 			AddFunction(actionFunc);
 		}
-
 		State state = State.FromXElement(element, spriteResolver);
 		States[state.Name] = state;
 	}
-
 	/// <summary>
 	/// Loads multiple states from XML elements.
 	/// Phase 1: Creates all state objects.
@@ -413,7 +388,6 @@ public class StateCollection
 		foreach (XElement element in elements)
 			AddStateFromXml(element, spriteResolver);
 	}
-
 	/// <summary>
 	/// Resolves NextStateName references to actual State objects.
 	/// Call this after loading all states from XML (Phase 2).
@@ -425,7 +399,6 @@ public class StateCollection
 			// Skip if Next is already set to self (handled in FromXElement phase 1)
 			if (state.Next == state)
 				continue;
-
 			if (!string.IsNullOrEmpty(state.NextStateName))
 			{
 				if (States.TryGetValue(state.NextStateName, out State nextState))
@@ -434,10 +407,8 @@ public class StateCollection
 					throw new InvalidOperationException($"State '{state.Name}' references unknown next state '{state.NextStateName}'");
 			}
 			else
-			{
 				// If no next state specified, loop to self (common pattern in original code)
 				state.Next = state;
-			}
 		}
 	}
 	/// <summary>
