@@ -59,7 +59,7 @@ public class Door(
 	{
 		Action = (byte)Action,
 		Position = Position,
-		TicCount = TicCount
+		TicCount = TicCount,
 	};
 
 	/// <summary>
@@ -83,5 +83,5 @@ public enum DoorAction : byte
 	Open,      // dr_open - door fully open, waiting to close
 	Closed,    // dr_closed - door fully closed
 	Opening,   // dr_opening - door sliding open
-	Closing    // dr_closing - door sliding closed
+	Closing,   // dr_closing - door sliding closed
 }

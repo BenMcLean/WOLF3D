@@ -14,9 +14,9 @@ namespace BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts;
 /// </summary>
 public static class DefaultScriptLoader
 {
-	private const string ResourcePrefix = "BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts.";
-	private const string BonusesSubPrefix = "BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts.Bonuses.";
-	private const string ResourceSuffix = ".lua";
+	private const string ResourcePrefix = "BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts.",
+		BonusesSubPrefix = "BenMcLean.Wolf3D.Simulator.Lua.DefaultScripts.Bonuses.",
+		ResourceSuffix = ".lua";
 
 	/// <summary>
 	/// Loads all actor and weapon default scripts (Actors/ and Weapons/ subfolders).

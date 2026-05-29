@@ -1,6 +1,6 @@
 using System;
+using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
-using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -35,7 +35,7 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 	/// Based on WL_DEF.H:objstruct:state pattern (same as actors).
 	/// Determines sprite, duration, and behavior functions.
 	/// </summary>
-	public GameplayState CurrentState { get; set; } = null;
+	public State CurrentState { get; set; } = null;
 
 	/// <summary>
 	/// WL_AGENT.C:attackcount (original: int = 16-bit signed)
@@ -87,7 +87,7 @@ public class WeaponSlot(int slotIndex) : ISnapshot<WeaponSlotSnapshot>
 		ShapeNum = ShapeNum,
 		AttackFrame = AttackFrame,
 		Flags = (int)Flags,
-		PendingWeaponType = PendingWeaponType
+		PendingWeaponType = PendingWeaponType,
 	};
 
 	/// <summary>

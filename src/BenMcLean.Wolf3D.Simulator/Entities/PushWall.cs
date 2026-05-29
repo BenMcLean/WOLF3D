@@ -8,7 +8,22 @@ namespace BenMcLean.Wolf3D.Simulator.Entities;
 /// Based on WL_DEF.H:pwallstruct and related pushwall logic in WL_ACT1.C.
 /// Pushwalls are special walls that can be pushed by the player to reveal secrets.
 /// </summary>
-public class PushWall : ISnapshot<PushWallSnapshot>
+/// <remarks>
+/// Creates a new PushWall instance at its initial position.
+/// </remarks>
+/// <param name="shape">Wall texture number (VSWAP page)</param>
+/// <param name="initialTileX">Starting tile X coordinate</param>
+/// <param name="initialTileY">Starting tile Y coordinate</param>
+/// <param name="digiSound">DigiSound name to play on activation (null for no sound)</param>
+/// <param name="blockedSound">DigiSound name to play when destination is blocked (null for no sound)</param>
+/// <param name="soundRepeatTics">Tics between repeat sounds (null = no repeat)</param>
+public class PushWall(
+	ushort shape,
+	ushort initialTileX,
+	ushort initialTileY,
+	string digiSound = null,
+	string blockedSound = null,
+	short? soundRepeatTics = null) : ISnapshot<PushWallSnapshot>
 {
 	/// <summary>
 	/// How long a pushwall takes to move one full tile (in tics).
@@ -22,72 +37,72 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	/// Wall texture number (VSWAP page number).
 	/// Even page for horizontal faces, odd page (Shape+1) for vertical faces.
 	/// </summary>
-	public ushort Shape { get; }
+	public ushort Shape { get; } = shape;
 
 	/// <summary>
 	/// Initial tile X coordinate where the pushwall starts.
 	/// Used to identify the pushwall and calculate final position.
 	/// Intentional extension: Using ushort to support maps > 64×64
 	/// </summary>
-	public ushort InitialTileX { get; }
+	public ushort InitialTileX { get; } = initialTileX;
 
 	/// <summary>
 	/// Initial tile Y coordinate where the pushwall starts.
 	/// Used to identify the pushwall and calculate final position.
 	/// Intentional extension: Using ushort to support maps > 64×64
 	/// </summary>
-	public ushort InitialTileY { get; }
+	public ushort InitialTileY { get; } = initialTileY;
 
 	/// <summary>
 	/// DigiSound name to play on activation (and repeat if SoundRepeatTics is set).
 	/// Null means no sound.
 	/// </summary>
-	public string DigiSound { get; }
+	public string DigiSound { get; } = digiSound;
 
 	/// <summary>
 	/// DigiSound name to play when the push wall is blocked (destination occupied).
 	/// WL_ACT1.C:PushWall SD_PlaySound(NOWAYSND) when actorat[dest] is non-null.
 	/// Null means no sound (default).
 	/// </summary>
-	public string BlockedSound { get; }
+	public string BlockedSound { get; } = blockedSound;
 
 	/// <summary>
 	/// How often (in tics) to repeat DigiSound during movement.
 	/// Null means play once on activation only (standard Wolf3D behavior).
 	/// N3D uses 8 tics — WL_ACT1.C:MovePWalls pwallnoise accumulator (#ifdef GAMEVER_NOAH3D).
 	/// </summary>
-	public short? SoundRepeatTics { get; }
+	public short? SoundRepeatTics { get; } = soundRepeatTics;
 
 	// Dynamic state (serialized for save games)
 
 	/// <summary>
 	/// Current pushwall state (idle or pushing).
 	/// </summary>
-	public PushWallAction Action { get; set; }
+	public PushWallAction Action { get; set; } = PushWallAction.Idle;
 
 	/// <summary>
 	/// Direction the pushwall is moving.
 	/// Only valid when Action == PushWallAction.Pushing.
 	/// </summary>
-	public Direction Direction { get; set; }
+	public Direction Direction { get; set; } = Direction.N; // Doesn't matter when idle
 
 	/// <summary>
 	/// Current X position in 16.16 fixed-point format.
 	/// High 16 bits = tile, low 16 bits = fractional position within tile.
 	/// </summary>
-	public int X { get; set; }
+	public int X { get; set; } = (initialTileX << 16) + 0x8000;
 
 	/// <summary>
 	/// Current Y position in 16.16 fixed-point format.
 	/// High 16 bits = tile, low 16 bits = fractional position within tile.
 	/// </summary>
-	public int Y { get; set; }
+	public int Y { get; set; } = (initialTileY << 16) + 0x8000;
 
 	/// <summary>
 	/// Number of tics remaining until pushwall reaches final position.
 	/// Counts down from PushTics to 0.
 	/// </summary>
-	public short TicCount { get; set; }
+	public short TicCount { get; set; } = 0;
 
 	/// <summary>
 	/// Whether this pushwall has ever been activated (pushed).
@@ -102,33 +117,6 @@ public class PushWall : ISnapshot<PushWallSnapshot>
 	/// Only used when SoundRepeatTics is set. Resets to 0 when sound fires.
 	/// </summary>
 	public short SoundNoiseAccumulator { get; set; }
-
-	/// <summary>
-	/// Creates a new PushWall instance at its initial position.
-	/// </summary>
-	/// <param name="shape">Wall texture number (VSWAP page)</param>
-	/// <param name="initialTileX">Starting tile X coordinate</param>
-	/// <param name="initialTileY">Starting tile Y coordinate</param>
-	/// <param name="digiSound">DigiSound name to play on activation (null for no sound)</param>
-	/// <param name="blockedSound">DigiSound name to play when destination is blocked (null for no sound)</param>
-	/// <param name="soundRepeatTics">Tics between repeat sounds (null = no repeat)</param>
-	public PushWall(ushort shape, ushort initialTileX, ushort initialTileY, string digiSound = null, string blockedSound = null, short? soundRepeatTics = null)
-	{
-		Shape = shape;
-		InitialTileX = initialTileX;
-		InitialTileY = initialTileY;
-		DigiSound = digiSound;
-		BlockedSound = blockedSound;
-		SoundRepeatTics = soundRepeatTics;
-
-		// Start at tile center in fixed-point (tile * 65536 + 32768)
-		X = (initialTileX << 16) + 0x8000;
-		Y = (initialTileY << 16) + 0x8000;
-
-		Action = PushWallAction.Idle;
-		Direction = Direction.N; // Doesn't matter when idle
-		TicCount = 0;
-	}
 
 	/// <summary>
 	/// Get the current tile coordinates from fixed-point position.

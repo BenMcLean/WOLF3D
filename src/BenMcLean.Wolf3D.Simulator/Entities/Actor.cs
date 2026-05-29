@@ -1,7 +1,6 @@
 using System;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Simulator.Snapshots;
-using GameplayState = BenMcLean.Wolf3D.Assets.Gameplay.State;
 
 namespace BenMcLean.Wolf3D.Simulator.Entities;
 
@@ -27,7 +26,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 	/// Current state in the actor's state machine.
 	/// Determines sprite, duration, Think/Action functions.
 	/// </summary>
-	public GameplayState CurrentState { get; set; }
+	public State CurrentState { get; set; }
 
 	/// <summary>
 	/// WL_DEF.H:objstruct:ticcount (original: int = 16-bit signed)
@@ -128,7 +127,7 @@ public class Actor : ISnapshot<ActorSnapshot>
 	/// <param name="tileY">Starting tile Y coordinate</param>
 	/// <param name="facing">Starting facing direction</param>
 	/// <param name="hitPoints">Starting hit points</param>
-	public Actor(string actorType, GameplayState initialState, ushort tileX, ushort tileY, Direction facing, short hitPoints)
+	public Actor(string actorType, State initialState, ushort tileX, ushort tileY, Direction facing, short hitPoints)
 	{
 		ArgumentException.ThrowIfNullOrEmpty(actorType);
 		ActorType = actorType;

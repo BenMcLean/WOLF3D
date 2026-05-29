@@ -182,18 +182,4 @@ public class ActionScriptContext(
 	public void SetText(string id, string content) =>
 		simulator.EmitStatusBarTextChanged(id, content);
 	#endregion
-	#region Bitwise Utilities (exposed to Lua)
-	/// <summary>
-	/// Bitwise right shift for Lua (value >> bits).
-	/// Lua doesn't have native bit shift operators, so we provide them here.
-	/// Available in all script contexts (actor, weapon, bonus, OnTakeDamage, etc.).
-	/// </summary>
-	public int BitShiftRight(int value, int bits) => value >> bits;
-	/// <summary>
-	/// Bitwise left shift for Lua (value << bits).
-	/// Lua doesn't have native bit shift operators, so we provide them here.
-	/// Available in all script contexts (actor, weapon, bonus, OnTakeDamage, etc.).
-	/// </summary>
-	public int BitShiftLeft(int value, int bits) => value << bits;
-	#endregion
 }

@@ -132,24 +132,24 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	// -1 = tile is empty, >= 0 = index into respective collection
 	// NOTE: actorAtTile[actor.TileX][actor.TileY] points to the actor's DESTINATION tile,
 	// not its current position! Updated via clear-think-set pattern in UpdateActors.
-	private short[] actorAtTile;     // Actor index occupying this tile (-1 if none)
-	private short[] doorAtTile;      // Door index at this tile (-1 if none)
-	private short[] pushWallAtTile;  // PushWall index at this tile (-1 if none)
+	private short[] actorAtTile, // Actor index occupying this tile (-1 if none)
+		doorAtTile, // Door index at this tile (-1 if none)
+		pushWallAtTile; // PushWall index at this tile (-1 if none)
 
 	// Fog-of-war state (WL_MAP.C:AutoMap visibility concept)
 	// _everSeen: persistent; once true, stays true (suitable for save/load)
 	// _currentlyVisible: recomputed each time RecomputeVisibilityIfNeeded() runs
-	private BitArray _everSeen;
-	private BitArray _currentlyVisible;
-	private ushort _lastFogTileX = ushort.MaxValue;
-	private ushort _lastFogTileY = ushort.MaxValue;
+	private BitArray _everSeen,
+		_currentlyVisible;
+	private ushort _lastFogTileX = ushort.MaxValue,
+		_lastFogTileY = ushort.MaxValue;
 	private bool _fogDirty;        // set when doors/pushwalls change; cleared after recompute
 	private int _fogVersion;       // incremented each recompute; AutomapController polls this
 	public BitArray EverSeen => _everSeen;
 	public BitArray CurrentlyVisible => _currentlyVisible;
 	public int FogVersion => _fogVersion;
-									 // WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
-									 // Current simulation time in tics
+	// WL_PLAY.C:tics (unsigned = 16-bit in original DOS, but we accumulate as long)
+	// Current simulation time in tics
 	public long CurrentTic { get; private set; }
 	// Player position and angle (updated each Update call by presentation layer)
 	// WL_DEF.H:player->x, player->y (16.16 fixed-point)
@@ -240,7 +240,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private Dictionary<byte, string> bonusNumberToScript = [];
 	private static string GetDoorScriptId(ushort tileNumber) => $"door:{tileNumber}";
 	private static string GetElevatorScriptId(ushort tileNumber) => $"elevator:{tileNumber}";
-/// <summary>
+	/// <summary>
 	/// Noah's Ark question index persisted in CONFIG.N3D.
 	/// Managed by quiz-related Lua helpers so quiz scrolls can cycle deterministically.
 	/// </summary>
@@ -475,22 +475,18 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (Paused)
 			return;
-
 		// Store previous position before update
-		int prevX = PlayerX;
-		int prevY = PlayerY;
-
+		int prevX = PlayerX,
+			prevY = PlayerY;
 		// Update player position and angle from presentation layer
 		PlayerX = playerX;
 		PlayerY = playerY;
 		PlayerAngle = playerAngle;
-
 		// Check for item pickups along the full movement path when player position changes.
 		// WL_AGENT.C:ClipMove checks for bonus collision.
 		// We extend this to cover all tiles traversed (handles high-speed multi-tile moves).
 		if (PlayerX != prevX || PlayerY != prevY)
 			CheckItemPickupsAlongPath(prevX, prevY);
-
 		accumulatedTime += deltaTime;
 		// WL_DRAW.C:CalcTics - calculate tics since last refresh
 		int ticsToProcess = (int)(accumulatedTime / TicDuration);
@@ -504,7 +500,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			CurrentTic++;
 		}
 	}
-
 	/// <summary>
 	/// Places the player at a position on behalf of the game system, with no path traversal.
 	/// Use for initial spawn, level transitions, and any other case where the system is
@@ -523,7 +518,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		PlayerAngle = playerAngle;
 		CheckItemPickups();
 	}
-
 	/// <summary>
 	/// Teleports the player to a new position as a player-initiated action.
 	/// Uses a Bresenham DDA sweep from the previous position to the destination
@@ -536,14 +530,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
 	public void TeleportPlayer(int playerX, int playerY, short playerAngle)
 	{
-		int prevX = PlayerX;
-		int prevY = PlayerY;
+		int prevX = PlayerX,
+			prevY = PlayerY;
 		PlayerX = playerX;
 		PlayerY = playerY;
 		PlayerAngle = playerAngle;
 		CheckItemPickupsAlongPath(prevX, prevY);
 	}
-
 	/// <summary>
 	/// Queue a player action to be processed on the next tic.
 	/// Ensures determinism by quantizing inputs to tic boundaries.
@@ -637,7 +630,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				break;
 		}
 	}
-
 	/// <summary>
 	/// Check if a door can be opened by running its script (if any).
 	/// Scripts can check inventory for keys using Has("Gold Key"), etc.
@@ -648,11 +640,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Look up door info to get script
 		if (MapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) != true)
 			return true; // No door info, allow open
-
-		// If no script defined, door can be opened
+						 // If no script defined, door can be opened
 		if (string.IsNullOrWhiteSpace(doorInfo.Script))
 			return true;
-
 		// Create script context for this door
 		Lua.DoorScriptContext context = new(
 			this,
@@ -666,28 +656,23 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			PlayLocalSoundAction = soundName => EmitDoorPlaySound(doorIndex, soundName),
 			AudioT = audioT
 		};
-
 		try
 		{
 			// Execute the door script
 			MoonSharp.Interpreter.DynValue result = luaScriptEngine.ExecuteCompiledScript(
 				GetDoorScriptId(doorInfo.TileNumber),
 				context);
-
 			// Script returns true if door can open, false if locked
 			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
 			{
 				if (!result.Boolean)
-				{
 					// Door is locked - fire event (script handles sound via PlayLocalSound)
 					DoorLocked?.Invoke(new DoorLockedEvent
 					{
 						DoorIndex = doorIndex
 					});
-				}
 				return result.Boolean;
 			}
-
 			// If script doesn't return a boolean, allow open
 			return true;
 		}
@@ -699,7 +684,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			return true;
 		}
 	}
-
 	/// <summary>
 	/// WL_ACT1.C:OpenDoor (line 546)
 	/// </summary>
@@ -739,10 +723,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (actorAtTile[tileIdx] >= 0)
 			return true;
 		// Check if player's body overlaps the doorway, expanded by HeadSize for VR collision radius
-		int doorMinX = door.TileX << 16;
-		int doorMaxX = (door.TileX + 1) << 16;
-		int doorMinY = door.TileY << 16;
-		int doorMaxY = (door.TileY + 1) << 16;
+		int doorMinX = door.TileX << 16,
+			doorMaxX = (door.TileX + 1) << 16,
+			doorMinY = door.TileY << 16,
+			doorMaxY = (door.TileY + 1) << 16;
 		if (PlayerX >= doorMinX - HeadSize && PlayerX < doorMaxX + HeadSize
 			&& PlayerY >= doorMinY - HeadSize && PlayerY < doorMaxY + HeadSize)
 			return true;
@@ -751,24 +735,22 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Only spawned objects (ShapeNum != -1) block the door
 		// Bonuses only have tile coordinates, so exact tile match is the only check needed
 		for (int i = 0; i < lastStatObj; i++)
-		{
 			if (StatObjList[i] is not null && !StatObjList[i].IsFree
 				&& StatObjList[i].TileX == door.TileX
 				&& StatObjList[i].TileY == door.TileY)
 				return true;
-		}
 		// Comprehensive actor collision check - check if any actor's collision box overlaps door tile
 		// This catches actors whose center is in an adjacent tile but body extends into doorway
 		// Fixed-point 16.16 door tile center for proximity checks
-		int doorCenterX = (door.TileX << 16) + 0x8000;
-		int doorCenterY = (door.TileY << 16) + 0x8000;
+		int doorCenterX = (door.TileX << 16) + 0x8000,
+			doorCenterY = (door.TileY << 16) + 0x8000;
 		const int TILE_SIZE = 0x10000; // One tile in fixed-point 16.16
 		for (int i = 0; i < actors.Count; i++)
 		{
 			Actor actor = actors[i];
 			// Check if actor's collision box overlaps with door tile (box is 1 tile centered on actor)
-			int deltaX = Math.Abs(actor.X - doorCenterX);
-			int deltaY = Math.Abs(actor.Y - doorCenterY);
+			int deltaX = Math.Abs(actor.X - doorCenterX),
+				deltaY = Math.Abs(actor.Y - doorCenterY);
 			if (deltaX < TILE_SIZE && deltaY < TILE_SIZE)
 				return true;
 		}
@@ -796,7 +778,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			DoorIndex = doorIndex,
 			TileX = door.TileX,
-			TileY = door.TileY
+			TileY = door.TileY,
 		});
 		// Emit door closing sound
 		if (MapAnalyzer?.Doors.TryGetValue(door.TileNumber, out DoorInfo doorInfo) ?? false
@@ -864,7 +846,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				DoorIndex = (ushort)doorIndex,
 				TileX = door.TileX,
-				TileY = door.TileY
+				TileY = door.TileY,
 			});
 			// WL_ACT1.C:748 - clear actorat for door tile (allows actors to pathfind through)
 			int tileIdx = GetTileIndex(door.TileX, door.TileY);
@@ -885,7 +867,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			TileX = door.TileX,
 			TileY = door.TileY,
 			Position = door.Position,
-			Action = door.Action
+			Action = door.Action,
 		});
 	}
 	/// <summary>
@@ -894,7 +876,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void UpdateDoorClosing(int doorIndex)
 	{
 		Door door = doors[doorIndex];
-
 		// WL_ACT1.C:773-778 - check if something moved into the doorway while closing
 		if (IsDoorBlocked(door))
 		{
@@ -902,9 +883,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			OpenDoor((ushort)doorIndex);
 			return;
 		}
-
-		int tileIdx = GetTileIndex(door.TileX, door.TileY);
-		int newPosition = door.Position;
+		int tileIdx = GetTileIndex(door.TileX, door.TileY),
+			newPosition = door.Position;
 		// WL_ACT1.C:785 - slide the door by an adaptive amount
 		// position -= tics<<10 (we use 1 tic per update)
 		newPosition -= 1 << 10;
@@ -922,7 +902,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			{
 				DoorIndex = (ushort)doorIndex,
 				TileX = door.TileX,
-				TileY = door.TileY
+				TileY = door.TileY,
 			});
 			// WL_ACT1.C:798-811 - decrement area connection count for hearing propagation
 			if (door.Area1 >= 0 && door.Area2 >= 0)
@@ -940,7 +920,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			TileX = door.TileX,
 			TileY = door.TileY,
 			Position = door.Position,
-			Action = door.Action
+			Action = door.Action,
 		});
 	}
 	#region PushWall Logic
@@ -956,24 +936,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Rule 3: Only one pushwall can move at a time in the entire level
 		if (anyPushWallMoving)
 			return; // Another pushwall is already moving
-
 		int tileIdx = GetTileIndex(tileX, tileY);
-
 		// Check if there's a pushwall at this location
 		if (pushWallAtTile[tileIdx] < 0)
 			return; // No pushwall here
-
 		int pushWallIndex = pushWallAtTile[tileIdx];
 		PushWall pushWall = pushWalls[pushWallIndex];
-
 		// Check if pushwall is already moving
 		if (pushWall.Action == PushWallAction.Pushing)
 			return; // Already moving
-
-		// Rule 1: Pushwalls move TWO tiles, not one
-		// Calculate first and second destination tiles based on direction
-		ushort dest1X = tileX, dest1Y = tileY;
-		ushort dest2X = tileX, dest2Y = tileY;
+					// Rule 1: Pushwalls move TWO tiles, not one
+					// Calculate first and second destination tiles based on direction
+		ushort dest1X = tileX, dest1Y = tileY,
+			dest2X = tileX, dest2Y = tileY;
 		switch (direction)
 		{
 			case Direction.N: dest1Y--; dest2Y -= 2; break;
@@ -982,7 +957,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.W: dest1X--; dest2X -= 2; break;
 			default: return; // Invalid direction (only cardinal directions for pushwalls)
 		}
-
 		// Check if both destination tiles are navigable
 		// WL_ACT1.C:PushWall: plays NOWAYSND when actorat[dest] is non-null (destination blocked)
 		if (!IsTileNavigable(dest1X, dest1Y) || !IsTileNavigable(dest2X, dest2Y))
@@ -991,7 +965,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				EmitPushWallPlaySound((ushort)pushWallIndex, pushWall.BlockedSound);
 			return; // Can't push - destination blocked
 		}
-
 		// Start pushing!
 		pushWall.Action = PushWallAction.Pushing;
 		pushWall.Direction = direction;
@@ -999,12 +972,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		pushWall.HasBeenActivated = true; // Track for secret count statistics
 		pushWall.SoundNoiseAccumulator = 0;
 		anyPushWallMoving = true; // Set global lock
-
-		// Play pushwall sound (WL_ACT1.C:PushWall SD_PlaySound(PUSHWALLSND))
+								  // Play pushwall sound (WL_ACT1.C:PushWall SD_PlaySound(PUSHWALLSND))
 		if (pushWall.DigiSound is not null)
 			EmitPushWallPlaySound((ushort)pushWallIndex, pushWall.DigiSound);
 	}
-
 	/// <summary>
 	/// Updates a single pushwall during movement.
 	/// Based on WL_ACT1.C:MovePWalls
@@ -1012,18 +983,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void UpdatePushWall(int pushWallIndex)
 	{
 		PushWall pushWall = pushWalls[pushWallIndex];
-
 		// Only update if actively pushing
 		if (pushWall.Action != PushWallAction.Pushing)
 			return;
-
 		// Calculate trailing edge position BEFORE moving
 		// Trailing edge is half a tile behind center, opposite to movement direction
 		// This determines which tile the back of the pushwall is still in
 		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
 		// A position at exactly N*65536 is counted as tile N, so +0x8000 would be next tile
-		int oldTrailingX = pushWall.X;
-		int oldTrailingY = pushWall.Y;
+		int oldTrailingX = pushWall.X,
+			oldTrailingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
 			case Direction.N: oldTrailingY += 0x7FFF; break; // Moving north, trailing edge is south (stay inside tile)
@@ -1031,13 +1000,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.E: oldTrailingX -= 0x8000; break; // Moving east, trailing edge is west
 			case Direction.W: oldTrailingX += 0x7FFF; break; // Moving west, trailing edge is east (stay inside tile)
 		}
-		ushort oldTrailingTileX = (ushort)(oldTrailingX >> 16);
-		ushort oldTrailingTileY = (ushort)(oldTrailingY >> 16);
-
+		ushort oldTrailingTileX = (ushort)(oldTrailingX >> 16),
+			oldTrailingTileY = (ushort)(oldTrailingY >> 16);
 		// Track leading edge tile BEFORE moving (for claiming new tiles)
 		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
-		int oldLeadingX = pushWall.X;
-		int oldLeadingY = pushWall.Y;
+		int oldLeadingX = pushWall.X,
+			oldLeadingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
 			case Direction.N: oldLeadingY -= 0x8000; break; // Moving north, leading edge is north
@@ -1045,17 +1013,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.E: oldLeadingX += 0x7FFF; break; // Moving east, leading edge is east (stay inside tile)
 			case Direction.W: oldLeadingX -= 0x8000; break; // Moving west, leading edge is west
 		}
-		ushort oldLeadingTileX = (ushort)(oldLeadingX >> 16);
-		ushort oldLeadingTileY = (ushort)(oldLeadingY >> 16);
-
+		ushort oldLeadingTileX = (ushort)(oldLeadingX >> 16),
+			oldLeadingTileY = (ushort)(oldLeadingY >> 16);
 		// Decrement tic counter
 		pushWall.TicCount--;
-
 		// Rule 1: Calculate movement delta per tic (TWO full tiles over 2*PushTics tics)
 		// Two tiles = 2 * 65536 = 131072, duration = 256 tics, so delta = 131072 / 256 = 512
 		// This maintains original Wolf3D speed of 128 tics per tile
 		int delta = (2 << 16) / (2 * PushWall.PushTics);
-
 		// Move in the specified direction
 		switch (pushWall.Direction)
 		{
@@ -1064,11 +1029,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.E: pushWall.X += delta; break;
 			case Direction.W: pushWall.X -= delta; break;
 		}
-
 		// Calculate trailing edge position AFTER moving
 		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
-		int newTrailingX = pushWall.X;
-		int newTrailingY = pushWall.Y;
+		int newTrailingX = pushWall.X,
+			newTrailingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
 			case Direction.N: newTrailingY += 0x7FFF; break; // Stay inside tile
@@ -1076,13 +1040,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.E: newTrailingX -= 0x8000; break;
 			case Direction.W: newTrailingX += 0x7FFF; break; // Stay inside tile
 		}
-		ushort newTrailingTileX = (ushort)(newTrailingX >> 16);
-		ushort newTrailingTileY = (ushort)(newTrailingY >> 16);
-
+		ushort newTrailingTileX = (ushort)(newTrailingX >> 16),
+			newTrailingTileY = (ushort)(newTrailingY >> 16);
 		// Calculate leading edge position AFTER moving
 		// NOTE: Use 0x7FFF when adding to stay INSIDE the current tile (not at boundary)
-		int newLeadingX = pushWall.X;
-		int newLeadingY = pushWall.Y;
+		int newLeadingX = pushWall.X,
+			newLeadingY = pushWall.Y;
 		switch (pushWall.Direction)
 		{
 			case Direction.N: newLeadingY -= 0x8000; break;
@@ -1090,32 +1053,28 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.E: newLeadingX += 0x7FFF; break; // Stay inside tile
 			case Direction.W: newLeadingX -= 0x8000; break;
 		}
-		ushort newLeadingTileX = (ushort)(newLeadingX >> 16);
-		ushort newLeadingTileY = (ushort)(newLeadingY >> 16);
-
+		ushort newLeadingTileX = (ushort)(newLeadingX >> 16),
+			newLeadingTileY = (ushort)(newLeadingY >> 16);
 		// Claim new tile when LEADING EDGE enters it
 		if (oldLeadingTileX != newLeadingTileX || oldLeadingTileY != newLeadingTileY)
 		{
 			int newIdx = GetTileIndex(newLeadingTileX, newLeadingTileY);
 			pushWallAtTile[newIdx] = (short)pushWallIndex;
 		}
-
 		// Release old tile only when TRAILING EDGE has fully left it
 		if (oldTrailingTileX != newTrailingTileX || oldTrailingTileY != newTrailingTileY)
 		{
 			int oldIdx = GetTileIndex(oldTrailingTileX, oldTrailingTileY);
 			pushWallAtTile[oldIdx] = -1;
 		}
-
 		// Fire position changed event
 		PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
 		{
 			PushWallIndex = (ushort)pushWallIndex,
 			X = pushWall.X,
 			Y = pushWall.Y,
-			Action = pushWall.Action
+			Action = pushWall.Action,
 		});
-
 		// Repeat sound during movement (WL_ACT1.C:MovePWalls pwallnoise accumulator, #ifdef GAMEVER_NOAH3D)
 		if (pushWall.SoundRepeatTics.HasValue && pushWall.DigiSound is not null)
 		{
@@ -1126,7 +1085,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				pushWall.SoundNoiseAccumulator -= pushWall.SoundRepeatTics.Value;
 			}
 		}
-
 		// Check if movement complete
 		if (pushWall.TicCount <= 0)
 		{
@@ -1138,13 +1096,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			pushWall.SoundNoiseAccumulator = 0;
 			anyPushWallMoving = false; // Rule 3: Release global lock
 			_fogDirty = true;
-
 			// Clean up: release the initial tile and middle tile, keep only final tile
 			// Pushwall moved 2 tiles from initial position, so clear initial and initial+1
-			ushort initialX = pushWall.InitialTileX;
-			ushort initialY = pushWall.InitialTileY;
-			ushort middleX = initialX;
-			ushort middleY = initialY;
+			ushort initialX = pushWall.InitialTileX,
+				initialY = pushWall.InitialTileY,
+				middleX = initialX,
+				middleY = initialY;
 			switch (pushWall.Direction)
 			{
 				case Direction.N: middleY--; break;
@@ -1152,27 +1109,23 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				case Direction.E: middleX++; break;
 				case Direction.W: middleX--; break;
 			}
-
 			// Release initial and middle tiles (they may already be released, but ensure it)
-			int initialIdx = GetTileIndex(initialX, initialY);
-			int middleIdx = GetTileIndex(middleX, middleY);
-			int finalIdx = GetTileIndex(finalX, finalY);
-
+			int initialIdx = GetTileIndex(initialX, initialY),
+				middleIdx = GetTileIndex(middleX, middleY),
+				finalIdx = GetTileIndex(finalX, finalY);
 			if (pushWallAtTile[initialIdx] == pushWallIndex)
 				pushWallAtTile[initialIdx] = -1;
 			if (pushWallAtTile[middleIdx] == pushWallIndex)
 				pushWallAtTile[middleIdx] = -1;
-
 			// Ensure final tile is claimed
 			pushWallAtTile[finalIdx] = (short)pushWallIndex;
-
 			// Fire final position event
 			PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
 			{
 				PushWallIndex = (ushort)pushWallIndex,
 				X = pushWall.X,
 				Y = pushWall.Y,
-				Action = pushWall.Action
+				Action = pushWall.Action,
 			});
 		}
 	}
@@ -1197,58 +1150,47 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				break;
 			}
 		}
-
 		if (!elevatorSpawn.HasValue)
 			return; // No elevator at this position
-
-		// Look up elevator configuration by tile number (supports multiple elevator types)
+					// Look up elevator configuration by tile number (supports multiple elevator types)
 		if (!MapAnalyzer.Elevators.TryGetValue(elevatorSpawn.Value.Tile, out ElevatorConfig elevatorConfig))
 			return; // No config for this elevator tile type
-
-		// Check if player is facing the correct direction for this elevator
-		// WL_AGENT.C:Cmd_Use - elevatorok is true for east/west, false for north/south
+					// Check if player is facing the correct direction for this elevator
+					// WL_AGENT.C:Cmd_Use - elevatorok is true for east/west, false for north/south
 		bool facingAllowed = elevatorConfig.Faces switch
 		{
 			ElevatorFaces.All => true,
 			ElevatorFaces.EastWest => direction == Direction.E || direction == Direction.W,
 			ElevatorFaces.NorthSouth => direction == Direction.N || direction == Direction.S,
-			_ => true
+			_ => true,
 		};
-
 		if (!facingAllowed)
 			return; // Can't activate from this direction
-
-		// Emit switch flip events only if a pressed texture is configured
-		// WL_AGENT.C: tilemap[checkx][checky]++
+					// Emit switch flip events only if a pressed texture is configured
+					// WL_AGENT.C: tilemap[checkx][checky]++
 		if (elevatorConfig.PressedTile.HasValue)
 		{
 			// Wolf3D wall texture formula: horizwall[i]=(i-1)*2, vertwall[i]=(i-1)*2+1
 			// Only swap the faces specified by Faces (e.g., EastWest = vertwall only)
 			if (elevatorConfig.Faces == ElevatorFaces.EastWest || elevatorConfig.Faces == ElevatorFaces.All)
-			{
 				// vertwall formula for E/W-facing surfaces
 				ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
 				{
 					TileX = tileX,
 					TileY = tileY,
 					OldTexture = (ushort)((elevatorConfig.Tile - 1) * 2 + 1),
-					NewTexture = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2 + 1)
+					NewTexture = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2 + 1),
 				});
-			}
-
 			if (elevatorConfig.Faces == ElevatorFaces.NorthSouth || elevatorConfig.Faces == ElevatorFaces.All)
-			{
 				// horizwall formula for N/S-facing surfaces
 				ElevatorSwitchFlipped?.Invoke(new ElevatorSwitchFlippedEvent
 				{
 					TileX = tileX,
 					TileY = tileY,
 					OldTexture = (ushort)((elevatorConfig.Tile - 1) * 2),
-					NewTexture = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2)
+					NewTexture = (ushort)((elevatorConfig.PressedTile.Value - 1) * 2),
 				});
-			}
 		}
-
 		// Run the elevator's Lua script (plays sound, navigates to menu, etc.)
 		if (!string.IsNullOrEmpty(elevatorConfig.Script))
 		{
@@ -1266,20 +1208,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private Lua.ActorScriptContext CreateActorScriptContext(Actor actor, int actorIndex) => new(this, actor, actorIndex, rng, gameClock, MapAnalyzer, MapAnalysis, logger)
 	{
 		AudioT = audioT,
-		PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
+		PlaySoundAction = EmitPlayGlobalSound,
 		NavigateToMenuAction = menuName =>
 		{
 			// WL_ACT2.C:T_BJDone sets playstate = ex_victorious; we clear victoryflag here
 			VictoryFlag = false;
 			NavigateToMenu?.Invoke(new NavigateToMenuEvent { MenuName = menuName });
-		}
+		},
 	};
-
 	public void RequestGameplayMapTransition(byte destinationLevel, bool preservePlayerTransform = false) =>
 		GameplayMapTransitionRequested?.Invoke(new GameplayMapTransitionRequestedEvent
 		{
 			DestinationLevel = destinationLevel,
-			PreservePlayerTransform = preservePlayerTransform
+			PreservePlayerTransform = preservePlayerTransform,
 		});
 	/// <summary>
 	/// WL_PLAY.C actor update loop (lines 1690-1774)
@@ -1288,11 +1229,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void UpdateActor(int actorIndex)
 	{
 		Actor actor = actors[actorIndex];
-		if (actor.HitPoints <= 0)
-			actor.SnoozeCounter = unchecked((byte)(actor.SnoozeCounter + 3));
-		else
-			actor.SnoozeCounter = 0;
-
+		actor.SnoozeCounter = actor.HitPoints <= 0
+			? unchecked((byte)(actor.SnoozeCounter + 3))
+			: (byte)0;
 		// WL_PLAY.C:DoActor - Clear actorat before executing Think
 		// This implements the clear-think-set pattern from original Wolf3D
 		int tileIdx = GetTileIndex(actor.TileX, actor.TileY);
@@ -1320,21 +1259,18 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// WL_PLAY.C:1726 - Return early, don't transition
 			return;
 		}
-
 		// WL_PLAY.C:1732 - Transitional object (tictime > 0)
 		// Decrement tic counter
 		actor.TicCount--;
-
 		// WL_PLAY.C:1733 - Check for state transition
 		while (actor.TicCount <= 0)
 		{
 			// WL_PLAY.C:1746 - Transition to next state
 			if (actor.CurrentState.Next is null)
 				break; // No next state, stop transitioning
-
-			// WL_PLAY.C:DoActor "end of state action" — fire CURRENT state's action BEFORE advancing.
-			// Original: think = ob->state->action; if (think) think(ob); ob->state = ob->state->next;
-			// ChangeState (NewState equivalent) must NOT fire actions — only timer expiry does.
+					   // WL_PLAY.C:DoActor "end of state action" — fire CURRENT state's action BEFORE advancing.
+					   // Original: think = ob->state->action; if (think) think(ob); ob->state = ob->state->next;
+					   // ChangeState (NewState equivalent) must NOT fire actions — only timer expiry does.
 			if (!string.IsNullOrEmpty(actor.CurrentState.Action))
 			{
 				Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
@@ -1348,20 +1284,17 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				}
 			}
 			TransitionActorState(actorIndex, actor.CurrentState.Next);
-
 			// WL_PLAY.C:1754-1758 - If new state is non-transitional, set ticcount=0 and execute Think
 			if (actor.CurrentState.Tics == 0)
 			{
 				actor.TicCount = 0;
 				break; // Will execute Think on next update
 			}
-
 			// WL_PLAY.C:1760 - Add new state's tictime (keeps negative remainder for timing accuracy)
 			// Note: In original C, this is +=, not =, to preserve sub-tic timing
 			// For now we simplified to just break out of loop - full accuracy can be added later
 			break;
 		}
-
 		// WL_PLAY.C:1763-1770 - Execute Think function
 		if (!string.IsNullOrEmpty(actor.CurrentState.Think))
 		{
@@ -1379,14 +1312,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		tileIdx = GetTileIndex(actor.TileX, actor.TileY);
 		actorAtTile[tileIdx] = (short)actorIndex;
 	}
-
 	private void InitializeMovingActor(Actor actor, int actorIndex, Direction facing)
 	{
-		ushort spawnTileX = actor.TileX;
-		ushort spawnTileY = actor.TileY;
-		ushort destTileX = spawnTileX;
-		ushort destTileY = spawnTileY;
-
+		ushort spawnTileX = actor.TileX,
+			spawnTileY = actor.TileY,
+			destTileX = spawnTileX,
+			destTileY = spawnTileY;
 		switch (facing)
 		{
 			case Direction.E: destTileX++; break;
@@ -1398,7 +1329,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			case Direction.S: destTileY++; break;
 			case Direction.SE: destTileX++; destTileY++; break;
 		}
-
 		if (IsTileNavigable(destTileX, destTileY))
 		{
 			actor.TileX = destTileX;
@@ -1408,7 +1338,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			actorAtTile[destTileIdx] = (short)actorIndex;
 			return;
 		}
-
 		// Keep blocked patrol spawns anchored to their authored tile so their first Think
 		// can choose a valid direction instead of reserving a wall tile.
 		int spawnTileIdx = GetTileIndex(spawnTileX, spawnTileY);
@@ -1453,7 +1382,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Shape = (ushort)actor.ShapeNum,
 			IsRotated = nextState.Rotate,
 			IsSleeping = actor.HitPoints <= 0,
-			SnoozeCounter = actor.SnoozeCounter
+			SnoozeCounter = actor.SnoozeCounter,
 		});
 	}
 	#endregion
@@ -1519,14 +1448,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		IEnumerable<MapAnalysis.DoorSpawn> doorSpawns)
 	{
 		// Store MapAnalyzer for looking up door sounds when emitting events
-		this.MapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
-
+		MapAnalyzer = mapAnalyzer ?? throw new ArgumentNullException(nameof(mapAnalyzer));
 		// Initialize spatial index arrays and map dimensions
 		// Must be done before loading any entities (doors, pushwalls, actors)
-		this.MapAnalysis = mapAnalysis;
+		MapAnalysis = mapAnalysis;
 		mapWidth = mapAnalysis.Width;
 		mapHeight = mapAnalysis.Depth;
-
 		int tileCount = mapWidth * mapHeight;
 		actorAtTile = new short[tileCount];
 		doorAtTile = new short[tileCount];
@@ -1536,7 +1463,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		_lastFogTileX = ushort.MaxValue;
 		_lastFogTileY = ushort.MaxValue;
 		_fogDirty = true;
-
 		// Fill with -1 (empty)
 #if NET6_0_OR_GREATER
 		Array.Fill(actorAtTile, (short)-1);
@@ -1550,7 +1476,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			pushWallAtTile[i] = -1;
 		}
 #endif
-
 		// Initialize area connectivity matrix (WL_ACT1.C:areaconnect)
 		// Size is based on number of floor codes defined in the game configuration
 		AreaConnect = new SymmetricMatrix(mapAnalysis.FloorCodeCount);
@@ -1560,15 +1485,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			// Create door with area connectivity from spawn data (calculated by MapAnalysis)
 			doors.Add(new Door(spawn.X, spawn.Y, spawn.FacesEastWest, spawn.TileNumber, spawn.Area1, spawn.Area2));
-
 			// Update spatial index - door occupies its tile
 			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
 			doorAtTile[tileIdx] = (short)doorIndex;
-
 			doorIndex++;
 		}
 	}
-
 	/// <summary>
 	/// Initialize pushwalls from MapAnalysis data.
 	/// Pushwalls start in their initial positions and can be activated during gameplay.
@@ -1581,7 +1503,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		foreach (MapAnalysis.PushWallSpawn spawn in pushWallSpawns)
 		{
 			pushWalls.Add(new PushWall(spawn.Shape, spawn.X, spawn.Y, spawn.DigiSound, spawn.BlockedSound, spawn.SoundRepeatTics));
-
 			// Update spatial index - pushwall occupies its initial tile
 			int tileIdx = GetTileIndex(spawn.X, spawn.Y);
 			pushWallAtTile[tileIdx] = (short)pushWallIndex;
@@ -1648,7 +1569,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					Shape = (short)page,
 					TileX = tileX,
 					TileY = tileY,
-					ItemNumber = (byte)objectCode
+					ItemNumber = (byte)objectCode,
 				});
 				return true;
 			}
@@ -1663,14 +1584,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Shape = (short)page,
 				TileX = tileX,
 				TileY = tileY,
-				ItemNumber = (byte)objectCode
+				ItemNumber = (byte)objectCode,
 			});
 			lastStatObj++;
 			return true;
 		}
 		return false;
 	}
-
 	/// <summary>
 	/// Initialize actors from MapAnalyzer data - creates Actor instances and fires ActorSpawnedEvent for each.
 	/// HP and initial state are read from ActorDefinition (parsed from XML).
@@ -1682,32 +1602,27 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Note: mapAnalysis, mapWidth, mapHeight, and spatial arrays are already initialized by LoadDoorsFromMapAnalysis
 		actors.Clear();
 		_collidableActors.Clear();
-		int difficulty = Inventory.GetValue("Difficulty");
-		int actorIndex = 0;
+		int difficulty = Inventory.GetValue("Difficulty"),
+			actorIndex = 0;
 		foreach (MapAnalysis.ActorSpawn spawn in mapAnalysis.ActorSpawns)
 		{
 			// WL_GAME.C:ScanInfoPlane - skip enemies above current difficulty
 			if (difficulty < spawn.Difficulty)
 				continue;
-
 			// Use initial state from spawn data (from ObjectType XML)
 			string initialStateName = spawn.InitialState;
-
 			// Fall back to ActorDefinition.InitialState if no state specified in spawn
 			if (string.IsNullOrEmpty(initialStateName))
 			{
 				if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition def)
 					&& !string.IsNullOrEmpty(def.InitialState))
-				{
 					initialStateName = def.InitialState;
-				}
 				else
 				{
 					System.Diagnostics.Debug.WriteLine($"Warning: No initial state defined for actor type '{spawn.ActorType}', skipping");
 					continue;
 				}
 			}
-
 			if (!stateCollection.States.TryGetValue(initialStateName, out State initialState))
 			{
 				System.Diagnostics.Debug.WriteLine($"Warning: Initial state '{initialStateName}' not found for actor type '{spawn.ActorType}', skipping");
@@ -1718,9 +1633,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (stateCollection.ActorDefinitions.TryGetValue(spawn.ActorType, out ActorDefinition actorDef)
 				&& actorDef.HitPointsByDifficulty is not null
 				&& difficulty >= 0 && difficulty < actorDef.HitPointsByDifficulty.Length)
-			{
 				hitPoints = actorDef.GetHitPoints(difficulty);
-			}
 			// Create actor instance
 			Actor actor = new(
 				actorType: spawn.ActorType,
@@ -1742,7 +1655,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			actors.Add(actor);
 			if (!string.IsNullOrEmpty(initialState.CollidableScript))
 				_collidableActors.Add(actorIndex);
-
 			// WL_ACT2.C: Two spawn patterns based on initial state's movement properties
 			// SpawnPatrol (line 1246): Speed > 0, initializes for immediate movement
 			//   - Clear spawn tile, move TileX/TileY to adjacent, set Distance=TILEGLOBAL
@@ -1750,12 +1662,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			//   - Stay at spawn tile, Distance remains 0
 			bool needsMovementInit = initialState.Speed > 0;
 			if (needsMovementInit)
-			{
 				InitializeMovingActor(actor, actorIndex, spawn.Facing);
-			}
 			// Note: Stationary actors don't claim spawn tile - they'll be added to actorat
 			// when they first move (via the clear-think-set pattern in UpdateActors)
-
 			// Execute initial Action function if present
 			if (!string.IsNullOrEmpty(initialState.Action))
 			{
@@ -1779,7 +1688,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = initialState.Rotate,
 				IsSleeping = actor.HitPoints <= 0,
-				SnoozeCounter = actor.SnoozeCounter
+				SnoozeCounter = actor.SnoozeCounter,
 			});
 			actorIndex++;
 		}
@@ -1871,7 +1780,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Shape = (ushort)actor.ShapeNum,
 			IsRotated = initialState.Rotate,
 			IsSleeping = actor.HitPoints <= 0,
-			SnoozeCounter = actor.SnoozeCounter
+			SnoozeCounter = actor.SnoozeCounter,
 		});
 		return actorIndex;
 	}
@@ -1886,10 +1795,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		VictoryStarted?.Invoke(new VictoryStartedEvent
 		{
 			ViewTileX = viewTileX,
-			ViewTileY = viewTileY
+			ViewTileY = viewTileY,
 		});
 	}
-
 	/// <summary>
 	/// Helper for ActorScriptContext.SelectPathDir() - looks up patrol direction at a tile.
 	/// </summary>
@@ -1903,7 +1811,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		direction = default;
 		return false;
 	}
-
 	#region Projectile Management
 	/// <summary>
 	/// Spawns a new projectile.
@@ -1967,7 +1874,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void UpdateProjectile(int index)
 	{
 		Entities.Projectile proj = projectiles[index];
-
 		// State machine: advance transitional states (explosion animation, flight timing)
 		if (proj.TicCount > 0)
 		{
@@ -1995,21 +1901,18 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					proj.TicCount = 0; // Non-transitional (flight), clear countdown
 			}
 		}
-
 		// No movement while exploding
 		if (proj.IsExploding)
 			return;
-
 		// WL_FPROJ.C:T_Projectile - move projectile by speed * cos/sin(angle)
 		double radians = proj.Angle * Math.PI / 180.0;
-		long deltax = (long)(proj.Speed * Math.Cos(radians));
-		long deltay = -(long)(proj.Speed * Math.Sin(radians));
+		long deltax = (long)(proj.Speed * Math.Cos(radians)),
+			deltay = -(long)(proj.Speed * Math.Sin(radians));
 		// WL_FPROJ.C:T_Projectile cap (prevents clipping through thin geometry at high speed)
 		if (deltax > 0x10000L) deltax = 0x10000L;
 		if (deltay > 0x10000L) deltay = 0x10000L;
 		proj.X += (int)deltax;
 		proj.Y += (int)deltay;
-
 		// Wall collision check - WL_FPROJ.C:ProjectileTryMove
 		stateCollection.ProjectileDefinitions.TryGetValue(proj.ProjectileType, out Assets.Gameplay.ProjectileDefinition projDef);
 		if (!ProjectileCanMove(proj, projDef))
@@ -2017,11 +1920,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			TransitionProjectileToExplosion(index, proj, projDef);
 			return;
 		}
-
 		// Update tile coordinates
 		proj.TileX = (ushort)(proj.X >> 16);
 		proj.TileY = (ushort)(proj.Y >> 16);
-
 		// Entity hit detection
 		int collisionSize = projDef?.ActorCollisionSize ?? 0xC000;
 		if (proj.IsPlayerOwned)
@@ -2032,19 +1933,17 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Actor actor = actors[i];
 				if (!actor.Flags.HasFlag(ActorFlags.Shootable))
 					continue;
-				long adx = Math.Abs((long)proj.X - actor.X);
-				long ady = Math.Abs((long)proj.Y - actor.Y);
+				long adx = Math.Abs((long)proj.X - actor.X),
+					ady = Math.Abs((long)proj.Y - actor.Y);
 				if (adx < collisionSize && ady < collisionSize)
 				{
 					short damage = ComputeProjectileDamage(projDef, rng);
 					ApplyProjectileDamage(i, damage);
-
 					// WL_ACT2.C:MissileTryMove - Noah projectiles can pass through actors that
 					// became non-shootable from this hit (typically a kill), otherwise they
 					// transition into their explosion animation.
 					if (!actor.Flags.HasFlag(ActorFlags.Shootable))
 						continue;
-
 					TransitionProjectileToExplosion(index, proj, projDef);
 					return;
 				}
@@ -2053,8 +1952,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		else
 		{
 			// WL_FPROJ.C:T_Projectile - check player proximity
-			long pdx = Math.Abs((long)proj.X - PlayerX);
-			long pdy = Math.Abs((long)proj.Y - PlayerY);
+			long pdx = Math.Abs((long)proj.X - PlayerX),
+				pdy = Math.Abs((long)proj.Y - PlayerY);
 			if (pdx < collisionSize && pdy < collisionSize)
 			{
 				short damage = ComputeProjectileDamage(projDef, rng);
@@ -2063,7 +1962,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				return;
 			}
 		}
-
 		ProjectileMoved?.Invoke(new ProjectileMovedEvent
 		{
 			ProjectileId = proj.ProjectileId,
@@ -2071,50 +1969,32 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			Y = proj.Y,
 		});
 	}
-
 	/// <summary>
 	/// Checks whether a projectile can move to its current position without hitting a wall.
 	/// WL_FPROJ.C:ProjectileTryMove - checks bounding box tiles for solid geometry.
 	/// </summary>
 	private bool ProjectileCanMove(Entities.Projectile proj, Assets.Gameplay.ProjectileDefinition def)
 	{
-		int collisionSize = def?.WallCollisionSize ?? 0x2000;
-		int xl = (proj.X - collisionSize) >> 16;
-		int yl = (proj.Y - collisionSize) >> 16;
-		int xh = (proj.X + collisionSize) >> 16;
-		int yh = (proj.Y + collisionSize) >> 16;
+		int collisionSize = def?.WallCollisionSize ?? 0x2000,
+			xl = (proj.X - collisionSize) >> 16,
+			yl = (proj.Y - collisionSize) >> 16,
+			xh = (proj.X + collisionSize) >> 16,
+			yh = (proj.Y + collisionSize) >> 16;
 		for (int y = yl; y <= yh; y++)
-		{
 			for (int x = xl; x <= xh; x++)
-			{
 				if (IsProjectileBlockedAt(x, y))
 					return false;
-			}
-		}
 		return true;
 	}
-
 	/// <summary>
 	/// Returns true if a projectile is blocked at the given tile (wall, closed door, pushwall).
 	/// Actors do not block projectiles (projectiles detect actors via proximity check).
 	/// </summary>
-	private bool IsProjectileBlockedAt(int x, int y)
-	{
-		// mapAnalysis.IsNavigable already handles out-of-bounds (returns false)
-		if (!MapAnalysis.IsNavigable(x, y))
-			return true;
-		int tileIdx = GetTileIndex((ushort)x, (ushort)y);
-		if (pushWallAtTile[tileIdx] >= 0)
-			return true;
-		if (doorAtTile[tileIdx] >= 0)
-		{
-			Door door = doors[doorAtTile[tileIdx]];
-			if (door.Action != DoorAction.Open)
-				return true;
-		}
-		return false;
-	}
-
+	private bool IsProjectileBlockedAt(int x, int y) =>
+		!MapAnalysis.IsNavigable(x, y) ||
+		pushWallAtTile[GetTileIndex((ushort)x, (ushort)y)] >= 0 ||
+		(doorAtTile[GetTileIndex((ushort)x, (ushort)y)] >= 0 &&
+		 doors[doorAtTile[GetTileIndex((ushort)x, (ushort)y)]].Action != DoorAction.Open);
 	private void TransitionProjectileToExplosion(
 		int index,
 		Entities.Projectile proj,
@@ -2134,10 +2014,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			});
 			return;
 		}
-
 		DespawnProjectile(index);
 	}
-
 	/// <summary>
 	/// Removes a projectile from the list and fires the despawn event.
 	/// Safe to call during backwards iteration of the projectiles list.
@@ -2148,18 +2026,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		ProjectileDespawned?.Invoke(new ProjectileDespawnedEvent { ProjectileId = proj.ProjectileId });
 		projectiles.RemoveAt(index);
 	}
-
 	/// <summary>
 	/// Computes randomized damage for a projectile hit.
 	/// WL_FPROJ.C: damage = (US_RndT() >> 3) + base, approximated as MinDamage + RNG(range).
 	/// </summary>
-	private static short ComputeProjectileDamage(Assets.Gameplay.ProjectileDefinition def, RNG rng)
-	{
-		if (def is null || def.MaxDamage <= def.MinDamage)
-			return def?.MinDamage ?? 0;
-		return (short)(def.MinDamage + rng.NextInt(def.MaxDamage - def.MinDamage + 1));
-	}
-
+	private static short ComputeProjectileDamage(Assets.Gameplay.ProjectileDefinition def, RNG rng) =>
+		def is null || def.MaxDamage <= def.MinDamage
+			? def?.MinDamage ?? 0
+			: (short)(def.MinDamage + rng.NextInt(def.MaxDamage - def.MinDamage + 1));
 	/// <summary>
 	/// Applies damage from a projectile hit to an actor.
 	/// Same death/pain state transitions as ApplyWeaponDamage but without weapon-specific
@@ -2207,7 +2081,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 	}
 	#endregion Projectile Management
-
 	#region Weapon Slot Management
 	/// <summary>
 	/// Initialize weapon slots (call during game setup).
@@ -2222,7 +2095,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		for (int i = 0; i < slotCount; i++)
 			weaponSlots.Add(new WeaponSlot(i));
 	}
-
 	/// <summary>
 	/// Equip a weapon to a specific slot.
 	/// Based on WL_AGENT.C weapon selection logic (bt_readyknife, bt_readypistol, etc.).
@@ -2236,23 +2108,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger?.LogError("Invalid weapon slot index: {SlotIndex}", slotIndex);
 			return;
 		}
-
 		if (!weaponCollection.Weapons.TryGetValue(weaponType, out WeaponInfo weaponInfo))
 		{
 			logger?.LogError("Unknown weapon type: {WeaponType}", weaponType);
 			return;
 		}
-
 		// WL_AGENT.C:CheckWeaponChange - player must have the weapon to equip it
 		if (!PlayerHasWeapon(weaponType))
 			return;
-
 		if (!stateCollection.States.TryGetValue(weaponInfo.IdleState, out State idleState))
 		{
 			logger?.LogError("Weapon {WeaponType} idle state {IdleState} not found", weaponType, weaponInfo.IdleState);
 			return;
 		}
-
 		WeaponSlot slot = weaponSlots[slotIndex];
 		slot.WeaponType = weaponType;
 		slot.CurrentState = idleState;
@@ -2260,31 +2128,25 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		slot.ShapeNum = idleState.Shape;
 		slot.AttackFrame = 0;
 		slot.Flags = WeaponSlotFlags.Ready;
-
 		Inventory.SetValue($"SelectedWeapon{slotIndex}", weaponInfo.Number);
 		ExecuteOnWeaponSlotChangeScript(slotIndex, weaponInfo.Number, weaponType);
-
 		WeaponEquipped?.Invoke(new WeaponEquippedEvent
 		{
 			SlotIndex = slotIndex,
 			WeaponType = weaponType,
-			Shape = (ushort)slot.ShapeNum
+			Shape = (ushort)slot.ShapeNum,
 		});
 	}
-
 	/// <summary>
 	/// Get the weapon type currently equipped in a slot.
 	/// Used to preserve weapon selection across level transitions.
 	/// </summary>
 	/// <param name="slotIndex">Weapon slot index</param>
 	/// <returns>Weapon type identifier (e.g., "pistol"), or null if slot is empty or invalid</returns>
-	public string GetEquippedWeaponType(int slotIndex)
-	{
-		if (slotIndex < 0 || slotIndex >= weaponSlots.Count)
-			return null;
-		return weaponSlots[slotIndex].WeaponType;
-	}
-
+	public string GetEquippedWeaponType(int slotIndex) =>
+		slotIndex < 0 || slotIndex >= weaponSlots.Count
+			? null
+			: weaponSlots[slotIndex].WeaponType;
 	/// <summary>
 	/// Derives level completion statistics from the current game state.
 	/// Called at level end to capture kill/secret/treasure ratios and time.
@@ -2295,24 +2157,22 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public LevelCompletionStats GetCompletionStats(int floorNumber, bool isSecretLevel, TimeSpan parTime)
 	{
 		// KillTotal = number of spawned actors, KillCount = actors with HitPoints <= 0
-		int killTotal = actors.Count;
-		int killCount = 0;
+		int killTotal = actors.Count,
+			killCount = 0;
 		for (int i = 0; i < actors.Count; i++)
 			if (actors[i].HitPoints <= 0)
 				killCount++;
-
 		// SecretTotal = number of pushwalls, SecretCount = pushwalls that have been activated
-		int secretTotal = pushWalls.Count;
-		int secretCount = 0;
+		int secretTotal = pushWalls.Count,
+			secretCount = 0;
 		for (int i = 0; i < pushWalls.Count; i++)
 			if (pushWalls[i].HasBeenActivated)
 				secretCount++;
-
 		// TreasureTotal/TreasureCount: count treasure items from initial spawns
 		// Treasure items are identified by IsTreasure flag on ObjectInfo
 		// Collected treasures have ShapeNum == -1 (IsFree) in StatObjList
-		int treasureTotal = 0;
-		int treasureCount = 0;
+		int treasureTotal = 0,
+			treasureCount = 0;
 		for (int i = 0; i < lastStatObj; i++)
 		{
 			StatObj stat = StatObjList[i];
@@ -2324,21 +2184,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					treasureCount++;
 			}
 		}
-
 		return new LevelCompletionStats(
-			floorNumber,
-			isSecretLevel,
-			killCount,
-			killTotal,
-			secretCount,
-			secretTotal,
-			treasureCount,
-			treasureTotal,
-			CurrentTic,
-			parTime,
-			Inventory.GetValue("Score"));
+			FloorNumber: floorNumber,
+			IsSecretLevel: isSecretLevel,
+			KillCount: killCount,
+			KillTotal: killTotal,
+			SecretCount: secretCount,
+			SecretTotal: secretTotal,
+			TreasureCount: treasureCount,
+			TreasureTotal: treasureTotal,
+			ElapsedTics: CurrentTic,
+			ParTime: parTime,
+			Score: Inventory.GetValue("Score"));
 	}
-
 	/// <summary>
 	/// Appends a level's completion stats to the accumulated list.
 	/// Called when the player completes a level (elevator, victory, or cheat skip).
@@ -2348,7 +2206,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		if (stats is not null)
 			LevelRatios.Add(stats);
 	}
-
 	/// <summary>
 	/// Computes averaged statistics across all accumulated level completions.
 	/// Used by the Victory screen (WL_INTER.C:Victory).
@@ -2358,7 +2215,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (LevelRatios.Count == 0)
 			return null;
-
 		long totalTics = 0;
 		int killRatioSum = 0, secretRatioSum = 0, treasureRatioSum = 0;
 		for (int i = 0; i < LevelRatios.Count; i++)
@@ -2372,16 +2228,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			treasureRatioSum += stats.TreasureTotal > 0
 				? (int)(stats.TreasureCount * 100L / stats.TreasureTotal) : 0;
 		}
-
 		int count = LevelRatios.Count;
 		return new AccumulatedStats(
-			killRatioSum / count,
-			secretRatioSum / count,
-			treasureRatioSum / count,
-			totalTics,
-			count);
+			AverageKillRatio: killRatioSum / count,
+			AverageSecretRatio: secretRatioSum / count,
+			AverageTreasureRatio: treasureRatioSum / count,
+			TotalTics: totalTics,
+			LevelCount: count);
 	}
-
 	/// <summary>
 	/// Update a single weapon slot's state machine.
 	/// Based on WL_AGENT.C:T_Attack (line 2101) and Actor update pattern.
@@ -2390,26 +2244,20 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void UpdateWeaponSlot(int slotIndex)
 	{
 		WeaponSlot slot = weaponSlots[slotIndex];
-
 		// Empty slot or no state - nothing to update
 		if (slot.CurrentState is null || slot.WeaponType is null)
 			return;
-
 		// Non-transitional state (tics == 0) - stays in state, no auto-transition
 		// These are idle/ready states (WL_AGENT.C:T_Attack early return for tictime==0)
 		if (slot.TicCount == 0)
 			return;
-
 		// Transitional state - decrement and check for transition
 		slot.TicCount--;
-
 		while (slot.TicCount <= 0)
 		{
 			if (slot.CurrentState.Next is null)
 				break;
-
 			TransitionWeaponState(slotIndex, slot.CurrentState.Next);
-
 			// If new state is non-transitional, stop
 			if (slot.CurrentState.Tics == 0)
 			{
@@ -2418,11 +2266,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				slot.Flags &= ~WeaponSlotFlags.Attacking;
 				break;
 			}
-
 			break;  // Simplified - full timing accuracy can be added later
 		}
 	}
-
 	/// <summary>
 	/// Transition weapon slot to a new state.
 	/// Updates sprite, executes Action function if present, fires events.
@@ -2434,18 +2280,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		WeaponSlot slot = weaponSlots[slotIndex];
 		short oldShape = slot.ShapeNum;
-
 		slot.CurrentState = nextState;
 		slot.TicCount = nextState.Tics;
 		slot.ShapeNum = nextState.Shape;
 		slot.AttackFrame++;  // Increment attack frame counter
-
 		if (!string.IsNullOrEmpty(nextState.Action)
 			&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
 		{
 			Lua.WeaponScriptContext weaponContext = new(this, slot, slotIndex, weaponInfo, rng, gameClock, logger)
 			{
-				AudioT = audioT
+				AudioT = audioT,
 			};
 			try
 			{
@@ -2465,7 +2309,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				slot.AttackFrame = 1;
 			}
 		}
-
 		// Update flags based on state
 		if (nextState.Tics == 0)
 		{
@@ -2476,25 +2319,22 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				EquipWeapon(slotIndex, pendingWeaponType);
 				return;
 			}
-
 			// Returning to idle state
 			slot.Flags |= WeaponSlotFlags.Ready;
 			slot.Flags &= ~WeaponSlotFlags.Attacking;
 			slot.AttackFrame = 0;  // Reset attack frame when idle
-
-			// WL_AGENT.C:T_Player line 2288 - auto-fire on return to idle.
-			// In original Wolf3D, T_Attack eating a press during wind-down clears
-			// buttonheld, so when T_Player runs next frame with the button still
-			// physically held, it appears as a fresh press and fires immediately.
-			// We replicate this: if TriggerHeld is set when returning to idle,
-			// and the weapon is auto-mode, immediately start a new attack.
+								   // WL_AGENT.C:T_Player line 2288 - auto-fire on return to idle.
+								   // In original Wolf3D, T_Attack eating a press during wind-down clears
+								   // buttonheld, so when T_Player runs next frame with the button still
+								   // physically held, it appears as a fresh press and fires immediately.
+								   // We replicate this: if TriggerHeld is set when returning to idle,
+								   // and the weapon is auto-mode, immediately start a new attack.
 			if (slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld)
 				&& slot.WeaponType is not null
 				&& weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo idleWeaponInfo)
 				&& idleWeaponInfo.RapidFire)
 			{
 				bool hasAmmo = HasAmmo(idleWeaponInfo);
-
 				if (hasAmmo && stateCollection.States.TryGetValue(idleWeaponInfo.FireState, out State autoFireState))
 				{
 					slot.CurrentState = autoFireState;
@@ -2507,22 +2347,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 		else
-		{
 			// In animation
 			slot.Flags &= ~WeaponSlotFlags.Ready;
-		}
-
 		// Fire sprite changed event
 		if (oldShape != slot.ShapeNum)
-		{
 			WeaponSpriteChanged?.Invoke(new WeaponSpriteChangedEvent
 			{
 				SlotIndex = slotIndex,
-				Shape = (ushort)slot.ShapeNum
+				Shape = (ushort)slot.ShapeNum,
 			});
-		}
 	}
-
 	/// <summary>
 	/// Process weapon fire action from presentation layer.
 	/// Based on WL_AGENT.C:Cmd_Fire (line 1629) and T_Attack.
@@ -2532,13 +2366,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (action.SlotIndex < 0 || action.SlotIndex >= weaponSlots.Count)
 			return;
-
 		WeaponSlot slot = weaponSlots[action.SlotIndex];
-
 		// Validate: slot must have a weapon
 		if (slot.WeaponType is null)
 			return;
-
 		// WL_AGENT.C:T_Attack lines 2119-2120 - fresh presses during attack are eaten/ignored.
 		// Cannot start a new attack while one is already playing.
 		// However, record TriggerHeld so that when the attack animation completes,
@@ -2550,15 +2381,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			slot.Flags |= WeaponSlotFlags.TriggerHeld;
 			return;
 		}
-
 		if (!weaponCollection.Weapons.TryGetValue(slot.WeaponType, out WeaponInfo weaponInfo))
 			return;
-
 		// Non-rapid-fire weapons require trigger release between shots.
 		// WL_AGENT.C:T_Player line 2288 - fire only on rising edge (buttonstate && !buttonheld)
 		if (!weaponInfo.RapidFire && slot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld))
 			return;
-
 		// Check ammo before starting animation (dry fire check)
 		if (!HasAmmo(weaponInfo))
 		{
@@ -2566,20 +2394,16 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				EmitGlobalSound(weaponInfo.NoAmmoSound);
 			return;
 		}
-
 		// Start fire animation - ammo consumption, hit detection, and damage
 		// are handled by the attack action (A_PistolAttack, etc.) on the fire frame
 		if (!stateCollection.States.TryGetValue(weaponInfo.FireState, out State fireState))
 			return;
-
 		TransitionWeaponState(action.SlotIndex, fireState);
-
 		// Set flags
 		slot.Flags |= WeaponSlotFlags.TriggerHeld | WeaponSlotFlags.Attacking;
 		slot.Flags &= ~WeaponSlotFlags.Ready;
 		slot.AttackFrame = 0;
 	}
-
 	/// <summary>
 	/// Process release weapon trigger action.
 	/// Clears TriggerHeld flag for semi-auto fire mode.
@@ -2590,60 +2414,40 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (action.SlotIndex < 0 || action.SlotIndex >= weaponSlots.Count)
 			return;
-
 		WeaponSlot slot = weaponSlots[action.SlotIndex];
 		slot.Flags &= ~WeaponSlotFlags.TriggerHeld;
 	}
-
-
 	private int GetAmmoCount(string ammoKey) =>
 		string.IsNullOrEmpty(ammoKey) ? 0 : Inventory.GetValue(ammoKey);
-
-	private bool HasAmmo(WeaponInfo weaponInfo)
-	{
-		if (weaponInfo.AmmoPerShot <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType))
-			return true;
-
-		return GetAmmoCount(weaponInfo.AmmoType) >= weaponInfo.AmmoPerShot;
-	}
-
+	private bool HasAmmo(WeaponInfo weaponInfo) =>
+		weaponInfo.AmmoPerShot <= 0
+		|| string.IsNullOrEmpty(weaponInfo.AmmoType)
+		|| GetAmmoCount(weaponInfo.AmmoType) >= weaponInfo.AmmoPerShot;
 	private bool TryConsumeAmmo(WeaponInfo weaponInfo, string ammoKeyOverride = null)
 	{
 		if (weaponInfo.AmmoPerShot <= 0)
 			return true;
-
 		string ammoKey = ammoKeyOverride ?? weaponInfo.AmmoType;
 		if (string.IsNullOrEmpty(ammoKey))
 			return true;
-
 		int currentAmmo = GetAmmoCount(ammoKey);
 		if (currentAmmo < weaponInfo.AmmoPerShot)
 			return false;
-
 		Inventory.SetValue(ammoKey, currentAmmo - weaponInfo.AmmoPerShot);
 		return true;
 	}
-
 	private void QueueWeaponFallback(int slotIndex, WeaponSlot slot)
 	{
 		if (!weaponCollection.TryGetWeapon("knife", out WeaponInfo fallbackWeapon))
 			return;
-
 		if (!PlayerHasWeapon(fallbackWeapon.Name))
 			return;
-
 		slot.PendingWeaponType = fallbackWeapon.Name;
 	}
-
-	public Entities.Projectile SpawnPlayerProjectile(int slotIndex, string projectileType)
-	{
-		WeaponFirePose? firePose = WeaponFirePoseProvider?.Invoke(slotIndex);
-		if (firePose is null)
-			return null;
-
-		return SpawnProjectile(projectileType, firePose.Value.X, firePose.Value.Y, firePose.Value.Angle, isPlayerOwned: true);
-	}
-
+	public Entities.Projectile SpawnPlayerProjectile(int slotIndex, string projectileType) =>
+		WeaponFirePoseProvider?.Invoke(slotIndex) is WeaponFirePose firePose
+			? SpawnProjectile(projectileType, firePose.X, firePose.Y, firePose.Angle, isPlayerOwned: true)
+			: null;
 	/// <summary>
 	/// WL_AGENT.C:GunAttack sets madenoise = true
 	/// WL_STATE.C:SightPlayer checks madenoise to alert non-ambush enemies in connected areas
@@ -2652,13 +2456,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	internal void PropagateNoise()
 	{
 		if (MapAnalysis is null) return;
-
 		short playerArea = MapAnalysis.GetAreaNumber(PlayerTileX, PlayerTileY);
 		List<ushort> connectedAreas;
 		if (playerArea >= 0)
-		{
 			connectedAreas = AreaConnect.FloorCodes((ushort)playerArea);
-		}
 		else
 		{
 			// Player is standing in a doorframe - propagate from both areas the door connects.
@@ -2671,15 +2472,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (doorArea < 0) return;
 			connectedAreas = AreaConnect.FloorCodes((ushort)doorArea);
 		}
-
 		for (int i = 0; i < actors.Count; i++)
 		{
 			Actor actor = actors[i];
-
 			if (!actor.Flags.HasFlag(ActorFlags.Shootable)) continue;
 			if (actor.Flags.HasFlag(ActorFlags.AttackMode)) continue;
 			if (actor.Flags.HasFlag(ActorFlags.Ambush)) continue;
-
 			short actorArea = MapAnalysis.GetAreaNumber(actor.TileX, actor.TileY);
 			if (actorArea >= 0)
 			{
@@ -2694,10 +2492,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					|| (actorDoor.Area2 >= 0 && connectedAreas.Contains((ushort)actorDoor.Area2));
 				if (!doorConnected) continue;
 			}
-
 			// WL_STATE.C:SightPlayer - ob->temp2 = 1 + US_RndT()/4
 			actor.ReactionTimer = (short)(1 + rng.Next(256) / 4);
-
 			if (stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef)
 				&& !string.IsNullOrEmpty(actorDef.ChaseState))
 			{
@@ -2707,7 +2503,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 	}
-
 	/// <summary>
 	/// Apply damage to an actor from a weapon hit.
 	/// Calculates damage based on distance and weapon type, matching original Wolf3D formulas.
@@ -2720,36 +2515,26 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (actorIndex < 0 || actorIndex >= actors.Count)
 			return;
-
 		Actor actor = actors[actorIndex];
-
 		// WL_AGENT.C:DamageActor - only damage shootable (alive) actors
 		if (!actor.Flags.HasFlag(ActorFlags.Shootable))
 			return;
-
 		bool isMelee = weaponInfo.AmmoPerShot <= 0 || string.IsNullOrEmpty(weaponInfo.AmmoType);
 		int damage;
-
 		if (isMelee)
-		{
 			// WL_AGENT.C:KnifeAttack - damage = US_RndT() >> 4 (0-15)
 			damage = rng.Next(256) >> 4;
-		}
 		else
 		{
 			// WL_AGENT.C:GunAttack - Chebyshev distance between player and actor tiles
-			int dx = Math.Abs(PlayerTileX - actor.TileX);
-			int dy = Math.Abs(PlayerTileY - actor.TileY);
-			int dist = Math.Max(dx, dy);
-
+			int dx = Math.Abs(PlayerTileX - actor.TileX),
+				dy = Math.Abs(PlayerTileY - actor.TileY),
+				dist = Math.Max(dx, dy);
 			// WL_AGENT.C:GunAttack - accuracy falloff at distance
-			if (UseAccuracyFalloff && dist >= 4)
-			{
-				if (rng.Next(256) / 12 < dist)
-					return; // Miss
-			}
-
-			// WL_AGENT.C:GunAttack - distance-based damage tiers
+			if (UseAccuracyFalloff && dist >= 4
+				&& rng.Next(256) / 12 < dist)
+				return; // Miss
+						// WL_AGENT.C:GunAttack - distance-based damage tiers
 			if (dist < 2)
 				damage = rng.Next(256) / 4;   // 0-63
 			else if (dist < 4)
@@ -2757,22 +2542,17 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			else
 				damage = rng.Next(256) / 6;   // 0-42
 		}
-
 		// WL_STATE.C:DamageActor - surprise bonus (FL_ATTACKMODE not set = unaware)
 		if (!actor.Flags.HasFlag(ActorFlags.AttackMode))
 			damage *= 2;
-
 		// Apply damage
 		actor.HitPoints -= (short)damage;
-
 		// Look up actor definition for state transitions
 		stateCollection.ActorDefinitions.TryGetValue(actor.ActorType, out ActorDefinition actorDef);
-
 		if (actor.HitPoints <= 0)
 		{
 			// WL_STATE.C:DamageActor - actor killed
 			actor.HitPoints = 0;
-
 			if (actorDef is not null && !string.IsNullOrEmpty(actorDef.DeathState))
 			{
 				TransitionActorStateByName(actorIndex, actorDef.DeathState);
@@ -2783,18 +2563,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		else
 		{
 			// WL_STATE.C:DamageActor - actor hurt but alive
-
 			// If not in attack mode, trigger first sighting (wake up)
-			if (!actor.Flags.HasFlag(ActorFlags.AttackMode) && actorDef is not null)
+			if (!actor.Flags.HasFlag(ActorFlags.AttackMode) && actorDef is not null
+				&& !string.IsNullOrEmpty(actorDef.ChaseState))
 			{
-				if (!string.IsNullOrEmpty(actorDef.ChaseState))
-				{
-					TransitionActorStateByName(actorIndex, actorDef.ChaseState);
-					actor.Flags |= ActorFlags.AttackMode;
-					RunActorAlert(actorIndex);
-				}
+				TransitionActorStateByName(actorIndex, actorDef.ChaseState);
+				actor.Flags |= ActorFlags.AttackMode;
+				RunActorAlert(actorIndex);
 			}
-
 			// Transition to pain state (if actor has one)
 			// WL_STATE.C:DamageActor - alternates between two pain frames based on HP parity
 			if (actorDef is not null)
@@ -2802,26 +2578,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				string painState = (actor.HitPoints & 1) != 0
 					? actorDef.PainState
 					: actorDef.PainState1 ?? actorDef.PainState;
-
 				if (!string.IsNullOrEmpty(painState))
 					TransitionActorStateByName(actorIndex, painState);
 			}
 		}
 	}
 	#endregion
-
 	#region Player State Management
 	/// <summary>
 	/// Check if player has a specific weapon.
 	/// WL_DEF.H:gametype:bestweapon
 	/// </summary>
-	public bool PlayerHasWeapon(string weaponType)
-	{
-		if (weaponCollection is not null && weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo))
-			return Inventory.Has(WeaponCollection.GetInventoryKey(weaponInfo.Number));
-		return false;
-	}
-
+	public bool PlayerHasWeapon(string weaponType) =>
+		weaponCollection is not null
+		&& weaponCollection.TryGetWeapon(weaponType, out WeaponInfo weaponInfo)
+		&& Inventory.Has(WeaponCollection.GetInventoryKey(weaponInfo.Number));
 	/// <summary>
 	/// Damage the player.
 	/// WL_AGENT.C:TakeDamage
@@ -2849,7 +2620,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			PlayerDied?.Invoke(new PlayerDiedEvent());
 		}
 	}
-
 	/// <summary>
 	/// Applies the optional XML/Lua-defined incoming-damage transform before health is reduced.
 	/// This keeps game-specific damage rules in data/scripts instead of baking them into the simulator.
@@ -2858,14 +2628,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (amount <= 0)
 			return amount;
-
 		if (string.IsNullOrEmpty(onTakeDamageFunctionName))
 			return amount;
-
 		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 		{
-			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-			AudioT = audioT
+			PlaySoundAction = EmitPlayGlobalSound,
+			AudioT = audioT,
 		};
 		MoonSharp.Interpreter.DynValue result =
 			luaScriptEngine.ExecuteActionFunction(onTakeDamageFunctionName, context, amount);
@@ -2873,7 +2641,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			? (int)result.Number
 			: amount;
 	}
-
 	/// <summary>
 	/// Executes the OnDeath ActionFunction (WL_GAME.C:Died).
 	/// Called by the presentation layer after the death fadeout completes,
@@ -2887,8 +2654,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-				AudioT = audioT
+				PlaySoundAction = EmitPlayGlobalSound,
+				AudioT = audioT,
 			};
 			try
 			{
@@ -2903,7 +2670,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 		return "gameover";
 	}
-
 	/// <summary>
 	/// Execute the OnInventoryChange action function after any inventory value changes.
 	/// The inventory key name and new value are passed as Lua varargs.
@@ -2912,11 +2678,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (string.IsNullOrEmpty(onInventoryChangeFunctionName))
 			return;
-
 		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 		{
-			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-			AudioT = audioT
+			PlaySoundAction = EmitPlayGlobalSound,
+			AudioT = audioT,
 		};
 		try
 		{
@@ -2927,7 +2692,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger?.LogError(ex, "Error executing OnInventoryChange function '{FunctionName}' for inventory key '{InventoryKey}'", onInventoryChangeFunctionName, inventoryKey);
 		}
 	}
-
 	/// <summary>
 	/// Execute the optional OnCheat action function.
 	/// Missing is valid and treated as a no-op.
@@ -2936,11 +2700,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (string.IsNullOrEmpty(onCheatFunctionName))
 			return;
-
 		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 		{
-			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-			AudioT = audioT
+			PlaySoundAction = EmitPlayGlobalSound,
+			AudioT = audioT,
 		};
 		try
 		{
@@ -2951,16 +2714,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger?.LogError(ex, "Error executing OnCheat function '{FunctionName}'", onCheatFunctionName);
 		}
 	}
-
 	private void ExecuteOnWeaponSlotChangeScript(int slotIndex, int weaponNumber, string weaponType)
 	{
 		if (string.IsNullOrEmpty(onWeaponSlotChangeFunctionName))
 			return;
-
 		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 		{
-			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-			AudioT = audioT
+			PlaySoundAction = EmitPlayGlobalSound,
+			AudioT = audioT,
 		};
 		try
 		{
@@ -2971,16 +2732,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger?.LogError(ex, "Error executing OnWeaponSlotChange function '{FunctionName}'", onWeaponSlotChangeFunctionName);
 		}
 	}
-
 	internal void ExecuteOnWeaponFireScript(int slotIndex, int weaponNumber, string weaponType)
 	{
 		if (string.IsNullOrEmpty(onWeaponFireFunctionName))
 			return;
-
 		Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 		{
-			PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-			AudioT = audioT
+			PlaySoundAction = EmitPlayGlobalSound,
+			AudioT = audioT,
 		};
 		try
 		{
@@ -2991,16 +2750,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			logger?.LogError(ex, "Error executing OnWeaponFire function '{FunctionName}'", onWeaponFireFunctionName);
 		}
 	}
-
 	/// <summary>
 	/// Emit a generic PlayerStateChanged event for listeners that want to know
 	/// some player inventory-derived state changed.
 	/// </summary>
-	private void EmitPlayerStateChanged()
-	{
-		PlayerStateChanged?.Invoke(new PlayerStateChangedEvent());
-	}
-
+	private void EmitPlayerStateChanged() => PlayerStateChanged?.Invoke(new PlayerStateChangedEvent());
 	/// <summary>
 	/// Emit a BonusPlaySound event for positional audio at an item's location.
 	/// </summary>
@@ -3012,12 +2766,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			StatObjIndex = statObjIndex,
 			TileX = tileX,
 			TileY = tileY,
-			SoundName = soundName
+			SoundName = soundName,
 		});
 	}
-
 	internal void EmitWeaponFired(WeaponFiredEvent e) => WeaponFired?.Invoke(e);
-
 	/// <summary>
 	/// Emit a PlayGlobalSound event for non-positional audio.
 	/// </summary>
@@ -3026,10 +2778,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		soundName = ResolveSoundNameForEmission(soundName);
 		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
 		{
-			SoundName = soundName
+			SoundName = soundName,
 		});
 	}
-
 	/// <summary>
 	/// Emit a StatusBarPicChanged event to update a named status bar picture.
 	/// Called by ActionScriptContext.SetPicture() from Lua scripts.
@@ -3040,12 +2791,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		StatusBarPicChanged?.Invoke(new StatusBarPicChangedEvent
 		{
 			Name = name,
-			PicName = picName
+			PicName = picName,
 		});
 	}
-
 	public bool HasStatusBarPicture(string id) => _statusBarPictureIds.Contains(id);
-
 	/// <summary>
 	/// Emit a StatusBarTextChanged event to update a named status bar text label.
 	/// Called by ActionScriptContext.SetText() from Lua scripts.
@@ -3055,15 +2804,13 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		StatusBarTextChanged?.Invoke(new StatusBarTextChangedEvent
 		{
 			Id = id,
-			Content = content
+			Content = content,
 		});
 	}
-
 	/// <summary>
 	/// Returns the number of loaded quiz questions.
 	/// </summary>
 	public int VgaGraphQuestionCount() => QuizQuestions?.Count ?? 0;
-
 	/// <summary>
 	/// Builds a pending quiz payload for the specified question index.
 	/// Returns null when the current game has no quiz question bank loaded.
@@ -3072,22 +2819,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (QuizQuestions is null || QuizQuestions.Count == 0)
 			return null;
-
 		int wrappedIndex = (questionNum % QuizQuestions.Count + QuizQuestions.Count) % QuizQuestions.Count;
 		Assets.Graphics.VgaGraph.QuizQuestion question = QuizQuestions[wrappedIndex];
 		int correctIndex = Array.FindIndex(question.Answers, answer => answer.Correct);
-		if (correctIndex < 0)
-			return null;
-
-		return new PendingQuizData(
-			QuestionIndex: wrappedIndex,
-			QuestionText: question.Text,
-			ReferenceText: question.Reference,
-			Answers: [.. question.Answers.Select(answer => answer.Text)],
-			CorrectAnswerIndex: correctIndex,
-			ShowReference: Inventory.GetValue("Difficulty") <= 1);
+		return correctIndex < 0
+			? null
+			: new PendingQuizData(
+				QuestionIndex: wrappedIndex,
+				QuestionText: question.Text,
+				ReferenceText: question.Reference,
+				Answers: [.. question.Answers.Select(answer => answer.Text)],
+				CorrectAnswerIndex: correctIndex,
+				ShowReference: Inventory.GetValue("Difficulty") <= 1);
 	}
-
 	/// <summary>
 	/// Re-emits all current status bar text and picture values to bring a newly created
 	/// status bar up to date. Call this after subscribing to StatusBarTextChanged and
@@ -3104,7 +2848,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		foreach (KeyValuePair<string, string> kvp in _currentStatusBarPics)
 			EmitStatusBarPicChanged(kvp.Key, kvp.Value);
 	}
-
 	/// <summary>
 	/// Equip the starting weapon based on the current SelectedWeapon0 inventory value.
 	/// Call this after ExecuteOnNewGameScript (new games) or after inventory is loaded (level transitions).
@@ -3121,7 +2864,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				EquipWeapon(i, startWeapon.Name);
 		}
 	}
-
 	/// <summary>
 	/// Execute the OnNewGame action function to initialize all inventory values and status bar display.
 	/// WL_GAME.C:NewGame — initializes inventory, maxes, and fires SetText/SetPicture for each display.
@@ -3133,8 +2875,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-				AudioT = audioT
+				PlaySoundAction = EmitPlayGlobalSound,
+				AudioT = audioT,
 			};
 			try
 			{
@@ -3146,7 +2888,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 	}
-
 	/// <summary>
 	/// Execute the OnMapStart action function after gameplay starts on a map.
 	/// Runs for new-game map entry and inter-map transitions, but not save restore.
@@ -3157,8 +2898,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			Lua.ActionScriptContext context = new(this, rng, gameClock, logger)
 			{
-				PlaySoundAction = soundName => EmitPlayGlobalSound(soundName),
-				AudioT = audioT
+				PlaySoundAction = EmitPlayGlobalSound,
+				AudioT = audioT,
 			};
 			try
 			{
@@ -3170,7 +2911,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 	}
-
 	/// <summary>
 	/// Load bonus scripts from game configuration.
 	/// Called during level load to set up bonus pickup behavior.
@@ -3187,7 +2927,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				bonusScripts[name] = code;
 		bonusNumberToScript = bonusNumberToScriptMap ?? [];
 	}
-
 	/// <summary>
 	/// Check for item pickups based on player position.
 	/// Player must be within the item's tile to pick it up.
@@ -3200,45 +2939,37 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Player position in fixed-point 16.16
 		// Items are centered on their tile - collision box extends half tile in each direction
 		const int HALF_TILE = 0x8000; // Half tile in fixed-point (0.5 * 0x10000)
-
 		for (int i = 0; i < lastStatObj; i++)
 		{
 			StatObj item = StatObjList[i];
-
 			// Skip empty/despawned slots
 			if (item is null || item.IsFree)
 				continue;
-
 			// Item center in fixed-point coordinates
-			int itemCenterX = (item.TileX << 16) + HALF_TILE;
-			int itemCenterY = (item.TileY << 16) + HALF_TILE;
-
-			// Check if player is within the item's tile (box collision)
-			// Distance must be < half a tile from center in both X and Y
-			int deltaX = Math.Abs(PlayerX - itemCenterX);
-			int deltaY = Math.Abs(PlayerY - itemCenterY);
-
-			if (deltaX < HALF_TILE && deltaY < HALF_TILE)
-			{
+			int itemCenterX = (item.TileX << 16) + HALF_TILE,
+				itemCenterY = (item.TileY << 16) + HALF_TILE,
+				// Check if player is within the item's tile (box collision)
+				// Distance must be < half a tile from center in both X and Y
+				deltaX = Math.Abs(PlayerX - itemCenterX),
+				deltaY = Math.Abs(PlayerY - itemCenterY);
+			if (deltaX < HALF_TILE
+				&& deltaY < HALF_TILE
 				// Player is touching item - try to pick it up
-				if (TryPickupBonus(i, item, out _))
+				&& TryPickupBonus(i, item, out _))
+			{
+				// Item was consumed - mark as despawned
+				item.ShapeNum = -1;
+				// Emit pickup event for presentation layer
+				BonusPickedUp?.Invoke(new BonusPickedUpEvent
 				{
-					// Item was consumed - mark as despawned
-					item.ShapeNum = -1;
-
-					// Emit pickup event for presentation layer
-					BonusPickedUp?.Invoke(new BonusPickedUpEvent
-					{
-						StatObjIndex = i,
-						TileX = item.TileX,
-						TileY = item.TileY,
-						ItemNumber = item.ItemNumber
-					});
-				}
+					StatObjIndex = i,
+					TileX = item.TileX,
+					TileY = item.TileY,
+					ItemNumber = item.ItemNumber,
+				});
 			}
 		}
 	}
-
 	/// <summary>
 	/// Attempt to pick up an item using its Lua script.
 	/// Script returns true if item should be consumed, false otherwise.
@@ -3252,7 +2983,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Use a local variable; out params can't be captured in lambdas (CS1628)
 		bool navLocal = false,
 			transitionLocal = false;
-
 		// Look up script name by ItemNumber
 		if (!bonusNumberToScript.TryGetValue(item.ItemNumber, out string scriptName))
 		{
@@ -3263,7 +2993,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			navigationTriggered = false;
 			return true;
 		}
-
 		if (!bonusScripts.TryGetValue(scriptName, out string script))
 		{
 			// Script name not found - consume by default
@@ -3272,7 +3001,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			navigationTriggered = false;
 			return true;
 		}
-
 		if (string.IsNullOrWhiteSpace(script))
 		{
 			// Empty script - consume by default
@@ -3280,7 +3008,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			navigationTriggered = false;
 			return true;
 		}
-
 		// Create script context for this item
 		Lua.BonusScriptContext context = new(
 			this,
@@ -3306,17 +3033,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				RequestGameplayMapTransition((byte)destinationLevel, preservePlayerTransform);
 			}
 		};
-
 		try
 		{
 			// Execute the item script
 			MoonSharp.Interpreter.DynValue result = luaScriptEngine.ExecuteCompiledScript(scriptName, context);
 			navigationTriggered = navLocal || transitionLocal;
-
 			// Script returns true to consume, false to leave
 			if (result.Type == MoonSharp.Interpreter.DataType.Boolean)
 				return result.Boolean;
-
 			// If script doesn't return a boolean, default to consume
 			return true;
 		}
@@ -3329,7 +3053,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			return false;
 		}
 	}
-
 	/// <summary>
 	/// Processes item pickups at a specific tile coordinate.
 	/// Returns true if a NavigateToMenu call was triggered (e.g. level exit tile),
@@ -3345,7 +3068,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			StatObj item = StatObjList[i];
 			if (item is null || item.IsFree || item.TileX != tileX || item.TileY != tileY)
 				continue;
-
 			if (TryPickupBonus(i, item, out bool navigationTriggered))
 			{
 				item.ShapeNum = -1;
@@ -3354,16 +3076,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					StatObjIndex = i,
 					TileX = item.TileX,
 					TileY = item.TileY,
-					ItemNumber = item.ItemNumber
+					ItemNumber = item.ItemNumber,
 				});
 			}
-
 			if (navigationTriggered)
 				return true;
 		}
 		return false;
 	}
-
 	/// <summary>
 	/// Checks for item pickups along the entire path from a previous player position to the current one.
 	/// Uses Bresenham tile traversal to visit every tile along the path (excluding the start tile).
@@ -3374,11 +3094,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="fromY">Previous player Y position (16.16 fixed-point)</param>
 	private void CheckItemPickupsAlongPath(int fromX, int fromY)
 	{
-		int fromTileX = Math.Max(0, Math.Min(mapWidth - 1, fromX >> 16));
-		int fromTileY = Math.Max(0, Math.Min(mapHeight - 1, fromY >> 16));
-		int toTileX = Math.Max(0, Math.Min(mapWidth - 1, PlayerX >> 16));
-		int toTileY = Math.Max(0, Math.Min(mapHeight - 1, PlayerY >> 16));
-
+		int fromTileX = Math.Max(0, Math.Min(mapWidth - 1, fromX >> 16)),
+			fromTileY = Math.Max(0, Math.Min(mapHeight - 1, fromY >> 16)),
+			toTileX = Math.Max(0, Math.Min(mapWidth - 1, PlayerX >> 16)),
+			toTileY = Math.Max(0, Math.Min(mapHeight - 1, PlayerY >> 16));
 		// Same tile: fall back to proximity-based check (existing behaviour)
 		if (fromTileX == toTileX && fromTileY == toTileY)
 		{
@@ -3386,25 +3105,22 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			CheckCollidableActors(PlayerX, PlayerY);
 			return;
 		}
-
 		// Multi-tile path: process every tile from (fromTile+step) through toTile.
 		// The start tile was already processed in a previous frame; skip it.
-		int dx = Math.Abs(toTileX - fromTileX);
-		int dy = Math.Abs(toTileY - fromTileY);
-		int sx = fromTileX < toTileX ? 1 : -1;
-		int sy = fromTileY < toTileY ? 1 : -1;
-		int err = dx - dy;
-		int x = fromTileX;
-		int y = fromTileY;
-
+		int dx = Math.Abs(toTileX - fromTileX),
+			dy = Math.Abs(toTileY - fromTileY),
+			sx = fromTileX < toTileX ? 1 : -1,
+			sy = fromTileY < toTileY ? 1 : -1,
+			err = dx - dy,
+			x = fromTileX,
+			y = fromTileY;
 		while (x != toTileX || y != toTileY)
 		{
 			int e2 = 2 * err;
 			if (e2 > -dy) { err -= dy; x += sx; }
 			if (e2 < dx) { err += dx; y += sy; }
-
-			int tileCenterX = (x << 16) + 0x8000;
-			int tileCenterY = (y << 16) + 0x8000;
+			int tileCenterX = (x << 16) + 0x8000,
+				tileCenterY = (y << 16) + 0x8000;
 			CheckCollidableActors(tileCenterX, tileCenterY);
 			if (PickupItemsAtTile((ushort)x, (ushort)y))
 			{
@@ -3417,7 +3133,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Check at exact destination (may differ from tile center during normal movement)
 		CheckCollidableActors(PlayerX, PlayerY);
 	}
-
 	/// <summary>
 	/// Checks all actors in collidable states for player proximity at the given position
 	/// and fires their CollidableScript if the player is within radius.
@@ -3440,9 +3155,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (string.IsNullOrEmpty(state?.CollidableScript))
 				continue;
 			// Radius in fixed-point units (tile fraction * 65536)
-			long radius = (long)(state.CollidableRadius * 65536f);
-			long dx = posX - actor.X;
-			long dy = posY - actor.Y;
+			long radius = (long)(state.CollidableRadius * 65536f),
+				dx = posX - actor.X,
+				dy = posY - actor.Y;
 			if (dx * dx + dy * dy < radius * radius)
 			{
 				Lua.ActorScriptContext context = CreateActorScriptContext(actor, actorIndex);
@@ -3457,7 +3172,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			}
 		}
 	}
-
 	/// <summary>
 	/// Rebuilds the collidable actor index from scratch by scanning all actors.
 	/// Called after save game load, where actor states are restored without going
@@ -3467,13 +3181,10 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		_collidableActors.Clear();
 		for (int i = 0; i < actors.Count; i++)
-		{
 			if (!string.IsNullOrEmpty(actors[i].CurrentState?.CollidableScript))
 				_collidableActors.Add(i);
-		}
 	}
 	#endregion
-
 	/// <summary>
 	/// Helper for ActorScriptContext.MoveObj() - fires ActorMovedEvent.
 	/// </summary>
@@ -3484,10 +3195,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			ActorIndex = actorIndex,
 			X = x,
 			Y = y,
-			Facing = facing
+			Facing = facing,
 		});
 	}
-
 	/// <summary>
 	/// Emits current state events for all entities after deserialization.
 	/// Fixed-count entities (doors, push walls) get state change events.
@@ -3507,10 +3217,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				TileX = door.TileX,
 				TileY = door.TileY,
 				Position = door.Position,
-				Action = door.Action
+				Action = door.Action,
 			});
 		}
-
 		// Emit push wall position events for pushwalls that have moved
 		// Push walls are fixed-count entities (created from MapAnalysis.PushWalls)
 		// but need position events to show movement after being pushed
@@ -3521,17 +3230,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (pushWall.Action == PushWallAction.Pushing ||
 				pushWall.X != ((pushWall.InitialTileX << 16) + 0x8000) ||
 				pushWall.Y != ((pushWall.InitialTileY << 16) + 0x8000))
-			{
 				PushWallPositionChanged?.Invoke(new PushWallPositionChangedEvent
 				{
 					PushWallIndex = (ushort)i,
 					X = pushWall.X,
 					Y = pushWall.Y,
-					Action = pushWall.Action
+					Action = pushWall.Action,
 				});
-			}
 		}
-
 		// Emit bonus SPAWN events for all active bonuses
 		// WL_DEF.H: shapenum = -1 means despawned (entire object removed - skip event)
 		// Noah's Ark: shapenum = -2 means invisible trigger (emit event, no visual)
@@ -3541,7 +3247,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// Skip despawned bonuses: null, IsFree, or ShapeNum == -1
 			if (StatObjList[i] is null || StatObjList[i].IsFree || StatObjList[i].ShapeNum == -1)
 				continue;
-
 			// Emit event for both invisible triggers (-2) and visible bonuses (>= 0)
 			BonusSpawned?.Invoke(new BonusSpawnedEvent
 			{
@@ -3549,10 +3254,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Shape = StatObjList[i].ShapeNum,
 				TileX = StatObjList[i].TileX,
 				TileY = StatObjList[i].TileY,
-				ItemNumber = StatObjList[i].ItemNumber
+				ItemNumber = StatObjList[i].ItemNumber,
 			});
 		}
-
 		// Emit actor SPAWN events for all active actors
 		for (int i = 0; i < actors.Count; i++)
 		{
@@ -3566,9 +3270,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = actor.CurrentState?.Rotate ?? false,
 				IsSleeping = actor.HitPoints <= 0,
-				SnoozeCounter = actor.SnoozeCounter
+				SnoozeCounter = actor.SnoozeCounter,
 			});
-
 			// Emit precise 16.16 fixed-point position
 			// ActorSpawnedEvent only has tile coordinates; actors may be mid-tile
 			// (e.g., dead actors that stopped mid-movement)
@@ -3577,9 +3280,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				ActorIndex = i,
 				X = actor.X,
 				Y = actor.Y,
-				Facing = actor.Facing
+				Facing = actor.Facing,
 			});
-
 			// Also emit current actor sprite state
 			ActorSpriteChanged?.Invoke(new ActorSpriteChangedEvent
 			{
@@ -3587,13 +3289,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				Shape = (ushort)actor.ShapeNum,
 				IsRotated = actor.CurrentState?.Rotate ?? false,
 				IsSleeping = actor.HitPoints <= 0,
-				SnoozeCounter = actor.SnoozeCounter
+				SnoozeCounter = actor.SnoozeCounter,
 			});
 		}
-
 		// Emit spawn events for all in-flight projectiles
 		EmitProjectileState();
-
 		// Emit weapon equipped events for all active weapon slots
 		for (int i = 0; i < weaponSlots.Count; i++)
 		{
@@ -3604,22 +3304,18 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				{
 					SlotIndex = i,
 					WeaponType = slot.WeaponType,
-					Shape = (ushort)slot.ShapeNum
+					Shape = (ushort)slot.ShapeNum,
 				});
-
 				// Also emit current weapon sprite state
 				if (slot.ShapeNum >= 0)
-				{
 					WeaponSpriteChanged?.Invoke(new WeaponSpriteChangedEvent
 					{
 						SlotIndex = i,
-						Shape = (ushort)slot.ShapeNum
+						Shape = (ushort)slot.ShapeNum,
 					});
-				}
 			}
 		}
 	}
-
 	/// <summary>
 	/// Emits spawn events for all in-flight projectiles.
 	/// Called by EmitAllEntityState and can be called independently after load.
@@ -3655,17 +3351,14 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					Shape = (ushort)slot.ShapeNum
 				});
 				if (slot.ShapeNum >= 0)
-				{
 					WeaponSpriteChanged?.Invoke(new WeaponSpriteChangedEvent
 					{
 						SlotIndex = i,
-						Shape = (ushort)slot.ShapeNum
+						Shape = (ushort)slot.ShapeNum,
 					});
-				}
 			}
 		}
 	}
-
 	/// <summary>
 	/// Emits an actor sound event - sound will be attached to the actor.
 	/// Called from ActorScriptContext.
@@ -3682,7 +3375,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			ActorIndex = actorIndex,
 			SoundName = soundName,
-			SoundId = -1 // Name-based lookup
+			SoundId = -1, // Name-based lookup
 		});
 	}
 
@@ -3699,10 +3392,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			DoorIndex = doorIndex,
 			SoundName = soundName,
-			SoundId = -1
+			SoundId = -1,
 		});
 	}
-
 	/// <summary>
 	/// Emits a global (non-positional) sound event.
 	/// For UI sounds, music, narrator, etc.
@@ -3714,10 +3406,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		PlayGlobalSound?.Invoke(new PlayGlobalSoundEvent
 		{
 			SoundName = soundName,
-			SoundId = -1
+			SoundId = -1,
 		});
 	}
-
 	/// <summary>
 	/// Emits a pushwall sound event - sound will be attached to the pushwall.
 	/// WL_ACT1.C pushwall activation
@@ -3731,10 +3422,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		{
 			PushWallIndex = pushWallIndex,
 			SoundName = soundName,
-			SoundId = -1
+			SoundId = -1,
 		});
 	}
-
 	/// <summary>
 	/// Emits a screen flash event for palette-shift effects.
 	/// WL_PLAY.C: Bonus flash, damage flash, etc.
@@ -3742,24 +3432,19 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// </summary>
 	/// <param name="color">24-bit RGB color (e.g., 0xFF0000 for red)</param>
 	/// <param name="duration">Duration in tics (default 18, matching original Wolf3D bonus flash)</param>
-	internal void EmitScreenFlash(uint color, short duration)
-	{
+	internal void EmitScreenFlash(uint color, short duration) =>
 		ScreenFlash?.Invoke(new ScreenFlashEvent { Color = color, Duration = duration });
-	}
-
 	#region Spatial Index
 	/// <summary>
 	/// Converts tile coordinates to array index for spatial index arrays.
 	/// Based on WL_DEF.H actorat array indexing.
 	/// </summary>
 	private int GetTileIndex(ushort x, ushort y) => y * mapWidth + x;
-
 	#region Fog of War
 	// 512 rays gives angular resolution of 0.703°, guaranteeing coverage of every tile
 	// at distances up to 1/sin(0.703°) ≈ 81 tiles — sufficient for a 64×64 Wolf3D map.
 	// Rays are cast only on tile-change or door/pushwall state transitions, not every frame.
 	private const int FogRayCount = 512;
-
 	/// <summary>
 	/// Recomputes visibility from the player's current tile if anything relevant has changed:
 	/// player moved to a new tile, a door opened/closed, or a pushwall completed movement.
@@ -3778,57 +3463,47 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		_everSeen.SetAll(true);
 		_fogVersion++;
 	}
-
 	public string ResolvePlayableSoundName(string soundName) =>
 		string.IsNullOrWhiteSpace(soundName)
 			? null
 			: audioT?.ResolvePlayableSoundName(soundName);
-
 	private string ResolveSoundNameForEmission(string soundName) =>
 		ResolvePlayableSoundName(soundName) ?? soundName;
-
 	public void RecomputeVisibilityIfNeeded()
 	{
 		if (_everSeen is null) return;
 		if (PlayerTileX != _lastFogTileX || PlayerTileY != _lastFogTileY || _fogDirty)
 			RecomputeVisibility();
 	}
-
 	private void RecomputeVisibility()
 	{
 		_currentlyVisible.SetAll(false);
-
 		ushort startX = PlayerTileX, startY = PlayerTileY;
 		if (startX >= mapWidth || startY >= mapHeight) return;
-
 		// Player's own tile is always visible
 		int startIdx = GetTileIndex(startX, startY);
 		_currentlyVisible[startIdx] = true;
 		_everSeen[startIdx] = true;
-
 		// Cast 512 rays in all directions using DDA grid traversal.
 		// Each ray starts at the centre of the player's tile and steps through tiles until
 		// it hits a solid tile (wall, pushwall, closed door) or exits the map.
 		// Mirrors WL_DRAW.C:HitVertWall/HitHorizWall setting tilemap[x][y]|=0x20 (S3DNA).
 		for (int r = 0; r < FogRayCount; r++)
 		{
-			double angle  = r * (2.0 * Math.PI / FogRayCount);
-			double dx     = Math.Cos(angle);
-			double dy     = Math.Sin(angle);
-			int    tileX  = startX;
-			int    tileY  = startY;
-			int    stepX  = dx >= 0 ? 1 : -1;
-			int    stepY  = dy >= 0 ? 1 : -1;
-
+			double angle = r * (2.0 * Math.PI / FogRayCount),
+				dx = Math.Cos(angle),
+				dy = Math.Sin(angle);
+			int tileX = startX,
+				tileY = startY,
+				stepX = dx >= 0 ? 1 : -1,
+				stepY = dy >= 0 ? 1 : -1;
 			// Distance along the ray between consecutive tile-boundary crossings per axis.
 			// Near-zero component → ray is axis-parallel → that axis never crosses.
-			double tDeltaX = Math.Abs(dx) < 1e-10 ? double.MaxValue : Math.Abs(1.0 / dx);
-			double tDeltaY = Math.Abs(dy) < 1e-10 ? double.MaxValue : Math.Abs(1.0 / dy);
-
-			// Starting at the tile centre means the first crossing is always half a step away.
-			double tMaxX = tDeltaX * 0.5;
-			double tMaxY = tDeltaY * 0.5;
-
+			double tDeltaX = Math.Abs(dx) < 1e-10 ? double.MaxValue : Math.Abs(1.0 / dx),
+				tDeltaY = Math.Abs(dy) < 1e-10 ? double.MaxValue : Math.Abs(1.0 / dy),
+				// Starting at the tile centre means the first crossing is always half a step away.
+				tMaxX = tDeltaX * 0.5,
+				tMaxY = tDeltaY * 0.5;
 			while (true)
 			{
 				// Advance to the nearer axis crossing
@@ -3842,27 +3517,22 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					tileY += stepY;
 					tMaxY += tDeltaY;
 				}
-
 				// Cast negative indices to uint so a single comparison catches both
 				// underflow (negative → huge uint) and overflow (>= mapWidth/Height).
 				if ((uint)tileX >= (uint)mapWidth || (uint)tileY >= (uint)mapHeight)
 					break;
-
 				int idx = GetTileIndex((ushort)tileX, (ushort)tileY);
 				_currentlyVisible[idx] = true;
 				_everSeen[idx] = true;
-
 				if (!IsFogRayPassable((ushort)tileX, (ushort)tileY))
 					break; // solid tile — mark it, then stop the ray
 			}
 		}
-
 		_lastFogTileX = PlayerTileX;
 		_lastFogTileY = PlayerTileY;
-		_fogDirty     = false;
+		_fogDirty = false;
 		_fogVersion++;
 	}
-
 	/// <summary>
 	/// Returns true if a fog-of-war ray can pass through this tile.
 	/// Open/opening doors are transparent; walls, pushwalls, and closed doors terminate the ray.
@@ -3882,7 +3552,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		return MapAnalysis.IsTransparent(x, y);
 	}
 	#endregion Fog of War
-
 	/// <summary>
 	/// Checks if a straight-line teleportation path between two tile positions is clear.
 	/// Uses the same Bresenham DDA and corner-prevention logic as HasLineOfSight.
@@ -3921,55 +3590,29 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				movedY = true;
 			}
 			// Prevent teleporting through corners, matching HasLineOfSight
-			if (movedX && movedY)
-			{
-				if (!IsTilePassableForTeleport((ushort)(x - sx), (ushort)y))
-					return false;
-			}
+			if (movedX && movedY
+				&& !IsTilePassableForTeleport((ushort)(x - sx), (ushort)y))
+				return false;
 		}
 	}
-
 	/// <summary>
 	/// Checks whether a tile is passable for teleportation path purposes.
 	/// Blocks on walls, closed doors, pushwalls, and living actors.
 	/// Does NOT apply the player-tile exclusion used by IsTileNavigable (which is for actors).
 	/// </summary>
-	private bool IsTilePassableForTeleport(ushort x, ushort y)
-	{
-		// 1. Walls and other static impassable tiles
-		if (!MapAnalysis.IsNavigable(x, y))
-			return false;
-
-		int tileIdx = GetTileIndex(x, y);
-
-		// 2. Closed doors block the path (open or opening doors are passable)
-		if (doorAtTile[tileIdx] >= 0)
-		{
-			Door door = doors[doorAtTile[tileIdx]];
-			if (door.Action == DoorAction.Closed)
-				return false;
-		}
-
-		// 3. Pushwalls block the path
-		if (pushWallAtTile[tileIdx] >= 0)
-			return false;
-
-		// 4. Living actors lock their tiles — cannot teleport through an occupied tile
-		if (actorAtTile[tileIdx] >= 0 && actors[actorAtTile[tileIdx]].HitPoints > 0)
-			return false;
-
-		return true;
-	}
-
+	private bool IsTilePassableForTeleport(ushort x, ushort y) =>
+		MapAnalysis.IsNavigable(x, y) &&
+		doorAtTile[GetTileIndex(x, y)] is short dIdx && (dIdx < 0 || doors[dIdx].Action != DoorAction.Closed) &&
+		pushWallAtTile[GetTileIndex(x, y)] < 0 &&
+		(actorAtTile[GetTileIndex(x, y)] is short aIdx && (aIdx < 0 || actors[aIdx].HitPoints <= 0));
 	/// <summary>
 	/// Returns the chase state name for the given actor type from the game definition.
 	/// WL_STATE.C:FirstSighting uses ob->obclass to select the chase state; this is the data-driven equivalent.
 	/// </summary>
 	public string GetActorChaseState(string actorType) =>
 		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
-		? def.ChaseState
-		: null;
-
+			? def.ChaseState
+			: null;
 	/// <summary>
 	/// WL_STATE.C:FirstSighting - execute this actor's Alert function (if any).
 	/// Called from C# alert paths (shot-wake, area-alert) and from ActorScriptContext.RunAlert().
@@ -3994,30 +3637,25 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		Actor actor = actors[actorIndex];
 		RunActorAlert(actorIndex, CreateActorScriptContext(actor, actorIndex));
 	}
-
 	/// <summary>
 	/// Computes a reaction time for an actor based on its Reaction range from XML.
 	/// WL_STATE.C:SightPlayer - ob->temp2 formula varies by obclass.
 	/// Formula: ReactionMin + random * (ReactionMax - ReactionMin) / 255.
 	/// </summary>
-	public short ComputeActorReactionTime(string actorType, int random)
-	{
-		if (!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def))
-			return (short)(1 + random / 4); // Fallback: guard formula
-		if (def.ReactionMax <= def.ReactionMin)
-			return def.ReactionMin;
-		return (short)(def.ReactionMin + random * (def.ReactionMax - def.ReactionMin) / 255);
-	}
-
+	public short ComputeActorReactionTime(string actorType, int random) =>
+		!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+			? (short)(1 + random / 4) // Fallback: guard formula
+			: def.ReactionMax <= def.ReactionMin
+				? def.ReactionMin
+				: (short)(def.ReactionMin + random * (def.ReactionMax - def.ReactionMin) / 255);
 	/// <summary>
 	/// Returns the attack state name for the given actor type from the game definition.
 	/// WL_ACT2.C:T_Chase uses ob->obclass to switch to the shoot state; this is the data-driven equivalent.
 	/// </summary>
 	public string GetActorAttackState(string actorType) =>
 		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
-		? def.AttackState
-		: null;
-
+			? def.AttackState
+			: null;
 	/// <summary>
 	/// Returns whether the given actor type has 360° vision (skips facing direction check).
 	/// WL_STATE.C:CheckSight #ifndef GAMEVER_NOAH3D — for Noah's Ark, the direction check
@@ -4026,32 +3664,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public bool GetActorFullVision(string actorType) =>
 		stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
 		&& def.FullVision;
-
-	private static bool IsDoorTransparentForSight(Door door)
-	{
-		if (door.Action == DoorAction.Closed)
-			return false;
-
+	private static bool IsDoorTransparentForSight(Door door) =>
 		// Once a door has begun opening, allow sight through it so actors can react to
 		// players visible in a doorway instead of treating a visibly open door as opaque.
-		return true;
-	}
-
+		door.Action != DoorAction.Closed;
 	/// <summary>
 	/// Returns the maximum hit points for an actor type at the current difficulty.
 	/// Used by ActorScriptContext.Heal() to clamp healing.
 	/// Returns short.MaxValue if the actor type has no defined HP (won't cap healing).
 	/// </summary>
-	public short GetActorMaxHitPoints(string actorType)
-	{
-		if (!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
+	public short GetActorMaxHitPoints(string actorType) =>
+		!stateCollection.ActorDefinitions.TryGetValue(actorType, out Assets.Gameplay.ActorDefinition def)
 			|| def.HitPointsByDifficulty is null
-			|| def.HitPointsByDifficulty.Length == 0)
-			return short.MaxValue;
-		int difficulty = Math.Clamp(Inventory.GetValue("Difficulty"), 0, def.HitPointsByDifficulty.Length - 1);
-		return def.GetHitPoints(difficulty);
-	}
-
+			|| def.HitPointsByDifficulty.Length == 0
+			? short.MaxValue
+			: def.GetHitPoints(Math.Clamp(Inventory.GetValue("Difficulty"), 0, def.HitPointsByDifficulty.Length - 1));
 	/// <summary>
 	/// Bresenham tile-based line-of-sight check between two tile positions.
 	/// Based on WL_STATE.C:CheckLine.
@@ -4089,16 +3716,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			// Prevent seeing through corners - check both adjacent tiles at the diagonal crossing.
 			// Original Wolf3D CheckLine uses two separate DDA sweeps (X and Y directions),
 			// which naturally checks both corner tiles. We replicate that by checking both here.
-			if (movedX && movedY)
-			{
-				if (!IsTileTransparentForSight((ushort)(x - sx), (ushort)y))
-					return false;
-				if (!IsTileTransparentForSight((ushort)x, (ushort)(y - sy)))
-					return false;
-			}
+			if (movedX && movedY
+				&& (!IsTileTransparentForSight((ushort)(x - sx), (ushort)y)
+					|| !IsTileTransparentForSight((ushort)x, (ushort)(y - sy))))
+				return false;
 		}
 	}
-
 	/// <summary>
 	/// Checks if a tile is transparent for line-of-sight purposes.
 	/// Combines static map transparency with dynamic obstacle checks.
@@ -4139,9 +3762,7 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// 1. Check static navigability (from MapAnalysis BitArray)
 		if (!MapAnalysis.IsNavigable(x, y))
 			return false;
-
 		int tileIdx = GetTileIndex(x, y);
-
 		// 2. Check for closed doors
 		if (doorAtTile[tileIdx] >= 0)
 		{
@@ -4149,11 +3770,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (door.Action == DoorAction.Closed)
 				return false;
 		}
-
 		// 3. Check for pushwalls
 		if (pushWallAtTile[tileIdx] >= 0)
 			return false;
-
 		// 4. Check for living actors
 		if (actorAtTile[tileIdx] >= 0)
 		{
@@ -4161,14 +3780,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (actor.HitPoints > 0)
 				return false;
 		}
-
 		// 5. Actors cannot path into the player's tile (player not in actorat; checked separately)
 		if (PlayerTileX == x && PlayerTileY == y)
 			return false;
-
 		return true;
 	}
-
 	/// <summary>
 	/// Get the door index at a specific tile.
 	/// WL_STATE.C:TryWalk uses this to detect doors during pathfinding.
@@ -4176,13 +3792,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <param name="x">Tile X coordinate</param>
 	/// <param name="y">Tile Y coordinate</param>
 	/// <returns>Door index (0-based) or -1 if no door at this tile</returns>
-	public int GetDoorIndexAtTile(ushort x, ushort y)
-	{
-		int tileIdx = GetTileIndex(x, y);
-		return doorAtTile[tileIdx];
-	}
+	public int GetDoorIndexAtTile(ushort x, ushort y) => doorAtTile[GetTileIndex(x, y)];
 	#endregion
-
 	#region Player Movement Validation
 	/// <summary>
 	/// Validates a desired player position against collision and returns an adjusted position.
@@ -4201,26 +3812,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// NoClip bypass
 		if (NoClip)
 			return (desiredX, desiredY);
-
 		// Check if full movement is valid (destination AABB + path for diagonal corner blocking)
 		if (IsPositionValidForPlayer(desiredX, desiredY, headSize)
 			&& IsMovementPathClearForPlayer(currentX, currentY, desiredX, desiredY))
 			return (desiredX, desiredY);
-
 		// Wall sliding: try X-only movement
 		if (IsPositionValidForPlayer(desiredX, currentY, headSize)
 			&& IsMovementPathClearForPlayer(currentX, currentY, desiredX, currentY))
 			return (desiredX, currentY);
-
 		// Wall sliding: try Y-only movement
 		if (IsPositionValidForPlayer(currentX, desiredY, headSize)
 			&& IsMovementPathClearForPlayer(currentX, currentY, currentX, desiredY))
 			return (currentX, desiredY);
-
 		// Completely blocked, stay at current position
 		return (currentX, currentY);
 	}
-
 	/// <summary>
 	/// Checks if a position is valid for the player by testing all four corners of the AABB.
 	/// </summary>
@@ -4231,26 +3837,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private bool IsPositionValidForPlayer(int centerX, int centerY, int headSize)
 	{
 		// Calculate AABB corners
-		int left = centerX - headSize;
-		int right = centerX + headSize;
-		int top = centerY - headSize;
-		int bottom = centerY + headSize;
-
-		// Convert to tile coordinates
-		int leftTile = left >> 16;
-		int rightTile = right >> 16;
-		int topTile = top >> 16;
-		int bottomTile = bottom >> 16;
-
+		int left = centerX - headSize,
+			right = centerX + headSize,
+			top = centerY - headSize,
+			bottom = centerY + headSize,
+			// Convert to tile coordinates
+			leftTile = left >> 16,
+			rightTile = right >> 16,
+			topTile = top >> 16,
+			bottomTile = bottom >> 16;
 		// Check all four corners
-		if (!IsTileValidForPlayer(leftTile, topTile)) return false;
-		if (!IsTileValidForPlayer(rightTile, topTile)) return false;
-		if (!IsTileValidForPlayer(leftTile, bottomTile)) return false;
-		if (!IsTileValidForPlayer(rightTile, bottomTile)) return false;
-
-		return true;
+		return IsTileValidForPlayer(leftTile, topTile)
+			&& IsTileValidForPlayer(rightTile, topTile)
+			&& IsTileValidForPlayer(leftTile, bottomTile)
+			&& IsTileValidForPlayer(rightTile, bottomTile);
 	}
-
 	/// <summary>
 	/// Checks if a tile is valid for player movement.
 	/// Similar to IsTileNavigable but uses int params for bounds checking.
@@ -4263,16 +3864,12 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		// Bounds check (handles negative coords and overflow)
 		if (tileX < 0 || tileY < 0 || tileX >= mapWidth || tileY >= mapHeight)
 			return false;
-
-		ushort x = (ushort)tileX;
-		ushort y = (ushort)tileY;
-
+		ushort x = (ushort)tileX,
+			y = (ushort)tileY;
 		// Check static navigability (from MapAnalysis BitArray)
 		if (!MapAnalysis.IsNavigable(x, y))
 			return false;
-
 		int tileIdx = GetTileIndex(x, y);
-
 		// Check for doors that aren't fully open
 		if (doorAtTile[tileIdx] >= 0)
 		{
@@ -4281,11 +3878,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (door.Action != DoorAction.Open)
 				return false;
 		}
-
 		// Check for push walls
 		if (pushWallAtTile[tileIdx] >= 0)
 			return false;
-
 		// Check for living actors
 		if (actorAtTile[tileIdx] >= 0)
 		{
@@ -4293,10 +3888,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			if (actor.HitPoints > 0)
 				return false;
 		}
-
 		return true;
 	}
-
 	/// <summary>
 	/// Checks that the tile path from current to desired position is passable for the player.
 	/// Prevents high-speed clipping through blocked diagonal corners (where both adjacent
@@ -4310,47 +3903,40 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	/// <returns>True if the path is clear (no blocked intermediate tiles or diagonal corners)</returns>
 	private bool IsMovementPathClearForPlayer(int fromX, int fromY, int toX, int toY)
 	{
-		int fromTileX = Math.Max(0, Math.Min(mapWidth - 1, fromX >> 16));
-		int fromTileY = Math.Max(0, Math.Min(mapHeight - 1, fromY >> 16));
-		int toTileX = Math.Max(0, Math.Min(mapWidth - 1, toX >> 16));
-		int toTileY = Math.Max(0, Math.Min(mapHeight - 1, toY >> 16));
-
+		int fromTileX = Math.Max(0, Math.Min(mapWidth - 1, fromX >> 16)),
+			fromTileY = Math.Max(0, Math.Min(mapHeight - 1, fromY >> 16)),
+			toTileX = Math.Max(0, Math.Min(mapWidth - 1, toX >> 16)),
+			toTileY = Math.Max(0, Math.Min(mapHeight - 1, toY >> 16));
 		// Same tile - no intermediate tiles to check
 		if (fromTileX == toTileX && fromTileY == toTileY)
 			return true;
-
-		int dx = Math.Abs(toTileX - fromTileX);
-		int dy = Math.Abs(toTileY - fromTileY);
-		int sx = fromTileX < toTileX ? 1 : -1;
-		int sy = fromTileY < toTileY ? 1 : -1;
-		int err = dx - dy;
-		int x = fromTileX;
-		int y = fromTileY;
-
+		int dx = Math.Abs(toTileX - fromTileX),
+			dy = Math.Abs(toTileY - fromTileY),
+			sx = fromTileX < toTileX ? 1 : -1,
+			sy = fromTileY < toTileY ? 1 : -1,
+			err = dx - dy,
+			x = fromTileX,
+			y = fromTileY;
 		while (x != toTileX || y != toTileY)
 		{
 			int e2 = 2 * err;
 			bool movedX = false, movedY = false;
 			if (e2 > -dy) { err -= dy; x += sx; movedX = true; }
 			if (e2 < dx) { err += dx; y += sy; movedY = true; }
-
 			// Diagonal corner blocking: if we stepped in both X and Y simultaneously,
 			// the center path crosses the exact corner where all four tiles meet.
 			// Because the player has nonzero bounding box, either adjacent wall would clip them.
 			// Block the diagonal if EITHER adjacent tile is impassable.
 			if (movedX && movedY && (!IsTileValidForPlayer(x - sx, y) || !IsTileValidForPlayer(x, y - sy)))
 				return false;
-
 			// Check intermediate tiles for navigability.
 			// Destination tile validity is already checked by IsPositionValidForPlayer.
 			if ((x != toTileX || y != toTileY) && !IsTileValidForPlayer(x, y))
 				return false;
 		}
-
 		return true;
 	}
 	#endregion
-
 	#region Save/Load State
 	/// <summary>
 	/// Captures the entire simulator state into a serializable snapshot.
@@ -4363,32 +3949,26 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		DoorSnapshot[] doorSnapshots = new DoorSnapshot[doors.Count];
 		for (int i = 0; i < doors.Count; i++)
 			doorSnapshots[i] = doors[i].Save();
-
 		// Capture pushwall dynamic state (matched by index on restore)
 		PushWallSnapshot[] pushWallSnapshots = new PushWallSnapshot[pushWalls.Count];
 		for (int i = 0; i < pushWalls.Count; i++)
 			pushWallSnapshots[i] = pushWalls[i].Save();
-
 		// Capture actor state (CurrentStateName resolved on restore)
 		ActorSnapshot[] actorSnapshots = new ActorSnapshot[actors.Count];
 		for (int i = 0; i < actors.Count; i++)
 			actorSnapshots[i] = actors[i].Save();
-
 		// Capture in-flight projectile state
 		ProjectileSnapshot[] projectileSnapshots = new ProjectileSnapshot[projectiles.Count];
 		for (int i = 0; i < projectiles.Count; i++)
 			projectileSnapshots[i] = projectiles[i].Save();
-
 		// Capture weapon slot state (CurrentStateName resolved on restore)
 		WeaponSlotSnapshot[] weaponSlotSnapshots = new WeaponSlotSnapshot[weaponSlots.Count];
 		for (int i = 0; i < weaponSlots.Count; i++)
 			weaponSlotSnapshots[i] = weaponSlots[i].Save();
-
 		// Capture StatObjList (StatObj is its own snapshot type)
 		StatObj[] statObjSnapshots = new StatObj[StatObjList.Length];
 		for (int i = 0; i < StatObjList.Length; i++)
 			statObjSnapshots[i] = StatObjList[i]?.Save();
-
 		// Capture patrol directions with enum stored as byte
 		Dictionary<uint, byte> patrolDirs = null;
 		if (patrolDirectionAtTile is not null)
@@ -4397,7 +3977,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			foreach (KeyValuePair<uint, Direction> kvp in patrolDirectionAtTile)
 				patrolDirs[kvp.Key] = (byte)kvp.Value;
 		}
-
 		return new SimulatorSnapshot
 		{
 			GameName = GameName,
@@ -4423,10 +4002,9 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			RngStateA = rng.StateA,
 			RngStateB = rng.StateB,
 			GameClock = gameClock.Save(),
-			EverSeen = PackEverSeen()
+			EverSeen = PackEverSeen(),
 		};
 	}
-
 	/// <summary>
 	/// Restores the simulator to a previously saved state.
 	///
@@ -4447,64 +4025,45 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	public void Load(SimulatorSnapshot snapshot)
 	{
 		ArgumentNullException.ThrowIfNull(snapshot);
-
 		// Validate game compatibility
 		if (!string.IsNullOrEmpty(GameName) && !string.IsNullOrEmpty(snapshot.GameName)
 			&& GameName != snapshot.GameName)
-		{
 			throw new InvalidOperationException(
 				$"Save game is for '{snapshot.GameName}' but current game is '{GameName}'");
-		}
-
 		// Restore simulation time
 		CurrentTic = snapshot.CurrentTic;
 		accumulatedTime = snapshot.AccumulatedTime;
-
 		// Restore player position and angle
 		PlayerX = snapshot.PlayerX;
 		PlayerY = snapshot.PlayerY;
 		PlayerAngle = snapshot.PlayerAngle;
 		NoClip = snapshot.NoClip;
 		GodMode = snapshot.GodMode;
-
 		// Restore door dynamic state (doors already created by LoadDoorsFromMapAnalysis)
 		if (snapshot.Doors is not null)
-		{
 			for (int i = 0; i < Math.Min(doors.Count, snapshot.Doors.Length); i++)
 				doors[i].Load(snapshot.Doors[i]);
-		}
-
 		// Restore pushwall dynamic state
 		if (snapshot.PushWalls is not null)
-		{
 			for (int i = 0; i < Math.Min(pushWalls.Count, snapshot.PushWalls.Length); i++)
 				pushWalls[i].Load(snapshot.PushWalls[i]);
-		}
 		anyPushWallMoving = snapshot.AnyPushWallMoving;
-
 		// Restore actor state (value fields only)
 		if (snapshot.Actors is not null)
-		{
 			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
 				actors[i].Load(snapshot.Actors[i]);
-		}
-
 		// Resolve CurrentState references for actors via StateCollection
 		if (snapshot.Actors is not null)
-		{
 			for (int i = 0; i < Math.Min(actors.Count, snapshot.Actors.Length); i++)
 			{
 				string stateName = snapshot.Actors[i].CurrentStateName;
 				if (stateName is not null && stateCollection.States.TryGetValue(stateName, out State state))
 					actors[i].CurrentState = state;
 			}
-		}
 		RebuildCollidableActorsList();
-
 		// Restore in-flight projectiles
 		projectiles.Clear();
 		if (snapshot.Projectiles is not null)
-		{
 			foreach (ProjectileSnapshot projSnap in snapshot.Projectiles)
 			{
 				Entities.Projectile proj = new()
@@ -4516,37 +4075,25 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 				// Resolve CurrentState via StateCollection
 				if (projSnap.CurrentStateName is not null
 					&& stateCollection.States.TryGetValue(projSnap.CurrentStateName, out State projState))
-				{
 					proj.CurrentState = projState;
-				}
 				projectiles.Add(proj);
 			}
-		}
 		_nextProjectileId = snapshot.NextProjectileId;
-
 		// Restore weapon slot state (value fields only)
 		if (snapshot.WeaponSlots is not null)
-		{
 			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
 				weaponSlots[i].Load(snapshot.WeaponSlots[i]);
-		}
-
 		// Resolve CurrentState references for weapon slots via StateCollection
 		if (snapshot.WeaponSlots is not null)
-		{
 			for (int i = 0; i < Math.Min(weaponSlots.Count, snapshot.WeaponSlots.Length); i++)
 			{
 				string stateName = snapshot.WeaponSlots[i].CurrentStateName;
 				if (stateName is not null && stateCollection.States.TryGetValue(stateName, out State state))
 					weaponSlots[i].CurrentState = state;
 			}
-		}
-
 		// Restore StatObjList
 		if (snapshot.StatObjList is not null)
-		{
 			for (int i = 0; i < Math.Min(StatObjList.Length, snapshot.StatObjList.Length); i++)
-			{
 				if (snapshot.StatObjList[i] is not null)
 				{
 					if (StatObjList[i] is null)
@@ -4554,13 +4101,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 					StatObjList[i].Load(snapshot.StatObjList[i]);
 				}
 				else
-				{
 					StatObjList[i] = new StatObj(); // Free slot
-				}
-			}
-		}
 		lastStatObj = snapshot.LastStatObj;
-
 		// Restore patrol directions
 		if (snapshot.PatrolDirectionAtTile is not null)
 		{
@@ -4568,27 +4110,21 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			foreach (KeyValuePair<uint, byte> kvp in snapshot.PatrolDirectionAtTile)
 				patrolDirectionAtTile[kvp.Key] = (Direction)kvp.Value;
 		}
-
 		// Restore inventory
 		if (snapshot.InventoryValues is not null)
 			Inventory.Load(snapshot.InventoryValues);
-
 		// Restore accumulated level completion stats
 		LevelRatios.Clear();
 		if (snapshot.CompletedLevelStats is not null)
 			LevelRatios.AddRange(snapshot.CompletedLevelStats);
-
 		// Restore RNG state
 		rng.StateA = snapshot.RngStateA;
 		rng.StateB = snapshot.RngStateB;
-
 		// Restore GameClock
 		if (snapshot.GameClock is not null)
 			gameClock.Load(snapshot.GameClock);
-
 		// Clear pending actions (transient per-frame queue)
 		pendingActions.Clear();
-
 		// Restore fog-of-war seen tiles; force recompute on next UpdatePlayer call
 		if (snapshot.EverSeen is not null && _everSeen is not null)
 		{
@@ -4598,14 +4134,11 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		_lastFogTileX = ushort.MaxValue;
 		_lastFogTileY = ushort.MaxValue;
 		_fogDirty = true;
-
 		// Rebuild spatial indices from entity positions
 		RebuildSpatialIndices();
-
 		// Rebuild AreaConnect from door states
 		RebuildAreaConnect();
 	}
-
 	/// <summary>
 	/// Rebuilds all spatial index arrays (actorAtTile, doorAtTile, pushWallAtTile)
 	/// from current entity positions. Called after LoadState to reconstruct derived data.
@@ -4613,7 +4146,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	private void RebuildSpatialIndices()
 	{
 		int tileCount = mapWidth * mapHeight;
-
 		// Clear all spatial indices
 #if NET6_0_OR_GREATER
 		Array.Fill(actorAtTile, (short)-1);
@@ -4627,19 +4159,15 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			pushWallAtTile[i] = -1;
 		}
 #endif
-
 		// Rebuild door spatial index
 		// Doors that are fully Open have their doorAtTile cleared (allows actor pathfinding through)
 		// All other states (Closed, Opening, Closing) occupy the tile
 		for (int i = 0; i < doors.Count; i++)
-		{
 			if (doors[i].Action != DoorAction.Open)
 			{
 				int tileIdx = GetTileIndex(doors[i].TileX, doors[i].TileY);
 				doorAtTile[tileIdx] = (short)i;
 			}
-		}
-
 		// Rebuild pushwall spatial index from current positions
 		for (int i = 0; i < pushWalls.Count; i++)
 		{
@@ -4647,7 +4175,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			int tileIdx = GetTileIndex(tileX, tileY);
 			pushWallAtTile[tileIdx] = (short)i;
 		}
-
 		// Rebuild actor spatial index
 		for (int i = 0; i < actors.Count; i++)
 		{
@@ -4655,7 +4182,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 			actorAtTile[tileIdx] = (short)i;
 		}
 	}
-
 	/// <summary>
 	/// Rebuilds the AreaConnect symmetric matrix from current door states.
 	/// Open doors increment the connection count between the two areas they connect.
@@ -4665,10 +4191,8 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 	{
 		if (AreaConnect is null || MapAnalysis is null)
 			return;
-
 		// Reset all connections to zero
 		AreaConnect = new SymmetricMatrix(MapAnalysis.FloorCodeCount);
-
 		// Open doors connect their two areas
 		for (int i = 0; i < doors.Count; i++)
 		{
@@ -4681,7 +4205,6 @@ public class Simulator : ISnapshot<SimulatorSnapshot>
 		}
 	}
 	#endregion
-
 	private byte[] PackEverSeen()
 	{
 		if (_everSeen is null) return null;

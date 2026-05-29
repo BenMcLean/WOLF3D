@@ -116,17 +116,11 @@ public class Inventory : ISnapshot<InventorySnapshot>
 	{
 		if (savedState is null)
 			return;
-
 		if (savedState.MaxValues is not null)
-		{
 			foreach (KeyValuePair<string, int> kvp in savedState.MaxValues)
 				_maxValues[kvp.Key] = kvp.Value;
-		}
-
 		if (savedState.Values is not null)
-		{
 			foreach (KeyValuePair<string, int> kvp in savedState.Values)
 				SetValue(kvp.Key, kvp.Value);
-		}
 	}
 }

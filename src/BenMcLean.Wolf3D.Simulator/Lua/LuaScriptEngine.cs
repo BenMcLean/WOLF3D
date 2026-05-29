@@ -19,8 +19,8 @@ public class LuaScriptEngine
 	private readonly Dictionary<string, DynValue> compiledScripts = [];
 	private readonly ILogger logger;
 	private readonly Type[] contextTypes;
-	private Table baseEnvironment;
-	private Table proxyEnvironment;
+	private Table baseEnvironment,
+		proxyEnvironment;
 	/// <summary>
 	/// Current execution context (injected before each script call)
 	/// </summary>
@@ -178,8 +178,8 @@ public class LuaScriptEngine
 	/// <returns>A DynValue wrapping the read-only proxy table</returns>
 	private DynValue CreateReadOnlyTableProxy(Table sourceTable)
 	{
-		Table proxy = new(luaScript);
-		Table meta = new(luaScript);
+		Table proxy = new(luaScript),
+			meta = new(luaScript);
 		// Allow reads from source table (standard Lua pattern)
 		meta["__index"] = sourceTable;
 		// Forbid writes - prevent scripts from undoing deterministic overrides

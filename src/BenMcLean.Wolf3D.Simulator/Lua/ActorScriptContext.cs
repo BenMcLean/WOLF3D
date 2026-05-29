@@ -585,11 +585,10 @@ public class ActorScriptContext(
 		for (int i = 0; i < 5; i++)
 		{
 			int dir = dodgeDirs[i];
-			if (dir >= 0 && dir != turnaround)
-			{
-				if (TryDirection(dir, canOpenDoors))
-					return true;
-			}
+			if (dir >= 0
+				&& dir != turnaround
+				&& TryDirection(dir, canOpenDoors))
+				return true;
 		}
 		// Turn around only as last resort (WL_STATE.C:506)
 		if (turnaround >= 0 && TryDirection(turnaround, canOpenDoors))
@@ -626,18 +625,14 @@ public class ActorScriptContext(
 		if (rng.Next(256) > 128)
 		{
 			for (int tdir = 2; tdir <= 4; tdir++)
-			{
 				if (TryDirection(tdir, canOpenDoors))
 					return true;
-			}
 		}
 		else
 		{
 			for (int tdir = 4; tdir >= 2; tdir--)
-			{
 				if (TryDirection(tdir, canOpenDoors))
 					return true;
-			}
 		}
 		// WL_STATE.C:703 - can't move
 		actor.Facing = null;
@@ -835,10 +830,10 @@ public class ActorScriptContext(
 	/// </summary>
 	public int GetAngleToPlayer()
 	{
-		double dx = simulator.PlayerX - actor.X;
+		double dx = simulator.PlayerX - actor.X,
 		// Negate dy: Wolf3D Y increases downward, but angle 0=east, 90=north (math convention)
-		double dy = -(simulator.PlayerY - actor.Y);
-		double radians = System.Math.Atan2(dy, dx);
+			dy = -(simulator.PlayerY - actor.Y),
+			radians = System.Math.Atan2(dy, dx);
 		int angle = (int)(radians / (System.Math.PI * 2.0) * 360.0);
 		if (angle < 0)
 			angle += 360;
@@ -857,8 +852,8 @@ public class ActorScriptContext(
 		double radians = angle * System.Math.PI / 180.0;
 		// WL_ACT2.C:T_Launch: new->x = ob->x + (costable[ob->angle] >> 2)
 		// costable returns fixed-point 1.0 = 0x10000; >>2 = 0x4000 = 0.25 tiles forward
-		int offsetX = (int)(0x4000 * System.Math.Cos(radians));
-		int offsetY = -(int)(0x4000 * System.Math.Sin(radians));
+		int offsetX = (int)(0x4000 * System.Math.Cos(radians)),
+			offsetY = -(int)(0x4000 * System.Math.Sin(radians));
 		simulator.SpawnProjectile(projectileType, actor.X + offsetX, actor.Y + offsetY,
 			(short)(angle % 360), isPlayerOwned: false);
 	}

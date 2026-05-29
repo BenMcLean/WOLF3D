@@ -29,4 +29,16 @@ public interface IScriptContext
 	/// Stop currently playing music.
 	/// </summary>
 	void StopMusic();
+	#region Bitwise Utilities
+	/// <summary>
+	/// Bitwise right shift for Lua (value >> bits).
+	/// Lua doesn't have native bit shift operators, so we provide them here.
+	/// </summary>
+	public int BitShiftRight(int value, int bits);
+	/// <summary>
+	/// Bitwise left shift for Lua (value << bits).
+	/// Lua doesn't have native bit shift operators, so we provide them here.
+	/// </summary>
+	public int BitShiftLeft(int value, int bits);
+	#endregion Bitwise Utilities
 }

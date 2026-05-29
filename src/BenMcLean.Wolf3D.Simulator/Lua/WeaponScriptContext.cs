@@ -83,15 +83,9 @@ public class WeaponScriptContext(
 	/// </summary>
 	/// <param name="buttonName">Button name ("attack" for fire button)</param>
 	/// <returns>True if button is held</returns>
-	public bool IsButtonHeld(string buttonName)
-	{
+	public bool IsButtonHeld(string buttonName) =>
 		// For now, only support "attack" button
-		if (buttonName == "attack")
-		{
-			return weaponSlot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld);
-		}
-		return false;
-	}
+		buttonName == "attack" && weaponSlot.Flags.HasFlag(WeaponSlotFlags.TriggerHeld);
 	#endregion Input State
 	#region State Flow Control
 	/// <summary>
@@ -139,7 +133,7 @@ public class WeaponScriptContext(
 			WeaponType = weaponSlot.WeaponType,
 			SoundName = string.Empty,
 			DidHit = hitActorIndex.HasValue,
-			HitActorIndex = hitActorIndex
+			HitActorIndex = hitActorIndex,
 		});
 	}
 	/// <summary>
@@ -156,8 +150,8 @@ public class WeaponScriptContext(
 		{
 			Actor actor = simulator.Actors[i];
 			if (!actor.Flags.HasFlag(ActorFlags.Shootable)) continue;
-			int dx = Math.Abs(simulator.PlayerTileX - actor.TileX);
-			int dy = Math.Abs(simulator.PlayerTileY - actor.TileY);
+			int dx = Math.Abs(simulator.PlayerTileX - actor.TileX),
+				dy = Math.Abs(simulator.PlayerTileY - actor.TileY);
 			int chebyshev = Math.Max(dx, dy);
 			// WL_AGENT.C:KnifeAttack - range check (0x18000 ≈ 1.5 tiles)
 			if (chebyshev > 1) continue;
@@ -176,7 +170,7 @@ public class WeaponScriptContext(
 			WeaponType = weaponSlot.WeaponType,
 			SoundName = string.Empty,
 			DidHit = hitActorIndex.HasValue,
-			HitActorIndex = hitActorIndex
+			HitActorIndex = hitActorIndex,
 		});
 		// No PropagateNoise - knife is silent (WL_AGENT.C:KnifeAttack doesn't set madenoise)
 	}
@@ -195,7 +189,7 @@ public class WeaponScriptContext(
 			WeaponType = weaponSlot.WeaponType,
 			SoundName = string.Empty,
 			DidHit = false,
-			HitActorIndex = null
+			HitActorIndex = null,
 		});
 	}
 	#endregion Attack Requests
@@ -212,7 +206,6 @@ public class WeaponScriptContext(
 		simulator.SpawnPlayerProjectile(slotIndex, projectileType);
 	}
 	#endregion Projectile Spawning
-
 	#region Weapon Switching
 	/// <summary>
 	/// Switch to the lowest-numbered weapon (out of ammo fallback).
