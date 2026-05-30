@@ -1784,7 +1784,7 @@ end
 			</Question>
 		</Questions>
 	</VgaGraph>
-	<Maps MapHead="maphead.n3d" GameMaps="gamemaps.n3d" Floor="212" Ceiling="220">
+	<Maps MapHead="maphead.n3d" GameMaps="gamemaps.n3d" Floor="217" Ceiling="210" OnComplete="LevelComplete">
 		<!-- e1 -->
 		<Map Number="0" Episode="1" Level="1" FloorTile="63" CeilingTile="64" Par="00:30"
 			Music="NOAH01_MUS" />

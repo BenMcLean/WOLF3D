@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 using BenMcLean.Wolf3D.Assets.Gameplay;
 using BenMcLean.Wolf3D.Assets.Menu;
 using BenMcLean.Wolf3D.Simulator;
@@ -396,7 +398,6 @@ public class MenuScriptContext(
 	{
 		if (SetPictureAction?.Invoke(id, picName) == true)
 			return;
-
 		SetStatusBarFallbackPictureAction?.Invoke(id, picName);
 	}
 	#endregion Menu Item Selection and Dynamic Content
@@ -559,10 +560,7 @@ public class MenuScriptContext(
 	/// Pressing any button skips the delay.
 	/// </summary>
 	/// <param name="seconds">Duration to wait in seconds</param>
-	public void QueueDelay(double seconds)
-	{
-		ActiveSequence?.Enqueue(new DelaySequenceStep((float)seconds));
-	}
+	public void QueueDelay(double seconds) => ActiveSequence?.Enqueue(new DelaySequenceStep((float)seconds));
 	/// <summary>
 	/// Set the skip behavior for the current menu sequence.
 	/// "all" = pressing button during ticker skips ALL remaining steps (Wolf3D intermission).
@@ -601,11 +599,6 @@ public class MenuScriptContext(
 	/// </summary>
 	/// <returns>True when the current completion stats are for a secret level</returns>
 	public bool IsSecretLevel() => CompletionStats?.IsSecretLevel ?? false;
-	/// <summary>
-	/// Returns true when the current loaded game is one of the Spear campaign XMLs.
-	/// Exposed to Lua for game-specific menu presentation differences.
-	/// </summary>
-	public bool IsSpearGame() => IsSpearCampaign();
 	/// <summary>
 	/// Get the number of enemies killed.
 	/// </summary>
@@ -721,16 +714,10 @@ public class MenuScriptContext(
 	/// Null when not in victory mode.
 	/// </summary>
 	public System.Collections.Generic.IReadOnlyList<LevelCompletionStats> AllLevelStats { get; set; }
-	private static bool IsSpearCampaign() =>
-		SharedAssetManager.CurrentGame?.XML?.Attribute("Path")?.Value is "M1" or "M2" or "M3";
-	private static bool CountsTowardSpearVictoryTotals(LevelCompletionStats stats) =>
-		stats is not null
-		&& !stats.IsSecretLevel
-		&& stats.FloorNumber <= 17
-		&& stats.FloorNumber is not 5 and not 10 and not 16;
 	private System.Collections.Generic.IEnumerable<LevelCompletionStats> GetVictoryStats() =>
 		(AllLevelStats ?? [])
-			.Where(stats => !IsSpearCampaign() || CountsTowardSpearVictoryTotals(stats));
+			.Where(stats => SharedAssetManager.CurrentGame?.MapAnalyzer?.GetMapOnCompleteByLevel(stats.FloorNumber)
+				== SharedAssetManager.CurrentGame?.MapAnalyzer?.GetMapsDefaultOnComplete());
 	/// <summary>
 	/// Get the average kill ratio across all completed levels.
 	/// WL_INTER.C:Victory averaged stats display.
@@ -776,7 +763,7 @@ public class MenuScriptContext(
 	/// WL_INTER.C:Victory total time display.
 	/// </summary>
 	/// <returns>Total time in seconds</returns>
-	public double GetTotalTime() => GetVictoryStats().Sum(s => s.ElapsedTics) / (double)Constants.TicsPerSecond;
+	public double GetTotalTime() => GetVictoryStats().Sum(s => s.ElapsedTics) / Constants.TicsPerSecond;
 	/// <summary>
 	/// Get the total par time across all completed levels in seconds.
 	/// WL_INTER.C:Victory — parsec accumulation for Noah3D par time display.
@@ -824,9 +811,9 @@ public class MenuScriptContext(
 	}
 	private static string FormatHighScoreDisplayLevel(int episodeZeroBased, int completed)
 	{
-		var maps = SharedAssetManager.CurrentGame?.XML?.Element("Maps")?.Elements("Map");
+		IEnumerable<XElement> maps = SharedAssetManager.CurrentGame?.XML?.Element("Maps")?.Elements("Map");
 		int episodeOneBased = episodeZeroBased + 1;
-		var map = maps?.FirstOrDefault(m =>
+		XElement map = maps?.FirstOrDefault(m =>
 				int.TryParse(m.Attribute("Episode")?.Value, out int ep) && ep == episodeOneBased
 				&& int.TryParse(m.Attribute("Number")?.Value, out int number) && number == completed)
 			?? maps?.FirstOrDefault(m =>
@@ -839,11 +826,11 @@ public class MenuScriptContext(
 				int.TryParse(m.Attribute("Number")?.Value, out int number) && number == completed)
 			?? maps?.FirstOrDefault(m =>
 				int.TryParse(m.Attribute("Number")?.Value, out int number) && number == completed - 1);
-		if (map is not null
+		return map is not null
 			&& int.TryParse(map.Attribute("Episode")?.Value, out int episode)
-			&& int.TryParse(map.Attribute("Level")?.Value, out int level))
-			return $"{episode}-{level}";
-		return $"{episodeOneBased}-{Math.Max(1, completed)}";
+			&& int.TryParse(map.Attribute("Level")?.Value, out int level)
+			? $"{episode}-{level}"
+			: $"{episodeOneBased}-{Math.Max(1, completed)}";
 	}
 	/// <summary>
 	/// Get the score from the pending high score data, or 0 if none.
@@ -852,11 +839,11 @@ public class MenuScriptContext(
 	/// <summary>
 	/// Get the level completed from the pending high score data, or 0 if none.
 	/// </summary>
-	public int GetPendingCompleted() => (int)(sessionState.PendingHighScore?.Completed ?? 0);
+	public int GetPendingCompleted() => sessionState.PendingHighScore?.Completed ?? 0;
 	/// <summary>
 	/// Get the episode (0-based) from the pending high score data, or 0 if none.
 	/// </summary>
-	public int GetPendingEpisode() => (int)(sessionState.PendingHighScore?.Episode ?? 0);
+	public int GetPendingEpisode() => sessionState.PendingHighScore?.Episode ?? 0;
 	/// <summary>
 	/// Check the pending score against the high score table and add it if it qualifies.
 	/// Clears PendingHighScore to prevent double-add.

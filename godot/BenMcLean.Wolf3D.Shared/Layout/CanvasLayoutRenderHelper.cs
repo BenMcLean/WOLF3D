@@ -23,15 +23,12 @@ public static class CanvasLayoutRenderHelper
 				: pictureDef.BottomY ? canvasHeight - textureSize.Y
 				: pictureDef.YValue);
 	}
-
 	public static TextureRect CreatePictureRect(
 		PictureDefinition pictureDef,
 		Texture2D texture,
 		float canvasWidth,
 		float canvasHeight,
-		int defaultZIndex)
-	{
-		return new TextureRect
+		int defaultZIndex) => new()
 		{
 			Texture = texture,
 			Position = GetPicturePosition(pictureDef, texture, canvasWidth, canvasHeight),
@@ -39,8 +36,6 @@ public static class CanvasLayoutRenderHelper
 			TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
 			ZIndex = pictureDef.ZIndex ?? defaultZIndex,
 		};
-	}
-
 	public static void AddBox(
 		Control canvas,
 		MenuBoxDefinition boxDef,
@@ -52,27 +47,24 @@ public static class CanvasLayoutRenderHelper
 		Color? bgColor = boxDef.BkgdColor.HasValue
 			? SharedAssetManager.GetPaletteColor(boxDef.BkgdColor.Value)
 			: null;
-
 		if (boxDef.Bevel)
 		{
-			int backgroundZIndex = boxDef.ZIndex ?? fillZIndex;
-			int outlineZIndex = boxDef.ZIndex.HasValue ? boxDef.ZIndex.Value + 1 : borderZIndex;
+			int backgroundZIndex = boxDef.ZIndex ?? fillZIndex,
+				outlineZIndex = boxDef.ZIndex.HasValue ? boxDef.ZIndex.Value + 1 : borderZIndex;
 			DrawBevelledBox(
-				canvas,
-				boxDef.X,
-				boxDef.Y,
-				boxDef.W,
-				boxDef.H,
-				bgColor,
-				SharedAssetManager.GetPaletteColor(boxDef.Deactive ?? defaultDeactive),
-				SharedAssetManager.GetPaletteColor(boxDef.Bord2Color ?? defaultBorder2Color),
-				backgroundZIndex,
-				outlineZIndex);
+				canvas: canvas,
+				x: boxDef.X,
+				y: boxDef.Y,
+				w: boxDef.W,
+				h: boxDef.H,
+				bgColor: bgColor,
+				colorNW: SharedAssetManager.GetPaletteColor(boxDef.Deactive ?? defaultDeactive),
+				colorSE: SharedAssetManager.GetPaletteColor(boxDef.Bord2Color ?? defaultBorder2Color),
+				bgZIndex: backgroundZIndex,
+				borderZIndex: outlineZIndex);
 			return;
 		}
-
 		if (bgColor.HasValue)
-		{
 			canvas.AddChild(new ColorRect
 			{
 				Color = bgColor.Value,
@@ -80,9 +72,7 @@ public static class CanvasLayoutRenderHelper
 				Size = new Vector2(boxDef.W, boxDef.H),
 				ZIndex = boxDef.ZIndex ?? fillZIndex,
 			});
-		}
 	}
-
 	public static void DrawBevelledBox(
 		Control canvas,
 		float x,
@@ -96,7 +86,6 @@ public static class CanvasLayoutRenderHelper
 		int borderZIndex)
 	{
 		if (bgColor.HasValue)
-		{
 			canvas.AddChild(new ColorRect
 			{
 				Color = bgColor.Value,
@@ -104,11 +93,8 @@ public static class CanvasLayoutRenderHelper
 				Size = new Vector2(w, h),
 				ZIndex = bgZIndex,
 			});
-		}
-
 		AddOutline(canvas, x, y, w, h, colorNW, colorSE, borderZIndex);
 	}
-
 	public static void AddOutline(
 		Control canvas,
 		float x,
@@ -124,7 +110,6 @@ public static class CanvasLayoutRenderHelper
 		canvas.AddChild(new ColorRect { Color = bottomRight, Position = new Vector2(x, y + h), Size = new Vector2(w + 1f, 1f), ZIndex = zIndex });
 		canvas.AddChild(new ColorRect { Color = bottomRight, Position = new Vector2(x + w, y), Size = new Vector2(1f, h + 1f), ZIndex = zIndex });
 	}
-
 	private static Vector2 GetTextureSize(Texture2D texture) =>
 		texture is AtlasTexture atlasTexture
 			? atlasTexture.Region.Size

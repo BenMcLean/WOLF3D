@@ -954,7 +954,7 @@ StartTicker("AvgTreasureRatio", tr)
 			</Menu>
 		</Menus>
 	</VgaGraph>
-	<Maps MapHead="MAPHEAD.WL6" GameMaps="GAMEMAPS.WL6" Floor="25" Ceiling="29">
+	<Maps MapHead="MAPHEAD.WL6" GameMaps="GAMEMAPS.WL6" Floor="25" Ceiling="29" OnComplete="LevelComplete">
 		<!-- Episode 1 (maps 0-9) — WL_INTER.C:parTimes[], WL_PLAY.C:songs[] -->
 		<Map Number="0" Episode="1" Level="1" Par="00:01:30" Music="GETTHEM_MUS" AltElevatorTo="9" />
 		<Map Number="1" Episode="1" Level="2" Par="00:02:00" Music="SEARCHN_MUS" />

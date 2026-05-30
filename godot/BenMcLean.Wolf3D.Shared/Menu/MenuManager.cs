@@ -221,7 +221,6 @@ public class MenuManager
 		foreach (ArticleDefinition articleDef in _menuCollection.Articles.Values)
 			CompileMenuScript(articleDef.OnCancel, GetArticleOnCancelScriptId(articleDef.Name));
 	}
-
 	private void ExecuteMenuFunction(string functionName)
 	{
 		if (string.IsNullOrWhiteSpace(functionName))
@@ -235,7 +234,6 @@ public class MenuManager
 			GD.PrintErr($"ERROR: Failed to execute menu function '{functionName}': {ex.Message}");
 		}
 	}
-
 	private void CompileMenuScript(string script, string scriptId)
 	{
 		if (string.IsNullOrEmpty(script))
@@ -249,7 +247,6 @@ public class MenuManager
 			GD.PrintErr($"ERROR: Failed to compile script '{scriptId}': {ex.Message}");
 		}
 	}
-
 	private void CompileMenuDefinitionScripts(MenuDefinition menuDef)
 	{
 		CompileMenuScript(menuDef.OnShow, GetMenuOnShowScriptId(menuDef.Name));
@@ -540,16 +537,11 @@ public class MenuManager
 	/// <summary>
 	/// Returns true if the item should be shown given the current in-game state.
 	/// </summary>
-	private static bool IsItemVisible(MenuItemDefinition item, bool inGame)
-	{//TODO This should probably be a one-liner, probably a statement rather than a method body
-		if (string.IsNullOrEmpty(item.Condition))
-			return true;
-		if (item.Condition.Equals("true", StringComparison.OrdinalIgnoreCase))
-			return inGame;
-		if (item.Condition.Equals("false", StringComparison.OrdinalIgnoreCase))
-			return !inGame;
-		return true; // Unknown condition value = always show
-	}
+	private static bool IsItemVisible(MenuItemDefinition item, bool inGame) =>
+		string.IsNullOrEmpty(item?.Condition) ||
+		item.Condition.Equals("true", StringComparison.OrdinalIgnoreCase) && inGame ||
+		item.Condition.Equals("false", StringComparison.OrdinalIgnoreCase) && !inGame ||
+		!item.Condition.Equals("true", StringComparison.OrdinalIgnoreCase) && !item.Condition.Equals("false", StringComparison.OrdinalIgnoreCase);
 	/// <summary>
 	/// Execute the OnSelectionChanged Lua script for a menu.
 	/// Matches original Wolf3D's DrawNewGameDiff callback in HandleMenu.
@@ -711,7 +703,6 @@ public class MenuManager
 				return;
 			}
 		}
-
 		// Handle active modal (blocks normal menu input while pending)
 		if (_activeModal is not null && _activeModal.IsPending)
 		{
@@ -720,7 +711,6 @@ public class MenuManager
 				ResolveModal();
 			return;
 		}
-
 		// Normal interactive menu mode
 		HandlePointerHover(menuDef);
 		// Handle navigation (use _currentVisibleItems so invisible items are skipped)
@@ -796,14 +786,12 @@ public class MenuManager
 	{
 		Input.PointerState primary = _input.PrimaryPointer,
 			secondary = _input.SecondaryPointer;
-
 		// Check for cancel from either pointer (works regardless of position)
 		if (primary.CancelPressed || secondary.CancelPressed)
 		{
 			ExecuteOnCancel(menuDef);
 			return;
 		}
-
 		// Check primary pointer for hover and select
 		if (primary.IsActive)
 		{
@@ -835,7 +823,6 @@ public class MenuManager
 				}
 			}
 		}
-
 		// Check secondary pointer for hover and select
 		if (secondary.IsActive)
 		{
@@ -893,7 +880,6 @@ public class MenuManager
 			selectSound = currentMenu.SelectSound;
 		if (!string.IsNullOrEmpty(selectSound))
 			PlaySoundImpl(selectSound);
-
 		if (item.IsPresentationSlot)
 		{
 			_scriptContext.OpenPresentationMenuAction?.Invoke();
@@ -1121,11 +1107,7 @@ public class MenuManager
 	/// </summary>
 	/// <param name="message">Message to display</param>
 	/// <returns>True if user confirmed, false if cancelled</returns>
-	private bool ShowConfirm(string message)
-	{
-		// TODO: Implement actual confirmation dialog using ModalDialog
-		return true; // Placeholder: always confirm
-	}
+	private bool ShowConfirm(string message) => throw new NotImplementedException(); // TODO: Implement actual confirmation dialog using ModalDialog
 	/// <summary>
 	/// Show an informational message.
 	/// Displays a message box with no Yes/No buttons; any key or button press dismisses it.

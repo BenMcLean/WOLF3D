@@ -871,7 +871,7 @@ StartTicker("AvgTreasureRatio", tr)
 			</Menu>
 		</Menus>
 	</VgaGraph>
-	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29">
+	<Maps MapHead="MAPHEAD.WL1" GameMaps="GAMEMAPS.WL1" Floor="25" Ceiling="29" OnComplete="LevelComplete">
 		<Map Number="0" Episode="1" Level="1" Par="00:01:30" Music="GETTHEM_MUS" AltElevatorTo="9" />
 		<Map Number="1" Episode="1" Level="2" Par="00:02:00" Music="SEARCHN_MUS" />
 		<Map Number="2" Episode="1" Level="3" Par="00:02:00" Music="POW_MUS" />

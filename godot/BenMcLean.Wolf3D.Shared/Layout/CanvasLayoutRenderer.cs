@@ -13,27 +13,22 @@ namespace BenMcLean.Wolf3D.Shared.Layout;
 public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canvasHeight)
 {
 	private readonly Control _canvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
-	private readonly float _canvasWidth = canvasWidth;
-	private readonly float _canvasHeight = canvasHeight;
-
+	private readonly float _canvasWidth = canvasWidth,
+		_canvasHeight = canvasHeight;
 	public void RenderAll(CanvasLayoutDefinition layout, CanvasLayoutRenderOptions options)
 	{
 		ArgumentNullException.ThrowIfNull(options);
-
 		RenderBackgroundPicture(options.BackgroundPictureName, options.BackgroundZIndex);
 		RenderBoxes(layout, options.DefaultDeactive, options.DefaultBorder2Color, options.BoxFillZIndex, options.BoxBorderZIndex);
-
 		if (options.RenderTextsBeforePictures)
 		{
 			RenderTexts(layout, options.FallbackFontName, options.TextContentProvider, options.TextColorProvider, options.AfterAddText);
 			RenderPictures(layout, options.PictureZIndex, options.PictureNameProvider, options.AfterAddPicture);
 			return;
 		}
-
 		RenderPictures(layout, options.PictureZIndex, options.PictureNameProvider, options.AfterAddPicture);
 		RenderTexts(layout, options.FallbackFontName, options.TextContentProvider, options.TextColorProvider, options.AfterAddText);
 	}
-
 	public void RenderBackgroundPicture(string pictureName, int defaultZIndex = 0)
 	{
 		if (string.IsNullOrEmpty(pictureName))
@@ -43,7 +38,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 			GD.PrintErr($"ERROR: Background picture '{pictureName}' not found in VgaGraph");
 			return;
 		}
-
 		PictureDefinition backgroundDef = new() { Name = pictureName, X = "0", Y = "0" };
 		TextureRect background = CanvasLayoutRenderHelper.CreatePictureRect(
 			backgroundDef,
@@ -54,7 +48,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 		background.Size = new Vector2(_canvasWidth, _canvasHeight);
 		_canvas.AddChild(background);
 	}
-
 	public void RenderBoxes(
 		CanvasLayoutDefinition layout,
 		byte defaultDeactive,
@@ -64,11 +57,9 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 	{
 		if (layout?.Boxes is null || layout.Boxes.Count == 0)
 			return;
-
 		foreach (MenuBoxDefinition boxDef in layout.Boxes)
 			CanvasLayoutRenderHelper.AddBox(_canvas, boxDef, defaultDeactive, defaultBorder2Color, fillZIndex, borderZIndex);
 	}
-
 	public void RenderPictures(
 		CanvasLayoutDefinition layout,
 		int defaultZIndex,
@@ -77,7 +68,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 	{
 		if (layout?.Pictures is null || layout.Pictures.Count == 0)
 			return;
-
 		foreach (PictureDefinition pictureDef in layout.Pictures)
 		{
 			string pictureName = pictureNameProvider?.Invoke(pictureDef) ?? pictureDef.Name;
@@ -88,7 +78,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 				GD.PrintErr($"ERROR: Picture '{pictureName}' (Id='{pictureDef.Id}') not found in VgaGraph");
 				continue;
 			}
-
 			TextureRect pictureRect = CanvasLayoutRenderHelper.CreatePictureRect(
 				pictureDef,
 				texture,
@@ -99,7 +88,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 			afterAdd?.Invoke(pictureDef, pictureRect);
 		}
 	}
-
 	public void RenderTexts(
 		CanvasLayoutDefinition layout,
 		string fallbackFontName,
@@ -109,7 +97,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 	{
 		if (layout?.Texts is null || layout.Texts.Count == 0)
 			return;
-
 		foreach (TextDefinition textDef in layout.Texts)
 		{
 			string fontName = textDef.Font ?? layout.Font ?? fallbackFontName;
@@ -118,7 +105,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 				GD.PrintErr($"ERROR: Theme '{fontName}' not found in SharedAssetManager");
 				continue;
 			}
-
 			string content = contentProvider?.Invoke(textDef) ?? textDef.Content;
 			byte? colorIndex = colorProvider?.Invoke(textDef);
 			Color? textColor = colorIndex.HasValue
@@ -131,7 +117,6 @@ public class CanvasLayoutRenderer(Control canvas, float canvasWidth, float canva
 		}
 	}
 }
-
 public class CanvasLayoutRenderOptions
 {
 	public string BackgroundPictureName { get; set; }

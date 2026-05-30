@@ -113,7 +113,7 @@ public class StatusBarRenderer
 		if (_textLabels.TryGetValue(id, out Label label))
 		{
 			label.Text = content;
-			if (_textLayout.TryGetValue(id, out var layout) && layout.Theme is not null)
+			if (_textLayout.TryGetValue(id, out (TextDefinition Definition, Theme Theme) layout) && layout.Theme is not null)
 				label.Position = TextLayoutHelper.GetPosition(
 					layout.Definition,
 					layout.Theme,

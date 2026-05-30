@@ -19,7 +19,6 @@ public static class ArticleRenderer
 	public static void RenderPage(Control canvas, ArticlePageLayout page, IReadOnlyList<PictureDefinition> fixedPictures = null)
 	{
 		if (canvas is null || page is null) return;
-
 		// Background fill — WL_TEXT.C: VWB_Bar(0,0,320,200,BACKCOLOR)
 		canvas.AddChild(new ColorRect
 		{
@@ -28,23 +27,19 @@ public static class ArticleRenderer
 			Color = SharedAssetManager.GetPaletteColor(page.BackColor),
 			ZIndex = 0,
 		});
-
 		// Fixed window-border pictures (H_TOPWINDOWPIC etc.) — WL_TEXT.C: drawn before text loop
 		if (fixedPictures is not null)
 			foreach (PictureDefinition pic in fixedPictures)
 				DrawFixedPicture(canvas, pic);
-
 		// Draw in-text graphics (^G / ^T commands)
 		foreach (ArticleGraphicItem graphic in page.Graphics)
 			DrawGraphic(canvas, graphic);
-
 		// Draw text runs (words and page number)
 		Godot.Theme smallTheme = null;
 		SharedAssetManager.Themes?.TryGetValue("SMALL", out smallTheme);
 		foreach (ArticleTextRun run in page.TextRuns)
 			DrawTextRun(canvas, run, smallTheme);
 	}
-
 	private static void DrawFixedPicture(Control canvas, PictureDefinition pic)
 	{
 		if (string.IsNullOrEmpty(pic.Name)) return;
@@ -63,7 +58,6 @@ public static class ArticleRenderer
 			ZIndex = 3,
 		});
 	}
-
 	private static void DrawGraphic(Control canvas, ArticleGraphicItem graphic)
 	{
 		if (string.IsNullOrEmpty(graphic.PicName)) return;
@@ -78,11 +72,9 @@ public static class ArticleRenderer
 			ZIndex = 5,
 		});
 	}
-
 	private static void DrawTextRun(Control canvas, ArticleTextRun run, Godot.Theme theme)
 	{
 		Color color = SharedAssetManager.GetPaletteColor(run.Color);
-
 		Label label = new()
 		{
 			Text = run.Text,

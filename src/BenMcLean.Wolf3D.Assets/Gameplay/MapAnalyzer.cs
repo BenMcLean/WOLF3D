@@ -7,7 +7,6 @@ using System.Linq;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using static System.Net.WebRequestMethods;
 
 namespace BenMcLean.Wolf3D.Assets.Gameplay;
 
@@ -297,6 +296,18 @@ public class MapAnalyzer
 			ushort.TryParse(map.Attribute("Episode")?.Value, out ushort e) && e == episode
 			&& ushort.TryParse(map.Attribute("Level")?.Value, out ushort l) && l == level
 		).First().Attribute("Number")?.Value);
+	public string GetMapsDefaultOnComplete() =>
+		XML?.Element("Maps")?.Attribute("OnComplete")?.Value ?? "LevelComplete";
+	public string GetMapOnComplete(int mapNumber) =>
+		XML?.Element("Maps")?.Elements("Map")
+			.FirstOrDefault(m => m.Attribute("Number")?.Value == mapNumber.ToString())
+			?.Attribute("OnComplete")?.Value
+			?? GetMapsDefaultOnComplete();
+	public string GetMapOnCompleteByLevel(int level) =>
+		XML?.Element("Maps")?.Elements("Map")
+			.FirstOrDefault(m => m.Attribute("Level")?.Value == level.ToString())
+			?.Attribute("OnComplete")?.Value
+			?? GetMapsDefaultOnComplete();
 	// Wall formula from WL_MAIN.C SetupWalls():
 	// horizwall[i] = (i-1) * 2
 	// vertwall[i] = (i-1) * 2 + 1

@@ -133,14 +133,6 @@ public partial class ActionRoom : Node3D, IRoom
 	/// WL_DEF.H:gamestate.mapon
 	/// </summary>
 	private readonly int _initialLevelIndex;
-	private static bool IsSpearCampaign() =>
-		SharedAssetManager.CurrentGame?.XML?.Attribute("Path")?.Value is "M1" or "M2" or "M3";
-	private static bool UsesSpearSpecialIntermission(LevelCompletionStats stats) =>
-		IsSpearCampaign()
-		&& stats is not null
-		&& stats.FloorNumber is 5 or 10 or 16 or 18 or 19 or 20;
-	private static string GetLevelCompleteMenuName(LevelCompletionStats stats) =>
-		UsesSpearSpecialIntermission(stats) ? "LevelCompleteSpecial" : "LevelComplete";
 
 	// Public accessors for level components - used by systems like PixelPerfectAiming
 	public MapAnalyzer.MapAnalysis MapAnalysis { get; private set; }
@@ -957,7 +949,7 @@ void sky() {
 		sim.AddCompletionStats(stats);
 		PendingTransition = new LevelTransitionRequest(
 			destinationLevel, savedInventory, stats,
-			menuName: GetLevelCompleteMenuName(stats),
+			menuName: SharedAssetManager.CurrentGame?.MapAnalyzer?.GetMapOnComplete(_initialLevelIndex) ?? "LevelComplete",
 			allLevelStats: sim.LevelRatios,
 			floorColor: MapAnalysis.Floor,
 			ceilingColor: MapAnalysis.Ceiling,

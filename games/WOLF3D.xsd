@@ -1521,6 +1521,14 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="OnComplete" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Default Lua function to call on level completion for all maps.
+						Individual Map elements can override this value.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 
@@ -1640,6 +1648,14 @@
 						Used when player activates ELEVATORTILE while standing on ALTELEVATORTILE (typically 107).
 						This typically leads to a secret level in the original game.
 						If not specified, alternate elevator behaves the same as normal elevator (uses ElevatorTo).
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="OnComplete" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						Lua function to call on level completion.
+						Overrides the default from the containing Maps element.
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

@@ -45,10 +45,10 @@ public class MenuRenderer
 	/// Set by MenuRoom from VSwap.TileSqrt.
 	/// </summary>
 	public int SpriteNativeSize { get; set; } = 64;
-	private Input.PointerState _primaryPointer;
-	private Input.PointerState _secondaryPointer;
-	private TextureRect _primaryCrosshair;
-	private TextureRect _secondaryCrosshair;
+	private Input.PointerState _primaryPointer,
+		_secondaryPointer;
+	private TextureRect _primaryCrosshair,
+		_secondaryCrosshair;
 	#endregion Data
 	#region Events
 	/// <summary>
@@ -186,7 +186,7 @@ public class MenuRenderer
 							FrameNames = frameNames,
 							FrameInterval = pictureDef.FrameInterval,
 							CurrentFrame = 0,
-							Elapsed = 0f
+							Elapsed = 0f,
 						});
 				}
 			},
@@ -213,7 +213,7 @@ public class MenuRenderer
 							Constants.MenuScreenWidth,
 							Constants.MenuScreenHeight);
 				}
-			}
+			},
 		});
 		// Render static VSWAP sprites (e.g., SPR_DEATHCAM title - WL_ACT2.C:A_StartDeathCam)
 		RenderStaticSprites(menuDef);
@@ -276,10 +276,10 @@ public class MenuRenderer
 			Texture2D texture = SpriteTextureProvider((ushort)startState.Shape);
 			if (texture is null)
 				continue;
-			float displaySize = SpriteNativeSize * animDef.Scale;
-			// Scale the node transform so the upscaled texture renders at native display size.
-			// Size property alone doesn't constrain TextureRect when texture is larger than Size.
-			float nodeScale = texture.GetWidth() > 0 ? displaySize / texture.GetWidth() : 1f;
+			float displaySize = SpriteNativeSize * animDef.Scale,
+				// Scale the node transform so the upscaled texture renders at native display size.
+				// Size property alone doesn't constrain TextureRect when texture is larger than Size.
+				nodeScale = texture.GetWidth() > 0 ? displaySize / texture.GetWidth() : 1f;
 			TextureRect rect = new()
 			{
 				Texture = texture,
@@ -317,8 +317,8 @@ public class MenuRenderer
 			Texture2D texture = SpriteTextureProvider(page.Value);
 			if (texture is null)
 				continue;
-			float displaySize = SpriteNativeSize * spriteDef.Scale;
-			float nodeScale = texture.GetWidth() > 0 ? displaySize / texture.GetWidth() : 1f;
+			float displaySize = SpriteNativeSize * spriteDef.Scale,
+				nodeScale = texture.GetWidth() > 0 ? displaySize / texture.GetWidth() : 1f;
 			TextureRect rect = new()
 			{
 				Texture = texture,
@@ -536,7 +536,7 @@ public class MenuRenderer
 					Font = theme.DefaultFont,
 					FontSize = theme.DefaultFontSize,
 					LineSpacing = 0,
-					FontColor = textColor
+					FontColor = textColor,
 				},
 			};
 			_canvas.AddChild(label);
@@ -555,9 +555,7 @@ public class MenuRenderer
 				label.Position = new Vector2(x - textWidth, y);
 			}
 			else
-			{
 				label.Position = new Vector2(x, y);
-			}
 			// Track by name for dynamic updates
 			_tickerLabels[tickerDef.Name] = label;
 		}
@@ -580,13 +578,13 @@ public class MenuRenderer
 		if (_namedTextLabels.TryGetValue(name, out Label label))
 		{
 			label.Text = value;
-			if (_namedTextLayout.TryGetValue(name, out var layout))
+			if (_namedTextLayout.TryGetValue(name, out (TextDefinition Definition, Theme Theme) layout))
 				label.Position = TextLayoutHelper.GetPosition(
-					layout.Definition,
-					layout.Theme,
-					value,
-					Constants.MenuScreenWidth,
-					Constants.MenuScreenHeight);
+					textDef: layout.Definition,
+					theme: layout.Theme,
+					content: value,
+					canvasWidth: Constants.MenuScreenWidth,
+					canvasHeight: Constants.MenuScreenHeight);
 		}
 	}
 	/// <summary>
@@ -617,11 +615,11 @@ public class MenuRenderer
 			if (SharedAssetManager.Themes.TryGetValue(fontName, out Theme theme))
 			{
 				Font font = theme.DefaultFont;
-				float textWidth = font.GetStringSize(value, fontSize: theme.DefaultFontSize).X;
-				float anchorX = tickerDef.CenterX ? Constants.MenuScreenWidth / 2f
-				: tickerDef.RightX ? Constants.MenuScreenWidth
-				: tickerDef.XValue;
-			label.Position = new Vector2(anchorX - textWidth, label.Position.Y);
+				float textWidth = font.GetStringSize(value, fontSize: theme.DefaultFontSize).X,
+					anchorX = tickerDef.CenterX ? Constants.MenuScreenWidth / 2f
+					: tickerDef.RightX ? Constants.MenuScreenWidth
+					: tickerDef.XValue;
+				label.Position = new Vector2(anchorX - textWidth, label.Position.Y);
 			}
 		}
 	}
@@ -691,7 +689,6 @@ public class MenuRenderer
 		Font font = theme.DefaultFont;
 		float fontSize = theme.DefaultFontSize,
 			lineHeight = fontSize;
-
 		// Modal-specific colors from XML (PixelRect: Color/NWColor/SEColor/TextColor)
 		// Each has a dedicated ModalXxx attribute; falls back to menu default if absent.
 		MenuCollection menuCollection = SharedAssetManager.CurrentGame?.MenuCollection;
@@ -717,7 +714,6 @@ public class MenuRenderer
 				maxLineWidth = w;
 		}
 		float textHeight = lines.Length * lineHeight;
-
 		bool isMessage = modal.Kind == ModalDialog.ModalKind.Message;
 		// Size and position the message box (contains only text, no buttons inside)
 		const float boxPad = 8f,   // inner padding for message box
@@ -744,7 +740,7 @@ public class MenuRenderer
 				FontSize = (int)fontSize,
 				LineSpacing = 0,
 				FontColor = textColor,
-			}
+			},
 		});
 		if (!isMessage)
 		{
@@ -754,7 +750,7 @@ public class MenuRenderer
 				noW = font.GetStringSize("No", fontSize: (int)fontSize).X,
 				yesBoxW = yesW + btnPad * 2f,
 				noBoxW = noW + btnPad * 2f,
-			// Yes is left-aligned with the message box; No is right-aligned
+				// Yes is left-aligned with the message box; No is right-aligned
 				yesBoxX = msgBoxX,
 				noBoxX = msgBoxX + msgBoxW - noBoxW;
 			// "Yes" box — outside/below the message box, left-aligned with it
@@ -829,7 +825,6 @@ public class MenuRenderer
 		UpdateCrosshairs();
 	}
 }
-
 /// <summary>
 /// Tracks a clickable picture's bounding rectangle and its index in the menu's Pictures list.
 /// Used for click/hover detection on pictures that have Lua scripts.
@@ -841,7 +836,6 @@ public readonly struct ClickablePictureBounds(Rect2 bounds, int pictureIndex)
 	/// <summary>Index into MenuDefinition.Pictures list.</summary>
 	public int PictureIndex { get; } = pictureIndex;
 }
-
 /// <summary>
 /// Tracks state for an animated picture that cycles through multiple VgaGraph frames.
 /// Used for BJ breathing animation on the intermission screen.
@@ -859,7 +853,6 @@ internal class AnimatedPictureState
 	/// <summary>Time elapsed since last frame change.</summary>
 	public float Elapsed { get; set; }
 }
-
 /// <summary>
 /// Tracks state for an actor animation walking the state machine chain.
 /// Used for boss death cam sequences (WL_ACT2.C:A_StartDeathCam).
@@ -872,5 +865,4 @@ internal class ActorAnimationState
 	public State CurrentState { get; set; }
 	/// <summary>Time elapsed in the current state (seconds).</summary>
 	public float Elapsed { get; set; }
-
 }

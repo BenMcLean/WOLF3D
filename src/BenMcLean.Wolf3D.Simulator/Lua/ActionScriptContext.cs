@@ -94,6 +94,16 @@ public class ActionScriptContext(
 	/// </summary>
 	/// <param name="menuName">Menu name as defined in XML (e.g., "Victory", "LevelComplete")</param>
 	public void NavigateToMenu(string menuName) => NavigateToMenuAction?.Invoke(menuName);
+	/// <summary>
+	/// Call the OnComplete function for the current map.
+	/// Reads the OnComplete attribute from the Map element (falling back to the Maps default),
+	/// then invokes NavigateToMenu with that function name.
+	/// WL_AGENT.C:Cmd_Use elevator tile — replaces hardcoded NavigateToMenu calls.
+	/// </summary>
+	public void CallOnComplete() =>
+		NavigateToMenuAction?.Invoke(
+			simulator.MapAnalyzer?.GetMapOnComplete(simulator.Inventory.GetValue("MapOn"))
+			?? "LevelComplete");
 	public void RequestGameplayMapTransition(int destinationLevel, bool preservePlayerTransform = false)
 	{
 		if (RequestGameplayMapTransitionAction is not null)

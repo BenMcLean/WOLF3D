@@ -580,7 +580,7 @@ for i = 0, GetHighScoreCount() - 1 do
 	local ep = GetHighScoreEpisode(i) + 1
 	local lvl = GetHighScoreCompleted(i)
 	SetText("Name"  .. i, GetHighScoreName(i))
-	if IsSpearGame() then
+	if IsSpearCampaign() then
 		SetText("Level" .. i, lvl == 21 and "SPEAR" or tostring(lvl))
 	else
 		SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
@@ -749,11 +749,7 @@ for i = 0, GetHighScoreCount() - 1 do
 	local ep = GetHighScoreEpisode(i) + 1
 	local lvl = GetHighScoreCompleted(i)
 	SetText("Name"  .. i, GetHighScoreName(i))
-	if IsSpearGame() then
-		SetText("Level" .. i, lvl == 21 and "SPEAR" or tostring(lvl))
-	else
-		SetText("Level" .. i, "E" .. ep .. "/L" .. lvl)
-	end
+	SetText("Level" .. i, lvl == 21 and "SPEAR" or tostring(lvl))
 	SetText("Score" .. i, tostring(GetHighScoreScore(i)))
 end
 ]]>
@@ -869,7 +865,7 @@ StartTicker("AvgTreasureRatio", tr)
 			</Menu>
 		</Menus>
 	</VgaGraph>
-	<Maps MapHead="MAPHEAD.SOD" GameMaps="GAMEMAPS.SOD" Floor="25" Ceiling="29">
+	<Maps MapHead="MAPHEAD.SOD" GameMaps="GAMEMAPS.SOD" Floor="25" Ceiling="29" OnComplete="LevelComplete">
 		<!-- Spear of Destiny is one continuous 21-floor campaign.
 		     We model it as Episode 1 / Levels 1-21 so the existing launcher can still start at MapNumber(1, 1). -->
 		<!-- Songs from WL_PLAY.C SPEAR track order. Par times from WL_INTER.C SPEAR parTimes[]. -->
@@ -881,24 +877,24 @@ StartTicker("AvgTreasureRatio", tr)
 		<Map Number="1" Episode="1" Level="2" Par="00:03:30" Music="XFUNKIE_MUS" />
 		<Map Number="2" Episode="1" Level="3" Par="00:02:45" Music="XDEATH_MUS" />
 		<Map Number="3" Episode="1" Level="4" Par="00:03:30" Music="XGETYOU_MUS" AltElevatorTo="18" />
-		<Map Number="4" Episode="1" Level="5" Music="ULTIMATE_MUS" />
+		<Map Number="4" Episode="1" Level="5" Music="ULTIMATE_MUS" OnComplete="LevelCompleteSpecial" />
 		<Map Number="5" Episode="1" Level="6" Par="00:04:30" Music="DUNGEON_MUS" />
 		<Map Number="6" Episode="1" Level="7" Par="00:03:15" Music="GOINGAFT_MUS" />
 		<Map Number="7" Episode="1" Level="8" Par="00:02:45" Music="POW_MUS" />
 		<Map Number="8" Episode="1" Level="9" Par="00:04:45" Music="TWELFTH_MUS" />
-		<Map Number="9" Episode="1" Level="10" Music="ULTIMATE_MUS" />
+		<Map Number="9" Episode="1" Level="10" Music="ULTIMATE_MUS" OnComplete="LevelCompleteSpecial" />
 		<Map Number="10" Episode="1" Level="11" Par="00:06:30" Music="NAZI_OMI_MUS" />
 		<Map Number="11" Episode="1" Level="12" Par="00:04:30" Music="GETTHEM_MUS"
 			AltElevatorTo="19" />
 		<Map Number="12" Episode="1" Level="13" Par="00:02:45" Music="SUSPENSE_MUS" />
 		<Map Number="13" Episode="1" Level="14" Par="00:04:30" Music="SEARCHN_MUS" />
 		<Map Number="14" Episode="1" Level="15" Par="00:06:00" Music="ZEROHOUR_MUS" />
-		<Map Number="15" Episode="1" Level="16" Music="ULTIMATE_MUS" />
+		<Map Number="15" Episode="1" Level="16" Music="ULTIMATE_MUS" OnComplete="LevelCompleteSpecial" />
 		<Map Number="16" Episode="1" Level="17" Par="00:06:00" Music="XPUTIT_MUS" />
-		<Map Number="17" Episode="1" Level="18" Music="ULTIMATE_MUS" ElevatorTo="20" />
-		<Map Number="18" Episode="1" Level="19" Music="XJAZNAZI_MUS" ElevatorTo="4" />
-		<Map Number="19" Episode="1" Level="20" Music="XFUNKIE_MUS" ElevatorTo="12" />
-		<Map Number="20" Episode="1" Level="21" Music="XEVIL_MUS" />
+		<Map Number="17" Episode="1" Level="18" Music="ULTIMATE_MUS" ElevatorTo="20" OnComplete="LevelCompleteSpecial" />
+		<Map Number="18" Episode="1" Level="19" Music="XJAZNAZI_MUS" ElevatorTo="4" OnComplete="LevelCompleteSpecial" />
+		<Map Number="19" Episode="1" Level="20" Music="XFUNKIE_MUS" ElevatorTo="12" OnComplete="LevelCompleteSpecial" />
+		<Map Number="20" Episode="1" Level="21" Music="XEVIL_MUS" OnComplete="LevelCompleteSpecial" />
 	</Maps>
 	<Audio AudioHead="AUDIOHED.SOD" AudioT="AUDIOT.SOD" StartPCSounds="0" StartAdlibSounds="81"
 		StartMusic="243">
@@ -1073,12 +1069,7 @@ StartTicker("AvgTreasureRatio", tr)
 			<!-- Special floor tiles -->
 			<Elevator Tile="21" PressedTile="22" Faces="EastWest"><![CDATA[
 PlaySound("LEVELDONESND")
-local floor = GetValue("MapOn") + 1
-if floor == 5 or floor == 10 or floor == 16 or floor == 18 or floor == 19 or floor == 20 then
-    NavigateToMenu("LevelCompleteSpecial")
-else
-    NavigateToMenu("LevelComplete")
-end
+CallOnComplete()
 return true
 ]]></Elevator>
 			<Exit Tile="99" />

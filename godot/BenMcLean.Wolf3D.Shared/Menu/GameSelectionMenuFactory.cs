@@ -14,7 +14,6 @@ namespace BenMcLean.Wolf3D.Shared.Menu;
 public static class GameSelectionMenuFactory
 {
 	public const int PerPage = 10;
-
 	/// <summary>
 	/// Builds a MenuCollection containing paginated "_GameSelectN" menus that list
 	/// all playable game definition files available for the specified directory.
@@ -26,9 +25,7 @@ public static class GameSelectionMenuFactory
 	public static MenuCollection Build(string gamesDirectory)
 	{
 		GameCatalog.GameDefinition[] games = [.. GameCatalog.GetAvailableGames(gamesDirectory)];
-
 		int pages = games.Length == 0 ? 1 : (games.Length - 1) / PerPage + 1;
-
 		MenuCollection collection = new()
 		{
 			DefaultFont = "SMALL",
@@ -43,12 +40,10 @@ public static class GameSelectionMenuFactory
 			DefaultCursorMoveSound = "MOVEGUN2SND",
 		};
 		collection.EndStrings.Add("Are you sure you want\nto quit?");
-
 		for (int page = 0; page < pages; page++)
 		{
-			int prevPage = (page - 1 + pages) % pages;
-			int nextPage = (page + 1) % pages;
-
+			int prevPage = (page - 1 + pages) % pages,
+				nextPage = (page + 1) % pages;
 			MenuDefinition menu = new()
 			{
 				Name = "_GameSelect" + page,
@@ -87,7 +82,6 @@ public static class GameSelectionMenuFactory
 					},
 				],
 			};
-
 			if (pages > 1)
 			{
 				menu.Texts.Add(new TextDefinition
@@ -97,30 +91,26 @@ public static class GameSelectionMenuFactory
 					Y = "188",
 					Color = 0x17,
 				});
-
 				menu.Items.Add(new MenuItemDefinition
 				{
 					Text = "\u00ab Prev",
 					Script = $"NavigateToMenu(\"_GameSelect{prevPage}\")",
 				});
 			}
-
 			if (games.Length == 0)
-			{
 				menu.Items.Add(new MenuItemDefinition
 				{
 					Text = "No games found",
 					Script = "",
 				});
-			}
 			else
 			{
-				int startIdx = page * PerPage;
-				int endIdx = Math.Min(startIdx + PerPage, games.Length);
+				int startIdx = page * PerPage,
+					endIdx = Math.Min(startIdx + PerPage, games.Length);
 				for (int i = startIdx; i < endIdx; i++)
 				{
-					string name = games[i].DisplayName;
-					string normalizedPath = games[i].XmlPath.Replace('\\', '/');
+					string name = games[i].DisplayName,
+						normalizedPath = games[i].XmlPath.Replace('\\', '/');
 					menu.Items.Add(new MenuItemDefinition
 					{
 						Text = name,
@@ -128,19 +118,14 @@ public static class GameSelectionMenuFactory
 					});
 				}
 			}
-
 			if (pages > 1)
-			{
 				menu.Items.Add(new MenuItemDefinition
 				{
 					Text = "Next \u00bb",
 					Script = $"NavigateToMenu(\"_GameSelect{nextPage}\")",
 				});
-			}
-
 			collection.AddMenu(menu);
 		}
-
 		return collection;
 	}
 }
