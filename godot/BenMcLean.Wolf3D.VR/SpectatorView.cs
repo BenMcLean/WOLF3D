@@ -18,7 +18,6 @@ public partial class SpectatorView : Node
 	}
 
 	private const float DefaultFov = 75f;
-	private const float PositionSharpness = 10f;
 	private const float DirectionSharpness = 12f;
 
 	// Placed directly in the scene tree so it renders to the root viewport.
@@ -81,7 +80,6 @@ public partial class SpectatorView : Node
 	private Node3D _vrOrigin;
 	private SpectatorMode _mode;
 	private bool _hasPose;
-	private Vector3 _smoothedPosition = Vector3.Zero;
 	private Vector3 _smoothedForward = Vector3.Forward;
 
 	public override void _Ready()
@@ -169,21 +167,17 @@ public partial class SpectatorView : Node
 
 		if (!_hasPose)
 		{
-			_smoothedPosition = trackedPosition;
 			_smoothedForward = desiredForward;
 			_hasPose = true;
 		}
 		else
 		{
-			_smoothedPosition = _smoothedPosition.Lerp(
-				trackedPosition,
-				ExponentialBlend(PositionSharpness, delta));
 			_smoothedForward = _smoothedForward.Slerp(
 				desiredForward,
 				ExponentialBlend(DirectionSharpness, delta)).Normalized();
 		}
 
-		_camera.GlobalPosition = _smoothedPosition;
+		_camera.GlobalPosition = trackedPosition;
 		_camera.GlobalBasis = Basis.LookingAt(_smoothedForward, Vector3.Up);
 		_camera.Fov = _trackedCamera.Fov > 1f ? _trackedCamera.Fov : DefaultFov;
 	}
