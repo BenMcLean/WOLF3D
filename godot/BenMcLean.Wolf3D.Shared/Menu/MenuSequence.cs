@@ -38,7 +38,7 @@ public interface ISequenceStep
 	/// <param name="anyButtonPressed">True if any button was pressed this frame</param>
 	/// <param name="skipBehavior">The sequence's skip behavior setting</param>
 	/// <returns>True if the sequence should skip all remaining steps (SkipAll triggered)</returns>
-	bool Update(float delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior);
+	bool Update(double delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior);
 
 	/// <summary>
 	/// Immediately complete this step, jumping to its final state.
@@ -60,7 +60,7 @@ public class TickerSequenceStep : ISequenceStep
 	private readonly Action<string, string> _updateTickerAction;
 	private readonly Action<string> _playSoundAction;
 	private int _currentValue;
-	private float _elapsed;
+	private double _elapsed;
 	private bool _isComplete,
 		_doneHandled;
 	#endregion Data
@@ -69,8 +69,7 @@ public class TickerSequenceStep : ISequenceStep
 	/// WL_INTER.C's loop calls VW_UpdateScreen (vsync) + RollDelay (waits for TimeCount),
 	/// making the effective rate roughly half of TickBase=70, i.e., ~35 increments/second.
 	/// </summary>
-	//TODO Use Constants.TicsPerSecond and make it a double to match Godot 4's time
-	private const float TickInterval = 1.0f / 35.0f;
+	private const double TickInterval = 2.0 / Constants.TicsPerSecond;
 
 	public bool IsComplete => _isComplete;
 
@@ -95,7 +94,7 @@ public class TickerSequenceStep : ISequenceStep
 		_updateTickerAction = updateTickerAction;
 		_playSoundAction = playSoundAction;
 		_currentValue = 0;
-		_elapsed = 0f;
+		_elapsed = 0.0;
 		_isComplete = false;
 		_doneHandled = false;
 
@@ -103,7 +102,7 @@ public class TickerSequenceStep : ISequenceStep
 		_updateTickerAction?.Invoke(_tickerName, "0");
 	}
 
-	public bool Update(float delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
+	public bool Update(double delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
 	{
 		if (_isComplete)
 			return false;
@@ -172,11 +171,11 @@ public class TickerSequenceStep : ISequenceStep
 /// Creates a new DelaySequenceStep.
 /// </remarks>
 /// <param name="Seconds">Duration to wait in seconds</param>
-public class DelaySequenceStep(float Seconds) : ISequenceStep
+public class DelaySequenceStep(double Seconds) : ISequenceStep
 {
-	private float _elapsed = 0f;
+	private double _elapsed = 0.0;
 	public bool IsComplete { get; private set; }
-	public bool Update(float delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
+	public bool Update(double delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
 	{
 		if (IsComplete)
 			return false;
@@ -203,13 +202,13 @@ public class DelaySequenceStep(float Seconds) : ISequenceStep
 /// </remarks>
 /// <param name="Duration">Optional timeout in seconds. If null or &lt;= 0, waits indefinitely for input.</param>
 /// <param name="OnComplete">Callback to execute when the pause completes (e.g., Lua script execution).</param>
-public class PauseSequenceStep(float? Duration, Action OnComplete) : ISequenceStep
+public class PauseSequenceStep(double? Duration, Action OnComplete) : ISequenceStep
 {
-	private readonly float _duration = Duration ?? 0f;
-	private readonly bool _hasTimeout = Duration.HasValue && Duration.Value > 0f;
-	private float _elapsed;
+	private readonly double _duration = Duration ?? 0.0;
+	private readonly bool _hasTimeout = Duration.HasValue && Duration.Value > 0.0;
+	private double _elapsed;
 	public bool IsComplete { get; private set; }
-	public bool Update(float delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
+	public bool Update(double delta, bool anyButtonPressed, SequenceSkipBehavior skipBehavior)
 	{
 		if (IsComplete)
 			return false;
@@ -272,7 +271,7 @@ public class MenuSequence
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds</param>
 	/// <param name="anyButtonPressed">True if any button was pressed this frame</param>
-	public void Update(float delta, bool anyButtonPressed)
+	public void Update(double delta, bool anyButtonPressed)
 	{
 		// Advance to next step if needed
 		if (_currentStep is null || _currentStep.IsComplete)

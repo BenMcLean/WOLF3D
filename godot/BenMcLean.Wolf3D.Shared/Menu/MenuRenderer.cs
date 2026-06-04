@@ -205,13 +205,13 @@ public class MenuRenderer
 					if (_textOverrides.ContainsKey(textDef.Id)
 						&& (textDef.CenterX
 							|| textDef.RightX
-							|| textDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) == true))
+							|| (textDef.Align?.Equals("Right", StringComparison.OrdinalIgnoreCase) ?? false)))
 						label.Position = TextLayoutHelper.GetPosition(
-							textDef,
-							theme,
-							content,
-							Constants.MenuScreenWidth,
-							Constants.MenuScreenHeight);
+							textDef: textDef,
+							theme: theme,
+							content: content,
+							canvasWidth: Constants.MenuScreenWidth,
+							canvasHeight: Constants.MenuScreenHeight);
 				}
 			},
 		});
@@ -388,7 +388,7 @@ public class MenuRenderer
 					FontSize = theme.DefaultFontSize,
 					LineSpacing = 0,
 					FontColor = textColor,
-				}
+				},
 			};
 			_canvas.AddChild(label);
 			// Store bounds for hover detection - measure text size from font

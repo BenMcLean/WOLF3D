@@ -1074,7 +1074,7 @@ void sky() {
 			UpdateFlatscreenMenuLayout();
 
 		// Update menu manager
-		_menuManager?.Update((float)delta);
+		_menuManager?.Update(delta);
 
 		// If a game selection was made, Root is already handling the transition.
 		// Skip all other menu processing to avoid spurious state changes.

@@ -331,19 +331,15 @@ public class MenuManager
 			if (fontIdx < SharedAssetManager.CurrentGame.VgaGraph.Fonts.Length)
 				smallFont = SharedAssetManager.CurrentGame.VgaGraph.Fonts[fontIdx];
 		Assets.Graphics.VgaGraph vgaGraph = SharedAssetManager.CurrentGame?.VgaGraph;
-		Func<int, string> picNameResolver = absIdx =>
+		string picNameResolver(int absIdx) => vgaGraph.PicNamesByRelativeIndex?.GetValueOrDefault(absIdx - (int)vgaGraph.StartPic);
+		(int width, int height)? picSizeResolver(int absIdx)
 		{
-			int relIdx = absIdx - (int)vgaGraph.StartPic;
-			return vgaGraph.PicNamesByRelativeIndex?.GetValueOrDefault(relIdx);
-		};
-		Func<int, (int width, int height)?> picSizeResolver = absIdx =>
-		{
-			int relIdx = absIdx - (int)vgaGraph.StartPic;
-			int sizeIdx = relIdx * 2;
-			if (relIdx < 0 || vgaGraph.Sizes is null || sizeIdx + 1 >= vgaGraph.Sizes.Length)
-				return null;
-			return (vgaGraph.Sizes[sizeIdx], vgaGraph.Sizes[sizeIdx + 1]);
-		};
+			int relIdx = absIdx - (int)vgaGraph.StartPic,
+				sizeIdx = relIdx * 2;
+			return relIdx < 0 || vgaGraph.Sizes is null || sizeIdx + 1 >= vgaGraph.Sizes.Length
+				? null
+				: (vgaGraph.Sizes[sizeIdx], vgaGraph.Sizes[sizeIdx + 1]);
+		}
 		ArticlePageLayout[] pages;
 		try
 		{
@@ -376,8 +372,8 @@ public class MenuManager
 	/// </summary>
 	private void ExitArticle()
 	{
-		string onCancel = _currentArticle?.OnCancel;
-		string articleName = _currentArticle?.Name;
+		string onCancel = _currentArticle?.OnCancel,
+			articleName = _currentArticle?.Name;
 		_currentArticle = null;
 		_articlePages = null;
 		_articlePageIndex = 0;
@@ -438,8 +434,8 @@ public class MenuManager
 			{
 				MenuPauseDefinition captured = menuDef.Pauses[pauseIndex];
 				int capturedPauseIndex = pauseIndex;
-				float? duration = captured.Duration.HasValue
-					? (float)captured.Duration.Value.TotalSeconds
+				double? duration = captured.Duration.HasValue
+					? captured.Duration.Value.TotalSeconds
 					: null;
 				sequence.Enqueue(new PauseSequenceStep(duration, () =>
 				{
@@ -622,12 +618,12 @@ public class MenuManager
 	/// Handles input and executes menu actions.
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds</param>
-	public void Update(float delta)
+	public void Update(double delta)
 	{
 		// Article mode — Up/Down flips pages, Cancel runs OnCancel script
 		if (_currentArticle is not null)
 		{
-			_input.Update(delta);
+			_input.Update((float)delta);
 			MenuInputState articleInput = _input.GetState();
 			if (articleInput.DownPressed || articleInput.RightPressed || articleInput.SelectPressed)
 			{
@@ -654,9 +650,9 @@ public class MenuManager
 		if (!_menuCollection.Menus.TryGetValue(_currentMenuName, out MenuDefinition menuDef))
 			return;
 		// Update animated pictures (e.g., BJ breathing on intermission screen)
-		_renderer.UpdateAnimations(delta);
+		_renderer.UpdateAnimations((float)delta);
 		// Update input (includes pointer tracking for mouse/VR implementations)
-		_input.Update(delta);
+		_input.Update((float)delta);
 		_renderer.SetPointers(_input.PrimaryPointer, _input.SecondaryPointer);
 		_renderer.UpdateCrosshairs();
 		MenuInputState inputState = _input.GetState();
@@ -729,8 +725,8 @@ public class MenuManager
 		// Handle selection and cancel via directional input only when the pointer did not
 		// already handle them this frame. This prevents double-execution when VR button presses
 		// feed both the pointer state (used by HandlePointerHover) and MenuInputState.
-		bool pointerHandledSelect = primary.SelectPressed || secondary.SelectPressed;
-		bool pointerHandledCancel = primary.CancelPressed || secondary.CancelPressed;
+		bool pointerHandledSelect = primary.SelectPressed || secondary.SelectPressed,
+			pointerHandledCancel = primary.CancelPressed || secondary.CancelPressed;
 		if (!pointerHandledSelect && inputState.SelectPressed && _currentVisibleItems.Count > 0)
 			ExecuteMenuItemAction(_currentVisibleItems[_selectedItemIndex]);
 		if (!pointerHandledCancel && inputState.CancelPressed)

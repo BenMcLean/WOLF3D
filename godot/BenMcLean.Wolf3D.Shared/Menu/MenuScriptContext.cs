@@ -560,7 +560,7 @@ public class MenuScriptContext(
 	/// Pressing any button skips the delay.
 	/// </summary>
 	/// <param name="seconds">Duration to wait in seconds</param>
-	public void QueueDelay(double seconds) => ActiveSequence?.Enqueue(new DelaySequenceStep((float)seconds));
+	public void QueueDelay(double seconds) => ActiveSequence?.Enqueue(new DelaySequenceStep(seconds));
 	/// <summary>
 	/// Set the skip behavior for the current menu sequence.
 	/// "all" = pressing button during ticker skips ALL remaining steps (Wolf3D intermission).

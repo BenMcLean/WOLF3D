@@ -111,5 +111,5 @@ public partial class MenuStage : Node
 	/// Updates the menu system.
 	/// </summary>
 	/// <param name="delta">Time since last frame in seconds</param>
-	public override void _Process(double delta) => _menuManager?.Update((float)delta);
+	public override void _Process(double delta) => _menuManager?.Update(delta);
 }
