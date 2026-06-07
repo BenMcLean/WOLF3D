@@ -16,7 +16,6 @@ public static class SaveGameManager
 	/// Number of save game slots (matches original Wolf3D).
 	/// </summary>
 	public const byte SlotCount = 10;
-
 	/// <summary>
 	/// Gets the folder where save game files are stored.
 	/// Same folder as game data files (derived from XML Path attribute).
@@ -63,7 +62,6 @@ public static class SaveGameManager
 			return null;
 		}
 	}
-
 	/// <summary>
 	/// Saves a game to the specified slot.
 	/// </summary>
@@ -77,9 +75,7 @@ public static class SaveGameManager
 			GD.PrintErr("ERROR: Cannot determine save file path");
 			return;
 		}
-
 		DateTime utcNow = DateTime.UtcNow;
-
 		SaveGameFile saveFile = new()
 		{
 			Snapshot = snapshot,
@@ -87,7 +83,6 @@ public static class SaveGameManager
 			SavedAt = utcNow.ToString("o"), // ISO 8601
 			DisplayName = mapName,
 		};
-
 		try
 		{
 			Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -99,7 +94,6 @@ public static class SaveGameManager
 			GD.PrintErr($"ERROR: Failed to save game to slot {slot}: {ex.Message}");
 		}
 	}
-
 	/// <summary>
 	/// Loads a game from the specified slot.
 	/// </summary>

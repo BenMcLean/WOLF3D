@@ -35,18 +35,15 @@ public static class TextLayoutHelper
 				Font = font,
 				FontSize = fontSize,
 				LineSpacing = 0,
-			}
+			},
 		};
-
 		if (textColor.HasValue)
 			label.LabelSettings.FontColor = textColor.Value;
-
 		if (textDef.MaxWidth.HasValue)
 		{
 			label.AutowrapMode = TextServer.AutowrapMode.Word;
 			label.CustomMinimumSize = new Vector2(textDef.MaxWidth.Value, 0);
 		}
-
 		if (HasFixedRightAlignedField(textDef))
 		{
 			float fieldWidth = GetRightAlignedFieldWidth(textDef, font, fontSize);
@@ -56,10 +53,8 @@ public static class TextLayoutHelper
 				y: Math.Max(label.CustomMinimumSize.Y, fontSize));
 			label.HorizontalAlignment = HorizontalAlignment.Right;
 		}
-
 		return label;
 	}
-
 	public static Vector2 GetPosition(
 		TextDefinition textDef,
 		Theme theme,

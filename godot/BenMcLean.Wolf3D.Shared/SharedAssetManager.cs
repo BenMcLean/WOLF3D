@@ -515,18 +515,13 @@ public static class SharedAssetManager
 			_digiSounds[name] = audioStream;
 		}
 	}
-
 	public static bool IsDigitizedSoundEnabled =>
 		Config?.DigiMode is Assets.Gameplay.Config.SDSMode.SoundBlaster
 			or Assets.Gameplay.Config.SDSMode.SoundSource;
-
-	public static string ResolveLogicalSoundName(string requestedSoundName)
-	{
-		if (string.IsNullOrWhiteSpace(requestedSoundName) || CurrentGame?.AudioT is null)
-			return requestedSoundName;
-		return CurrentGame.AudioT.ResolveLogicalSoundName(requestedSoundName);
-	}
-
+	public static string ResolveLogicalSoundName(string requestedSoundName) =>
+		string.IsNullOrWhiteSpace(requestedSoundName) || CurrentGame?.AudioT is null
+			? requestedSoundName
+			: CurrentGame.AudioT.ResolveLogicalSoundName(requestedSoundName);
 	public static bool TryGetDigiSound(
 		string requestedSoundName,
 		out Godot.AudioStreamWav stream,
@@ -534,20 +529,14 @@ public static class SharedAssetManager
 	{
 		logicalSoundName = ResolveLogicalSoundName(requestedSoundName);
 		stream = null;
-
 		if (string.IsNullOrWhiteSpace(requestedSoundName) || _digiSounds is null)
 			return false;
-
 		if (_digiSounds.TryGetValue(requestedSoundName, out stream))
 			return true;
-
 		return CurrentGame?.AudioT is not null &&
 			CurrentGame.AudioT.TryGetMappedDigiSoundName(logicalSoundName, out string digiSoundName) &&
 			_digiSounds.TryGetValue(digiSoundName, out stream);
 	}
-
-	private static bool HasLogicalSound(string soundName) =>
-		CurrentGame?.AudioT?.HasLogicalSound(soundName) == true;
 	#endregion DigiSounds
 	#region BonusAutomapTiles
 	/// <summary>
@@ -587,11 +576,10 @@ public static class SharedAssetManager
 			})
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 	}
-
 	/// <summary>
 	/// Nearest-neighbour downsamples an RGBA8888 byte array of arbitrary size to an 8×8 tile.
 	/// </summary>
-	private static byte[] SampleToTile(byte[] rgba, ushort width=0)
+	private static byte[] SampleToTile(byte[] rgba, ushort width = 0)
 	{
 		ushort srcWidth = width < 1 ? (ushort)Math.Sqrt(rgba.Length >> 2) : width,
 			srcHeight = (ushort)(width < 1 ? srcWidth : (rgba.Length >> 2) / width);
@@ -606,7 +594,7 @@ public static class SharedAssetManager
 					srcY = (int)((dy + 0.5f) * scaleY),
 					src = (srcY * srcWidth + srcX) << 2,
 					dst = (dy * size + dx) << 2;
-				tile[dst]     = rgba[src];
+				tile[dst] = rgba[src];
 				tile[dst + 1] = rgba[src + 1];
 				tile[dst + 2] = rgba[src + 2];
 				tile[dst + 3] = rgba[src + 3];
@@ -749,13 +737,13 @@ public static class SharedAssetManager
 			Config.DigiMode = Assets.Gameplay.Config.SDSMode.SoundBlaster;
 		}
 	}
-	public static bool RequiresExternalStorage(string xmlPath, bool preferEmbeddedShareware = false)
-	{
-		GameCatalog.GameDefinition gameDefinition = GameCatalog.Resolve(
-			xmlPath,
-			preferEmbeddedOfficial: preferEmbeddedShareware);
-		return !ShouldUseEmbeddedSharewareData(xmlPath, gameDefinition, preferEmbeddedShareware);
-	}
+	public static bool RequiresExternalStorage(string xmlPath, bool preferEmbeddedShareware = false) =>
+		!ShouldUseEmbeddedSharewareData(
+			xmlPath: xmlPath,
+			gameDefinition: GameCatalog.Resolve(
+				xmlPath: xmlPath,
+				preferEmbeddedOfficial: preferEmbeddedShareware),
+			preferEmbeddedShareware: preferEmbeddedShareware);
 	private static bool ShouldUseEmbeddedSharewareData(string xmlPath, GameCatalog.GameDefinition gameDefinition, bool preferEmbeddedShareware)
 	{
 		if (!GameCatalog.CanUseEmbeddedSharewareData(gameDefinition))
@@ -775,7 +763,6 @@ public static class SharedAssetManager
 			throw new FileNotFoundException($"Embedded shareware file not found: {Path.GetFileName(path)}", path);
 		return new MemoryStream(bytes, writable: false);
 	}
-
 	private static string GetDoorScriptId(ushort tileNumber) => $"door:{tileNumber}";
 	private static string GetElevatorScriptId(ushort tileNumber) => $"elevator:{tileNumber}";
 	private static string GetMenuOnShowScriptId(string menuName) => $"menu:{menuName}:on-show";
@@ -786,38 +773,30 @@ public static class SharedAssetManager
 	private static string GetMenuPictureScriptId(string menuName, int pictureIndex) => $"menu:{menuName}:picture:{pictureIndex}";
 	private static string GetArticleOnCancelScriptId(string articleName) => $"article:{articleName}:on-cancel";
 	public const string OnStartupScriptId = "startup:on-startup";
-
 	private static void PrecompileCurrentGameLua()
 	{
 		if (CurrentGame is null)
 			return;
-
 		ActionLuaEngine = new LuaScriptEngine(_loggerFactory?.CreateLogger("ActionLua"));
 		MenuLuaEngine = new LuaScriptEngine([typeof(MenuScriptContext)], _loggerFactory?.CreateLogger("MenuLua"));
-
 		CurrentGame.StateCollection.MergeDefaults(DefaultScriptLoader.LoadActorAndWeaponScripts());
 		CurrentGame.StateCollection.ValidateFunctionReferences();
 		ActionLuaEngine.CompileAllActionFunctions(CurrentGame.StateCollection);
-
 		foreach (DoorInfo doorInfo in CurrentGame.MapAnalyzer.Doors.Values.DistinctBy(d => d.TileNumber))
 			if (!string.IsNullOrWhiteSpace(doorInfo.Script))
 				ActionLuaEngine.CompileScript(GetDoorScriptId(doorInfo.TileNumber), doorInfo.Script);
-
 		foreach (ElevatorConfig elevatorConfig in CurrentGame.MapAnalyzer.Elevators.Values.DistinctBy(e => e.Tile))
 			if (!string.IsNullOrWhiteSpace(elevatorConfig.Script))
 				ActionLuaEngine.CompileScript(GetElevatorScriptId(elevatorConfig.Tile), elevatorConfig.Script);
-
 		(Dictionary<string, string> bonusScripts, _) = CurrentGame.MapAnalyzer.GetBonusScripts();
 		foreach ((string name, string code) in DefaultScriptLoader.LoadBonusScripts())
 			if (!bonusScripts.ContainsKey(name))
 				bonusScripts[name] = code;
 		foreach ((string name, string code) in bonusScripts)
 			ActionLuaEngine.CompileScript(name, code);
-
 		foreach (MenuFunction function in CurrentGame.MenuCollection.Functions.Values)
 			if (!string.IsNullOrWhiteSpace(function.Code))
 				MenuLuaEngine.CompileScript($"menu-function:{function.Name}", function.Code, LuaEngineMode.Permissive);
-
 		foreach (MenuDefinition menuDef in CurrentGame.MenuCollection.Menus.Values)
 		{
 			CompileMenuScript(menuDef.OnShow, GetMenuOnShowScriptId(menuDef.Name));
@@ -831,13 +810,10 @@ public static class SharedAssetManager
 			for (int i = 0; i < menuDef.Pictures.Count; i++)
 				CompileMenuScript(menuDef.Pictures[i].Script, GetMenuPictureScriptId(menuDef.Name, i));
 		}
-
 		foreach (ArticleDefinition articleDef in CurrentGame.MenuCollection.Articles.Values)
 			CompileMenuScript(articleDef.OnCancel, GetArticleOnCancelScriptId(articleDef.Name));
-
 		CompileMenuScript(CurrentGame.XML.Element("OnStartup")?.Value, OnStartupScriptId);
 	}
-
 	private static void CompileMenuScript(string script, string scriptId)
 	{
 		if (string.IsNullOrWhiteSpace(script))

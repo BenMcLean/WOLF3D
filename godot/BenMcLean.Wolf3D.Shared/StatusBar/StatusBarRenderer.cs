@@ -115,11 +115,11 @@ public class StatusBarRenderer
 			label.Text = content;
 			if (_textLayout.TryGetValue(id, out (TextDefinition Definition, Theme Theme) layout) && layout.Theme is not null)
 				label.Position = TextLayoutHelper.GetPosition(
-					layout.Definition,
-					layout.Theme,
-					content,
-					320,
-					40);
+					textDef: layout.Definition,
+					theme: layout.Theme,
+					content: content,
+					canvasWidth: 320,
+					canvasHeight: 40);
 		}
 	}
 	/// <summary>

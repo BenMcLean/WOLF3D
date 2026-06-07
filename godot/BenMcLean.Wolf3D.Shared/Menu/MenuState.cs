@@ -21,7 +21,7 @@ public enum VRMode
 	/// 5 degrees of freedom VR - ignores vertical movement (seated play).
 	/// Player can look around and move horizontally but height is fixed.
 	/// </summary>
-	FiveDOF
+	FiveDOF,
 }
 
 /// <summary>

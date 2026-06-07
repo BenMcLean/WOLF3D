@@ -67,7 +67,6 @@ public static class EventBus
 		// Create a copy to avoid issues if handlers modify the list during iteration
 		List<Action<object>> handlersCopy = [.. _handlers[eventType]];
 		foreach (Action<object> handler in handlersCopy)
-		{
 			try
 			{
 				handler?.Invoke(data);
@@ -77,15 +76,11 @@ public static class EventBus
 				GD.PrintErr($"ERROR: Exception in event handler for {eventType}: {ex.Message}");
 				GD.PrintErr(ex.StackTrace);
 			}
-		}
 	}
 	/// <summary>
 	/// Clears all event subscriptions. Use with caution!
 	/// </summary>
-	public static void ClearAll()
-	{
-		_handlers.Clear();
-	}
+	public static void ClearAll() => _handlers.Clear();
 	/// <summary>
 	/// Gets the number of handlers registered for an event type.
 	/// Useful for debugging.

@@ -9,19 +9,12 @@ namespace BenMcLean.Wolf3D.Shared.StatusBar;
 /// Lives at the Root level and is shared between ActionRoom and MenuRoom so quiz menus
 /// can display the live status bar without re-subscribing to the simulator.
 /// </summary>
-public class StatusBarController
+public class StatusBarController(StatusBarDefinition definition)
 {
-	public StatusBarState State { get; }
-
+	public StatusBarState State { get; } = new StatusBarState(definition ?? throw new ArgumentNullException(nameof(definition)));
 	private Action<StatusBarPicChangedEvent> _onPicChanged;
 	private Action<StatusBarTextChangedEvent> _onTextChanged;
 	private Simulator.Simulator _simulator;
-
-	public StatusBarController(StatusBarDefinition definition)
-	{
-		State = new StatusBarState(definition ?? throw new ArgumentNullException(nameof(definition)));
-	}
-
 	/// <summary>
 	/// Subscribes to a simulator's status bar events and syncs current state.
 	/// Automatically unsubscribes from any previous simulator first.
@@ -36,7 +29,6 @@ public class StatusBarController
 		_simulator.StatusBarTextChanged += _onTextChanged;
 		_simulator.SyncStatusBarState();
 	}
-
 	/// <summary>
 	/// Removes all event subscriptions from the current simulator.
 	/// </summary>

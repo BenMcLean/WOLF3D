@@ -97,8 +97,6 @@ public class TickerSequenceStep : ISequenceStep
 		_elapsed = 0.0;
 		_isComplete = false;
 		_doneHandled = false;
-
-		// Display initial value
 		_updateTickerAction?.Invoke(_tickerName, "0");
 	}
 
@@ -106,35 +104,28 @@ public class TickerSequenceStep : ISequenceStep
 	{
 		if (_isComplete)
 			return false;
-
 		if (anyButtonPressed)
 		{
 			Complete();
 			return skipBehavior == SequenceSkipBehavior.SkipAll;
 		}
-
 		_elapsed += delta;
-
 		// Advance one tick per 1/70th second (matching Wolf3D's RollDelay)
 		while (_elapsed >= TickInterval && _currentValue < _targetValue)
 		{
 			_currentValue++;
 			_elapsed -= TickInterval;
-
 			// Update display
 			_updateTickerAction?.Invoke(_tickerName, _currentValue.ToString());
-
 			// Play tick sound at configured intervals (e.g., every 10%)
 			if (_tickerDef?.TickSound is not null &&
 				_tickerDef.TickInterval > 0 &&
 				_currentValue % _tickerDef.TickInterval == 0)
 				_playSoundAction?.Invoke(_tickerDef.TickSound);
 		}
-
 		// Check if counting finished naturally
 		if (_currentValue >= _targetValue && !_doneHandled)
 			HandleDone();
-
 		return false;
 	}
 
