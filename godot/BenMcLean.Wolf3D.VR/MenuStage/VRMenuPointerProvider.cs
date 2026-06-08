@@ -41,13 +41,10 @@ public class VRMenuInput : IMenuInput
 		_thumbstickRight;
 	private const float ThumbstickThreshold = 0.5f,
 		ThumbstickRepeatDelay = 0.3f;
-
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
-
 	/// <inheritdoc/>
 	public PointerState SecondaryPointer => _secondaryPointer;
-
 	/// <summary>
 	/// Creates a new VR menu input.
 	/// </summary>
@@ -57,12 +54,10 @@ public class VRMenuInput : IMenuInput
 		_displayMode = displayMode;
 		_displayMode.HandButtonPressed += OnHandButtonPressed;
 	}
-
 	/// <summary>
 	/// Unsubscribes from display mode events. Call when the owning MenuRoom exits the tree.
 	/// </summary>
 	public void Dispose() => _displayMode.HandButtonPressed -= OnHandButtonPressed;
-
 	private void OnHandButtonPressed(int handIndex, string buttonName)
 	{
 		if (handIndex == 0)
@@ -96,7 +91,6 @@ public class VRMenuInput : IMenuInput
 			else if (buttonName == "grip_click") _cancelPressed1 = true;
 		}
 	}
-
 	/// <summary>
 	/// Sets the menu panel to ray cast against.
 	/// </summary>
@@ -109,22 +103,18 @@ public class VRMenuInput : IMenuInput
 		_panelWidth = width;
 		_panelHeight = height;
 	}
-
 	/// <inheritdoc/>
 	/// <remarks>VR input is event-driven via IDisplayMode; this is a no-op.</remarks>
 	public void HandleInput(InputEvent @event) { }
-
 	/// <inheritdoc/>
 	public void Update(float delta)
 	{
 		_keyboard.Update(delta);
-
 		// Advance thumbstick repeat cooldown
 		if (_thumbstickLeftRightCooldown > 0f)
 			_thumbstickLeftRightCooldown -= delta;
 		if (_thumbstickUpDownCooldown > 0f)
 			_thumbstickUpDownCooldown -= delta;
-
 		// Compute thumbstick directional navigation from either stick's Y axis
 		_thumbstickUp = false;
 		_thumbstickDown = false;
@@ -167,7 +157,6 @@ public class VRMenuInput : IMenuInput
 					_thumbstickUpDownCooldown = ThumbstickRepeatDelay;
 				}
 		}
-
 		// Capture and clear button states (set by event handler)
 		bool select0 = _selectPressed0, cancel0 = _cancelPressed0,
 			select1 = _selectPressed1, cancel1 = _cancelPressed1,
@@ -178,25 +167,21 @@ public class VRMenuInput : IMenuInput
 		_cancelPressed1 = false;
 		_faceSelectPressed0 = false;
 		_faceSelectPressed1 = false;
-
 		// _anySelectPressed: face buttons only — trigger requires a ray hit to select
 		_anySelectPressed = faceSelect0 || faceSelect1;
 		_anyCancelPressed = cancel0 || cancel1;
-
 		if (_menuPanel is null || !_displayMode.IsVRActive)
 		{
 			_primaryPointer = new PointerState { IsActive = false };
 			_secondaryPointer = new PointerState { IsActive = false };
 			return;
 		}
-
 		// Cast ray from hand 0 (right controller)
 		_primaryPointer = CastControllerRay(
 			_displayMode.GetHandPosition(0),
 			_displayMode.GetHandForward(0),
 			select0,
 			cancel0);
-
 		// Cast ray from hand 1 (left controller)
 		_secondaryPointer = CastControllerRay(
 			_displayMode.GetHandPosition(1),
@@ -204,7 +189,6 @@ public class VRMenuInput : IMenuInput
 			select1,
 			cancel1);
 	}
-
 	/// <inheritdoc/>
 	public MenuInputState GetState()
 	{
@@ -228,10 +212,8 @@ public class VRMenuInput : IMenuInput
 			HoveredItemIndex = -1,
 		};
 	}
-
 	/// <inheritdoc/>
 	public void SetMenuItemBounds(Rect2[] itemBounds) => _keyboard.SetMenuItemBounds(itemBounds);
-
 	/// <summary>
 	/// Casts a ray from a controller and checks for intersection with the menu panel.
 	/// </summary>
@@ -246,36 +228,28 @@ public class VRMenuInput : IMenuInput
 		Transform3D panelTransform = _menuPanel.GlobalTransform;
 		Vector3 panelPosition = panelTransform.Origin,
 			panelNormal = panelTransform.Basis.Z; // Panel's front face (+Z) points toward camera
-
 		// Ray-plane intersection
 		// t = dot(panelPosition - origin, normal) / dot(direction, normal)
 		float denominator = direction.Dot(panelNormal);
-
 		// Check if ray is parallel to panel (or pointing away)
 		if (Mathf.Abs(denominator) < 0.0001f)
 			return new PointerState { IsActive = false, CancelPressed = cancelPressed };
-
 		float t = (panelPosition - origin).Dot(panelNormal) / denominator;
-
 		// Check if intersection is behind the controller
 		if (t < 0)
 			return new PointerState { IsActive = false, CancelPressed = cancelPressed };
-
 		// Calculate intersection point in world space
 		Vector3 intersection = origin + direction * t,
 			// Convert to panel-local coordinates
 			// The panel is centered at panelPosition, with X going right and Y going up
 			localPoint = panelTransform.AffineInverse() * intersection;
-
 		// Convert from local 3D coords to 2D panel coords
 		// Panel mesh is centered at origin, so coordinates range from -width/2 to width/2
 		float u = (localPoint.X + _panelWidth / 2f) / _panelWidth,
 			v = (-localPoint.Y + _panelHeight / 2f) / _panelHeight; // Flip Y for screen coords
-
 		// Check if within panel bounds
 		if (u < 0 || u > 1 || v < 0 || v > 1)
 			return new PointerState { IsActive = false, CancelPressed = cancelPressed, };
-
 		// Convert to menu viewport coordinates (0-320 x 0-200)
 		return new PointerState
 		{

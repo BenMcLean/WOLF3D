@@ -11,17 +11,14 @@ public class FlatscreenMenuInput : IMenuInput
 {
 	private readonly KeyboardMenuInput _keyboard = new();
 	private PointerState _primaryPointer;
-	private Vector2 _menuPosition;
-	private Vector2 _menuSize;
-	private bool _selectPressed;
-	private bool _cancelPressed;
-
+	private Vector2 _menuPosition,
+		_menuSize;
+	private bool _selectPressed,
+		_cancelPressed;
 	/// <inheritdoc/>
 	public PointerState PrimaryPointer => _primaryPointer;
-
 	/// <inheritdoc/>
 	public PointerState SecondaryPointer => default; // No secondary pointer in flatscreen mode
-
 	/// <summary>
 	/// Sets the menu display area in screen coordinates.
 	/// Used to convert mouse position to menu viewport coordinates.
@@ -33,7 +30,6 @@ public class FlatscreenMenuInput : IMenuInput
 		_menuPosition = position;
 		_menuSize = size;
 	}
-
 	/// <inheritdoc/>
 	public void HandleInput(InputEvent @event)
 	{
@@ -45,23 +41,19 @@ public class FlatscreenMenuInput : IMenuInput
 				_cancelPressed = true;
 		}
 	}
-
 	/// <inheritdoc/>
 	public void Update(float delta)
 	{
 		_keyboard.Update(delta);
-
 		// Get mouse position in window coordinates
-		Vector2I screenPos = DisplayServer.MouseGetPosition();
-		Vector2I windowPos = DisplayServer.WindowGetPosition();
+		Vector2I screenPos = DisplayServer.MouseGetPosition(),
+			windowPos = DisplayServer.WindowGetPosition();
 		Vector2 mousePos = screenPos - windowPos;
-
 		// Capture and clear button states (they were set by HandleInput)
-		bool selectPressed = _selectPressed;
-		bool cancelPressed = _cancelPressed;
+		bool selectPressed = _selectPressed,
+			cancelPressed = _cancelPressed;
 		_selectPressed = false;
 		_cancelPressed = false;
-
 		// Check if mouse is within the menu display area
 		if (mousePos.X < _menuPosition.X || mousePos.X >= _menuPosition.X + _menuSize.X ||
 			mousePos.Y < _menuPosition.Y || mousePos.Y >= _menuPosition.Y + _menuSize.Y)
@@ -74,26 +66,22 @@ public class FlatscreenMenuInput : IMenuInput
 			};
 			return;
 		}
-
 		// Convert to menu viewport coordinates (0-320 x 0-200)
-		Vector2 relativePos = mousePos - _menuPosition;
-		Vector2 viewportPos = new(
-			relativePos.X / _menuSize.X * 320f,
-			relativePos.Y / _menuSize.Y * 200f
+		Vector2 relativePos = mousePos - _menuPosition,
+			viewportPos = new(
+				relativePos.X / _menuSize.X * 320f,
+				relativePos.Y / _menuSize.Y * 200f
 		);
-
 		_primaryPointer = new PointerState
 		{
 			IsActive = true,
 			Position = viewportPos,
 			SelectPressed = selectPressed,
-			CancelPressed = cancelPressed
+			CancelPressed = cancelPressed,
 		};
 	}
-
 	/// <inheritdoc/>
 	public MenuInputState GetState() => _keyboard.GetState();
-
 	/// <inheritdoc/>
 	public void SetMenuItemBounds(Rect2[] itemBounds) => _keyboard.SetMenuItemBounds(itemBounds);
 }

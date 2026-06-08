@@ -29,7 +29,6 @@ public partial class SimulatorController : Node3D
 	private Weapons weapons;
 	private Projectiles projectiles;
 	private Func<(int X, int Y, short Angle)> getPlayerPosition; // Delegate returns Wolf3D 16.16 fixed-point coordinates and angle (0-359)
-
 	/// <summary>
 	/// When true, _ExitTree will not call simulator.Cleanup().
 	/// Set by Root before suspending to menu so the preserved simulator retains its subscriptions.
@@ -43,7 +42,6 @@ public partial class SimulatorController : Node3D
 	private Action<PlayerDiedEvent> _playerDiedHandler;
 	private Action<PlayGlobalSoundEvent> _playGlobalSoundHandler;
 	private Action<VictoryStartedEvent> _victoryStartedHandler;
-
 	/// <summary>
 	/// Initializes the simulator with door, bonus, and actor data from MapAnalysis.
 	/// Call this after adding the controller to the scene tree.
@@ -85,20 +83,18 @@ public partial class SimulatorController : Node3D
 			GD.PrintErr("WARNING: No StateCollection provided - creating empty collection (actors will not function)");
 			stateCollection = new StateCollection();
 		}
-
 		// Create deterministic RNG and GameClock
 		RNG rng = new(0); // TODO: Use seed from game settings or save file
 		GameClock gameClock = new();
-
 		// Create logger that routes to Godot console
 		ILogger logger = new GodotLogger("Simulator");
 		simulator = new Simulator.Simulator(
-			stateCollection,
-			rng,
-			gameClock,
-			logger,
-			SharedAssetManager.CurrentGame?.AudioT,
-			SharedAssetManager.ActionLuaEngine);
+			stateCollection: stateCollection,
+			rng: rng,
+			gameClock: gameClock,
+			logger: logger,
+			audioT: SharedAssetManager.CurrentGame?.AudioT,
+			luaScriptEngine: SharedAssetManager.ActionLuaEngine);
 		doors = doorsNode ?? throw new ArgumentNullException(nameof(doorsNode));
 		walls = wallsNode ?? throw new ArgumentNullException(nameof(wallsNode));
 		bonuses = bonusesNode ?? throw new ArgumentNullException(nameof(bonusesNode));
@@ -107,7 +103,6 @@ public partial class SimulatorController : Node3D
 		projectiles = projectilesNode ?? throw new ArgumentNullException(nameof(projectilesNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
 		simulator.HeadSize = Constants.HeadXZ.ToFixedPoint();
-
 		// CRITICAL: Subscribe presentation layers to simulator events BEFORE loading data
 		// This ensures they receive spawn events during initialization
 		doors.Subscribe(simulator);
@@ -116,80 +111,62 @@ public partial class SimulatorController : Node3D
 		actors.Subscribe(simulator);
 		weapons.Subscribe(simulator);
 		projectiles.Subscribe(simulator);
-
 		// Forward player state changes to presentation layer for HUD updates
 		_playerStateHandler = e => PlayerStateChanged?.Invoke(e);
 		simulator.PlayerStateChanged += _playerStateHandler;
-
 		// Forward screen flash events to presentation layer
 		_screenFlashHandler = e => ScreenFlash?.Invoke(e);
 		simulator.ScreenFlash += _screenFlashHandler;
-
 		// Forward menu navigation events (VictoryTile, quiz triggers, etc.)
 		_navigateToMenuHandler = e => NavigateToMenu?.Invoke(e);
 		simulator.NavigateToMenu += _navigateToMenuHandler;
-
 		// Forward direct gameplay map transition events (e.g., Spear pickup jump to map 20)
 		_gameplayMapTransitionHandler = e => GameplayMapTransitionRequested?.Invoke(e);
 		simulator.GameplayMapTransitionRequested += _gameplayMapTransitionHandler;
-
 		// Forward player death events
 		_playerDiedHandler = e => PlayerDied?.Invoke(e);
 		simulator.PlayerDied += _playerDiedHandler;
-
 		// Forward global (non-positional) sound events to the audio bus
 		_playGlobalSoundHandler = e => EventBus.Emit(GameEvent.PlaySound, e.SoundName);
 		simulator.PlayGlobalSound += _playGlobalSoundHandler;
-
 		// Forward victory started events for VR teleport and tile confinement
 		_victoryStartedHandler = e => VictoryStarted?.Invoke(e);
 		simulator.VictoryStarted += _victoryStartedHandler;
-
 		// Initialize inventory and weapon slots before loading actors
 		// (difficulty filtering depends on inventory, EquipWeapon depends on slots)
 		if (statusBar is not null)
 			simulator.InitializeInventory(statusBar, difficulty, 2, weaponCollection, savedInventory, savedLevelStats);
-
 		// Load doors into simulator (no spawn events - doors are fixed count)
 		// IMPORTANT: This must be called first to initialize spatial index arrays
 		simulator.LoadDoorsFromMapAnalysis(mapAnalyzer, mapAnalysis, mapAnalysis.Doors);
 		// Load pushwalls into simulator (no spawn events - pushwalls are fixed count)
 		simulator.LoadPushWallsFromMapAnalysis(mapAnalysis.PushWalls);
-
 		// Load bonus scripts from game configuration
 		// Scripts define conditional pickup behavior (e.g., health only if needed)
 		(System.Collections.Generic.Dictionary<string, string> scripts,
 		 System.Collections.Generic.Dictionary<byte, string> bonusNumberToScript) = mapAnalyzer.GetBonusScripts();
 		simulator.LoadBonusScripts(scripts, bonusNumberToScript);
-
 		// Load bonuses into simulator (populates StatObjList only - no events emitted).
 		// Always called regardless of snapshot; if loading, Load() will overwrite StatObjList afterward.
 		simulator.LoadBonusesFromMapAnalysis(mapAnalysis);
-
 		// WL_AGENT.C:Cmd_Use else branch sound (DONOTHINGSND for Wolf3D, NOWAYSND for N3D)
 		simulator.UseWallSound = mapAnalyzer.UseWallSound;
-
 		// VR uses pixel-perfect aiming - disable distance-based miss chance
 		simulator.UseAccuracyFalloff = false;
-
 		// Load actors into simulator - emits ActorSpawnedEvent for each actor
 		// VR layer receives these events and creates actor visuals
 		// HP and initial states are now read from ActorDefinition in XML
 		simulator.LoadActorsFromMapAnalysis(mapAnalysis);
-
 		if (weaponCollection is null || weaponCollection.Weapons.Count == 0)
 			GD.PrintErr("WARNING: No WeaponCollection provided - weapons will not function");
-
 		// When loading a saved game, restore simulator state before emitting.
 		if (snapshotToLoad is not null)
 			simulator.Load(snapshotToLoad);
-
 		// Always emit all entity state after initialization.
 		// EmitAllEntityState() is the sole source of bonus spawn events for the presentation layer -
 		// LoadBonusesFromMapAnalysis() does not emit events.
 		simulator.EmitAllEntityState();
 	}
-
 	/// <summary>
 	/// Initializes the controller with an existing simulator (for resuming a suspended game).
 	/// Does NOT create new RNG/GameClock/Simulator - reuses the existing one.
@@ -213,7 +190,6 @@ public partial class SimulatorController : Node3D
 		weapons = weaponsNode ?? throw new ArgumentNullException(nameof(weaponsNode));
 		projectiles = projectilesNode ?? throw new ArgumentNullException(nameof(projectilesNode));
 		this.getPlayerPosition = getPlayerPosition ?? throw new ArgumentNullException(nameof(getPlayerPosition));
-
 		// Subscribe presentation layers to existing simulator
 		doors.Subscribe(simulator);
 		walls.Subscribe(simulator);
@@ -221,7 +197,6 @@ public partial class SimulatorController : Node3D
 		actors.Subscribe(simulator);
 		weapons.Subscribe(simulator);
 		projectiles.Subscribe(simulator);
-
 		// Subscribe event forwarding handlers
 		_playerStateHandler = e => PlayerStateChanged?.Invoke(e);
 		simulator.PlayerStateChanged += _playerStateHandler;
@@ -237,11 +212,9 @@ public partial class SimulatorController : Node3D
 		simulator.PlayGlobalSound += _playGlobalSoundHandler;
 		_victoryStartedHandler = e => VictoryStarted?.Invoke(e);
 		simulator.VictoryStarted += _victoryStartedHandler;
-
 		// Replay current state to newly subscribed presentation layers
 		simulator.EmitAllEntityState();
 	}
-
 	public override void _ExitTree()
 	{
 		if (simulator is not null)
@@ -264,7 +237,6 @@ public partial class SimulatorController : Node3D
 				simulator.VictoryStarted -= _victoryStartedHandler;
 		}
 	}
-
 	/// <summary>
 	/// Godot process loop - drives the simulator forward in time.
 	/// WL_PLAY.C:PlayLoop equivalent
@@ -273,15 +245,12 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null || getPlayerPosition is null)
 			return;
-
 		// Get player position and angle from delegate (Wolf3D 16.16 fixed-point coordinates, 0-359 angle)
 		(int playerX, int playerY, short playerAngle) = getPlayerPosition();
-
 		// Update simulator with elapsed time, player position, and angle
 		// Events are automatically dispatched to subscribers (Doors, Bonuses, etc.)
 		simulator.Update(delta, playerX, playerY, playerAngle);
 	}
-
 	/// <summary>
 	/// Player attempts to operate (open/close) a door.
 	/// Call this from player input handling (e.g., "use" button pressed near a door).
@@ -292,13 +261,11 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new OperateDoorAction
 		{
-			DoorIndex = doorIndex
+			DoorIndex = doorIndex,
 		});
 	}
-
 	/// <summary>
 	/// Player tried to "use" (push) a plain non-interactive wall.
 	/// Call this from player input handling when the player uses a wall that isn't a door, pushwall, or elevator.
@@ -309,10 +276,8 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new UseNormalWallAction());
 	}
-
 	/// <summary>
 	/// Player attempts to push a pushwall.
 	/// Call this from player input handling (e.g., "use" button pressed near a pushwall).
@@ -325,15 +290,13 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new ActivatePushWallAction
 		{
 			TileX = tileX,
 			TileY = tileY,
-			Direction = direction
+			Direction = direction,
 		});
 	}
-
 	/// <summary>
 	/// Player attempts to activate an elevator switch.
 	/// Call this from player input handling (e.g., "use" button pressed near an elevator).
@@ -346,15 +309,13 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new ActivateElevatorAction
 		{
 			TileX = tileX,
 			TileY = tileY,
-			Direction = direction
+			Direction = direction,
 		});
 	}
-
 	/// <summary>
 	/// Player fires weapon in specified slot.
 	/// Call this from player input handling (e.g., trigger press or X key).
@@ -366,13 +327,11 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new FireWeaponAction
 		{
 			SlotIndex = slotIndex,
 		});
 	}
-
 	/// <summary>
 	/// Player releases weapon trigger in specified slot.
 	/// Call this from player input handling when trigger/button is released.
@@ -384,13 +343,11 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new ReleaseWeaponTriggerAction
 		{
-			SlotIndex = slotIndex
+			SlotIndex = slotIndex,
 		});
 	}
-
 	/// <summary>
 	/// Player switches to a different weapon in specified slot.
 	/// Call this from player input handling (e.g., number keys mapped to XML weapon numbers).
@@ -402,20 +359,17 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return;
-
 		simulator.QueueAction(new EquipWeaponAction
 		{
 			SlotIndex = slotIndex,
-			WeaponType = weaponType
+			WeaponType = weaponType,
 		});
 	}
-
 	/// <summary>
 	/// Gets the current simulation time in tics.
 	/// Useful for debugging or time-based game mechanics.
 	/// </summary>
 	public long CurrentTic => simulator?.CurrentTic ?? 0;
-
 	/// <summary>
 	/// Gets the list of doors in the simulator.
 	/// Read-only access to door states.
@@ -426,7 +380,6 @@ public partial class SimulatorController : Node3D
 	/// Read-only access to pushwall states.
 	/// </summary>
 	public IReadOnlyList<PushWall> PushWalls => simulator?.PushWalls;
-
 	#region Player Movement Validation
 	/// <summary>
 	/// Validates a desired movement and returns the adjusted position.
@@ -442,26 +395,21 @@ public partial class SimulatorController : Node3D
 	{
 		if (simulator is null)
 			return (desiredX, desiredZ);
-
 		// Convert meters to fixed-point
-		int currentFixedX = currentX.ToFixedPoint();
-		int currentFixedY = currentZ.ToFixedPoint();  // Godot Z = Wolf3D Y
-		int desiredFixedX = desiredX.ToFixedPoint();
-		int desiredFixedY = desiredZ.ToFixedPoint();
-
-		// HeadXZ in fixed-point (meters to fixed-point)
-		int headSize = Constants.HeadXZ.ToFixedPoint();
-
+		int currentFixedX = currentX.ToFixedPoint(),
+			currentFixedY = currentZ.ToFixedPoint(), // Godot Z = Wolf3D Y
+			desiredFixedX = desiredX.ToFixedPoint(),
+			desiredFixedY = desiredZ.ToFixedPoint(),
+			// HeadXZ in fixed-point (meters to fixed-point)
+			headSize = Constants.HeadXZ.ToFixedPoint();
 		// Validate through simulator
 		(int validX, int validY) = simulator.ValidatePlayerMove(
 			currentFixedX, currentFixedY,
 			desiredFixedX, desiredFixedY,
 			headSize);
-
 		// Convert back to meters (Wolf3D Y back to Godot Z)
 		return (validX.ToMeters(), validY.ToMeters());
 	}
-
 	/// <summary>
 	/// Sets or clears NoClip mode. When enabled, player can walk through walls.
 	/// Based on original Wolf3D "MLI" debug/cheat command.
@@ -472,13 +420,11 @@ public partial class SimulatorController : Node3D
 		if (simulator is not null)
 			simulator.NoClip = enabled;
 	}
-
 	/// <summary>
 	/// Gets the current NoClip mode state.
 	/// </summary>
 	/// <returns>True if NoClip is enabled</returns>
 	public bool GetNoClip() => simulator?.NoClip ?? false;
-
 	/// <summary>
 	/// Teleports the player to a new position, sweeping all tiles along the straight-line
 	/// path from the previous position to the destination for item pickup.
@@ -489,7 +435,6 @@ public partial class SimulatorController : Node3D
 	/// <param name="playerAngle">Player angle in degrees 0-359 (WL_DEF.H:player->angle)</param>
 	public void TeleportPlayer(int playerX, int playerZ, short playerAngle) =>
 		simulator?.TeleportPlayer(playerX, playerZ, playerAngle);
-
 	/// <summary>
 	/// Checks whether a tile is currently navigable, accounting for dynamic state:
 	/// walls, closed doors, pushwalls, living actors, and the player's position.
@@ -501,7 +446,6 @@ public partial class SimulatorController : Node3D
 	/// <returns>True if the tile can currently be entered by the player</returns>
 	public bool IsTileNavigable(ushort tileX, ushort tileZ) =>
 		simulator?.IsTileNavigable(tileX, tileZ) ?? false;
-
 	/// <summary>
 	/// Checks whether a straight-line path between two tiles is clear for teleportation.
 	/// Blocks on walls, closed doors, pushwalls, living actors, and corners.
@@ -509,45 +453,38 @@ public partial class SimulatorController : Node3D
 	/// </summary>
 	public bool HasClearTeleportPath(ushort fromTileX, ushort fromTileZ, ushort toTileX, ushort toTileZ) =>
 		simulator?.HasClearTeleportPath(fromTileX, fromTileZ, toTileX, toTileZ) ?? false;
-	#endregion
-
+	#endregion Player Movement Validation
 	/// <summary>
 	/// Event fired when player inventory-derived state changes.
 	/// Used as a generic notification in the presentation layer.
 	/// </summary>
 	public event Action<PlayerStateChangedEvent> PlayerStateChanged;
-
 	/// <summary>
 	/// Event fired when a screen flash effect should be displayed.
 	/// WL_PLAY.C: Bonus flash, damage flash, etc.
 	/// </summary>
 	public event Action<ScreenFlashEvent> ScreenFlash;
-
 	/// <summary>
 	/// Event fired when an item script requests navigation to a named menu screen.
 	/// Generic mechanism for VictoryTile, Bible quiz, or any menu-triggering item.
 	/// </summary>
 	public event Action<NavigateToMenuEvent> NavigateToMenu;
-
 	/// <summary>
 	/// Event fired when gameplay should continue directly into another map.
 	/// Used for special campaign flows that skip the intermission/menu pipeline.
 	/// </summary>
 	public event Action<GameplayMapTransitionRequestedEvent> GameplayMapTransitionRequested;
-
 	/// <summary>
 	/// Event fired when the player dies (health reaches zero).
 	/// WL_AGENT.C:TakeDamage death check → WL_GAME.C:Died().
 	/// </summary>
 	public event Action<PlayerDiedEvent> PlayerDied;
-
 	/// <summary>
 	/// Event fired when BJ victory animation starts.
 	/// VR layer uses this to teleport player to viewing tile and enable tile confinement.
 	/// WL_ACT2.C:SpawnBJVictory → VictoryStarted
 	/// </summary>
 	public event Action<VictoryStartedEvent> VictoryStarted;
-
 	/// <summary>
 	/// True while the BJ victory animation is playing.
 	/// WL_AGENT.C:gamestate.victoryflag equivalent.

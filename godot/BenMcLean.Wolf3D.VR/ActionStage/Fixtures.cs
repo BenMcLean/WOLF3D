@@ -19,15 +19,12 @@ public partial class Fixtures : Node3D
 	/// Dictionary of MultiMeshInstance3D nodes, indexed by sprite page number.
 	/// </summary>
 	public Dictionary<ushort, MultiMeshInstance3D> MeshInstances { get; private init; }
-
 	/// <summary>
 	/// Delegate that returns the camera's Y-axis rotation angle for billboard effect.
 	/// </summary>
 	private Func<float> _getCameraYRotation;
-
 	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
 	private readonly Dictionary<ushort, List<int>> _instancesByPage = [];
-
 	/// <summary>
 	/// Creates fixture sprite geometry from map data.
 	/// </summary>
@@ -35,21 +32,21 @@ public partial class Fixtures : Node3D
 	/// <param name="mapAnalysis">Map analysis containing static spawn data</param>
 	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
 	/// <param name="spritePageOffset">VSwap.SpritePage offset (first sprite page number) - no longer used with Dictionary</param>
-	public Fixtures(IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials, IEnumerable<MapAnalysis.StaticSpawn> staticSpawns, Func<float> getCameraYRotation, ushort spritePageOffset)
+	public Fixtures(
+		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
+		IEnumerable<MapAnalysis.StaticSpawn> staticSpawns,
+		Func<float> getCameraYRotation)
 	{
 		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
-
 		// Filter for only dressing and block objects (exclude bonus/pickup items)
 		List<MapAnalysis.StaticSpawn> fixtureSpawns = [.. staticSpawns.Where(s =>
 			(s.StatType == StatType.dressing || s.StatType == StatType.block)
 			&& s.Shape >= 0)];  // Skip invisible triggers (Shape == -2)
-
-		// Group fixtures by sprite page number
+								// Group fixtures by sprite page number
 		Dictionary<ushort, MapAnalysis.StaticSpawn[]> fixturesByPage = fixtureSpawns
 			.GroupBy(s => (ushort)s.Shape)
 			.ToDictionary(g => g.Key, g => g.ToArray());
-
 		// Create MultiMesh for each unique sprite page
 		MeshInstances = fixturesByPage.Keys.ToDictionary(
 			page => page,
@@ -61,7 +58,6 @@ public partial class Fixtures : Node3D
 		foreach (MultiMeshInstance3D meshInstance in MeshInstances.Values)
 			AddChild(meshInstance);
 	}
-
 	/// <summary>
 	/// Creates a MultiMeshInstance3D for all fixtures using a specific sprite page.
 	/// </summary>
@@ -126,7 +122,6 @@ public partial class Fixtures : Node3D
 				y: Constants.TileHeight,
 				z: (maxZ - minZ + 1) * Constants.TileWidth));
 	}
-
 	/// <summary>
 	/// Updates all billboard rotations to face the camera.
 	/// Call this every frame from _Process().
@@ -134,15 +129,12 @@ public partial class Fixtures : Node3D
 	public override void _Process(double delta)
 	{
 		float billboardRotation = _getCameraYRotation();
-
 		foreach (KeyValuePair<ushort, MultiMeshInstance3D> kvp in MeshInstances)
 		{
 			ushort pageNumber = kvp.Key;
 			MultiMeshInstance3D meshInstance = kvp.Value;
-
 			if (!_instancesByPage.TryGetValue(pageNumber, out List<int> instances))
 				continue;
-
 			// Update rotation for each instance (position stays the same)
 			for (int i = 0; i < instances.Count; i++)
 			{
@@ -155,13 +147,11 @@ public partial class Fixtures : Node3D
 			}
 		}
 	}
-
 	/// <summary>
 	/// Sets the delegate for retrieving camera Y rotation.
 	/// Useful if camera changes during gameplay.
 	/// </summary>
-	public void SetCameraRotationDelegate(Func<float> getCameraYRotation)
-	{
-		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
-	}
+	public void SetCameraRotationDelegate(Func<float> getCameraYRotation) =>
+		_getCameraYRotation = getCameraYRotation
+			?? throw new ArgumentNullException(nameof(getCameraYRotation));
 }

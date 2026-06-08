@@ -26,9 +26,7 @@ namespace BenMcLean.Wolf3D.VR;
 public partial class SetupRoom : Node3D, IRoom
 {
 	public bool SkipFade => true;
-
 	private enum Phase { NotStarted, ShowingMessage, Loading, Done }
-
 	private readonly IDisplayMode _displayMode;
 	private readonly string _xmlPath;
 	private DosScreen _dosScreen;
@@ -37,23 +35,19 @@ public partial class SetupRoom : Node3D, IRoom
 	private Vector2I _lastWindowSize;
 	private Phase _phase = Phase.NotStarted;
 	private bool _hasExternalError;
-
 	/// <summary>
 	/// True when this is the first load (WL1 shareware). After completion Root shows the
 	/// game selection menu. False for subsequent loads; after completion Root starts the game.
 	/// </summary>
 	public bool IsInitialLoad { get; }
-
 	/// <summary>
 	/// Polled by Root._Process(). True once the asset load completed successfully.
 	/// </summary>
 	public bool IsComplete => _phase == Phase.Done;
-
 	/// <summary>
 	/// DosScreen render texture for direct spectator-window capture.
 	/// </summary>
 	public Texture2D SpectatorTexture => _dosScreen?.GetSubViewport()?.GetTexture();
-
 	/// <param name="displayMode">Display mode initialized by Root (VR or flatscreen).</param>
 	/// <param name="xmlPath">Path to the game XML definition file to load.</param>
 	/// <param name="isInitialLoad">
@@ -68,25 +62,20 @@ public partial class SetupRoom : Node3D, IRoom
 		// Always process so the loading sequence runs even during fade transitions
 		ProcessMode = ProcessModeEnum.Always;
 	}
-
 	public override void _Ready()
 	{
 		_displayMode.Initialize(this);
 		_displayMode.LocomotionEnabled = false;
-
 		_dosScreen = new DosScreen();
 		AddChild(_dosScreen);
-
 		if (_displayMode.IsVRActive)
 			SetupVRDosScreen();
 		else
 			SetupFlatscreenDosScreen();
-
 		_dosScreen.WriteLine("Wolfenstein 3-D VR Engine");
 		_dosScreen.WriteLine("=========================");
 		_dosScreen.WriteLine("");
 	}
-
 	/// <summary>
 	/// Displays an unhandled exception on the DosScreen and halts the loading sequence.
 	/// Called by Root when an exception occurs outside the normal loading catch block.
@@ -112,7 +101,6 @@ public partial class SetupRoom : Node3D, IRoom
 		foreach (string line in WordWrap(text, width: 80).Take(25))
 			_dosScreen.WriteLine(line);
 	}
-
 	/// <summary>
 	/// Splits <paramref name="text"/> on newlines, word-wraps each line at
 	/// <paramref name="width"/> columns, and yields the resulting display lines.
@@ -142,7 +130,6 @@ public partial class SetupRoom : Node3D, IRoom
 			yield return remaining;
 		}
 	}
-
 	/// <summary>
 	/// Attaches the DosScreen as a quad to the camera so it is always visible (head-locked).
 	/// Size matches an 8-foot-wide screen at 3 metres distance.
@@ -151,7 +138,6 @@ public partial class SetupRoom : Node3D, IRoom
 	{
 		if (_displayMode.Camera is null)
 			return;
-
 		AddChild(new WorldEnvironment()
 		{
 			Environment = new Godot.Environment
@@ -160,10 +146,9 @@ public partial class SetupRoom : Node3D, IRoom
 				BackgroundColor = Colors.Black,
 				AmbientLightSource = Godot.Environment.AmbientSource.Color,
 				AmbientLightColor = Colors.White,
-				AmbientLightEnergy = 1.0f,
+				AmbientLightEnergy = 1f,
 			}
 		});
-
 		_displayMode.Camera.AddChild(new MeshInstance3D()
 		{
 			Mesh = new QuadMesh() { Size = new Vector2(2.4384f, 1.8288f) }, // 8 ft × 6 ft in metres
@@ -179,7 +164,6 @@ public partial class SetupRoom : Node3D, IRoom
 			Position = Vector3.Forward * 2.5f,
 		});
 	}
-
 	/// <summary>
 	/// Displays the DosScreen as a 2D overlay scaled to the largest 4:3 area in the window,
 	/// with a black letterbox/pillarbox background.
@@ -188,13 +172,11 @@ public partial class SetupRoom : Node3D, IRoom
 	{
 		CanvasLayer canvasLayer = new() { Layer = 1 };
 		AddChild(canvasLayer);
-
 		_flatscreenBackground = new ColorRect
 		{
 			Color = Colors.Black,
 		};
 		canvasLayer.AddChild(_flatscreenBackground);
-
 		_flatscreenDosTextureRect = new TextureRect()
 		{
 			Texture = _dosScreen.GetSubViewport().GetTexture(),
@@ -203,23 +185,18 @@ public partial class SetupRoom : Node3D, IRoom
 			TextureFilter = Control.TextureFilterEnum.Nearest,
 		};
 		canvasLayer.AddChild(_flatscreenDosTextureRect);
-
 		_lastWindowSize = Vector2I.Zero;
 		UpdateFlatscreenDosLayout();
 	}
-
 	public override void _Process(double delta)
 	{
 		if (!_displayMode.IsVRActive)
 			UpdateFlatscreenDosLayout();
-
 		// If an external error was shown, stop — don't start or continue loading
 		if (_hasExternalError)
 			return;
-
 		// DisplayMode.Update is called from Root._Process (ProcessMode.Always).
 		// Calling it here too would apply turning and position validation twice per frame.
-
 		switch (_phase)
 		{
 			case Phase.NotStarted:
@@ -227,7 +204,6 @@ public partial class SetupRoom : Node3D, IRoom
 				_dosScreen.WriteLine($"Loading: {System.IO.Path.GetFileNameWithoutExtension(_xmlPath)}...");
 				_phase = Phase.ShowingMessage;
 				break;
-
 			case Phase.ShowingMessage:
 				_phase = Phase.Loading;
 				try
@@ -244,14 +220,11 @@ public partial class SetupRoom : Node3D, IRoom
 							"The Android All Files Access settings page has been opened.\n" +
 							"Grant 'All Files Access' to this app, then relaunch.");
 					}
-
 					// For non-initial loads, release the current game's VR 3D materials
 					// before SharedAssetManager.LoadGame() disposes the atlas textures
 					if (!IsInitialLoad)
 						VRAssetManager.Cleanup();
-
 					SharedAssetManager.LoadGame(_xmlPath, preferEmbeddedShareware: IsInitialLoad);
-
 					_dosScreen.WriteLine("Done.");
 					_phase = Phase.Done;
 					// Root polls IsComplete and performs the scene transition
@@ -268,24 +241,19 @@ public partial class SetupRoom : Node3D, IRoom
 				break;
 		}
 	}
-
 	private void UpdateFlatscreenDosLayout()
 	{
 		if (_flatscreenBackground is null || _flatscreenDosTextureRect is null)
 			return;
-
 		Vector2I windowSize = DisplayServer.WindowGetSize();
 		if (windowSize == _lastWindowSize || windowSize.X <= 0 || windowSize.Y <= 0)
 			return;
-
 		_lastWindowSize = windowSize;
 		_flatscreenBackground.Size = windowSize;
-
 		(Vector2 dosSize, Vector2 dosPosition) = CalculateAspectFit(windowSize, 720f / 400f);
 		_flatscreenDosTextureRect.Size = dosSize;
 		_flatscreenDosTextureRect.Position = dosPosition;
 	}
-
 	private static (Vector2 Size, Vector2 Position) CalculateAspectFit(Vector2I windowSize, float aspectRatio)
 	{
 		float windowAspect = (float)windowSize.X / windowSize.Y;
@@ -294,7 +262,6 @@ public partial class SetupRoom : Node3D, IRoom
 			Vector2 size = new(windowSize.Y * aspectRatio, windowSize.Y);
 			return (size, new Vector2((windowSize.X - size.X) / 2f, 0f));
 		}
-
 		Vector2 letterboxedSize = new(windowSize.X, windowSize.X / aspectRatio);
 		return (letterboxedSize, new Vector2(0f, (windowSize.Y - letterboxedSize.Y) / 2f));
 	}

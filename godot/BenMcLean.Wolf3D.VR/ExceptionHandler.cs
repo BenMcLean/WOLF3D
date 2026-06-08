@@ -14,7 +14,6 @@ public static class ExceptionHandler
 	/// Root registers this callback during initialization.
 	/// </summary>
 	public static Action<Exception> DisplayCallback { get; set; }
-
 	/// <summary>
 	/// Central exception handling method.
 	/// Logs the exception first (always works), then attempts to display it via callback.
@@ -24,7 +23,6 @@ public static class ExceptionHandler
 	{
 		// Always log first - most reliable, never fails
 		GD.PrintErr($"ERROR: Unhandled exception: {ex}");
-
 		// Attempt to display via callback (best-effort)
 		try
 		{

@@ -187,12 +187,12 @@ void fragment() {
 	private static StandardMaterial3D CreateOpaqueMaterial(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
-		byte[] originalData = _vswap.Pages[pageNumber];
-		// Upscale the texture data
-		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
-		int scaledSize = _vswap.TileSqrt * ScaleFactor;
-		// Debug: Check data validity
-		int expectedSize = scaledSize * scaledSize * 4; // RGBA = 4 bytes per pixel
+		byte[] originalData = _vswap.Pages[pageNumber],
+			// Upscale the texture data
+			scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
+		int scaledSize = _vswap.TileSqrt * ScaleFactor,
+			// Debug: Check data validity
+			expectedSize = scaledSize * scaledSize * 4; // RGBA = 4 bytes per pixel
 		if (scaledData.Length != expectedSize)
 		{
 			GD.PrintErr($"ERROR: Page {pageNumber} has wrong data size: {scaledData.Length} bytes, expected {expectedSize}");
@@ -204,8 +204,7 @@ void fragment() {
 			height: scaledSize,
 			useMipmaps: false, // Don't create mipmaps during construction
 			format: Image.Format.Rgba8,
-			data: scaledData
-		);
+			data: scaledData);
 		// Check if image was created successfully
 		if (image is null)
 		{
@@ -243,9 +242,9 @@ void fragment() {
 	private static ShaderMaterial CreateFlippedMaterial(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
-		byte[] originalData = _vswap.Pages[pageNumber];
-		// Upscale the texture data
-		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
+		byte[] originalData = _vswap.Pages[pageNumber],
+			// Upscale the texture data
+			scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
 		int scaledSize = _vswap.TileSqrt * ScaleFactor;
 		// Create Godot Image
 		Image image = Image.CreateFromData(
@@ -278,9 +277,9 @@ void fragment() {
 	private static ImageTexture CreateSpriteTexture(ushort pageNumber)
 	{
 		// Get the original texture data from VSwap (will throw if page doesn't exist)
-		byte[] originalData = _vswap.Pages[pageNumber];
-		// Upscale the texture data
-		byte[] scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
+		byte[] originalData = _vswap.Pages[pageNumber],
+			// Upscale the texture data
+			scaledData = originalData.Upscale(ScaleFactor, ScaleFactor, _vswap.TileSqrt);
 		int scaledSize = _vswap.TileSqrt * ScaleFactor;
 		// Create Godot Image with mipmaps disabled initially
 		Image image = Image.CreateFromData(

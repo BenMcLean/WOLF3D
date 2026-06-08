@@ -22,7 +22,6 @@ internal static class AndroidPermissions
 		using GodotObject environment = (GodotObject)jcw.Call("wrap", "android.os.Environment");
 		return (bool)environment.Call("isExternalStorageManager");
 	}
-
 	/// <summary>
 	/// Launches the Android All Files Access settings page for this app.
 	/// MANAGE_EXTERNAL_STORAGE cannot be granted via a normal permission dialog — the user

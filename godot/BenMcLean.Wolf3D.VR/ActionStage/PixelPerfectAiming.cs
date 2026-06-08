@@ -60,7 +60,7 @@ public class PixelPerfectAiming
 		Fixture,   // Opaque pixel on fixture sprite
 		Bonus,     // Opaque pixel on bonus sprite
 		Floor,     // Floor plane
-		Ceiling    // Ceiling plane
+		Ceiling,    // Ceiling plane
 	}
 	/// <summary>
 	/// Creates the pixel-perfect raycasting system.
@@ -90,7 +90,7 @@ public class PixelPerfectAiming
 			doorHit = RaycastDoors(rayOrigin, rayDirection),
 			pushWallHit = RaycastPushWalls(rayOrigin, rayDirection),
 			floorCeilingHit = RaycastFloorCeiling(rayOrigin, rayDirection),
-		// Find closest solid hit
+			// Find closest solid hit
 			closestHit = new() { IsHit = false, Distance = float.MaxValue };
 		if (wallHit.IsHit && wallHit.Distance < closestHit.Distance)
 			closestHit = wallHit;
@@ -106,7 +106,6 @@ public class PixelPerfectAiming
 		RayHit billboardHit = RaycastBillboards(rayOrigin, rayDirection, cameraForward, maxBillboardDistance);
 		if (billboardHit.IsHit && billboardHit.Distance < closestHit.Distance)
 			closestHit = billboardHit;
-
 		return new AimHitResult
 		{
 			IsHit = closestHit.IsHit,
@@ -179,8 +178,8 @@ public class PixelPerfectAiming
 			sideDistZ = (mapZ + 1f - currentZ) * deltaDistZ;
 		}
 		// Perform DDA
-		bool hit = false;
-		bool hitVertical = false; // true if we hit a vertical wall (X-aligned)
+		bool hit = false,
+			hitVertical = false; // true if we hit a vertical wall (X-aligned)
 		int maxSteps = 100, // Prevent infinite loops
 			steps = 0;
 		while (!hit && steps < maxSteps)
@@ -243,7 +242,7 @@ public class PixelPerfectAiming
 			t = (hitZ - rayOrigin.Z) / rayDirection.Z;
 		else
 			return new RayHit { IsHit = false }; // Shouldn't happen
-		// Calculate Y using the ray parameter
+												 // Calculate Y using the ray parameter
 		float hitY = rayOrigin.Y + rayDirection.Y * t;
 		// Check if hit is within wall vertical bounds
 		if (hitY < 0 || hitY > Constants.TileHeight)
@@ -260,7 +259,7 @@ public class PixelPerfectAiming
 			Distance = distance,
 			Type = HitType.Wall,
 			Normal = wallNormal,
-			ActorIndex = -1
+			ActorIndex = -1,
 		};
 	}
 	/// <summary>
@@ -317,7 +316,7 @@ public class PixelPerfectAiming
 				// The blocking portion is what's still in the original doorway
 				float doorMinZ = doorWorldZ - Constants.HalfTileWidth + openFraction * Constants.TileWidth,
 					doorMaxZ = doorWorldZ + Constants.HalfTileWidth; // Right edge stays constant
-				// Check if ray hits the portion of the door still in the doorway
+																	 // Check if ray hits the portion of the door still in the doorway
 				if (hitPosition.Z < doorMinZ || hitPosition.Z > doorMaxZ)
 					continue; // Ray passes through the open part of the doorway
 			}
@@ -335,7 +334,7 @@ public class PixelPerfectAiming
 				// Door slides by offset = openFraction * tileWidth in +X direction
 				float doorMinX = doorWorldX - Constants.HalfTileWidth + openFraction * Constants.TileWidth,
 					doorMaxX = doorWorldX + Constants.HalfTileWidth; // Right edge stays constant
-				// Check if ray hits the portion of the door still in the doorway
+																	 // Check if ray hits the portion of the door still in the doorway
 				if (hitPosition.X < doorMinX || hitPosition.X > doorMaxX)
 					continue; // Ray passes through the open part of the doorway
 			}
@@ -354,7 +353,7 @@ public class PixelPerfectAiming
 					Distance = distance,
 					Type = HitType.Door,
 					Normal = doorNormal,
-					ActorIndex = -1
+					ActorIndex = -1,
 				};
 		}
 		return closestHit;
@@ -414,7 +413,13 @@ public class PixelPerfectAiming
 	/// <param name="faceZ">Z coordinate of face center</param>
 	/// <param name="isVerticalInX">True if face is perpendicular to X axis, false if perpendicular to Z</param>
 	/// <param name="height">Height of the face</param>
-	private RayHit RaycastPushWallFace(Vector3 rayOrigin, Vector3 rayDirection, float faceX, float faceZ, bool isVerticalInX, float height)
+	private RayHit RaycastPushWallFace(
+		Vector3 rayOrigin,
+		Vector3 rayDirection,
+		float faceX,
+		float faceZ,
+		bool isVerticalInX,
+		float height)
 	{
 		Vector3 hitPosition;
 		float t;
@@ -458,7 +463,7 @@ public class PixelPerfectAiming
 			Distance = distance,
 			Type = HitType.PushWall,
 			Normal = pushWallNormal,
-			ActorIndex = -1
+			ActorIndex = -1,
 		};
 	}
 	/// <summary>
@@ -528,18 +533,17 @@ public class PixelPerfectAiming
 					Transform3D instanceTransform = multiMesh.Multimesh.GetInstanceTransform(i);
 					Vector3 billboardPosition = instanceTransform.Origin;
 					// Get material for this multimesh to extract sprite page
-					StandardMaterial3D material = multiMesh.MaterialOverride as StandardMaterial3D;
-					if (material is null)
+					if (multiMesh.MaterialOverride is not StandardMaterial3D material)
 						continue;
 					RayHit hit = CheckBillboardAtPosition(
-						billboardPosition,
-						material,
-						rayOrigin,
-						rayDirection,
-						billboardNormal,
-						currentClosest.Distance,
-						hitType,
-						-1); // MultiMesh instances (fixtures/bonuses) don't have individual indices
+						billboardPosition: billboardPosition,
+						material: material,
+						rayOrigin: rayOrigin,
+						rayDirection: rayDirection,
+						billboardNormal: billboardNormal,
+						maxDistance: currentClosest.Distance,
+						hitType: hitType,
+						actorIndex: -1); // MultiMesh instances (fixtures/bonuses) don't have individual indices
 					if (hit.IsHit && hit.Distance < currentClosest.Distance)
 						currentClosest = hit;
 				}
@@ -550,13 +554,18 @@ public class PixelPerfectAiming
 	/// <summary>
 	/// Checks a single billboard (MeshInstance3D) for ray intersection with pixel-perfect detection.
 	/// </summary>
-	private RayHit CheckBillboard(MeshInstance3D billboard, Vector3 rayOrigin, Vector3 rayDirection, Vector3 billboardNormal, float maxDistance, HitType hitType, int actorIndex)
-	{
-		Vector3 billboardPosition = billboard.GlobalPosition;
-		if (billboard.MaterialOverride is not StandardMaterial3D material)
-			return new RayHit { IsHit = false };
-		return CheckBillboardAtPosition(billboardPosition, material, rayOrigin, rayDirection, billboardNormal, maxDistance, hitType, actorIndex);
-	}
+	private RayHit CheckBillboard(MeshInstance3D billboard, Vector3 rayOrigin, Vector3 rayDirection, Vector3 billboardNormal, float maxDistance, HitType hitType, int actorIndex) =>
+		billboard.MaterialOverride is StandardMaterial3D material
+			? CheckBillboardAtPosition(
+				billboardPosition: billboard.GlobalPosition,
+				material: material,
+				rayOrigin: rayOrigin,
+				rayDirection: rayDirection,
+				billboardNormal: billboardNormal,
+				maxDistance: maxDistance,
+				hitType: hitType,
+				actorIndex: actorIndex)
+			: new RayHit { IsHit = false };
 	/// <summary>
 	/// Checks billboard at a specific position with pixel-perfect transparency detection.
 	/// </summary>
@@ -580,10 +589,10 @@ public class PixelPerfectAiming
 			return new RayHit { IsHit = false }; // Behind ray or too far
 		Vector3 hitPosition = rayOrigin + rayDirection * t;
 		float distance = t; // rayDirection is normalized, so t equals the distance
-		// Convert hit position to billboard local coordinates
-		// Billboard is aligned with camera, so we need to find the offset from center
+							// Convert hit position to billboard local coordinates
+							// Billboard is aligned with camera, so we need to find the offset from center
 		Vector3 offset = hitPosition - billboardPosition,
-		// Calculate right vector (perpendicular to normal, in XZ plane)
+			// Calculate right vector (perpendicular to normal, in XZ plane)
 			billboardRight = new Vector3(-billboardNormal.Z, 0, billboardNormal.X).Normalized(),
 			billboardUp = Vector3.Up;
 		// Project offset onto billboard coordinate system
@@ -596,10 +605,10 @@ public class PixelPerfectAiming
 		// Billboard UVs go from 0 to 1, with (0,0) at bottom-left
 		float u = (localX + Constants.HalfTileWidth) / Constants.TileWidth,
 			v = 1f - (localY + Constants.HalfTileHeight) / Constants.TileHeight; // Flip V
-		// Get page number for this material
+																				 // Get page number for this material
 		if (!_materialToPage.TryGetValue(material, out ushort pageNumber))
 			return new RayHit { IsHit = false }; // Material not found, treat as miss
-		// Convert UV to pixel coordinates in original sprite space (before upscaling)
+												 // Convert UV to pixel coordinates in original sprite space (before upscaling)
 		VSwap vSwap = SharedAssetManager.CurrentGame.VSwap;
 		ushort pageSqrt = vSwap.GetPageSqrt(pageNumber);
 		int pixelX = Mathf.Clamp((int)(u * pageSqrt), 0, pageSqrt - 1),
@@ -623,7 +632,7 @@ public class PixelPerfectAiming
 			Distance = distance,
 			Type = hitType,
 			Normal = -billboardNormal, // Billboard face points toward player
-			ActorIndex = actorIndex
+			ActorIndex = actorIndex,
 		};
 	}
 	/// <summary>
@@ -650,7 +659,7 @@ public class PixelPerfectAiming
 					Distance = tFloor,
 					Type = HitType.Floor,
 					Normal = Vector3.Up,
-					ActorIndex = -1
+					ActorIndex = -1,
 				};
 		}
 		// Check ceiling (Y = TileHeight, normal points down)
@@ -666,7 +675,7 @@ public class PixelPerfectAiming
 					Distance = tCeiling,
 					Type = HitType.Ceiling,
 					Normal = Vector3.Down,
-					ActorIndex = -1
+					ActorIndex = -1,
 				};
 		}
 		return closestHit;

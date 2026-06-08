@@ -38,10 +38,8 @@ public partial class Root : Node3D
 		BlackAfterSwap,
 		FadingIn,
 	}
-
 	[Export]
 	public int CurrentLevelIndex { get; set; } = 0;
-
 	/// <summary>
 	/// Captures the state needed to resume a suspended game.
 	/// The Simulator is a pure C# object (no Godot dependencies) and survives ActionStage destruction.
@@ -49,9 +47,8 @@ public partial class Root : Node3D
 	/// </summary>
 	private record SuspendedGameState(
 		Simulator.Simulator Simulator);
-
-	private Node _currentScene;
-	private Node _pendingScene;
+	private Node _currentScene,
+		_pendingScene;
 	private Action _pendingMidFadeAction;
 	private bool _errorMode = false;
 	private ScreenFadeOverlay _fadeOverlay;
@@ -61,36 +58,30 @@ public partial class Root : Node3D
 	private SuspendedGameState _suspendedGame;
 	private StatusBarController _statusBarController;
 	private StatusBarRenderer _statusBarRenderer;
-
 	/// <summary>
 	/// The active display mode (VR or flatscreen).
 	/// Initialized first before any other systems.
 	/// </summary>
 	public IDisplayMode DisplayMode { get; private set; }
-	private bool _debugMarkersEnabled = false;
-	private bool _cheatModeEnabled = false;
-	private bool _useVoxelWeapons = true;
-
+	private bool _debugMarkersEnabled = false,
+		_cheatModeEnabled = false,
+		_useVoxelWeapons = true;
 	public override void _Ready()
 	{
 		// Root must keep processing during pause so fade overlay animates
 		ProcessMode = ProcessModeEnum.Always;
-
 		// Register error display callback
 		ExceptionHandler.DisplayCallback = ShowErrorScreen;
-
 		try
 		{
 			// Initialize display mode FIRST (VR or flatscreen)
 			// This must happen before anything else that needs the camera
 			DisplayMode = DisplayModeFactory.Create();
-
 			// Create fade overlay for scene transitions
 			_fadeOverlay = new ScreenFadeOverlay();
 			AddChild(_fadeOverlay);
 			_fadeOverlay.FadeOutComplete += OnFadeOutComplete;
 			_fadeOverlay.FadeInComplete += OnFadeInComplete;
-
 			// Optional spectator compositor for VR capture footage.
 			// It is opt-in because it adds an extra 3D render pass.
 			if (DisplayMode.IsVRActive && RuntimeOptions.SpectatorViewEnabled)
@@ -98,10 +89,8 @@ public partial class Root : Node3D
 				_spectatorView = new SpectatorView();
 				AddChild(_spectatorView);
 			}
-
 			// Add SoundBlaster to scene tree (manages both AdLib and PC Speaker audio)
 			AddChild(new Shared.Audio.SoundBlaster());
-
 			// Boot to SetupRoom which loads the shareware assets and shows the
 			// DosScreen progress log. After completion, _Process() transitions to
 			// the game selection MenuRoom.
@@ -113,7 +102,6 @@ public partial class Root : Node3D
 			ExceptionHandler.HandleException(ex);
 		}
 	}
-
 	public override void _Process(double delta)
 	{
 		// Always update display mode so VR head tracking and camera continue during fades.
@@ -130,7 +118,6 @@ public partial class Root : Node3D
 				ExceptionHandler.HandleException(ex);
 			}
 		}
-
 		// BlackBeforeSwap: one fully-black frame has been rendered with the old room behind the
 		// overlay. Now execute the scene swap while still fully black, then wait one more frame.
 		if (_transitionState == TransitionState.BlackBeforeSwap)
@@ -166,24 +153,20 @@ public partial class Root : Node3D
 			}
 			return;
 		}
-
 		// BlackAfterSwap: screen is fully black and the new room is rendered behind the overlay.
 		// Poll PrepareForFadeIn() each frame until the room signals it is ready (e.g. VR
 		// tracking has reported a non-zero position). Once ready, start the fade-in.
 		if (_transitionState == TransitionState.BlackAfterSwap)
 		{
-			bool ready = (_currentScene as IRoom)?.PrepareForFadeIn() ?? true;
-			if (!ready)
+			if (!((_currentScene as IRoom)?.PrepareForFadeIn() ?? true))
 				return; // hold black, try again next frame
 			_transitionState = TransitionState.FadingIn;
 			_fadeOverlay.FadeFromBlack();
 			return;
 		}
-
 		// Don't poll for new transitions while one is in progress
 		if (_transitionState != TransitionState.Idle)
 			return;
-
 		// Poll SetupRoom: transitions after assets finish loading
 		if (_currentScene is SetupRoom setupRoom && setupRoom.IsComplete)
 		{
@@ -226,21 +209,18 @@ public partial class Root : Node3D
 			}
 			return;
 		}
-
 		// Poll MenuRoom for game start, resume, or intermission completion
 		if (_currentScene is MenuRoom menuRoom)
 		{
 			_debugMarkersEnabled = menuRoom.DebugMarkersEnabled;
 			_cheatModeEnabled = menuRoom.CheatModeEnabled;
 			_useVoxelWeapons = menuRoom.UseVoxelWeapons;
-
 			// Game selected from the procedural game selection menu
 			if (menuRoom.SelectedGameXmlPath is not null)
 			{
 				TransitionTo(new SetupRoom(DisplayMode, menuRoom.SelectedGameXmlPath, isInitialLoad: false));
 				return;
 			}
-
 			if (menuRoom.PendingEndGame)
 			{
 				// User confirmed "End Game" — discard suspended game and re-run OnStartup
@@ -248,13 +228,9 @@ public partial class Root : Node3D
 				RunOnStartup();
 			}
 			else if (menuRoom.PendingLoadGame is int loadSlot)
-			{
 				LoadSavedGame(loadSlot);
-			}
 			else if (menuRoom.PendingResumeGame && _suspendedGame is not null)
-			{
 				ResumeGame();
-			}
 			else if (menuRoom.PendingLevelTransition is ActionRoom.LevelTransitionRequest intermissionRequest)
 			{
 				// Intermission dismissed — continue to next level
@@ -277,8 +253,8 @@ public partial class Root : Node3D
 				// Get selected episode and difficulty from menu
 				int selectedEpisode = menuRoom.SelectedEpisode;
 				ushort episode = (ushort)selectedEpisode;
-				int difficulty = menuRoom.SelectedDifficulty;
-				int levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
+				int difficulty = menuRoom.SelectedDifficulty,
+					levelIndex = SharedAssetManager.CurrentGame.MapAnalyzer.MapNumber(episode, 1);
 				ActionRoom actionStage = new(DisplayMode, levelIndex: levelIndex, difficulty: difficulty, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, useVoxelWeapons: _useVoxelWeapons, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
 				TransitionTo(actionStage);
 			}
@@ -306,8 +282,8 @@ public partial class Root : Node3D
 					{
 						// WL_GAME.C:Died() with lives remaining — restart same level
 						InventorySnapshot savedInventory = sim.Inventory.Save();
-						int currentLevel = sim.Inventory.GetValue("MapOn");
-						int difficulty = sim.Inventory.GetValue("Difficulty");
+						int currentLevel = sim.Inventory.GetValue("MapOn"),
+							difficulty = sim.Inventory.GetValue("Difficulty");
 						ActionRoom newStage = new(DisplayMode,
 							levelIndex: currentLevel,
 							difficulty: difficulty,
@@ -422,7 +398,6 @@ public partial class Root : Node3D
 		_statusBarController ??= new StatusBarController(statusBarDef);
 		return _statusBarController;
 	}
-
 	/// <summary>
 	/// Reads the WeaponSprite attribute from the current game's Menus XML element.
 	/// Returns null when no game is loaded or the attribute is absent.
@@ -430,7 +405,6 @@ public partial class Root : Node3D
 	private static string CurrentGameMenuWeaponSprite() =>
 		Shared.SharedAssetManager.CurrentGame?.XML
 			.Element("VgaGraph")?.Element("Menus")?.Attribute("WeaponSprite")?.Value;
-
 	/// <summary>
 	/// Returns the current StatusBarRenderer, creating it if needed.
 	/// Creates a fresh renderer each time a new game XML is loaded (controller is reset in InitializeVRAssets).
@@ -447,7 +421,6 @@ public partial class Root : Node3D
 		_statusBarRenderer ??= new StatusBarRenderer(controller.State);
 		return _statusBarRenderer;
 	}
-
 	/// <summary>
 	/// Initializes VR rendering assets from the currently loaded game.
 	/// Reads the Scale attribute from the VSwap XML element, defaulting to a value
@@ -462,7 +435,6 @@ public partial class Root : Node3D
 		_statusBarRenderer = null;
 		_statusBarController?.Unsubscribe();
 		_statusBarController = null;
-
 		VSwap vswap = Shared.SharedAssetManager.CurrentGame.VSwap;
 		byte scaleFactor = byte.TryParse(
 			Shared.SharedAssetManager.CurrentGame.XML
@@ -472,7 +444,6 @@ public partial class Root : Node3D
 			: (byte)Math.Max(1, 512 / vswap.TileSqrt);
 		VRAssetManager.Initialize(scaleFactor: scaleFactor);
 	}
-
 	/// <summary>
 	/// Reads and executes the mandatory &lt;OnStartup&gt; Lua element from the current game's XML.
 	/// Throws if the element is missing or the script fails (hard-crash policy).
@@ -523,7 +494,6 @@ public partial class Root : Node3D
 		actionStage.SimulatorController.PreserveSimulator = true;
 		_suspendedGame = new SuspendedGameState(
 			actionStage.SimulatorController.Simulator);
-
 		MenuRoom menuRoom = new(DisplayMode)
 		{
 			HasSuspendedGame = true,
@@ -550,17 +520,14 @@ public partial class Root : Node3D
 				RemoveChild(_currentScene);
 				_currentScene.QueueFree();
 			}
-
 			_currentScene = menuRoom;
 			_pendingScene = null;
 			AddChild(menuRoom);
 			OnSceneAdded();
-
 			// Wire up fade handler after MenuRoom._Ready has run
 			menuRoom.SetFadeTransitionHandler(StartMenuFade);
 		});
 	}
-
 	/// <summary>
 	/// Resumes a suspended game from the menu.
 	/// Creates a new ActionStage that reuses the existing Simulator.
@@ -569,7 +536,6 @@ public partial class Root : Node3D
 	{
 		if (_suspendedGame is null)
 			return;
-
 		SuspendedGameState state = _suspendedGame;
 		ActionRoom actionStage = new(
 			DisplayMode,
@@ -579,11 +545,9 @@ public partial class Root : Node3D
 			useVoxelWeapons: _useVoxelWeapons,
 			statusBarController: _statusBarController,
 			statusBarRenderer: _statusBarRenderer);
-
 		_suspendedGame = null;
 		TransitionTo(actionStage);
 	}
-
 	/// <summary>
 	/// Loads a saved game from a slot and transitions to an ActionStage.
 	/// Creates a fresh simulator, loads the level, then applies the saved state.
@@ -597,16 +561,13 @@ public partial class Root : Node3D
 			GD.PrintErr($"ERROR: Failed to load save game from slot {slot}");
 			return;
 		}
-
 		// Discard any suspended game
 		_suspendedGame = null;
-
 		// Create new ActionStage with the saved snapshot
 		// Level index is read from the snapshot's MapOn inventory value
 		ActionRoom actionStage = new(DisplayMode, saveFile.Snapshot, debugMarkersEnabled: _debugMarkersEnabled, cheatModeEnabled: _cheatModeEnabled, useVoxelWeapons: _useVoxelWeapons, statusBarController: GetOrCreateStatusBarController(), statusBarRenderer: GetOrCreateStatusBarRenderer());
 		TransitionTo(actionStage);
 	}
-
 	private MenuRoom CreateMenuRoom(string startMenuOverride)
 	{
 		return new MenuRoom(DisplayMode)
@@ -619,12 +580,10 @@ public partial class Root : Node3D
 			InitialUseVoxelWeapons = _useVoxelWeapons,
 		};
 	}
-
 	private VRMode CurrentVRMode() =>
 		DisplayMode is VRDisplayMode vrDisplayMode && vrDisplayMode.PlayMode == VRPlayMode.FiveDOF
 			? VRMode.FiveDOF
 			: VRMode.Roomscale;
-
 	/// <summary>
 	/// Transitions to a new scene with fade-to-black and fade-from-black.
 	/// Skips fade-out when the current scene has IRoom.SkipFade (already black background).
@@ -634,12 +593,9 @@ public partial class Root : Node3D
 	{
 		if (_errorMode || _transitionState != TransitionState.Idle)
 			return;
-
-		bool skipFadeOut = (_currentScene as IRoom)?.SkipFade ?? false;
-		bool skipFadeIn = (newScene as IRoom)?.SkipFade ?? false;
-
+		bool skipFadeOut = (_currentScene as IRoom)?.SkipFade ?? false,
+			skipFadeIn = (newScene as IRoom)?.SkipFade ?? false;
 		_pendingScene = newScene;
-
 		if (skipFadeOut)
 		{
 			// Current scene already has a black background — swap immediately then fade in.
@@ -653,7 +609,6 @@ public partial class Root : Node3D
 			AddChild(_currentScene);
 			OnSceneAdded();
 			(_currentScene as IRoom)?.SetFadeTransitionHandler(StartMenuFade);
-
 			// Ensure the overlay is opaque while we wait for the room to become ready,
 			// then let BlackAfterSwap poll PrepareForFadeIn() before starting the fade-in.
 			_fadeOverlay.SetBlack();
@@ -679,7 +634,6 @@ public partial class Root : Node3D
 			}, skipFadeIn: skipFadeIn);
 		}
 	}
-
 	/// <summary>
 	/// Updates the fade overlay's VR camera reference after a scene is added.
 	/// Every room calls _displayMode.Initialize() in _Ready() (triggered by AddChild),
@@ -690,7 +644,6 @@ public partial class Root : Node3D
 		_fadeOverlay.SetVRCamera(DisplayMode.IsVRActive ? DisplayMode.Camera : null);
 		UpdateSpectatorView();
 	}
-
 	/// <summary>
 	/// Transitions to a new scene immediately without fading.
 	/// Used for the initial boot scene.
@@ -699,41 +652,28 @@ public partial class Root : Node3D
 	{
 		if (_errorMode)
 			return;
-
 		if (_currentScene is not null)
 		{
 			RemoveChild(_currentScene);
 			_currentScene.QueueFree();
 		}
-
 		_currentScene = newScene;
 		AddChild(_currentScene);
 		OnSceneAdded();
 	}
-
 	private void UpdateSpectatorView()
 	{
 		if (_spectatorView is null)
 			return;
-
 		if (_currentScene is ActionRoom && DisplayMode.IsVRActive)
-		{
 			_spectatorView.AttachTo(DisplayMode.Origin, DisplayMode.Camera);
-		}
 		else if (_currentScene is SetupRoom setupRoom && DisplayMode.IsVRActive)
-		{
 			_spectatorView.AttachTexture(setupRoom.SpectatorTexture);
-		}
 		else if (_currentScene is MenuRoom menuRoom && DisplayMode.IsVRActive)
-		{
 			_spectatorView.AttachTexture(menuRoom.SpectatorTexture);
-		}
 		else
-		{
 			_spectatorView.Detach();
-		}
 	}
-
 	/// <summary>
 	/// Starts a fade-out, executes the action at mid-fade, then fades back in.
 	/// Pass skipFadeIn=true when the incoming scene has a black background (IRoom.SkipFade).
@@ -751,7 +691,6 @@ public partial class Root : Node3D
 		DisplayMode.LocomotionEnabled = false;
 		_fadeOverlay.FadeToBlack();
 	}
-
 	/// <summary>
 	/// Callback for menu screen navigations (Main → Episodes, etc.).
 	/// Wraps the menu navigation in a fade transition.
@@ -764,10 +703,8 @@ public partial class Root : Node3D
 			menuNavigation();
 			return;
 		}
-
 		StartFade(menuNavigation);
 	}
-
 	/// <summary>
 	/// Called when fade-to-black completes (alpha = 1).
 	/// Transitions to BlackBeforeSwap so _Process guarantees at least one fully-black
@@ -775,11 +712,8 @@ public partial class Root : Node3D
 	/// starting the fade-in. This prevents the VR compositor from displaying partial
 	/// frames during the heavy scene-swap work.
 	/// </summary>
-	private void OnFadeOutComplete()
-	{
+	private void OnFadeOutComplete() =>
 		_transitionState = TransitionState.BlackBeforeSwap;
-	}
-
 	/// <summary>
 	/// Called when fade-from-black completes. Returns to idle and unpauses.
 	/// </summary>
@@ -789,7 +723,6 @@ public partial class Root : Node3D
 		Simulator.Simulator.Paused = false;
 		GetTree().Paused = false;
 	}
-
 	/// <summary>
 	/// Displays an exception to the user via DOS screen.
 	/// Called by ExceptionHandler when an unhandled exception occurs.
@@ -800,13 +733,11 @@ public partial class Root : Node3D
 	private void ShowErrorScreen(Exception ex)
 	{
 		_errorMode = true;
-
 		if (_currentScene is SetupRoom setupRoom)
 		{
 			setupRoom.ShowError(ex);
 			return;
 		}
-
 		// Not in a SetupRoom (e.g. error during ActionRoom/MenuRoom) — discard the current
 		// scene and create a fresh SetupRoom solely for error display.
 		if (_currentScene is not null)
@@ -815,7 +746,6 @@ public partial class Root : Node3D
 			_currentScene.QueueFree();
 			_currentScene = null;
 		}
-
 		try
 		{
 			SetupRoom errorRoom = new(DisplayMode, xmlPath: string.Empty, isInitialLoad: false);

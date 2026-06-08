@@ -150,14 +150,14 @@ public static class ExtensionMethods
 		// Godot Y rotation: 0=North, π/2=West, π=South, 3π/2=East
 		// Wolf3D angle: 0=East, 90=North, 180=West, 270=South
 		// Mapping: wolf3dAngle = 90 - godotDegrees
-		float degrees = Mathf.RadToDeg(godotYRotation);
-		float wolf3d = 90f - degrees;
+		float degrees = Mathf.RadToDeg(godotYRotation),
+			wolf3d = 90f - degrees;
 		// Normalize to [0, 360)
 		wolf3d = ((wolf3d % 360f) + 360f) % 360f;
 		return (short)Mathf.RoundToInt(wolf3d) switch
 		{
-			360 => (short)0,
-			var a => (short)a,
+			360 => 0,
+			short a => a,
 		};
 	}
 	/// <summary>

@@ -43,12 +43,12 @@ public partial class Actors : Node3D
 	/// </summary>
 	private struct ActorRenderData
 	{
-		public Vector3 Position;                 // World position (Godot coordinates)
-		public Direction? Facing;       // Actor's facing direction (for rotated sprites, 8-way)
-		public ushort BaseShape;                 // Base sprite page
-		public bool IsRotated;                   // True = 8-directional, False = single sprite
-		public bool IsSleeping;                  // True while Noah-style snooze overlay should animate
-		public byte SnoozeCounter;               // Original Noah uses a wrapping 2.6 fixed-point snore counter
+		public Vector3 Position;   // World position (Godot coordinates)
+		public Direction? Facing;  // Actor's facing direction (for rotated sprites, 8-way)
+		public ushort BaseShape;   // Base sprite page
+		public bool IsRotated,     // True = 8-directional, False = single sprite
+			IsSleeping;            // True while Noah-style snooze overlay should animate
+		public byte SnoozeCounter; // Original Noah uses a wrapping 2.6 fixed-point snore counter
 	}
 	/// <summary>
 	/// Creates actor sprite rendering system.
@@ -108,7 +108,7 @@ public partial class Actors : Node3D
 			Mesh = Constants.WallMesh,  // Shared quad mesh
 			Name = $"Actor_{actorIndex}",
 			Position = position,
-			Rotation = new Vector3(0, _getCameraYRotation(), 0)  // Initial billboard rotation
+			Rotation = new Vector3(0, _getCameraYRotation(), 0), // Initial billboard rotation
 		};
 		// Set material based on sprite type
 		if (isRotated)
@@ -152,7 +152,7 @@ public partial class Actors : Node3D
 				Name = $"ActorSnooze_{actorIndex}",
 				Position = position,
 				Rotation = new Vector3(0, _getCameraYRotation(), 0),
-				Visible = false
+				Visible = false,
 			};
 			AddChild(snoozeNode);
 			_snoozeNodes[actorIndex] = snoozeNode;
@@ -244,38 +244,32 @@ public partial class Actors : Node3D
 		_actorSpeakers.Remove(actorIndex);  // Remove speaker reference
 		_actorData.Remove(actorIndex);
 	}
-
 	private void UpdateSnoozeNode(int actorIndex, ActorRenderData data, Vector3 viewerPosition)
 	{
 		if (_snoozePages is null || !_snoozeNodes.TryGetValue(actorIndex, out MeshInstance3D snoozeNode))
 			return;
-
 		if (!data.IsSleeping)
 		{
 			snoozeNode.Visible = false;
 			return;
 		}
-
 		int snoozeFrame = data.SnoozeCounter >> 6;
 		if (snoozeFrame < 1 || snoozeFrame > 3)
 		{
 			snoozeNode.Visible = false;
 			return;
 		}
-
 		ushort page = _snoozePages[snoozeFrame - 1];
 		if (!_spriteMaterials.TryGetValue(page, out StandardMaterial3D material))
 		{
 			snoozeNode.Visible = false;
 			return;
 		}
-
 		Vector3 towardsViewer = viewerPosition - data.Position;
 		if (towardsViewer.LengthSquared() > 0f)
 			towardsViewer = towardsViewer.Normalized() * SnoozeOverlayDepthOffset;
 		else
 			towardsViewer = Vector3.Zero;
-
 		snoozeNode.MaterialOverride = material;
 		snoozeNode.Position = data.Position + towardsViewer;
 		snoozeNode.Rotation = new Vector3(0, _getCameraYRotation(), 0);
@@ -294,13 +288,12 @@ public partial class Actors : Node3D
 		// Calculate viewing angle from viewer to actor
 		Vector3 toActor = actorPosition - viewerPosition;
 		float viewAngle = Mathf.Atan2(toActor.Z, toActor.X);  // Angle in radians
-		// Convert to [0, 2π) range
 		if (viewAngle < 0) viewAngle += Mathf.Tau;
 		// Calculate actor's facing angle in Godot coordinates using extension method
 		float actorAngle = actorFacing.Value.ToAngle(),
-		// Relative angle (viewer's perspective looking at actor, not actor looking at viewer)
-		// Add π to flip from "actor to viewer" to "viewer to actor"
-		// Swap order to reverse clockwise/counter-clockwise direction
+			// Relative angle (viewer's perspective looking at actor, not actor looking at viewer)
+			// Add π to flip from "actor to viewer" to "viewer to actor"
+			// Swap order to reverse clockwise/counter-clockwise direction
 			relativeAngle = actorAngle - viewAngle + Mathf.Pi;
 		// Normalize to [0, 2π)
 		while (relativeAngle < 0) relativeAngle += Mathf.Tau;
@@ -331,14 +324,12 @@ public partial class Actors : Node3D
 					ActorRenderData data = _actorData[actorIndex];
 					if (!data.IsSleeping)
 						continue;
-
 					data.SnoozeCounter = unchecked((byte)(data.SnoozeCounter + (3 * deltaTics)));
 					_actorData[actorIndex] = data;
 				}
 				_lastProcessedSimTic = currentSimTic;
 			}
 		}
-
 		foreach (KeyValuePair<int, MeshInstance3D> kvp in _actorNodes)
 		{
 			int actorIndex = kvp.Key;

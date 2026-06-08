@@ -14,14 +14,12 @@ public enum VRPlayMode
 	/// Matches classic Wolfenstein 3D's fixed eye height.
 	/// </summary>
 	FiveDOF,
-
 	/// <summary>
 	/// Camera height tracks the player's real-world head position.
 	/// Allows crouching, standing tall, etc.
 	/// </summary>
 	Roomscale,
 }
-
 /// <summary>
 /// VR display mode implementation using OpenXR.
 /// Creates XROrigin3D with XRCamera3D and controller nodes.
@@ -31,32 +29,26 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 {
 	private XROrigin3D _origin;
 	private XRCamera3D _camera;
-	private XRController3D _leftController;
-	private XRController3D _rightController;
-	private XRController3D _leftGripController;
-	private XRController3D _rightGripController;
+	private XRController3D _leftController,
+		_rightController,
+		_leftGripController,
+		_rightGripController;
 	private Node _parent;
-
 	// Movement validation for collision detection
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
 	private Vector3 _lastValidHmdPosition;
-
-	private bool _snapTurnReady = true;
-	private bool _smoothTurnEnabled = false;
-	private bool _isRunning = false;
-	private bool _teleportModeActive = false;
-
+	private bool _snapTurnReady = true,
+		_smoothTurnEnabled = false,
+		_isRunning = false,
+		_teleportModeActive = false;
 	// Teleportation mode activates when right thumbstick Y exceeds this threshold
 	private const float TeleportThreshold = 0.5f;
-
 	public bool LocomotionEnabled { get; set; } = true;
-
 	/// <summary>
 	/// True when the right thumbstick Y axis is pushed beyond TeleportThreshold.
 	/// Turning is suppressed while teleportation mode is active.
 	/// </summary>
 	public bool IsTeleportModeActive => _teleportModeActive;
-
 	/// <summary>
 	/// Controls how the VR camera height is handled.
 	/// Can be changed at runtime to switch between Roomscale and 5DOF play modes.
@@ -66,47 +58,35 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 		get => playMode;
 		set => playMode = value;
 	}
-
-	public event Action<int, string> HandButtonPressed;
-	public event Action<int, string> HandButtonReleased;
-
+	public event Action<int, string> HandButtonPressed,
+		HandButtonReleased;
 	public bool IsVRActive => true;
-
 	public Vector3 ViewerPosition => _camera?.GlobalPosition ?? Vector3.Zero;
-
 	public float ViewerYRotation => _camera?.GlobalRotation.Y ?? 0f;
-
 	public Vector3 GetHandPosition(int handIndex) => handIndex == 1
 		? _leftController?.GlobalPosition ?? ViewerPosition
 		: _rightController?.GlobalPosition ?? ViewerPosition;
-
-	public Vector3 GetHandForward(int handIndex)
-	{
-		if (handIndex == 1)
-			return _leftController is not null
+	public Vector3 GetHandForward(int handIndex) =>
+		handIndex == 1
+			? _leftController is not null
 				? -_leftController.GlobalBasis.Z
+				: _camera is not null ? -_camera.GlobalBasis.Z : Vector3.Forward
+			: _rightController is not null
+				? -_rightController.GlobalBasis.Z
 				: _camera is not null ? -_camera.GlobalBasis.Z : Vector3.Forward;
-		return _rightController is not null
-			? -_rightController.GlobalBasis.Z
-			: _camera is not null ? -_camera.GlobalBasis.Z : Vector3.Forward;
-	}
-
-	public Node3D GetHandNode(int handIndex) => handIndex == 1 ? _leftController : _rightController;
-
+	public Node3D GetHandNode(int handIndex) =>
+		handIndex == 1
+			? _leftController
+			: _rightController;
 	public Camera3D Camera => _camera;
-
 	public Node3D Origin => _origin;
-
 	public void Initialize(Node parent)
 	{
 		_parent = parent;
-
 		// Build XR rig (origin + camera + controllers) before attaching to the scene.
 		_origin = new XROrigin3D { Name = "XROrigin" };
-
 		_camera = new XRCamera3D { Name = "XRCamera", Current = true };
 		_origin.AddChild(_camera);
-
 		_leftController = new XRController3D
 		{
 			Name = "LeftController",
@@ -114,7 +94,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			Pose = "aim",
 		};
 		_origin.AddChild(_leftController);
-
 		_rightController = new XRController3D
 		{
 			Name = "RightController",
@@ -122,7 +101,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			Pose = "aim",
 		};
 		_origin.AddChild(_rightController);
-
 		// Grip-pose controllers: same tracker, grip pose. Used only for VoxelWeapon attachment.
 		// Button events and thumbstick input remain on the aim controllers.
 		_leftGripController = new XRController3D
@@ -132,7 +110,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			Pose = "grip",
 		};
 		_origin.AddChild(_leftGripController);
-
 		_rightGripController = new XRController3D
 		{
 			Name = "RightGripController",
@@ -140,14 +117,12 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			Pose = "grip",
 		};
 		_origin.AddChild(_rightGripController);
-
 		// Connect to controller button signals for event-driven input
 		// Hand 0 = right controller, hand 1 = left controller
 		_rightController.ButtonPressed += name => HandButtonPressed?.Invoke(0, name);
 		_rightController.ButtonReleased += name => HandButtonReleased?.Invoke(0, name);
 		_leftController.ButtonPressed += name => HandButtonPressed?.Invoke(1, name);
 		_leftController.ButtonReleased += name => HandButtonReleased?.Invoke(1, name);
-
 		// In spectator mode the root viewport must remain UseXR=false so MovieWriter can
 		// capture it (MovieWriter reads the root viewport's render target, which the XR
 		// swapchain bypasses when UseXR=true).  Instead, give XR its own SubViewport with
@@ -156,7 +131,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 		// to the root viewport as before.
 		Viewport rootVp = parent.GetViewport();
 		rootVp.PhysicsObjectPicking = false;
-
 		if (RuntimeOptions.SpectatorViewEnabled)
 		{
 			SubViewport xrViewport = new SubViewport
@@ -176,7 +150,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			parent.AddChild(_origin);
 		}
 	}
-
 	public void Update(double delta)
 	{
 		// Apply joystick locomotion and turning before height and collision corrections
@@ -185,7 +158,6 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			ApplyLocomotion((float)delta);
 			ApplyTurn((float)delta);
 		}
-
 		// VR tracking is handled automatically by OpenXR
 		// In 5DOF mode, lock the camera height to HalfTileHeight by adjusting the origin Y.
 		// Formula: origin.Y = HalfTileHeight - camera.Position.Y (local Y relative to origin)
@@ -195,11 +167,9 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			Vector3 originPos = _origin.Position;
 			_origin.Position = new Vector3(originPos.X, Constants.HalfTileHeight - _camera.Position.Y, originPos.Z);
 		}
-
 		// Validate HMD position against collision and push origin back if needed
 		ValidateVRPosition();
 	}
-
 	/// <summary>
 	/// Moves the XROrigin based on the left thumbstick.
 	/// Forward/back on stick Y, strafe on stick X.
@@ -209,22 +179,18 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		if (_origin is null || _leftController is null || _camera is null)
 			return;
-
 		Vector2 stick = _leftController.GetVector2("primary");
 		if (stick.LengthSquared() < 0.01f)
 			return;
-
 		// Derive horizontal forward/right vectors from the camera's actual world-space basis,
 		// projected onto the XZ plane so head pitch doesn't affect locomotion direction.
 		// Using GlobalBasis directly is more reliable than Euler decomposition for VR poses.
-		Vector3 forward = new Vector3(-_camera.GlobalBasis.Z.X, 0f, -_camera.GlobalBasis.Z.Z).Normalized();
-		Vector3 right = new Vector3(_camera.GlobalBasis.X.X, 0f, _camera.GlobalBasis.X.Z).Normalized();
-
+		Vector3 forward = new Vector3(-_camera.GlobalBasis.Z.X, 0f, -_camera.GlobalBasis.Z.Z).Normalized(),
+			right = new Vector3(_camera.GlobalBasis.X.X, 0f, _camera.GlobalBasis.X.Z).Normalized();
 		float speed = _isRunning ? Constants.VRMovementSpeed * Constants.RunSpeedMultiplier : Constants.VRMovementSpeed;
 		Vector3 movement = (forward * stick.Y + right * stick.X) * speed * delta;
 		_origin.GlobalPosition += movement;
 	}
-
 	/// <summary>
 	/// Dispatches to snap or smooth turning, or enters teleportation mode.
 	/// Teleportation mode requires the thumbstick to be pushed beyond TeleportThreshold
@@ -236,9 +202,7 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		if (_rightController is null)
 			return;
-
 		Vector2 stick = _rightController.GetVector2("primary");
-
 		if (Mathf.Abs(stick.Y) > TeleportThreshold && Mathf.Abs(stick.X) < TeleportThreshold)
 		{
 			// Thumbstick pushed forward or backward with little horizontal deflection —
@@ -246,16 +210,13 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 			_teleportModeActive = true;
 			return;
 		}
-
 		// Thumbstick Y returned to center (or X exceeded threshold) — exit teleport mode
 		_teleportModeActive = false;
-
 		if (_smoothTurnEnabled)
 			ApplySmoothTurn(delta);
 		else
 			ApplySnapTurn();
 	}
-
 	/// <summary>
 	/// Rotates the XROrigin by 45° increments based on the right thumbstick.
 	/// Snap turn is debounced: stick must return to center before the next snap fires.
@@ -265,30 +226,23 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		if (_origin is null || _rightController is null || _camera is null)
 			return;
-
 		float x = _rightController.GetVector2("primary").X;
-
 		if (Mathf.Abs(x) < Constants.SnapTurnThreshold)
 		{
 			_snapTurnReady = true;
 			return;
 		}
-
 		if (!_snapTurnReady)
 			return;
-
 		_snapTurnReady = false;
-
 		// Snap by 45° in the direction of stick deflection
 		float angle = x > 0f ? -Constants.SnapTurnAngle : Constants.SnapTurnAngle;
-
 		// Rotate around the HMD world position so the player's viewpoint doesn't shift
 		Vector3 hmdBefore = _camera.GlobalPosition;
 		_origin.RotateY(angle);
 		Vector3 hmdAfter = _camera.GlobalPosition;
 		_origin.GlobalPosition -= hmdAfter - hmdBefore;
 	}
-
 	/// <summary>
 	/// Continuously rotates the XROrigin based on the right thumbstick at SmoothTurnSpeed.
 	/// The rotation is performed around the HMD world position to avoid positional drift.
@@ -297,30 +251,23 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		if (_origin is null || _rightController is null || _camera is null)
 			return;
-
 		float x = _rightController.GetVector2("primary").X;
-
 		if (Mathf.Abs(x) < Constants.SnapTurnThreshold)
 			return;
-
 		float angle = -x * Constants.SmoothTurnSpeed * delta;
-
 		// Rotate around the HMD world position so the player's viewpoint doesn't shift
 		Vector3 hmdBefore = _camera.GlobalPosition;
 		_origin.RotateY(angle);
 		Vector3 hmdAfter = _camera.GlobalPosition;
 		_origin.GlobalPosition -= hmdAfter - hmdBefore;
 	}
-
 	public void ToggleRunning() => _isRunning = !_isRunning;
-
 	public void ToggleTurnMode()
 	{
 		_smoothTurnEnabled = !_smoothTurnEnabled;
 		// Reset snap turn debounce so the first snap after switching modes fires cleanly
 		_snapTurnReady = true;
 	}
-
 	/// <summary>
 	/// Validates the VR headset position against collision.
 	/// If the player physically moves into a wall, the XROrigin is pushed back to compensate.
@@ -329,26 +276,21 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		if (_validateMovement is null || _camera is null || _origin is null)
 			return;
-
 		// Get current HMD world position
 		Vector3 hmdGlobal = _camera.GlobalPosition;
-
 		// On first frame, initialize last valid position
 		if (_lastValidHmdPosition == Vector3.Zero)
 		{
 			_lastValidHmdPosition = hmdGlobal;
 			return;
 		}
-
 		// Validate the movement from last valid position to current HMD position
 		(float validX, float validZ) = _validateMovement(
 			_lastValidHmdPosition.X, _lastValidHmdPosition.Z,
 			hmdGlobal.X, hmdGlobal.Z);
-
 		// If position was adjusted, push XROrigin to compensate
-		float deltaX = validX - hmdGlobal.X;
-		float deltaZ = validZ - hmdGlobal.Z;
-
+		float deltaX = validX - hmdGlobal.X,
+			deltaZ = validZ - hmdGlobal.Z;
 		if (Mathf.Abs(deltaX) > 0.001f || Mathf.Abs(deltaZ) > 0.001f)
 		{
 			// Push origin by the correction amount
@@ -358,38 +300,29 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 				originPos.Y,
 				originPos.Z + deltaZ);
 		}
-
 		// Update last valid position (the validated position, not the raw HMD)
 		_lastValidHmdPosition = new Vector3(validX, hmdGlobal.Y, validZ);
 	}
-
-	public Vector2 GetMovementInput()
-	{
-		if (_leftController is null)
-			return Vector2.Zero;
-
+	public Vector2 GetMovementInput() =>
+		_leftController is null
+			? Vector2.Zero
 		// Left thumbstick for movement
-		return _leftController.GetVector2("primary");
-	}
-
-	public Vector2 GetTurnInput()
-	{
-		if (_rightController is null)
-			return Vector2.Zero;
-
-		// Right thumbstick for turning
-		return _rightController.GetVector2("primary");
-	}
-
-	public Node3D GetGripHandNode(int handIndex) => handIndex == 1 ? _leftGripController : _rightGripController;
-
+			: _leftController.GetVector2("primary");
+	public Vector2 GetTurnInput() =>
+		_rightController is null
+			? Vector2.Zero
+			// Right thumbstick for turning
+			: _rightController.GetVector2("primary");
+	public Node3D GetGripHandNode(int handIndex) =>
+		handIndex == 1
+			? _leftGripController
+			: _rightGripController;
 	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator)
 	{
 		_validateMovement = validator;
 		// Reset last valid position so it gets initialized on next Update
 		_lastValidHmdPosition = Vector3.Zero;
 	}
-
 	/// <summary>
 	/// Adjusts XROrigin rotation and position so the HMD ends up at spawnWorldPos facing panelWorldPos.
 	/// Used to reset the player's orientation when entering the MenuRoom or pressing the menu button.
@@ -398,23 +331,19 @@ public class VRDisplayMode(VRPlayMode playMode = VRPlayMode.Roomscale) : IDispla
 	{
 		if (_origin is null || _camera is null)
 			return;
-
 		// Desired yaw: camera should face from spawn toward panel (XZ plane only)
 		float desiredYaw = Mathf.Atan2(
 			panelWorldPos.X - spawnWorldPos.X,
 			-(panelWorldPos.Z - spawnWorldPos.Z));
-
 		// Set origin yaw so camera's global yaw = desiredYaw
 		// camera.GlobalRotation.Y ≈ origin.Rotation.Y + camera.Rotation.Y
 		_origin.Rotation = new Vector3(0f, desiredYaw - _camera.Rotation.Y, 0f);
-
 		// Adjust origin XZ so camera global XZ lands on spawnWorldPos XZ
 		Vector3 rotatedOffset = _origin.Basis * _camera.Position;
 		_origin.Position = new Vector3(
 			spawnWorldPos.X - rotatedOffset.X,
 			_origin.Position.Y,
 			spawnWorldPos.Z - rotatedOffset.Z);
-
 		// Reset so ValidateVRPosition re-initializes from the new position
 		_lastValidHmdPosition = Vector3.Zero;
 	}

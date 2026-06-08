@@ -29,7 +29,6 @@ public static class DisplayModeFactory
 		// Check command-line arguments first (highest priority)
 		string[] args = RuntimeOptions.GetAllCommandLineArgs();
 		bool forceFlatscreen = args.Contains("--flatscreen") || args.Contains("--no-vr");
-
 		// Determine VR play mode from args, then env var, then default to roomscale
 		VRPlayMode playMode = VRPlayMode.Roomscale;
 		bool forceVR = false;
@@ -39,9 +38,7 @@ public static class DisplayModeFactory
 			forceVR = true;
 		}
 		else if (args.Contains("--5dof"))
-		{
 			forceVR = true;
-		}
 		else
 		{
 			string envPlayMode = System.Environment.GetEnvironmentVariable("WOLF3D_VR_PLAY_MODE");
@@ -53,22 +50,17 @@ public static class DisplayModeFactory
 					forceVR = true;
 				}
 				else if (envPlayMode.Equals("5dof", StringComparison.OrdinalIgnoreCase))
-				{
 					forceVR = true;
-				}
 			}
 		}
-
 		// Handle forced flatscreen mode
 		if (forceFlatscreen)
 		{
 			GD.Print("Flatscreen mode forced via command-line or environment variable");
 			return new FlatscreenDisplayMode();
 		}
-
 		// Try to find and initialize OpenXR
 		XRInterface xrInterface = XRServer.FindInterface("OpenXR");
-
 		if (xrInterface is not null)
 		{
 			if (xrInterface.Initialize())
@@ -89,7 +81,6 @@ public static class DisplayModeFactory
 				GD.PrintErr("ERROR: VR mode forced but OpenXR interface not found");
 			GD.Print("OpenXR not available, using flatscreen mode");
 		}
-
 		return new FlatscreenDisplayMode();
 	}
 }

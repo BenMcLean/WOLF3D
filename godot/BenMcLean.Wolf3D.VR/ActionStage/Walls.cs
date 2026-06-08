@@ -170,17 +170,12 @@ void fragment() {
 		simulator.PushWallPlaySound -= OnPushWallPlaySound;
 		simulator.ElevatorSwitchFlipped -= OnElevatorSwitchFlipped;
 	}
-	public override void _ExitTree()
-	{
-		Unsubscribe();
-	}
+	public override void _ExitTree() => Unsubscribe();
 	/// <summary>
 	/// Handles pushwall position changes from the simulator.
 	/// </summary>
-	private void OnPushWallPositionChanged(Simulator.PushWallPositionChangedEvent evt)
-	{
+	private void OnPushWallPositionChanged(Simulator.PushWallPositionChangedEvent evt) =>
 		MovePushWall(evt.PushWallIndex, evt.X, evt.Y);
-	}
 	/// <summary>
 	/// Handles pushwall sound playback requests from the simulator.
 	/// </summary>
@@ -191,7 +186,6 @@ void fragment() {
 			GD.PrintErr($"Invalid pushwall index for sound: {evt.PushWallIndex}");
 			return;
 		}
-
 		PushWallData data = pushWalls[evt.PushWallIndex];
 		if (SharedAssetManager.IsDigitizedSoundEnabled &&
 			SharedAssetManager.TryGetDigiSound(evt.SoundName, out AudioStreamWav stream, out _))

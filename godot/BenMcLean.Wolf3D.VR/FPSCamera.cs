@@ -10,86 +10,65 @@ namespace BenMcLean.Wolf3D.VR;
 public partial class FPSCamera : Camera3D
 {
 	// Speed modifiers for Shift/Alt keys
-	private const float SHIFT_MULTIPLIER = 2.5f;
-	private const float ALT_MULTIPLIER = 1.0f / SHIFT_MULTIPLIER;
-
-	// Degrees per second for arrow-key turning
-	private const float KEYBOARD_TURN_SPEED = 90f;
-
+	private const float SHIFT_MULTIPLIER = 2.5f,
+		ALT_MULTIPLIER = 1.0f / SHIFT_MULTIPLIER,
+		// Degrees per second for arrow-key turning
+		KEYBOARD_TURN_SPEED = 90f,
+		ACCELERATION = 30f,
+		DECELERATION = -10f;
 	[Export(PropertyHint.Range, "0.0f,1.0f")]
 	public float Sensitivity { get; set; } = 0.25f;
-
 	/// <summary>
 	/// When false, WASD movement and mouse look are disabled.
 	/// </summary>
 	public bool MovementEnabled { get; set; } = true;
-
 	/// <summary>
 	/// Event fired when left mouse button is pressed (shoot).
 	/// </summary>
 	public event Action LeftClickPressed;
-
 	/// <summary>
 	/// Event fired when left mouse button is released.
 	/// </summary>
 	public event Action LeftClickReleased;
-
 	/// <summary>
 	/// Event fired when right mouse button is pressed (push/use).
 	/// </summary>
 	public event Action RightClickPressed;
-
 	// Mouse state
 	private Vector2 _mouseMotion = Vector2.Zero;
 	private float _totalPitch = 0.0f;
-
 	// Movement state
 	private Vector3 _velocity = Vector3.Zero;
-	private const float ACCELERATION = 30f;
-	private const float DECELERATION = -10f;
 	private float _velMultiplier = 4f;
-
 	// Keyboard state
-	private bool _w = false;
-	private bool _s = false;
-	private bool _a = false;
-	private bool _d = false;
-	private bool _left = false;
-	private bool _right = false;
-	private bool _shift = false;
-	private bool _alt = false;
-
+	private bool _w = false,
+		_s = false,
+		_a = false,
+		_d = false,
+		_left = false,
+		_right = false,
+		_shift = false,
+		_alt = false;
 	// Movement validator callback for collision detection
 	private Func<float, float, float, float, (float X, float Z)> _validateMovement;
-
-	public override void _Ready()
-	{
+	public override void _Ready() =>
 		// Pausable so mouse look and WASD movement stop during fade transitions,
 		// while the Camera3D still renders. VR head tracking (OpenXR runtime) is unaffected.
 		ProcessMode = ProcessModeEnum.Pausable;
-	}
-
 	/// <summary>
 	/// Sets the movement validator callback for collision detection.
 	/// When set, movement will be validated against walls, doors, and enemies.
 	/// </summary>
 	/// <param name="validator">Callback that takes (currentX, currentZ, desiredX, desiredZ) and returns validated (X, Z)</param>
-	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator)
-	{
+	public void SetMovementValidator(Func<float, float, float, float, (float X, float Z)> validator) =>
 		_validateMovement = validator;
-	}
-
 	public override void _Input(InputEvent @event)
 	{
 		// Mouse motion for look
 		if (@event is InputEventMouseMotion mouseMotion)
-		{
 			_mouseMotion = mouseMotion.Relative;
-		}
-
 		// Mouse buttons for shoot/push
 		if (@event is InputEventMouseButton mouseButton)
-		{
 			switch (mouseButton.ButtonIndex)
 			{
 				case MouseButton.Left:
@@ -98,25 +77,19 @@ public partial class FPSCamera : Camera3D
 					else
 						LeftClickReleased?.Invoke();
 					break;
-
 				case MouseButton.Right:
 					if (mouseButton.Pressed)
 						RightClickPressed?.Invoke();
 					break;
-
 				case MouseButton.WheelUp:
 					_velMultiplier = Mathf.Clamp(_velMultiplier * 1.1f, 0.2f, 20f);
 					break;
-
 				case MouseButton.WheelDown:
 					_velMultiplier = Mathf.Clamp(_velMultiplier / 1.1f, 0.2f, 20f);
 					break;
 			}
-		}
-
 		// Keyboard for movement, turning, and actions
 		if (@event is InputEventKey keyEvent)
-		{
 			switch (keyEvent.Keycode)
 			{
 				case Key.W:
@@ -154,16 +127,13 @@ public partial class FPSCamera : Camera3D
 						LeftClickReleased?.Invoke();
 					break;
 			}
-		}
 	}
-
 	public override void _Process(double delta)
 	{
 		UpdateMouseLook();
 		UpdateTurning((float)delta);
 		UpdateMovement((float)delta);
 	}
-
 	/// <summary>
 	/// Updates camera rotation based on left/right arrow keys.
 	/// Shift applies SHIFT_MULTIPLIER to turn speed.
@@ -172,18 +142,14 @@ public partial class FPSCamera : Camera3D
 	{
 		if (!MovementEnabled)
 			return;
-
 		float turn = 0f;
 		if (_left) turn += 1f;
 		if (_right) turn -= 1f;
-
 		if (turn == 0f)
 			return;
-
 		float speedMulti = _shift ? SHIFT_MULTIPLIER : 1f;
 		RotateY(Mathf.DegToRad(turn * KEYBOARD_TURN_SPEED * speedMulti * delta));
 	}
-
 	/// <summary>
 	/// Updates camera rotation based on mouse movement.
 	/// Always active when mouse is captured.
@@ -194,21 +160,15 @@ public partial class FPSCamera : Camera3D
 			return;
 		if (Input.MouseMode != Input.MouseModeEnum.Captured)
 			return;
-
 		Vector2 motion = _mouseMotion * Sensitivity;
 		_mouseMotion = Vector2.Zero;
-
-		float yaw = motion.X;
-		float pitch = motion.Y;
-
-		// Clamp pitch to prevent looking too far up/down
-		pitch = Mathf.Clamp(pitch, -90 - _totalPitch, 90 - _totalPitch);
+		float yaw = motion.X,
+			// Clamp pitch to prevent looking too far up/down
+			pitch = Mathf.Clamp(motion.Y, -90 - _totalPitch, 90 - _totalPitch);
 		_totalPitch += pitch;
-
 		RotateY(Mathf.DegToRad(-yaw));
 		RotateObjectLocal(Vector3.Right, Mathf.DegToRad(-pitch));
 	}
-
 	/// <summary>
 	/// Updates camera movement based on WASD keys.
 	/// Movement is horizontal only (Y position is fixed by parent).
@@ -218,58 +178,45 @@ public partial class FPSCamera : Camera3D
 	{
 		if (!MovementEnabled)
 			return;
-
 		// Compute desired direction from key states (horizontal only)
 		Vector3 direction = Vector3.Zero;
 		if (_d) direction.X += 1.0f;
 		if (_a) direction.X -= 1.0f;
 		if (_s) direction.Z += 1.0f;
 		if (_w) direction.Z -= 1.0f;
-
 		// Compute velocity change with acceleration and drag
 		Vector3 offset = direction.Normalized() * ACCELERATION * _velMultiplier * delta
 					   + _velocity.Normalized() * DECELERATION * _velMultiplier * delta;
-
 		// Speed multipliers
 		float speedMulti = 1.0f;
 		if (_shift) speedMulti *= SHIFT_MULTIPLIER;
 		if (_alt) speedMulti *= ALT_MULTIPLIER;
-
 		// Check if we should stop to prevent jittering
 		if (direction == Vector3.Zero && offset.LengthSquared() > _velocity.LengthSquared())
-		{
 			_velocity = Vector3.Zero;
-		}
 		else
 		{
 			// Clamp velocity components
 			_velocity.X = Mathf.Clamp(_velocity.X + offset.X, -_velMultiplier, _velMultiplier);
 			_velocity.Z = Mathf.Clamp(_velocity.Z + offset.Z, -_velMultiplier, _velMultiplier);
-
 			// Calculate desired movement in local space
 			Vector3 localMovement = new Vector3(_velocity.X, 0, _velocity.Z) * delta * speedMulti;
-
 			if (_validateMovement is not null)
 			{
 				// Convert local movement to global movement
-				Vector3 currentGlobal = GlobalPosition;
-				Vector3 desiredGlobal = currentGlobal + GlobalTransform.Basis * localMovement;
-
+				Vector3 currentGlobal = GlobalPosition,
+					desiredGlobal = currentGlobal + GlobalTransform.Basis * localMovement;
 				// Validate the movement (only X and Z; Y is controlled by parent)
 				(float validX, float validZ) = _validateMovement(
 					currentGlobal.X, currentGlobal.Z,
 					desiredGlobal.X, desiredGlobal.Z);
-
 				// Apply validated global position
 				GlobalPosition = new Vector3(validX, currentGlobal.Y, validZ);
 			}
 			else
-			{
 				// No validator - direct movement (NoClip mode or uninitialized)
 				Translate(localMovement);
-			}
 		}
-
 		// Enforce fixed height - reset Y to 0 (parent handles world Y position)
 		Vector3 pos = Position;
 		pos.Y = 0;

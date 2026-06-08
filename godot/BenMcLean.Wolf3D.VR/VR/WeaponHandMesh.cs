@@ -19,7 +19,6 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 	private readonly IReadOnlyDictionary<ushort, Texture2D> _spriteTextures = spriteTextures ?? throw new ArgumentNullException(nameof(spriteTextures));
 	private ShaderMaterial _material;
 	private Simulator.Simulator _simulator;
-
 	public override void _Ready()
 	{
 		Shader voxelShader = new() { Code = FileAccess.GetFileAsString("res://Resources/WeaponHandMesh.gdshader") };
@@ -51,7 +50,6 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 		AddChild(mesh);
 		Visible = false;  // Hidden until a weapon is equipped in this slot
 	}
-
 	/// <summary>
 	/// Subscribe to simulator weapon events for this hand's slot.
 	/// Call this after the simulator is initialized, then call
@@ -63,14 +61,12 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 		sim.WeaponEquipped += OnWeaponEquipped;
 		sim.WeaponSpriteChanged += OnWeaponSpriteChanged;
 	}
-
 	/// <summary>
 	/// Display a fixed sprite texture without subscribing to a simulator.
 	/// Use this for static contexts like the menu where no simulator is running.
 	/// Must be called after the node has been added to the scene tree (_Ready has run).
 	/// </summary>
 	public void ShowTexture(ushort shape) => UpdateTexture(shape);
-
 	/// <summary>Unsubscribe from simulator weapon events.</summary>
 	public void Unsubscribe()
 	{
@@ -80,21 +76,18 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 			_simulator.WeaponSpriteChanged -= OnWeaponSpriteChanged;
 		}
 	}
-
 	private void OnWeaponEquipped(WeaponEquippedEvent evt)
 	{
 		if (evt.SlotIndex != slotIndex)
 			return;
 		UpdateTexture(evt.Shape);
 	}
-
 	private void OnWeaponSpriteChanged(WeaponSpriteChangedEvent evt)
 	{
 		if (evt.SlotIndex != slotIndex)
 			return;
 		UpdateTexture(evt.Shape);
 	}
-
 	private void UpdateTexture(ushort shape)
 	{
 		if (_material is null)
@@ -107,7 +100,6 @@ public partial class WeaponHandMesh(IReadOnlyDictionary<ushort, Texture2D> sprit
 		else
 			Visible = false;
 	}
-
 	public override void _ExitTree()
 	{
 		Unsubscribe();

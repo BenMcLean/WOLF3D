@@ -11,13 +11,16 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// In flatscreen mode, the weapon is rendered as a HUD overlay.
 /// In VR, controller-attached weapon visuals are handled elsewhere.
 /// </summary>
-public partial class Weapons : Node3D
+/// <remarks>
+/// Creates weapon rendering system.
+/// </remarks>
+/// <param name="spriteTextures">Dictionary of sprite textures from VRAssetManager.SpriteTextures.</param>
+public partial class Weapons(IReadOnlyDictionary<ushort, Texture2D> spriteTextures) : Node3D
 {
-	private static readonly Vector2 HudWeaponBoxSize = new(192f, 120f);
-	private static readonly Vector2 HudWeaponBoxPosition = new(-96f, -240f);
-
+	private static readonly Vector2 HudWeaponBoxSize = new(192f, 120f),
+		HudWeaponBoxPosition = new(-96f, -240f);
 	// Sprite textures used by the flatscreen HUD representation.
-	private readonly IReadOnlyDictionary<ushort, Texture2D> spriteTextures;
+	private readonly IReadOnlyDictionary<ushort, Texture2D> spriteTextures = spriteTextures ?? throw new ArgumentNullException(nameof(spriteTextures));
 	private TextureRect hudWeaponSprite;
 	private Control hudCanvas;
 	private ushort? currentShape;
@@ -25,14 +28,6 @@ public partial class Weapons : Node3D
 	private int currentSlot = 0;
 	// Simulator reference for event subscription
 	private Simulator.Simulator simulator;
-
-	/// <summary>
-	/// Creates weapon rendering system.
-	/// </summary>
-	/// <param name="spriteTextures">Dictionary of sprite textures from VRAssetManager.SpriteTextures.</param>
-	public Weapons(IReadOnlyDictionary<ushort, Texture2D> spriteTextures) =>
-		this.spriteTextures = spriteTextures ?? throw new ArgumentNullException(nameof(spriteTextures));
-
 	/// <summary>
 	/// Attaches the flatscreen weapon display to the HUD canvas.
 	/// Safe to call after weapon events have already started arriving.
@@ -59,11 +54,9 @@ public partial class Weapons : Node3D
 			};
 			hudCanvas.AddChild(hudWeaponSprite);
 		}
-
 		if (currentShape.HasValue)
 			UpdateWeaponSprite(currentShape.Value);
 	}
-
 	/// <summary>
 	/// Subscribe to simulator weapon events.
 	/// Call this after simulator is initialized.
@@ -72,13 +65,11 @@ public partial class Weapons : Node3D
 	public void Subscribe(Simulator.Simulator sim)
 	{
 		simulator = sim ?? throw new ArgumentNullException(nameof(sim));
-
 		// Subscribe to weapon events
 		simulator.WeaponEquipped += OnWeaponEquipped;
 		simulator.WeaponSpriteChanged += OnWeaponSpriteChanged;
 		simulator.WeaponFired += OnWeaponFired;
 	}
-
 	/// <summary>
 	/// Unsubscribe from simulator events.
 	/// </summary>
@@ -91,7 +82,6 @@ public partial class Weapons : Node3D
 			simulator.WeaponFired -= OnWeaponFired;
 		}
 	}
-
 	/// <summary>
 	/// Handle weapon equipped event - show initial weapon sprite.
 	/// </summary>
@@ -103,7 +93,6 @@ public partial class Weapons : Node3D
 		// Update weapon sprite
 		UpdateWeaponSprite(evt.Shape);
 	}
-
 	/// <summary>
 	/// Handle weapon sprite change event - update displayed sprite.
 	/// </summary>
@@ -115,7 +104,6 @@ public partial class Weapons : Node3D
 		// Update weapon sprite
 		UpdateWeaponSprite(evt.Shape);
 	}
-
 	/// <summary>
 	/// Handle weapon fired event - plays weapon sound and could trigger muzzle flash.
 	/// </summary>
@@ -124,10 +112,7 @@ public partial class Weapons : Node3D
 		// Play weapon fire sound for any slot
 		if (!string.IsNullOrEmpty(evt.SoundName))
 			EventBus.Emit(GameEvent.PlaySound, evt.SoundName);
-
-		// TODO: Show muzzle flash
 	}
-
 	/// <summary>
 	/// Update the displayed weapon sprite material.
 	/// Uses MaterialOverride just like actors do.
@@ -138,7 +123,6 @@ public partial class Weapons : Node3D
 		currentShape = shape;
 		if (hudWeaponSprite is null)
 			return;
-
 		if (spriteTextures.TryGetValue(shape, out Texture2D texture))
 		{
 			hudWeaponSprite.Texture = texture;
@@ -147,7 +131,6 @@ public partial class Weapons : Node3D
 		else
 			hudWeaponSprite.Visible = false;
 	}
-
 	public override void _ExitTree()
 	{
 		Unsubscribe();

@@ -12,21 +12,30 @@ namespace BenMcLean.Wolf3D.VR.ActionStage;
 /// Sprites rotate each frame to face opposite of the player's Y-axis orientation (billboard effect).
 /// This node contains all projectile nodes as children — just add it to the scene tree.
 /// </summary>
-public partial class Projectiles : Node3D
+/// <remarks>
+/// Creates projectile sprite rendering system.
+/// Projectiles are spawned dynamically via ProjectileSpawnedEvent — no initial projectiles shown.
+/// </remarks>
+/// <param name="spriteMaterials">Dictionary of sprite materials from VRAssetManager.SpriteMaterials</param>
+/// <param name="getViewerPosition">Delegate that returns viewer position for directional sprites</param>
+/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
+public partial class Projectiles(
+	IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
+	Func<Vector3> getViewerPosition,
+	Func<float> getCameraYRotation) : Node3D
 {
 	// Maps ProjectileId -> MeshInstance3D node
 	private readonly Dictionary<long, MeshInstance3D> _projectileNodes = [];
 	// Maps ProjectileId -> projectile rendering state
 	private readonly Dictionary<long, ProjectileRenderData> _projectileData = [];
 	// Sprite materials from VRAssetManager
-	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials;
+	private readonly IReadOnlyDictionary<ushort, StandardMaterial3D> _spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
 	// Viewer position for directional sprite calculation (normally player, could be MR camera)
-	private readonly Func<Vector3> _getViewerPosition;
+	private readonly Func<Vector3> _getViewerPosition = getViewerPosition ?? throw new ArgumentNullException(nameof(getViewerPosition));
 	// Camera Y rotation delegate for billboard effect
-	private readonly Func<float> _getCameraYRotation;
+	private readonly Func<float> _getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
 	// Simulator reference for event subscription
 	private Simulator.Simulator _simulator;
-
 	/// <summary>
 	/// Projectile rendering state (position, sprite info, Wolf3D travel angle).
 	/// </summary>
@@ -37,24 +46,6 @@ public partial class Projectiles : Node3D
 		public ushort BaseShape;  // Base sprite page
 		public bool IsRotated;    // True = 8-directional sprite group, False = single sprite
 	}
-
-	/// <summary>
-	/// Creates projectile sprite rendering system.
-	/// Projectiles are spawned dynamically via ProjectileSpawnedEvent — no initial projectiles shown.
-	/// </summary>
-	/// <param name="spriteMaterials">Dictionary of sprite materials from VRAssetManager.SpriteMaterials</param>
-	/// <param name="getViewerPosition">Delegate that returns viewer position for directional sprites</param>
-	/// <param name="getCameraYRotation">Delegate that returns camera's Y rotation in radians</param>
-	public Projectiles(
-		IReadOnlyDictionary<ushort, StandardMaterial3D> spriteMaterials,
-		Func<Vector3> getViewerPosition,
-		Func<float> getCameraYRotation)
-	{
-		_spriteMaterials = spriteMaterials ?? throw new ArgumentNullException(nameof(spriteMaterials));
-		_getViewerPosition = getViewerPosition ?? throw new ArgumentNullException(nameof(getViewerPosition));
-		_getCameraYRotation = getCameraYRotation ?? throw new ArgumentNullException(nameof(getCameraYRotation));
-	}
-
 	/// <summary>
 	/// Shows a newly spawned projectile.
 	/// Called from event handler when ProjectileSpawnedEvent fires.
@@ -82,7 +73,7 @@ public partial class Projectiles : Node3D
 			Mesh = Constants.WallMesh,  // Shared quad mesh
 			Name = $"Projectile_{projectileId}",
 			Position = position,
-			Rotation = new Vector3(0, _getCameraYRotation(), 0)  // Initial billboard rotation
+			Rotation = new Vector3(0, _getCameraYRotation(), 0), // Initial billboard rotation
 		};
 		// Set material based on sprite type
 		if (isRotated)
@@ -117,7 +108,6 @@ public partial class Projectiles : Node3D
 			IsRotated = isRotated,
 		};
 	}
-
 	/// <summary>
 	/// Moves a projectile to a new position.
 	/// Called from event handler when ProjectileMovedEvent fires.
@@ -141,7 +131,6 @@ public partial class Projectiles : Node3D
 			_projectileData[projectileId] = data;
 		}
 	}
-
 	/// <summary>
 	/// Changes a projectile's sprite (explosion animation frame, state transition).
 	/// Called from event handler when ProjectileSpriteChangedEvent fires.
@@ -173,7 +162,6 @@ public partial class Projectiles : Node3D
 				node.MaterialOverride = material;
 		}
 	}
-
 	/// <summary>
 	/// Removes a projectile from the scene (wall hit, target hit, or explosion finished).
 	/// Called from event handler when ProjectileDespawnedEvent fires.
@@ -188,7 +176,6 @@ public partial class Projectiles : Node3D
 		}
 		_projectileData.Remove(projectileId);
 	}
-
 	/// <summary>
 	/// Calculates which of 8 directional sprites to show based on viewer angle relative to travel direction.
 	/// Only used for rotated sprites (e.g., rockets that visually rotate as they travel).
@@ -203,19 +190,17 @@ public partial class Projectiles : Node3D
 		if (viewAngle < 0) viewAngle += Mathf.Tau;
 		// Convert Wolf3D travel angle to Godot Y rotation radians
 		// ToGodotYRotation: wolf3dAngle=0(East)→Godot π/2, wolf3dAngle=90(North)→Godot 0, etc.
-		float projectileAngle = wolf3dAngle.ToGodotYRotation();
-		// Relative angle (viewer's perspective looking at projectile)
-		// Add π to flip from "projectile to viewer" to "viewer to projectile"
-		// Swap order to reverse clockwise/counter-clockwise direction (matches actor convention)
-		float relativeAngle = projectileAngle - viewAngle + Mathf.Pi;
+		float projectileAngle = wolf3dAngle.ToGodotYRotation(),
+			// Relative angle (viewer's perspective looking at projectile)
+			// Add π to flip from "projectile to viewer" to "viewer to projectile"
+			// Swap order to reverse clockwise/counter-clockwise direction (matches actor convention)
+			relativeAngle = projectileAngle - viewAngle + Mathf.Pi;
 		// Normalize to [0, 2π)
 		while (relativeAngle < 0) relativeAngle += Mathf.Tau;
 		while (relativeAngle >= Mathf.Tau) relativeAngle -= Mathf.Tau;
 		// Map to 8 directions (0-7); Direction 0 = viewing from front of travel
-		int direction = (int)Mathf.Round(relativeAngle / (Mathf.Tau / 8)) % 8;
-		return (ushort)(baseShape + direction);
+		return (ushort)(baseShape + (int)Mathf.Round(relativeAngle / (Mathf.Tau / 8)) % 8);
 	}
-
 	/// <summary>
 	/// Updates all billboard rotations and directional sprites.
 	/// Called every frame from _Process().
@@ -239,7 +224,6 @@ public partial class Projectiles : Node3D
 			}
 		}
 	}
-
 	/// <summary>
 	/// Subscribes to simulator events to automatically show/hide/update projectiles.
 	/// Call this after both Projectiles and Simulator are initialized.
@@ -254,7 +238,6 @@ public partial class Projectiles : Node3D
 		_simulator.ProjectileSpriteChanged += OnProjectileSpriteChanged;
 		_simulator.ProjectileDespawned += OnProjectileDespawned;
 	}
-
 	/// <summary>
 	/// Unsubscribes from simulator events.
 	/// </summary>
@@ -268,31 +251,26 @@ public partial class Projectiles : Node3D
 		_simulator.ProjectileDespawned -= OnProjectileDespawned;
 		_simulator = null;
 	}
-
 	/// <summary>
 	/// Handles ProjectileSpawnedEvent — shows a newly spawned projectile.
 	/// </summary>
 	private void OnProjectileSpawned(Simulator.ProjectileSpawnedEvent evt) =>
 		ShowProjectile(evt.ProjectileId, evt.Shape, evt.IsRotated, evt.X, evt.Y, evt.Angle);
-
 	/// <summary>
 	/// Handles ProjectileMovedEvent — moves a projectile to its new position.
 	/// </summary>
 	private void OnProjectileMoved(Simulator.ProjectileMovedEvent evt) =>
 		MoveProjectile(evt.ProjectileId, evt.X, evt.Y);
-
 	/// <summary>
 	/// Handles ProjectileSpriteChangedEvent — swaps the projectile's sprite.
 	/// </summary>
 	private void OnProjectileSpriteChanged(Simulator.ProjectileSpriteChangedEvent evt) =>
 		ChangeProjectileSprite(evt.ProjectileId, evt.Shape, evt.IsRotated);
-
 	/// <summary>
 	/// Handles ProjectileDespawnedEvent — removes the projectile from the scene.
 	/// </summary>
 	private void OnProjectileDespawned(Simulator.ProjectileDespawnedEvent evt) =>
 		HideProjectile(evt.ProjectileId);
-
 	/// <summary>
 	/// Cleanup when the node is removed from the scene tree.
 	/// </summary>

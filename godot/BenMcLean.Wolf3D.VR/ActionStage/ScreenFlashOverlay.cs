@@ -17,24 +17,19 @@ public partial class ScreenFlashOverlay : Node
 	// WL_PLAY.C:InitRedShifts - max shift is NUMWHITESHIFTS/WHITESTEPS = 3/20 = 15%
 	// This is the blend factor toward the target color at the strongest flash level
 	private const float FlashStartAlpha = 0.15f;
-
 	// Wolf3D tic rate for converting duration in tics to seconds
 	private const double TicRate = 70.0;
-
 	private CanvasLayer canvasLayer;
 	private ColorRect colorRect;
-
 	// Flash state
-	private float flashAlpha;
-	private float flashDecayRate; // Alpha units per second
+	private float flashAlpha,
+		flashDecayRate; // Alpha units per second
 	private Color flashColor;
-
 	// VR flash: veil quad parented to the XRCamera3D so it is always inside the view frustum.
 	// Vertex shader outputs POSITION in NDC via UV, bypassing projection and near/far clipping.
 	// Parenting to the camera keeps the mesh inside the view frustum.
 	private MeshInstance3D _vrFlashMesh;
 	private ShaderMaterial _vrFlashMaterial;
-
 	public override void _Ready()
 	{
 		// CanvasLayer on a high layer renders on top of everything (3D scene, other UI)
@@ -44,7 +39,6 @@ public partial class ScreenFlashOverlay : Node
 			Layer = 100, // Above all other layers
 		};
 		AddChild(canvasLayer);
-
 		// ColorRect covers entire viewport
 		colorRect = new ColorRect
 		{
@@ -61,7 +55,6 @@ public partial class ScreenFlashOverlay : Node
 		};
 		canvasLayer.AddChild(colorRect);
 	}
-
 	/// <summary>
 	/// Attaches a veil quad to the given VR camera so flash effects appear in the headset.
 	/// The quad is a child of the camera (not of this node) so it always stays inside
@@ -71,10 +64,8 @@ public partial class ScreenFlashOverlay : Node
 	public void SetVRCamera(Camera3D camera)
 	{
 		_vrFlashMesh = null; // Old mesh was freed with old camera
-
 		if (camera is null)
 			return;
-
 		// Create shader material once; it persists across camera changes because
 		// ScreenFlashOverlay holds the reference.
 		_vrFlashMaterial ??= new ShaderMaterial
@@ -102,7 +93,6 @@ void fragment() {
 """,
 			},
 		};
-
 		_vrFlashMesh = new MeshInstance3D
 		{
 			Name = "VRFlashQuad",
@@ -115,64 +105,52 @@ void fragment() {
 			SortingOffset = -2f,
 		};
 		camera.AddChild(_vrFlashMesh);
-
 		// Sync current flash state immediately in case a flash is mid-animation
 		_vrFlashMaterial.SetShaderParameter("color", new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha));
 		_vrFlashMesh.Visible = flashAlpha > 0f;
 	}
-
 	/// <summary>
 	/// Subscribe to screen flash events from the SimulatorController.
 	/// </summary>
 	public void Subscribe(SimulatorController controller)
 	{
-		if (controller is null)
-			throw new ArgumentNullException(nameof(controller));
+		ArgumentNullException.ThrowIfNull(controller);
 		controller.ScreenFlash += OnScreenFlash;
 	}
-
 	private void OnScreenFlash(ScreenFlashEvent e)
 	{
 		// Extract RGB from 24-bit color
-		float r = ((e.Color >> 16) & 0xFF) / 255f;
-		float g = ((e.Color >> 8) & 0xFF) / 255f;
-		float b = (e.Color & 0xFF) / 255f;
-
-		flashColor = new Color(r, g, b);
+		flashColor = new Color(
+			r: ((e.Color >> 16) & 0xFF) / 255f,
+			g: ((e.Color >> 8) & 0xFF) / 255f,
+			b: (e.Color & 0xFF) / 255f);
 		flashAlpha = FlashStartAlpha;
-
 		// Calculate decay rate: alpha should reach 0 over the duration in tics
 		double durationSeconds = e.Duration / TicRate;
-		flashDecayRate = (durationSeconds > 0) ? (float)(FlashStartAlpha / durationSeconds) : FlashStartAlpha;
-
+		flashDecayRate = (durationSeconds > 0)
+			? (float)(FlashStartAlpha / durationSeconds)
+			: FlashStartAlpha;
 		UpdateOverlay();
 	}
-
 	public override void _Process(double delta)
 	{
 		if (flashAlpha <= 0f)
 			return;
-
 		flashAlpha -= flashDecayRate * (float)delta;
 		if (flashAlpha < 0f)
 			flashAlpha = 0f;
-
 		UpdateOverlay();
 	}
-
 	private void UpdateOverlay()
 	{
 		// Flatscreen: CanvasLayer ColorRect (also covers the VR mirror window)
 		if (flashAlpha <= 0f)
-		{
 			colorRect.Visible = false;
-		}
 		else
 		{
 			colorRect.Visible = true;
 			colorRect.Color = new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha);
 		}
-
 		// VR: veil quad parented to XRCamera3D, visible in both headset eyes
 		if (_vrFlashMesh is not null && GodotObject.IsInstanceValid(_vrFlashMesh))
 		{
@@ -180,8 +158,6 @@ void fragment() {
 			_vrFlashMaterial.SetShaderParameter("color", new Color(flashColor.R, flashColor.G, flashColor.B, flashAlpha));
 		}
 		else if (_vrFlashMesh is not null)
-		{
 			_vrFlashMesh = null; // Freed with old camera
-		}
 	}
 }

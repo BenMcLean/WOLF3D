@@ -36,7 +36,6 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 	// Zero when no model is loaded. Used each frame to recompute the quad size for
 	// perspective-correct coverage; see _Process for the derivation.
 	private float _boundingSphereRadiusVoxels = 0f;
-
 	public override void _Ready()
 	{
 		// Must always process so _Process() keeps shader uniforms current even when
@@ -57,14 +56,13 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 			Name = "Mesh",
 			Mesh = _quadMesh,
 			MaterialOverride = _material,
-			Scale = Constants.VoxelWeaponScale
+			Scale = Constants.VoxelWeaponScale,
 		};
 		AddChild(_meshInstance);
 		// Initialise to identity so the uniform is never the zero matrix before _Process runs.
 		_material.SetShaderParameter("inv_model_matrix", Transform3D.Identity);
 		Visible = false;  // Hidden until a weapon is equipped in this slot
 	}
-
 	/// <summary>
 	/// Subscribe to simulator weapon events for this hand's slot.
 	/// Call this after the simulator is initialized, then call
@@ -76,14 +74,12 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		sim.WeaponEquipped += OnWeaponEquipped;
 		sim.WeaponSpriteChanged += OnWeaponSpriteChanged;
 	}
-
 	/// <summary>
 	/// Display a fixed voxel model without subscribing to a simulator.
 	/// Use this for static contexts like the menu where no simulator is running.
 	/// Must be called after the node has been added to the scene tree (_Ready has run).
 	/// </summary>
 	public void ShowModel(ushort shape) => UpdateModel(shape);
-
 	/// <summary>Unsubscribe from simulator weapon events.</summary>
 	public void Unsubscribe()
 	{
@@ -93,21 +89,18 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 			_simulator.WeaponSpriteChanged -= OnWeaponSpriteChanged;
 		}
 	}
-
 	private void OnWeaponEquipped(WeaponEquippedEvent evt)
 	{
 		if (evt.SlotIndex != slotIndex)
 			return;
 		UpdateModel(evt.Shape);
 	}
-
 	private void OnWeaponSpriteChanged(WeaponSpriteChangedEvent evt)
 	{
 		if (evt.SlotIndex != slotIndex)
 			return;
 		UpdateModel(evt.Shape);
 	}
-
 	private void UpdateModel(ushort shape)
 	{
 		if (_material is null || _quadMesh is null || _meshInstance is null)
@@ -149,13 +142,11 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		}
 		Visible = true;
 	}
-
 	private void UpdateInvModelMatrix()
 	{
 		if (_meshInstance is not null)
 			_material.SetShaderParameter("inv_model_matrix", _meshInstance.GlobalTransform.AffineInverse());
 	}
-
 	public override void _Process(double delta)
 	{
 		if (_material is null) return;
@@ -172,7 +163,6 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		}
 		UpdateInvModelMatrix();
 	}
-
 	/// <summary>
 	/// Recomputes the QuadMesh size each frame so the billboard always covers the full
 	/// weapon model under perspective projection from the current camera position.
@@ -194,10 +184,10 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 	{
 		if (_boundingSphereRadiusVoxels <= 0f || _meshInstance is null || _quadMesh is null)
 			return;
-		float s = _meshInstance.Scale.X;           // metres per voxel (WeaponMetersPerVoxel)
-		float R = _boundingSphereRadiusVoxels * s; // bounding-sphere radius in metres
-		float D = _meshInstance.GlobalPosition.DistanceTo(cameraWorldPosition);
-		float halfSizeMeters;
+		float s = _meshInstance.Scale.X,           // metres per voxel (WeaponMetersPerVoxel)
+			R = _boundingSphereRadiusVoxels * s, // bounding-sphere radius in metres
+			D = _meshInstance.GlobalPosition.DistanceTo(cameraWorldPosition),
+			halfSizeMeters;
 		if (D > R)
 			// Perspective-correct half-extent: R·D/√(D²−R²)
 			halfSizeMeters = R * D / Mathf.Sqrt(D * D - R * R);
@@ -210,7 +200,6 @@ public partial class VoxelWeapon(VoxelAtlas voxelAtlas, int slotIndex, Node3D gr
 		float quadSizeVoxels = halfSizeMeters / s * 2f + 1f;
 		_quadMesh.Size = new Vector2(quadSizeVoxels, quadSizeVoxels);
 	}
-
 	public override void _ExitTree()
 	{
 		Unsubscribe();

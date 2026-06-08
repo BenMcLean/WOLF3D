@@ -15,45 +15,37 @@ public partial class ScreenFadeOverlay : Node
 {
 	private CanvasLayer canvasLayer;
 	private ColorRect colorRect;
-
-	private float alpha;
-	private float targetAlpha;
-	private float rate; // Alpha units per second
-
-	// VR fade: veil sphere parented to the XRCamera3D so it is always at the camera origin.
-	// StandardMaterial3D with CullMode.Front renders the sphere's inside faces in both eyes.
-	// NoDepthTest ensures it renders over the entire scene regardless of depth.
-	// CanvasLayer handles flatscreen and the VR mirror window.
+	private float alpha,
+		targetAlpha,
+		rate; // Alpha units per second
+			  // VR fade: veil sphere parented to the XRCamera3D so it is always at the camera origin.
+			  // StandardMaterial3D with CullMode.Front renders the sphere's inside faces in both eyes.
+			  // NoDepthTest ensures it renders over the entire scene regardless of depth.
+			  // CanvasLayer handles flatscreen and the VR mirror window.
 	private Camera3D _vrCamera;
 	private MeshInstance3D _vrFadeMesh;
 	private StandardMaterial3D _vrFadeMaterial;
-
 	/// <summary>
 	/// True while a fade animation is in progress.
 	/// </summary>
 	public bool IsFading => alpha != targetAlpha;
-
 	/// <summary>
 	/// Fired when fade-to-black reaches full black (alpha = 1).
 	/// </summary>
 	public event Action FadeOutComplete;
-
 	/// <summary>
 	/// Fired when fade-from-black reaches transparent (alpha = 0).
 	/// </summary>
 	public event Action FadeInComplete;
-
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
-
 		canvasLayer = new CanvasLayer
 		{
 			Name = "ScreenFadeCanvas",
 			Layer = 101, // Above ScreenFlashOverlay (100)
 		};
 		AddChild(canvasLayer);
-
 		colorRect = new ColorRect
 		{
 			Name = "ScreenFadeRect",
@@ -67,7 +59,6 @@ public partial class ScreenFadeOverlay : Node
 		};
 		canvasLayer.AddChild(colorRect);
 	}
-
 	/// <summary>
 	/// Starts a fade to black over the specified duration.
 	/// </summary>
@@ -77,7 +68,6 @@ public partial class ScreenFadeOverlay : Node
 		rate = (duration > 0f) ? (1f / duration) : 1f;
 		UpdateVisuals();
 	}
-
 	/// <summary>
 	/// Starts a fade from black over the specified duration.
 	/// Assumes screen is already fully black (alpha = 1).
@@ -89,7 +79,6 @@ public partial class ScreenFadeOverlay : Node
 		rate = (duration > 0f) ? (1f / duration) : 1f;
 		UpdateVisuals();
 	}
-
 	/// <summary>
 	/// Instantly clears the overlay to fully transparent without firing FadeInComplete.
 	/// Used when transitioning into a scene that already has a black background (SkipFade),
@@ -101,7 +90,6 @@ public partial class ScreenFadeOverlay : Node
 		targetAlpha = 0f;
 		UpdateVisuals();
 	}
-
 	/// <summary>
 	/// Instantly sets the overlay to fully opaque black without firing FadeOutComplete.
 	/// Used when skipping the fade-out (e.g. incoming scene from a SkipFade room) but still
@@ -113,7 +101,6 @@ public partial class ScreenFadeOverlay : Node
 		targetAlpha = 1f;
 		UpdateVisuals();
 	}
-
 	/// <summary>
 	/// Attaches a veil sphere to the given VR camera so fades appear in the headset.
 	/// The sphere is a child of the camera so it is always centered on the viewer.
@@ -126,10 +113,8 @@ public partial class ScreenFadeOverlay : Node
 	{
 		_vrCamera = camera;
 		_vrFadeMesh = null; // Old mesh was freed with old camera
-
 		if (camera is null)
 			return;
-
 		// Create material once; it persists across camera changes because
 		// ScreenFadeOverlay holds the reference.
 		// CullMode.Front renders back faces = inside of the sphere is visible.
@@ -146,7 +131,6 @@ public partial class ScreenFadeOverlay : Node
 			// Higher RenderPriority = rendered last = in front. Belt-and-suspenders with SortingOffset.
 			RenderPriority = 2,
 		};
-
 		_vrFadeMesh = new MeshInstance3D
 		{
 			Name = "VRFadeSphere",
@@ -164,19 +148,15 @@ public partial class ScreenFadeOverlay : Node
 			SortingOffset = 0f,
 		};
 		camera.AddChild(_vrFadeMesh);
-
 		// Sync current fade state immediately in case a fade is mid-animation
 		_vrFadeMaterial.AlbedoColor = new Color(0f, 0f, 0f, alpha);
 	}
-
 	public override void _Process(double delta)
 	{
 		if (alpha == targetAlpha)
 			return;
-
-		float dt = (float)delta;
-		float step = rate * dt;
-
+		float dt = (float)delta,
+			step = rate * dt;
 		if (targetAlpha > alpha)
 		{
 			alpha += step;
@@ -199,32 +179,23 @@ public partial class ScreenFadeOverlay : Node
 				return;
 			}
 		}
-
 		UpdateVisuals();
 	}
-
 	private void UpdateVisuals()
 	{
 		// Flatscreen: CanvasLayer ColorRect (also covers the VR mirror window)
 		if (alpha <= 0f)
-		{
 			colorRect.Visible = false;
-		}
 		else
 		{
 			colorRect.Visible = true;
 			colorRect.Color = new Color(0f, 0f, 0f, alpha);
 		}
-
 		// VR: veil sphere parented to XRCamera3D, visible in both headset eyes.
 		// Mesh stays Visible=true always; material alpha controls opacity.
 		if (_vrFadeMesh is not null && GodotObject.IsInstanceValid(_vrFadeMesh))
-		{
 			_vrFadeMaterial.AlbedoColor = new Color(0f, 0f, 0f, alpha);
-		}
 		else if (_vrFadeMesh is not null)
-		{
 			_vrFadeMesh = null; // Freed with old camera
-		}
 	}
 }

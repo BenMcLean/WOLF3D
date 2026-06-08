@@ -1,6 +1,5 @@
 using Godot;
 using System;
-using BenMcLean.Wolf3D.Simulator;
 
 namespace BenMcLean.Wolf3D.VR.ActionStage;
 
@@ -32,39 +31,31 @@ public partial class DeathFizzleOverlay : Node
 	// FizzleFade duration: 70 frames at 70 tics/sec = 1 second
 	// WL_GAME.C:FizzleFade(bufferofs, displayofs+screenofs, viewwidth, viewheight, 70, false)
 	private const double FizzleDuration = 1.0;
-
 	// Fizzle texture resolution matches original Wolf3D viewport size
 	// ID_VH.C:FizzleFade width=320, height=200
-	private const int FizzleWidth = 320;
-	private const int FizzleHeight = 200;
-
+	private const int FizzleWidth = 320,
+		FizzleHeight = 200;
 	// Shared fizzle order texture generated once per application lifetime
 	private static ImageTexture _sharedFizzleTexture;
-
 	private ShaderMaterial _flatscreenMaterial;
 	private CanvasLayer _canvasLayer;
 	private ColorRect _colorRect;
-
 	// VR fizzle: veil quad parented to the XRCamera3D, always visible.
 	// Transparency controlled by the progress shader parameter (0.0 = fully transparent).
 	// Never toggle Visible — see class summary for the OpenXR compositor latency explanation.
 	private MeshInstance3D _vrFizzleMesh;
 	private ShaderMaterial _vrFizzleMaterial;
-
 	private bool _active;
 	private double _progress; // 0.0 = fully transparent, 1.0 = fully covered
 	private Color _fizzleColor;
-
 	/// <summary>
 	/// Fired when the fizzle animation completes (screen fully covered with color).
 	/// ActionRoom listens to this to set PendingDeathFadeOut.
 	/// </summary>
 	public event Action FizzleComplete;
-
 	public override void _Ready()
 	{
 		ImageTexture tex = GetOrCreateFizzleTexture();
-
 		_flatscreenMaterial = new ShaderMaterial
 		{
 			Shader = new Shader
@@ -90,14 +81,12 @@ void fragment() {
 		_flatscreenMaterial.SetShaderParameter("fizzle_texture", tex);
 		_flatscreenMaterial.SetShaderParameter("fizzle_color", new Color(1f, 0f, 0f, 1f));
 		_flatscreenMaterial.SetShaderParameter("progress", 0f);
-
 		_canvasLayer = new CanvasLayer
 		{
 			Name = "DeathFizzleCanvas",
 			Layer = 100,
 		};
 		AddChild(_canvasLayer);
-
 		// Flatscreen: hidden when inactive (toggling is safe for 2D; saves a draw call).
 		_colorRect = new ColorRect
 		{
@@ -112,7 +101,6 @@ void fragment() {
 		};
 		_canvasLayer.AddChild(_colorRect);
 	}
-
 	/// <summary>
 	/// Attaches a veil quad to the given VR camera so the fizzle effect appears in the headset.
 	///
@@ -135,10 +123,8 @@ void fragment() {
 	public void SetVRCamera(Camera3D camera)
 	{
 		_vrFizzleMesh = null; // Old mesh was freed with old camera
-
 		if (camera is null)
 			return;
-
 		_vrFizzleMaterial ??= new ShaderMaterial
 		{
 			// RenderPriority 1: renders in front of ScreenFlashOverlay (0) but behind ScreenFadeOverlay (2).
@@ -182,12 +168,10 @@ void fragment() {
 """,
 			},
 		};
-
 		_vrFizzleMaterial.SetShaderParameter("fizzle_texture", GetOrCreateFizzleTexture());
 		_vrFizzleMaterial.SetShaderParameter("fizzle_color", new Color(1f, 0f, 0f, 1f));
 		// progress=0.0: order ∈ [0,1) so order < 0.0 is always false → fully transparent.
 		_vrFizzleMaterial.SetShaderParameter("progress", 0f);
-
 		_vrFizzleMesh = new MeshInstance3D
 		{
 			Name = "VRFizzleQuad",
@@ -203,13 +187,11 @@ void fragment() {
 			SortingOffset = -1f,
 		};
 		camera.AddChild(_vrFizzleMesh);
-
 		// Sync current fizzle state immediately in case TriggerFizzle was called before
 		// SetVRCamera (unlikely in practice but consistent with ScreenFlashOverlay pattern).
 		_vrFizzleMaterial.SetShaderParameter("fizzle_color", _fizzleColor.A > 0f ? _fizzleColor : new Color(1f, 0f, 0f, 1f));
 		_vrFizzleMaterial.SetShaderParameter("progress", (float)_progress);
 	}
-
 	/// <summary>
 	/// Starts the fizzle-to-color animation.
 	/// WL_GAME.C:Died — triggered by PlayerDied event with the configured VGA palette color.
@@ -220,11 +202,9 @@ void fragment() {
 		_fizzleColor = color;
 		_progress = 0.0;
 		_active = true;
-
 		_flatscreenMaterial.SetShaderParameter("fizzle_color", color);
 		_flatscreenMaterial.SetShaderParameter("progress", 0f);
 		_colorRect.Visible = true;
-
 		if (_vrFizzleMesh is not null && GodotObject.IsInstanceValid(_vrFizzleMesh))
 		{
 			// No Visible toggle — mesh is always visible. Just update shader parameters.
@@ -232,7 +212,6 @@ void fragment() {
 			_vrFizzleMaterial.SetShaderParameter("progress", 0f);
 		}
 	}
-
 	public override void _ExitTree()
 	{
 		// _vrFizzleMesh is parented to the camera, not to this node, so it is not freed
@@ -241,12 +220,10 @@ void fragment() {
 			_vrFizzleMesh.QueueFree();
 		_vrFizzleMesh = null;
 	}
-
 	public override void _Process(double delta)
 	{
 		if (!_active)
 			return;
-
 		_progress += delta / FizzleDuration;
 		if (_progress >= 1.0)
 		{
@@ -256,20 +233,16 @@ void fragment() {
 			FizzleComplete?.Invoke();
 			return;
 		}
-
 		UpdateShaderProgress();
 	}
-
 	private void UpdateShaderProgress()
 	{
 		_flatscreenMaterial.SetShaderParameter("progress", (float)_progress);
-
 		if (_vrFizzleMesh is not null && GodotObject.IsInstanceValid(_vrFizzleMesh))
 			_vrFizzleMaterial.SetShaderParameter("progress", (float)_progress);
 		else if (_vrFizzleMesh is not null)
 			_vrFizzleMesh = null; // Freed with old camera
 	}
-
 	/// <summary>
 	/// Generates the fizzle order texture using the LFSR from ID_VH.C:FizzleFade.
 	/// Each pixel stores a normalized float in [0, 1) indicating when it becomes visible
@@ -285,10 +258,8 @@ void fragment() {
 	{
 		if (_sharedFizzleTexture is not null)
 			return _sharedFizzleTexture;
-
 		int[] order = new int[FizzleWidth * FizzleHeight];
 		Array.Fill(order, -1);
-
 		// ID_VH.C:FizzleFade LFSR loop
 		uint rndval = 1;
 		int seqIdx = 0;
@@ -296,20 +267,17 @@ void fragment() {
 		{
 			// Extract x,y from current state BEFORE advancing (matches original assembly order)
 			// ID_VH.C: y = low byte - 1, x = bits 8-16 (9 bits)
-			int y = (int)(rndval & 0xFFu) - 1;
-			int x = (int)((rndval >> 8) & 0x1FFu);
-
+			int y = (int)(rndval & 0xFFu) - 1,
+				x = (int)((rndval >> 8) & 0x1FFu);
 			// Advance: right-shift, XOR with 0x00012000 if carry bit was set
 			bool carry = (rndval & 1u) != 0u;
 			rndval >>= 1;
 			if (carry)
 				rndval ^= 0x00012000u;
-
 			if (x < FizzleWidth && y >= 0 && y < FizzleHeight)
 				order[y * FizzleWidth + x] = seqIdx++;
 		}
 		while (rndval != 1);
-
 		// Normalize to [0, 1): divide by seqIdx (= 64000) so:
 		//   first pixel  → 0/64000 = 0.0
 		//   last pixel   → 63999/64000 ≈ 0.99998 < 1.0
@@ -320,7 +288,6 @@ void fragment() {
 			float value = order[i] >= 0 ? (float)order[i] / seqIdx : 0f;
 			image.SetPixel(i % FizzleWidth, i / FizzleWidth, new Color(value, 0f, 0f, 1f));
 		}
-
 		_sharedFizzleTexture = ImageTexture.CreateFromImage(image);
 		return _sharedFizzleTexture;
 	}

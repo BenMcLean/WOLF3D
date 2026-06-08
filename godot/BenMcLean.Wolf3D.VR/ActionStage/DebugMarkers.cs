@@ -157,7 +157,7 @@ public partial class DebugMarkers : Node3D
 		{
 			Mesh = mesh,
 			Position = position,
-			Name = $"AmbushMarker_{x}_{y}_{label}"
+			Name = $"AmbushMarker_{x}_{y}_{label}",
 		};
 		return xMarkerNode;
 	}

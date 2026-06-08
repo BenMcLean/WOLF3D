@@ -12,14 +12,12 @@ public interface IRoom
 	/// Used for rooms that already have a black background, where fading is not visible.
 	/// </summary>
 	bool SkipFade { get; }
-
 	/// <summary>
 	/// Sets the handler that wraps internal screen navigations in a fade transition.
 	/// Called by Root after the room is added to the scene tree.
 	/// Rooms that do not navigate internally can ignore this (default no-op).
 	/// </summary>
 	void SetFadeTransitionHandler(Action<Action> handler) { }
-
 	/// <summary>
 	/// Called by Root each frame while the screen is fully black, before the fade-in begins.
 	/// Returns true when the room is ready to start fading in.

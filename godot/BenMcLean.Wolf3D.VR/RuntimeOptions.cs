@@ -11,7 +11,6 @@ namespace BenMcLean.Wolf3D.VR;
 public static class RuntimeOptions
 {
 	public static readonly Vector2I SpectatorResolution = new(1920, 1080);
-
 	/// <summary>
 	/// Returns command-line arguments from both Godot's normal argument list and the
 	/// user-argument list that appears after `--`.
@@ -19,7 +18,6 @@ public static class RuntimeOptions
 	/// MovieWriter flags.
 	/// </summary>
 	public static string[] GetAllCommandLineArgs() => [.. OS.GetCmdlineArgs(), .. OS.GetCmdlineUserArgs()];
-
 	/// <summary>
 	/// Returns true when the desktop spectator view should replace the default VR mirror.
 	/// Disabled by default because it adds an extra 3D render pass.
@@ -37,7 +35,6 @@ public static class RuntimeOptions
 			return IsTruthy(System.Environment.GetEnvironmentVariable("WOLF3D_VR_SPECTATOR"));
 		}
 	}
-
 	/// <summary>
 	/// Returns the directory containing game XML definition files and game data subdirectories.
 	/// Override with --path &lt;path&gt; or just a bare positional argument (absolute or relative
@@ -63,17 +60,14 @@ public static class RuntimeOptions
 			return positional != null ? ResolveGamesPath(positional) : DefaultGamesDir();
 		}
 	}
-
 	private static string ResolveGamesPath(string path) =>
 		System.IO.Path.IsPathRooted(path)
 			? path
 			: System.IO.Path.GetFullPath(path, System.IO.Path.GetDirectoryName(OS.GetExecutablePath()));
-
 	private static string DefaultGamesDir() =>
 		OS.HasFeature("android") ? "/sdcard/WOLF3D"
 		: OS.HasFeature("editor") ? System.IO.Path.GetFullPath(@"..\..\games")
 		: System.IO.Path.Combine(System.IO.Path.GetDirectoryName(OS.GetExecutablePath()), "games");
-
 	private static bool IsTruthy(string value) =>
 		!string.IsNullOrWhiteSpace(value) &&
 		value.Trim().ToLowerInvariant() is "1" or "true" or "yes" or "on";

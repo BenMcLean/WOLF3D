@@ -21,7 +21,6 @@ namespace BenMcLean.Wolf3D.VR.MenuStage;
 public partial class MenuRoom : Node3D, IRoom
 {
 	public bool SkipFade => false;
-
 	private readonly IDisplayMode _displayMode;
 	private MenuManager _menuManager;
 	private MeshInstance3D _menuPanel;
@@ -35,29 +34,24 @@ public partial class MenuRoom : Node3D, IRoom
 	private IMenuInput _menuInput;
 	private Node3D _elevatorEnvironmentNode;
 	private MeshInstance3D _elevatorSwitchWall;
-
 	// Menu panel sizing in VR (in meters)
-	private const float PanelWidth = Constants.TileWidth;                // One tile wide
-	private const float PanelHeight = Constants.TileWidth * 3f / 4f;     // 4:3 aspect ratio
-
+	private const float PanelWidth = Constants.TileWidth,                // One tile wide
+		PanelHeight = Constants.TileWidth * 3f / 4f;     // 4:3 aspect ratio
 	// Fixed world-space positions for VR menu room.
 	// Panel is vertically centred at HalfTileHeight (eye level).
 	// Spawn is at world origin; panel is one tile in front (−Z).
-	private static readonly Vector3 MenuPanelWorldPos = new(0f, Constants.HalfTileHeight, -Constants.TileWidth);
-	private static readonly Vector3 SpawnWorldPos = Vector3.Zero;
-
+	private static readonly Vector3 MenuPanelWorldPos = new(0f, Constants.HalfTileHeight, -Constants.TileWidth),
+		SpawnWorldPos = Vector3.Zero;
 	/// <summary>
 	/// True when the menu signals to start the game.
 	/// Polled by Root._Process().
 	/// </summary>
 	public bool ShouldStartGame => _menuManager?.SessionState?.StartGame ?? false;
-
 	/// <summary>
 	/// Set by Root when a game is suspended in the background.
 	/// When true, pressing ESC at the root menu will resume the game.
 	/// </summary>
 	public bool HasSuspendedGame { get; set; }
-
 	/// <summary>
 	/// Set when the player wants to resume a suspended game.
 	/// Set when the player chooses to resume a suspended game (via ResumeGame() Lua call).
@@ -69,54 +63,45 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Polled by Root._Process(); Root discards the suspended game and transitions to a fresh menu.
 	/// </summary>
 	public bool PendingEndGame { get; private set; }
-
 	/// <summary>
 	/// Selected episode from menu.
 	/// </summary>
 	public int SelectedEpisode => _menuManager?.SessionState?.SelectedEpisode ?? 0;
-
 	/// <summary>
 	/// Selected difficulty from menu.
 	/// </summary>
 	public int SelectedDifficulty => _menuManager?.SessionState?.SelectedDifficulty ?? 0;
-
 	/// <summary>
 	/// Optional level transition request for intermission mode.
 	/// When set, the MenuRoom shows the "LevelComplete" menu instead of "Main".
 	/// </summary>
 	public ActionRoom.LevelTransitionRequest LevelTransition { get; set; }
-
 	/// <summary>
 	/// Optional override for the starting menu name.
 	/// When set, navigates to this menu instead of the collection's default StartMenu.
 	/// Used for intermission screen ("LevelComplete").
 	/// </summary>
 	public string StartMenuOverride { get; set; }
-
 	/// <summary>
 	/// Pending level transition after intermission is dismissed.
 	/// Set by Lua ContinueToNextLevel(), polled by Root._Process().
 	/// </summary>
 	public ActionRoom.LevelTransitionRequest PendingLevelTransition { get; private set; }
-
 	/// <summary>
 	/// Pending load game slot. Null when no load is pending.
 	/// Set by Lua LoadGame(slot), polled by Root._Process().
 	/// </summary>
 	public int? PendingLoadGame => _menuManager?.SessionState?.LoadGameSlot;
-
 	/// <summary>
 	/// The suspended simulator instance, set by Root when a game is suspended.
 	/// Used by SaveGameManager to capture the simulator state for saving.
 	/// </summary>
 	public Simulator.Simulator SuspendedSimulator { get; set; }
-
 	/// <summary>
 	/// The level index of the suspended game.
 	/// Used by SaveGameManager to determine the map name for display.
 	/// </summary>
 	public int SuspendedLevelIndex { get; set; }
-
 	/// <summary>
 	/// The final score to check against the high score table after this menu session.
 	/// Null when not coming from a completed game.
@@ -141,19 +126,16 @@ public partial class MenuRoom : Node3D, IRoom
 	/// for procedural menus (e.g., the game selection screen). Null shows nothing.
 	/// </summary>
 	public string MenuWeaponSprite { get; set; }
-
 	/// <summary>
 	/// Set when the user selects a game from the game selection menu (via SelectGame() Lua call).
 	/// Polled by Root._Process(). Null when not in game selection mode or no selection yet.
 	/// </summary>
 	public string SelectedGameXmlPath { get; private set; }
-
 	/// <summary>
 	/// Initial VR mode to seed the menu session with.
 	/// Passed in by Root so the presentation menu reflects the current runtime state.
 	/// </summary>
 	public VRMode InitialVRMode { get; set; } = VRMode.Roomscale;
-
 	/// <summary>
 	/// Initial debug marker visibility to seed the menu session with.
 	/// Passed in by Root so the presentation menu reflects the current runtime state.
@@ -169,37 +151,31 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Passed in by Root so the presentation menu reflects the current runtime state.
 	/// </summary>
 	public bool InitialUseVoxelWeapons { get; set; } = true;
-
 	/// <summary>
 	/// Equipped weapon shapes from the ActionRoom to display on VR controllers.
 	/// When set (KeepWeapons=true menus), overrides the LevelTransition weapon shapes.
 	/// </summary>
 	public IReadOnlyList<ushort?> EquippedWeaponShapes { get; init; }
-
 	/// <summary>
 	/// Completion stats captured from the ActionRoom at NavigateToMenu time.
 	/// Used by Victory screen (and similar) when LevelTransition is not set.
 	/// </summary>
 	public LevelCompletionStats PendingCompletionStats { private get; init; }
-
 	/// <summary>
 	/// All accumulated level stats at NavigateToMenu time.
 	/// Used by Victory screen for total/average calculations.
 	/// </summary>
 	public IReadOnlyList<LevelCompletionStats> PendingAllLevelStats { private get; init; }
-
 	/// <summary>
 	/// Pending quiz payload captured from gameplay before entering the Quiz menu.
 	/// </summary>
 	public PendingQuizData PendingQuiz { private get; init; }
-
 	/// <summary>
 	/// Status bar renderer from Root. When set and the current menu declares a StatusBar position,
 	/// the renderer's canvas is placed into the menu viewport at the defined coordinates.
 	/// The renderer is owned by Root and lives for the entire game session.
 	/// </summary>
 	public StatusBarRenderer StatusBarRenderer { private get; init; }
-
 	/// <summary>
 	/// Current debug marker visibility from the menu session state.
 	/// Polled by Root and applied to newly created gameplay rooms.
@@ -215,12 +191,10 @@ public partial class MenuRoom : Node3D, IRoom
 	/// Polled by Root and applied to newly created gameplay rooms.
 	/// </summary>
 	public bool UseVoxelWeapons => _menuManager?.SessionState?.UseVoxelWeapons ?? InitialUseVoxelWeapons;
-
 	/// <summary>
 	/// Menu render texture for direct spectator-window capture.
 	/// </summary>
 	public Texture2D SpectatorTexture => _menuManager?.Renderer?.ViewportTexture;
-
 	/// <summary>
 	/// Sets the fade transition handler for menu screen navigations.
 	/// The callback receives an Action (the actual navigation work) to execute at mid-fade.
@@ -231,7 +205,6 @@ public partial class MenuRoom : Node3D, IRoom
 		if (_menuManager is not null)
 			_menuManager.FadeTransitionCallback = handler;
 	}
-
 	/// <summary>
 	/// Creates a new MenuRoom with the specified display mode.
 	/// </summary>
@@ -244,26 +217,21 @@ public partial class MenuRoom : Node3D, IRoom
 		// (Root is ProcessMode.Always, so Inherit would resolve to Always)
 		ProcessMode = ProcessModeEnum.Pausable;
 	}
-
 	public override void _Ready()
 	{
 		// Initialize the display mode camera rig
 		_displayMode.Initialize(this);
-
 		// No thumbstick locomotion or turning in the menu room
 		_displayMode.LocomotionEnabled = false;
-
 		if (_displayMode.IsVRActive)
 		{
 			// Constrain room-scale physical movement to one TileWidth square centred at origin
 			_displayMode.SetMovementValidator((fromX, fromZ, toX, toZ) =>
 				(Mathf.Clamp(toX, -Constants.HalfTileWidth, Constants.HalfTileWidth),
 				 Mathf.Clamp(toZ, -Constants.HalfTileWidth, Constants.HalfTileWidth)));
-
 			// Left controller menu button resets position to face the virtual screen
 			_displayMode.HandButtonPressed += OnHandButtonPressed;
 		}
-
 		// Create menu manager
 		// MenuCollectionOverride allows procedural menus (e.g., game selection screen)
 		// without requiring a fully-loaded game.
@@ -274,7 +242,6 @@ public partial class MenuRoom : Node3D, IRoom
 			GD.PrintErr("ERROR: No MenuCollection available (set MenuCollectionOverride or load a game first)");
 			return;
 		}
-
 		SharedAssetManager.Config ??= new Assets.Gameplay.Config();
 		bool usingSharedPrecompiledLua = MenuCollectionOverride is null && SharedAssetManager.MenuLuaEngine is not null;
 		_menuManager = new MenuManager(
@@ -298,10 +265,8 @@ public partial class MenuRoom : Node3D, IRoom
 			if (HasSuspendedGame)
 				PendingResumeGame = true;
 		};
-
 		// Resolve a short display name for local high score entries.
 		_menuManager.ScriptContext.GetPlayerNameFunc = ResolveHighScorePlayerName;
-
 		// Pass pending high score data to session state
 		if (PendingHighScoreScore.HasValue)
 			_menuManager.SessionState.PendingHighScore = new PendingHighScoreData(
@@ -310,7 +275,6 @@ public partial class MenuRoom : Node3D, IRoom
 				PendingHighScoreEpisode);
 		if (PendingQuiz is not null)
 			_menuManager.SessionState.PendingQuiz = PendingQuiz;
-
 		// Wire up save/load game delegates
 		_menuManager.SaveSimulatorFunc = () => SuspendedSimulator;
 		_menuManager.GetMapNameFunc = () =>
@@ -322,10 +286,8 @@ public partial class MenuRoom : Node3D, IRoom
 				return SharedAssetManager.CurrentGame.Maps[levelIndex]?.Name ?? $"Level {levelIndex + 1}";
 			return $"Level {levelIndex + 1}";
 		};
-
 		// Register the presentation menu in both VR and flatscreen modes.
 		RegisterVRModeMenu();
-
 		// Wire sprite texture provider for actor animations (boss death cam etc.)
 		// Must be set before NavigateToMenu so the first RenderMenu call can use it.
 		if (VRAssetManager.SpriteTextures is not null)
@@ -341,7 +303,6 @@ public partial class MenuRoom : Node3D, IRoom
 				_menuManager.Renderer.SpritePageByNameProvider = name =>
 					vswap.SpritesByName.TryGetValue(name, out ushort page) ? (ushort?)page : null;
 		}
-
 		// If in intermission mode, override start menu and pass completion stats
 		if (!string.IsNullOrEmpty(StartMenuOverride))
 		{
@@ -360,7 +321,6 @@ public partial class MenuRoom : Node3D, IRoom
 			// Navigate to the override menu (e.g., "LevelComplete") instead of default
 			_menuManager.NavigateToMenu(StartMenuOverride);
 		}
-
 		// Keep the live status bar synchronized with the menu currently being shown.
 		// This matters for flows like LevelComplete -> Mission2 where the first menu has a
 		// status bar and the next one intentionally does not.
@@ -369,10 +329,8 @@ public partial class MenuRoom : Node3D, IRoom
 		if (StatusBarRenderer is not null)
 			_menuManager.ScriptContext.SetStatusBarFallbackPictureAction =
 				(id, picName) => StatusBarRenderer.State.SetPic(id, picName);
-
 		// Add the menu viewport to the scene tree (required for rendering)
 		AddChild(_menuManager.Renderer.Viewport);
-
 		if (_displayMode.IsVRActive)
 			SetupVRMenuPanel();
 		else
@@ -456,7 +414,7 @@ end
 			X = 40,
 			Y = 101,
 			W = 250,
-			H = showVoxelWeaponsOption ? 28 : 39
+			H = showVoxelWeaponsOption ? 28 : 39,
 		});
 		if (showVoxelWeaponsOption)
 			vrModeMenu.Boxes.Add(new MenuBoxDefinition { X = 40, Y = 145, W = 250, H = 39 });
@@ -619,7 +577,6 @@ end
 		{
 			Size = new Vector2(PanelWidth, PanelHeight),
 		};
-
 		// RenderPriority=1: panel renders before default-priority (0) objects in the opaque pass,
 		// so it writes its depth first. Elevator walls (priority 0, rendered after) then fail
 		// the depth test wherever the panel is closer. Weapons (also priority 0 but physically
@@ -634,7 +591,6 @@ end
 			Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
 			RenderPriority = 1,
 		};
-
 		// Create the mesh instance
 		_menuPanel = new MeshInstance3D
 		{
@@ -642,18 +598,15 @@ end
 			Mesh = quadMesh,
 			MaterialOverride = material,
 		};
-
 		// GlobalPosition requires the node to be in the scene tree.
 		// Add first, then position.
 		AddChild(_menuPanel);
 		_menuPanel.GlobalPosition = MenuPanelWorldPos;
-
 		// Create VR menu input for crosshair tracking, thumbstick navigation, and face buttons
 		VRMenuInput vrMenuInput = new(_displayMode);
 		vrMenuInput.SetMenuPanel(_menuPanel, PanelWidth, PanelHeight);
 		_menuInput = vrMenuInput;
 		_menuManager.SetInput(_menuInput);
-
 		// Add simple environment lighting for the VR space
 		_worldEnvironment = new()
 		{
@@ -668,20 +621,16 @@ end
 		};
 		AddChild(_worldEnvironment);
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
-
 		if (LevelTransition is not null)
 		{
 			VRElevatorEnvironmentDefinition elevatorEnv = GetElevatorEnvironmentDefinition();
 			if (elevatorEnv is not null)
 				_elevatorMode = true;
 		}
-
 		SetupVRControllerWeapons();
-
 		if (_elevatorMode)
 			SetupElevatorEnvironment(GetElevatorEnvironmentDefinition(), LevelTransition);
 	}
-
 	/// <summary>
 	/// Attaches a static weapon to each VR controller hand for the menu.
 	/// Uses the sprite named by WeaponSprite in the Menus XML element.
@@ -692,11 +641,9 @@ end
 	{
 		if (VRAssetManager.SpriteTextures is null)
 			return;
-
 		// EquippedWeaponShapes (from KeepWeapons=true menus) takes priority;
 		// fall back to LevelTransition shapes for the elevator path.
 		IReadOnlyList<ushort?> equippedShapes = EquippedWeaponShapes ?? LevelTransition?.EquippedWeaponShapes;
-
 		// Resolve the fallback page number from MenuWeaponSprite (used when no equipped shapes,
 		// or when a slot has no equipped weapon).
 		ushort? fallbackPage = null;
@@ -711,19 +658,15 @@ end
 					GD.PrintErr($"Warning: WeaponSprite \"{MenuWeaponSprite}\" not found in VSwap sprite names");
 			}
 		}
-
 		for (int hand = 0; hand <= 1; hand++)
 		{
 			if (_displayMode.GetHandNode(hand) is not Node3D aimNode)
 				continue;
-
 			ushort? pageNum = (equippedShapes is not null && hand < equippedShapes.Count)
 				? equippedShapes[hand]
 				: fallbackPage;
-
 			if (pageNum is null)
 				continue;
-
 			if (VRAssetManager.HasVoxelWeapons && UseVoxelWeapons && VRAssetManager.VoxelAtlas is not null)
 			{
 				VoxelWeapon voxelWeapon = new(VRAssetManager.VoxelAtlas, hand, _displayMode.GetGripHandNode(hand))
@@ -740,7 +683,6 @@ end
 			}
 		}
 	}
-
 	/// <summary>
 	/// Returns the VRElevatorEnvironmentDefinition for the menu being shown, or null if not defined.
 	/// </summary>
@@ -752,7 +694,6 @@ end
 			?? Shared.SharedAssetManager.CurrentGame?.MenuCollection;
 		return collection?.GetMenu(StartMenuOverride)?.VRElevatorEnvironment;
 	}
-
 	/// <summary>
 	/// Spawns the six elevator walls, floor, ceiling, and sky environment for VR-only
 	/// LevelComplete/Victory screens, preserving the illusion of being in the elevator.
@@ -767,11 +708,9 @@ end
 		IReadOnlyDictionary<ushort, StandardMaterial3D> materials = VRAssetManager.OpaqueMaterials;
 		if (materials is null)
 			return;
-
 		_elevatorEnvironmentNode = new Node3D { Name = "ElevatorEnvironment" };
 		AddChild(_elevatorEnvironmentNode);
 		Node3D env = _elevatorEnvironmentNode;
-
 		// Front wall (switch) — parented to the panel so it billboard-rotates with it.
 		// Local Z = -0.005 keeps it exactly 5 mm behind the panel face in the panel's own
 		// frame, so depth testing always wins at every rotation angle without moving the wall.
@@ -786,12 +725,10 @@ end
 			};
 			_menuPanel.AddChild(_elevatorSwitchWall);
 		}
-
 		// Back wall (door) — sits at the mouth of the doorframe alcove (+HalfTileWidth).
 		SpawnElevatorWall(env, materials, envDef.DoorPage,
 			new Vector3(0f, Constants.HalfTileHeight, Constants.HalfTileWidth),
 			new Vector3(0f, Mathf.Pi, 0f));  // Rotated 180° to face -Z (toward player)
-
 		// Left and right inner elevator walls — cover the front half of room depth (Z: -TileWidth to 0).
 		// R_y(+90°) rotates the default +Z normal to +X (facing inward from left wall toward player).
 		// R_y(-90°) rotates the default +Z normal to -X (facing inward from right wall toward player).
@@ -801,7 +738,6 @@ end
 		SpawnElevatorWall(env, materials, envDef.SideWallPage,
 			new Vector3(Constants.HalfTileWidth, Constants.HalfTileHeight, -Constants.HalfTileWidth),
 			new Vector3(0f, -Constants.HalfPi, 0f));  // Faces -X (inward from right)
-
 		// Left and right doorframe strips — cover the back half of room depth (Z: 0 to +TileWidth),
 		// forming the stone frame visible on each side of the elevator door.
 		SpawnElevatorWall(env, materials, envDef.DoorframePage,
@@ -810,12 +746,10 @@ end
 		SpawnElevatorWall(env, materials, envDef.DoorframePage,
 			new Vector3(Constants.HalfTileWidth, Constants.HalfTileHeight, Constants.HalfTileWidth),
 			new Vector3(0f, -Constants.HalfPi, 0f));  // Faces -X (inward from right)
-
 		// Floor and ceiling — span from the switch wall to the door.
 		// Z range: [-(TileWidth + HalfTileWidth), +HalfTileWidth] = 2×TileWidth total, centred at -HalfTileWidth.
 		Vector2 floorSize = new(Constants.TileWidth, Constants.TileWidth * 2f);
 		Vector3 floorCenter = new(0f, 0f, -Constants.HalfTileWidth);
-
 		Material floorMat = CreateElevatorFloorCeilingMaterial(levelTransition.FloorTilePage, levelTransition.FloorColor);
 		if (floorMat is not null)
 		{
@@ -829,7 +763,6 @@ end
 			floor.RotateX(-Mathf.Pi / 2f);
 			env.AddChild(floor);
 		}
-
 		Material ceilMat = CreateElevatorFloorCeilingMaterial(levelTransition.CeilingTilePage, levelTransition.CeilingColor);
 		if (ceilMat is not null)
 		{
@@ -843,7 +776,6 @@ end
 			ceiling.RotateX(Mathf.Pi / 2f);
 			env.AddChild(ceiling);
 		}
-
 		// Replace the flat BordColor background with the previous level's sky shader so any
 		// visible gaps in the geometry show the correct floor/ceiling colors rather than a
 		// solid menu border color.
@@ -872,7 +804,7 @@ void sky() {
 	COLOR = mix(floor_color.rgb, ceiling_color.rgb, step(0.0, EYEDIR.y));
 }
 """
-					}
+					},
 				};
 				skyMaterial.SetShaderParameter("floor_color", floorColor);
 				skyMaterial.SetShaderParameter("ceiling_color", ceilingColor);
@@ -881,7 +813,6 @@ void sky() {
 			}
 		}
 	}
-
 	private static void SpawnElevatorWall(
 		Node3D parent,
 		IReadOnlyDictionary<ushort, StandardMaterial3D> materials,
@@ -900,7 +831,6 @@ void sky() {
 		};
 		parent.AddChild(wall);
 	}
-
 	private static Material CreateElevatorFloorCeilingMaterial(ushort? tilePage, byte? paletteColor)
 	{
 		if (tilePage.HasValue
@@ -914,7 +844,6 @@ void sky() {
 			};
 		return null;
 	}
-
 	/// <summary>
 	/// Sets up the menu as a 2D overlay for flatscreen mode.
 	/// Similar to the original MenuStage implementation.
@@ -927,14 +856,12 @@ void sky() {
 			Layer = 1,
 		};
 		AddChild(canvasLayer);
-
 		// Create margin background
 		_marginBackground = new ColorRect
 		{
 			Color = Colors.Black,
 		};
 		canvasLayer.AddChild(_marginBackground);
-
 		// Create TextureRect to display the viewport texture
 		_flatscreenMenuTextureRect = new TextureRect()
 		{
@@ -944,20 +871,16 @@ void sky() {
 			TextureFilter = Control.TextureFilterEnum.Nearest,
 		};
 		canvasLayer.AddChild(_flatscreenMenuTextureRect);
-
 		// Subscribe to border color changes
 		_menuManager.Renderer.BordColorChanged += OnBordColorChanged;
 		OnBordColorChanged(_menuManager.Renderer.CurrentBordColor);
-
 		// Create flatscreen menu input for mouse crosshair tracking
 		_flatscreenMenuInput = new FlatscreenMenuInput();
 		_menuInput = _flatscreenMenuInput;
 		_menuManager.SetInput(_menuInput);
-
 		_lastWindowSize = Vector2I.Zero;
 		UpdateFlatscreenMenuLayout();
 	}
-
 	private static string ResolveHighScorePlayerName()
 	{
 		foreach (string candidate in new[]
@@ -973,7 +896,6 @@ void sky() {
 		}
 		return "VR Player";
 	}
-
 	private static string SanitizeHighScorePlayerName(string value)
 	{
 		if (string.IsNullOrWhiteSpace(value))
@@ -987,7 +909,6 @@ void sky() {
 			? string.Empty
 			: sanitized;
 	}
-
 	public override void _ExitTree()
 	{
 		if (_menuManager is not null)
@@ -1006,7 +927,6 @@ void sky() {
 		if (StatusBarRenderer?.Canvas.GetParent() is Node statusBarParent)
 			statusBarParent.RemoveChild(StatusBarRenderer.Canvas);
 	}
-
 	/// <summary>
 	/// Orients the VR player to face the menu panel while the screen is still fully black,
 	/// before the fade-in begins. Sets _playerOriented so _Process() does not reposition
@@ -1024,7 +944,6 @@ void sky() {
 		_playerOriented = true;
 		return true;
 	}
-
 	/// <summary>
 	/// Handles left controller menu button: resets player position to face the virtual screen.
 	/// </summary>
@@ -1033,7 +952,6 @@ void sky() {
 		if (handIndex == 1 && buttonName == "menu_button")
 			_displayMode.ResetPositionFacing(MenuPanelWorldPos, SpawnWorldPos);
 	}
-
 	/// <summary>
 	/// Rotates the menu panel to face the camera's current position.
 	/// Called every frame. Rotates only on Y axis (no tilt).
@@ -1042,18 +960,14 @@ void sky() {
 	{
 		if (_menuPanel is null || _displayMode.Camera is null)
 			return;
-
-		Vector3 cameraPos = _displayMode.ViewerPosition;
-		Vector3 panelPos = _menuPanel.GlobalPosition;
-
+		Vector3 cameraPos = _displayMode.ViewerPosition,
+			panelPos = _menuPanel.GlobalPosition;
 		// Calculate Y rotation to face camera position (ignore Y difference)
-		float deltaX = cameraPos.X - panelPos.X;
-		float deltaZ = cameraPos.Z - panelPos.Z;
-		float yRotation = Mathf.Atan2(deltaX, deltaZ);
-
+		float deltaX = cameraPos.X - panelPos.X,
+			deltaZ = cameraPos.Z - panelPos.Z,
+			yRotation = Mathf.Atan2(deltaX, deltaZ);
 		_menuPanel.Rotation = new Vector3(0, yRotation, 0);
 	}
-
 	private void OnBordColorChanged(Color color)
 	{
 		if (_marginBackground is not null)
@@ -1061,26 +975,19 @@ void sky() {
 		if (_worldEnvironment is not null)
 			_worldEnvironment.Environment.BackgroundColor = color;
 	}
-
-	public override void _Input(InputEvent @event)
-	{
+	public override void _Input(InputEvent @event) =>
 		// Forward input events to the active input implementation
 		_menuInput?.HandleInput(@event);
-	}
-
 	public override void _Process(double delta)
 	{
 		if (!_displayMode.IsVRActive)
 			UpdateFlatscreenMenuLayout();
-
 		// Update menu manager
 		_menuManager?.Update(delta);
-
 		// If a game selection was made, Root is already handling the transition.
 		// Skip all other menu processing to avoid spurious state changes.
 		if (SelectedGameXmlPath is not null)
 			return;
-
 		// Quit: user confirmed quit dialog
 		if (_menuManager?.PendingQuit == true)
 		{
@@ -1095,10 +1002,7 @@ void sky() {
 		}
 		// Check if intermission screen was dismissed (Lua called ContinueToNextLevel)
 		if (_menuManager?.ScriptContext?.ContinueToNextLevelRequested == true && LevelTransition is not null)
-		{
 			PendingLevelTransition = LevelTransition;
-		}
-
 		// Apply VR play mode changes from the menu session state
 		if (_displayMode is VRDisplayMode vrDisplayMode && _menuManager is not null)
 		{
@@ -1108,7 +1012,6 @@ void sky() {
 			if (vrDisplayMode.PlayMode != targetMode)
 				vrDisplayMode.PlayMode = targetMode;
 		}
-
 		// In VR mode, orient the player toward the panel once after XR tracking is active.
 		// PrepareForFadeIn() handles this for normal transitions while the screen is black.
 		// This fallback fires if tracking was not yet active at PrepareForFadeIn() time
@@ -1118,15 +1021,11 @@ void sky() {
 			_displayMode.ResetPositionFacing(MenuPanelWorldPos, SpawnWorldPos);
 			_playerOriented = true;
 		}
-
 		// Rotate panel to face camera every frame (true billboard) — disabled in elevator mode
 		// so the screen stays fixed relative to the switch wall behind it.
 		if (_displayMode.IsVRActive && _menuPanel is not null && !_elevatorMode)
-		{
 			UpdateMenuPanelRotation();
-		}
 	}
-
 	/// <summary>
 	/// Ensure the live status bar canvas is placed in (or removed from) the menu viewport
 	/// according to whether the current menu declares a StatusBar position.
@@ -1136,7 +1035,6 @@ void sky() {
 	{
 		if (StatusBarRenderer is null || _menuManager is null)
 			return;
-
 		// When CurrentMenuName is null there are two cases:
 		// 1. Article mode — remove the status bar (articles never show it).
 		// 2. Menus closing (e.g. ResumeGame) — the fade-to-black has not started yet, so
@@ -1149,11 +1047,9 @@ void sky() {
 					articleParent.RemoveChild(StatusBarRenderer.Canvas);
 			return;
 		}
-
 		MenuCollection collection = MenuCollectionOverride
 			?? SharedAssetManager.CurrentGame?.MenuCollection;
 		MenuStatusBarDefinition statusBarDef = collection?.GetMenu(_menuManager.CurrentMenuName)?.StatusBar;
-
 		if (statusBarDef is null)
 		{
 			// This menu has no status bar — remove canvas from the viewport (but don't free it).
@@ -1161,17 +1057,14 @@ void sky() {
 				parent.RemoveChild(StatusBarRenderer.Canvas);
 			return;
 		}
-
 		// Ensure the canvas is in this menu's viewport.
 		if (StatusBarRenderer.Canvas.GetParent() != _menuManager.Renderer.Viewport)
 		{
 			StatusBarRenderer.Canvas.GetParent()?.RemoveChild(StatusBarRenderer.Canvas);
 			_menuManager.Renderer.Viewport.AddChild(StatusBarRenderer.Canvas);
 		}
-
 		StatusBarRenderer.Canvas.Position = new Vector2(statusBarDef.X, statusBarDef.Y);
 	}
-
 	/// <summary>
 	/// Clears the VR elevator environment when the current screen no longer defines one.
 	/// Called whenever the active menu or article changes so a missing VRElevatorEnvironment
@@ -1200,31 +1093,25 @@ void sky() {
 		}
 		_elevatorMode = false;
 	}
-
 	private void OnCurrentMenuChanged(string menuName)
 	{
 		SyncMenuStatusBar();
 		SyncVRElevatorEnvironment();
 	}
-
 	private void UpdateFlatscreenMenuLayout()
 	{
 		if (_marginBackground is null || _flatscreenMenuTextureRect is null || _flatscreenMenuInput is null)
 			return;
-
 		Vector2I windowSize = DisplayServer.WindowGetSize();
 		if (windowSize == _lastWindowSize || windowSize.X <= 0 || windowSize.Y <= 0)
 			return;
-
 		_lastWindowSize = windowSize;
 		_marginBackground.Size = windowSize;
-
 		(Vector2 menuSize, Vector2 menuPosition) = CalculateAspectFit(windowSize, 4f / 3f);
 		_flatscreenMenuTextureRect.Size = menuSize;
 		_flatscreenMenuTextureRect.Position = menuPosition;
 		_flatscreenMenuInput.SetMenuDisplayArea(menuPosition, menuSize);
 	}
-
 	private static (Vector2 Size, Vector2 Position) CalculateAspectFit(Vector2I windowSize, float aspectRatio)
 	{
 		float windowAspectRatio = (float)windowSize.X / windowSize.Y;
@@ -1233,7 +1120,6 @@ void sky() {
 			Vector2 size = new(windowSize.Y * aspectRatio, windowSize.Y);
 			return (size, new Vector2((windowSize.X - size.X) / 2f, 0f));
 		}
-
 		Vector2 letterboxedSize = new(windowSize.X, windowSize.X / aspectRatio);
 		return (letterboxedSize, new Vector2(0f, (windowSize.Y - letterboxedSize.Y) / 2f));
 	}
