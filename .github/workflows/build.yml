@@ -1,0 +1,78 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (e.g. 0.1.0)"
+        required: true
+        type: string
+
+env:
+  GODOT_VERSION: "4.5"
+
+jobs:
+  export:
+    name: Export ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: "Windows Desktop"
+            name: windows-x64
+            output_dir: build/windows
+            output_file: BenMcLean.Wolf3D.VR.exe
+          - preset: "Linux"
+            name: linux-x64
+            output_dir: build/linux
+            output_file: BenMcLean.Wolf3D.VR.x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Download Godot
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_mono_linux_x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo install -m 755 "Godot_v${{ env.GODOT_VERSION }}-stable_mono_linux_x86_64/Godot_v${{ env.GODOT_VERSION }}-stable_mono_linux.x86_64" /usr/local/bin/godot
+          sudo cp -r "Godot_v${{ env.GODOT_VERSION }}-stable_mono_linux_x86_64/GodotSharp" /usr/local/bin/GodotSharp
+
+      - name: Install export templates
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_mono_export_templates.tpz" -O templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable.mono"
+          unzip -q templates.tpz -d /tmp/godot_tpl
+          mv /tmp/godot_tpl/templates/* "$HOME/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable.mono/"
+
+      - name: Import project resources
+        working-directory: godot/BenMcLean.Wolf3D.VR
+        run: godot --headless --import
+
+      - name: Build C# assemblies
+        working-directory: godot/BenMcLean.Wolf3D.VR
+        run: dotnet build
+
+      - name: Export "${{ matrix.preset }}"
+        working-directory: godot/BenMcLean.Wolf3D.VR
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/${{ matrix.output_dir }}"
+          godot --headless --export-release "${{ matrix.preset }}" "$GITHUB_WORKSPACE/${{ matrix.output_dir }}/${{ matrix.output_file }}"
+
+      - name: Bundle games folder and README
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/${{ matrix.output_dir }}/games"
+          cp "$GITHUB_WORKSPACE/games/GAMES.md" "$GITHUB_WORKSPACE/${{ matrix.output_dir }}/games/GAMES.md"
+          if [ -f "$GITHUB_WORKSPACE/README.md" ]; then
+            cp "$GITHUB_WORKSPACE/README.md" "$GITHUB_WORKSPACE/${{ matrix.output_dir }}/README.md"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-v${{ inputs.version }}
+          path: ${{ matrix.output_dir }}/
