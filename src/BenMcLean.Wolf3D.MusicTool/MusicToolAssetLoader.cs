@@ -35,7 +35,9 @@ internal static class MusicToolAssetLoader
 
 	private static bool CanUseLocalSharewareZip(XElement xml, string zipPath) =>
 		File.Exists(zipPath) &&
-		string.Equals(xml.Attribute("Extension")?.Value, "WL1", StringComparison.OrdinalIgnoreCase);
+		(xml.Attribute("Extension")?.Value ?? "")
+			.Split(',', 2, StringSplitOptions.TrimEntries)[0]
+			.Equals("WL1", StringComparison.OrdinalIgnoreCase);
 
 	private static bool HasRequiredExternalData(XElement xml, string folder) =>
 		Directory.Exists(folder) &&

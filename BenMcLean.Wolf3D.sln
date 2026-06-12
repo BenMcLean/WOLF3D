@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		convert_vga_palette_to_hex.sh = convert_vga_palette_to_hex.sh
+		games\GAMES.md = games\GAMES.md
 		games\M1.xml = games\M1.xml
 		games\M2.xml = games\M2.xml
 		games\M3.xml = games\M3.xml

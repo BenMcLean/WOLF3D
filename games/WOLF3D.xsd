@@ -41,7 +41,19 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Extension" type="xs:string"/>
+			<xs:attribute name="Extension" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>
+						File extension(s) for game data files (e.g., "WL1", "SOD").
+						Multiple extensions may be specified as a comma-separated list (e.g., "SOD,SD2").
+						When multiple extensions are listed, the engine tries them in order when a file
+						is not found under its primary name, using the first match found. The first
+						extension is also used for save game and config file naming.
+						Example: Extension="SOD,SD2" supports both GOG releases (*.SOD) and
+						original retail releases (*.SD2) of Spear of Destiny Mission 2.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			<xs:attribute name="Exe" type="xs:string"/>
 			<xs:attribute name="HighScores" type="xs:string"/>
 			<xs:attribute name="Path" type="xs:string"/>

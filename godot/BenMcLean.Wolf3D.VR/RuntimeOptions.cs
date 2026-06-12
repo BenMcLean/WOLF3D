@@ -66,7 +66,7 @@ public static class RuntimeOptions
 			: System.IO.Path.GetFullPath(path, System.IO.Path.GetDirectoryName(OS.GetExecutablePath()));
 	private static string DefaultGamesDir() =>
 		OS.HasFeature("android") ? "/sdcard/WOLF3D"
-		: OS.HasFeature("editor") ? System.IO.Path.GetFullPath(@"..\..\games")
+		: OS.HasFeature("editor") ? System.IO.Path.GetFullPath(System.IO.Path.Combine("..", "..", "games"))
 		: System.IO.Path.Combine(System.IO.Path.GetDirectoryName(OS.GetExecutablePath()), "games");
 	private static bool IsTruthy(string value) =>
 		!string.IsNullOrWhiteSpace(value) &&

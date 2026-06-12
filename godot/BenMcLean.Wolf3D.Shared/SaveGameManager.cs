@@ -29,9 +29,12 @@ public static class SaveGameManager
 			SharedAssetManager.CurrentGame.XML.Attribute("Path")?.Value ?? "");
 	/// <summary>
 	/// Gets the file extension for save games from the XML Extension attribute.
-	/// Falls back to the Path attribute if Extension is not defined.
+	/// When Extension is comma-separated (e.g. "SOD,SD2"), uses the first (primary) extension.
+	/// Falls back to "SAV" if Extension is not defined.
 	/// </summary>
-	private static string GetExtension() => SharedAssetManager.CurrentGame?.XML?.Attribute("Extension")?.Value ?? "SAV";
+	private static string GetExtension() =>
+		(SharedAssetManager.CurrentGame?.XML?.Attribute("Extension")?.Value ?? "SAV")
+			.Split(',', 2, StringSplitOptions.TrimEntries)[0];
 	/// <summary>
 	/// Gets the full path for a save game file.
 	/// </summary>

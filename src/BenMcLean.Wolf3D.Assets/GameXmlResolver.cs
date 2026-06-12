@@ -32,6 +32,7 @@ public static class GameXmlResolver
 		XElement merged = new(loadBaseXml(baseReference.Trim()));
 		CopyAttributeIfPresent(xml, merged, "Name");
 		CopyAttributeIfPresent(xml, merged, "Path");
+		CopyAttributeIfPresent(xml, merged, "Extension");
 		return merged;
 	}
 	private static XElement LoadFromFile(

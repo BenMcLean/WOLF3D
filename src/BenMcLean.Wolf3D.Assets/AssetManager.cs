@@ -55,6 +55,23 @@ public class AssetManager
 	{
 		if (openRead is null && !Directory.Exists(folder))
 			throw new DirectoryNotFoundException(folder);
+		// Always wrap for case-insensitive resolution. Transparent on Windows (filesystem is
+		// already case-insensitive); needed on Linux where e.g. Noah's Ark ships lowercase
+		// filenames on some releases and uppercase on others.
+		Func<string, bool> baseFileExists = fileExists ?? File.Exists;
+		Func<string, Stream> baseOpenRead = openRead ?? File.OpenRead;
+		fileExists = path => baseFileExists(ResolveCaseInsensitive(path, baseFileExists));
+		openRead = path => baseOpenRead(ResolveCaseInsensitive(path, baseFileExists));
+		// When multiple comma-separated extensions are listed, also try each in order.
+		// E.g. Extension="SOD,SD2" supports both GOG (*.SOD) and original retail (*.SD2).
+		string[] extensions = ParseExtensions(xml);
+		if (extensions.Length > 1)
+		{
+			Func<string, bool> ciFileExists = fileExists;
+			Func<string, Stream> ciOpenRead = openRead;
+			fileExists = path => FileExistsWithExtensionFallback(path, extensions, ciFileExists);
+			openRead = path => OpenReadWithExtensionFallback(path, extensions, ciFileExists, ciOpenRead);
+		}
 		XML = xml ?? throw new ArgumentNullException(nameof(xml));
 		AudioT audioT = null;
 		VgaGraph vgaGraph = null;
@@ -236,6 +253,42 @@ public class AssetManager
 			chunks[name] = reader.ReadToEnd();
 		}
 		return chunks;
+	}
+	private static string ResolveCaseInsensitive(string path, Func<string, bool> fileExists)
+	{
+		if (fileExists(path)) return path;
+		string dir = Path.GetDirectoryName(path);
+		string fileName = Path.GetFileName(path);
+		if (string.IsNullOrEmpty(fileName)) return path;
+		string effectiveDir = string.IsNullOrEmpty(dir) ? "." : dir;
+		if (!Directory.Exists(effectiveDir)) return path;
+		try
+		{
+			return Directory.EnumerateFiles(effectiveDir)
+				.FirstOrDefault(f => string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase))
+				?? path;
+		}
+		catch { return path; }
+	}
+	private static string[] ParseExtensions(XElement xml) =>
+		(xml.Attribute("Extension")?.Value ?? "")
+			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+	private static bool FileExistsWithExtensionFallback(string path, string[] extensions, Func<string, bool> fileExists) =>
+		fileExists(path) ||
+		extensions.Any(ext => fileExists(Path.Combine(
+			Path.GetDirectoryName(path) ?? "",
+			Path.GetFileNameWithoutExtension(path) + "." + ext)));
+	private static Stream OpenReadWithExtensionFallback(string path, string[] extensions, Func<string, bool> fileExists, Func<string, Stream> openRead)
+	{
+		if (fileExists(path)) return openRead(path);
+		foreach (string ext in extensions)
+		{
+			string candidate = Path.Combine(
+				Path.GetDirectoryName(path) ?? "",
+				Path.GetFileNameWithoutExtension(path) + "." + ext);
+			if (fileExists(candidate)) return openRead(candidate);
+		}
+		return openRead(path); // let original path produce the FileNotFoundException
 	}
 	private static bool FileExists(string path, Func<string, bool> fileExists) => fileExists?.Invoke(path) ?? File.Exists(path);
 	private static Stream OpenRead(string path, Func<string, Stream> openRead) => openRead?.Invoke(path) ?? File.OpenRead(path);
