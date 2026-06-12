@@ -9,7 +9,7 @@
 		<Fonts Start="1">
 			<Font Number="0" Name="SMALL" />
 			<Font Number="1" Name="BIG" />
-			<Font Prefix="L_" Name="L" SpaceColor="127" SpaceWidth="16" />
+			<Font Prefix="L_" Name="L" SpaceColor="218" SpaceWidth="16" />
 			<Font Prefix="N_" Name="N" />
 			<Font Prefix="Y_" Name="Y" />
 		</Fonts>
